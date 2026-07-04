@@ -29,6 +29,7 @@ Layer 8: Self Learning and Evolution
 Layer 9: Portfolio and Organizational Intelligence
 Layer 10: Interface and Interaction
 Layer 11: Runtime and Infrastructure
+Layer 12: Orchestration and Work Management
 ```
 
 ## Layer 0: Constitution and Governance
@@ -44,6 +45,7 @@ Capabilities:
 - human approval model
 - safety model
 - agent contract
+- agent hierarchy
 
 Primary artifacts:
 
@@ -52,6 +54,7 @@ Primary artifacts:
 - docs/RFC_PROCESS.md
 - docs/ARBITER_FINAL_JUDGE.md
 - docs/DECISION_LIFECYCLE.md
+- docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
 - agents/UNIVERSAL_AGENT_CONTRACT.md
 
 ## Layer 1: Knowledge and Memory
@@ -308,6 +311,34 @@ Primary artifacts:
 - apps/api
 - apps/worker
 
+## Layer 12: Orchestration and Work Management
+
+Owns cross-agent coordination, durable project state, task sequencing, handoffs, and anti-context-rot workflows.
+
+Capabilities:
+
+- Orchestration Engine
+- agent hierarchy
+- agent communication protocol
+- current state tracking
+- active work tracking
+- handoff protocol
+- recent changes log
+- session bootstrap generation
+- Plane integration
+- task lifecycle enforcement
+- dependency and blocker tracking
+
+Primary artifacts:
+
+- docs/ORCHESTRATION_ENGINE.md
+- docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
+- docs/CURRENT_STATE.md
+- docs/ACTIVE_WORK.md
+- docs/HANDOFF.md
+- docs/RECENT_CHANGES.md
+- docs/SESSION_BOOTSTRAP.md
+
 ## Capability Dependency Graph
 
 ```text
@@ -316,6 +347,16 @@ Constitution
   -> Agent Contract
   -> Arbiter and Final Judge
   -> Decision Lifecycle
+  -> Agent Hierarchy
+
+Orchestration
+  -> Current State
+  -> Active Work
+  -> Session Bootstrap
+  -> Agent Assignment
+  -> Handoff
+  -> Plane Sync
+  -> PR Lifecycle
 
 Knowledge and Memory
   -> Knowledge Distillation
@@ -370,6 +411,8 @@ Minimum coherent product:
 8. Dashboard shell
 9. Voice inbox capture
 10. Local Docker runtime
+11. Orchestration state files
+12. Session bootstrap and handoff protocol
 
 ## Later Capabilities
 
@@ -380,6 +423,8 @@ Minimum coherent product:
 - production-grade voice session streaming
 - advanced digital twin prediction
 - write-capable build workflows after approval gates mature
+- live multi-agent communication bus
+- full Plane synchronization
 
 ## Update Rule
 

@@ -31,11 +31,7 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
         run: printf '%s' "$PR_BODY" > /tmp/pr_body.md
       - name: Run PR Guardian
-        run: |
-          python tools/pr_guardian.py \
-            --base "${{ github.event.pull_request.base.sha }}" \
-            --head "${{ github.event.pull_request.head.sha }}" \
-            --body-file /tmp/pr_body.md
+        run: python tools/pr_guardian.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}" --body-file /tmp/pr_body.md
 
   api-tests:
     name: API tests and lint
@@ -89,10 +85,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
       - name: Install web dependencies
-        run: npm ci
+        run: npm install
         working-directory: apps/web
       - name: Build web
         run: npm run build

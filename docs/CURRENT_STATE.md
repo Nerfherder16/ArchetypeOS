@@ -4,58 +4,57 @@
 
 This file is the durable project state checkpoint for ArchetypeOS.
 
-Every new engineering session should read this before planning or implementation.
-
 ## Status
 
 - Project: ArchetypeOS
 - Phase: v0.1 foundation
-- Current sprint: Sprint 1 — Runtime foundation and orchestration discipline
+- Current sprint: Sprint 2 — Operating Loop planning
 - Source of truth: GitHub repository
-- Plane status: local instance may be unavailable; markdown state files are fallback execution board
+- Plane status: pinned/offline due to local power outage; markdown state files remain fallback execution board
 
 ## Recently Merged
 
 - PR #1: Runtime foundation
 - PR #2: CI and deterministic PR Guardian
 - PR #3: CI enforcement and branch protection documentation
-- PR #6: Verification Protocol
 - PR #5: Repository Registry MVP
+- PR #6: Verification Protocol
+- PR #7: Agent Communication Bus and PR Monitoring skill
+- PR #8: Branch Isolation / Worktree Protocol
 
 ## Current Objective
 
-Document branch isolation and worktree discipline before expanding parallel agent work.
+Inventory the roadmap, document the operating loop, capture Claude Code workflow research, and prepare the Plane project blueprint while Plane is unavailable.
 
 ## Active Branch
 
-- `docs/branch-isolation-worktree-protocol`
+- `docs/operating-loop-roadmap`
 
 ## CI Status
 
 - CI exists
 - PR Guardian exists
-- Branch protection should be enforced or documented according to `docs/BRANCH_PROTECTION.md`
-- Verification Protocol is active; PR Guardian expects verification metadata in PR bodies
-- AOS-ORCH-002 documentation changes are pending GitHub CI / PR Guardian verification
+- Verification Protocol is active
+- Branch Isolation / Worktree Protocol is active
+- PR Monitoring skill exists
 
 ## Verification Status
 
 - Status: Verification pending
 - Level: Level 1
-- Method: GitHub connector repository inspection for documentation and state updates; pending GitHub CI / PR Guardian
-- Evidence: `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added and state docs updated on `docs/branch-isolation-worktree-protocol`
+- Method: GitHub connector documentation updates; pending GitHub CI / PR Guardian after PR creation
+- Evidence: roadmap, workflow research, app loop, Plane blueprint, and Control Tower docs added on branch
 - Limitations: Local Level 2 execution unavailable in connector-only session
 - Required Next Verifier: GitHub CI / PR Guardian
 
 ## In Scope Now
 
-- branch isolation protocol
-- worktree protocol
-- connector fallback rules
-- backup head preservation before force/reset
-- branch freshness checks before ready-for-review
-- local-agent versus ChatGPT-connector responsibility split
-- durable state updates for AOS-ORCH-002
+- roadmap inventory
+- Claude Code workflow research
+- app creation loop design
+- Plane project blueprint
+- Engineering Control Tower design
+- state file reconciliation
 
 ## Out Of Scope Now
 
@@ -63,25 +62,24 @@ Document branch isolation and worktree discipline before expanding parallel agen
 - desktop automation
 - browser automation
 - wake word
-- autonomous coding without approval gates
 - production deployment
 
 ## Open Decisions
 
 | Decision | Status | Notes |
 | --- | --- | --- |
-| Plane integration depth | Deferred | Start with markdown fallback and later sync Plane when available. |
-| Agent dashboard implementation | Deferred | Document first, build after v0.1 runtime stabilizes. |
-| Multi-agent live communication | Deferred | Start with durable artifact communication. |
-| Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
+| Plane integration depth | Pinned | Resume when local Plane returns. |
+| Agent dashboard implementation | Deferred | Design Control Tower first. |
+| Multi-agent live communication | Deferred | Durable artifact communication first. |
+| Verification Engine implementation | Deferred | Protocol and provider abstraction first. |
 
 ## Blockers
 
-- None known.
+- Local Plane unavailable during power outage.
 
 ## Next Recommended Task
 
-Review AOS-ORCH-002, wait for CI / PR Guardian, then merge if verification succeeds. After merge, proceed to AOS-RUNTIME-002 using one branch and one isolated worktree.
+Review and merge the operating loop planning PR, then assign AOS-RUNTIME-002 — Repository Scanner MVP to the Runtime Agent.
 
 ## Required Reading For New Sessions
 

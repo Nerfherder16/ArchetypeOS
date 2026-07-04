@@ -95,12 +95,15 @@ Capabilities:
 - source ranking
 - research notes
 - research freshness
+- external workflow research
+- Claude Code workflow pattern extraction
 
 Primary artifacts:
 
 - docs/RESEARCH_ENGINE.md
 - docs/REPOSITORY_INTELLIGENCE_ENGINE.md
 - docs/CONTINUOUS_RESEARCH_ENGINE.md
+- docs/BORIS_CLAUDE_CODE_RESEARCH.md
 - templates/research_note.md
 - agents/research_librarian/CLAUDE.md
 
@@ -180,12 +183,15 @@ Capabilities:
 - node agents
 - proof labs
 - builder workflows
+- autonomous app creation loop
+- minimum viable operating loop
 
 Primary artifacts:
 
 - docs/CLAUDE_CODE_BRIDGE.md
 - docs/DISTRIBUTED_RUNTIME.md
 - docs/LOCAL_LLM_GPU_NODE.md
+- docs/APP_CREATION_LOOP.md
 
 ## Layer 7: Validation and Release Gates
 
@@ -285,6 +291,10 @@ Capabilities:
 - Voice interface
 - agent council dashboard
 - engineering observatory
+- Engineering Control Tower
+- Control Tower current-state panel
+- Control Tower verification queue
+- Control Tower PR queue
 - multi-monitor layouts
 
 Primary artifacts:
@@ -294,6 +304,7 @@ Primary artifacts:
 - docs/VOICE_SAFETY_MODEL.md
 - docs/AGENT_COUNCIL_DASHBOARD.md
 - docs/ENGINEERING_OBSERVATORY.md
+- docs/ENGINEERING_CONTROL_TOWER.md
 
 ## Layer 11: Runtime and Infrastructure
 
@@ -344,6 +355,10 @@ Capabilities:
 - recent changes log
 - session bootstrap generation
 - Plane integration
+- Plane project blueprint
+- markdown fallback execution board
+- roadmap inventory
+- operating loop roadmap
 - task lifecycle enforcement
 - dependency and blocker tracking
 
@@ -352,6 +367,8 @@ Primary artifacts:
 - docs/ORCHESTRATION_ENGINE.md
 - docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
 - docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md
+- docs/ROADMAP_REVIEW.md
+- docs/PLANE_PROJECT_BLUEPRINT.md
 - docs/CURRENT_STATE.md
 - docs/ACTIVE_WORK.md
 - docs/HANDOFF.md
@@ -378,7 +395,9 @@ Orchestration
   -> Worktree Protocol
   -> Connector Fallback
   -> Verification Metadata
-  -> Plane Sync
+  -> Plane Blueprint
+  -> Operating Loop Roadmap
+  -> Control Tower
   -> PR Lifecycle
 
 Knowledge and Memory
@@ -393,6 +412,7 @@ Research
   -> Technology Fitness
   -> Design Intelligence
   -> Strategy Engine
+  -> Claude Code Workflow Research
 
 Repository Intelligence
   -> Architecture Reverse Engineering
@@ -423,6 +443,16 @@ Verification
   -> PR Guardian
   -> Release Gates
 
+Build Loop
+  -> Work Package
+  -> Branch Isolation
+  -> Build Agent
+  -> Verification
+  -> PR Monitoring
+  -> Merge
+  -> State Update
+  -> Knowledge Update
+
 Nightly Self Learning
   -> Knowledge Distillation
   -> Meta Agent
@@ -445,12 +475,15 @@ Minimum coherent product:
 6. PR Guardian first pass
 7. Verification Protocol
 8. Branch Isolation / Worktree Protocol
-9. Nightly self-learning digest
-10. Dashboard shell
-11. Voice inbox capture
-12. Local Docker runtime
-13. Orchestration state files
-14. Session bootstrap and handoff protocol
+9. Operating Loop Roadmap
+10. Plane Project Blueprint
+11. Engineering Control Tower design
+12. Nightly self-learning digest
+13. Dashboard shell
+14. Voice inbox capture
+15. Local Docker runtime
+16. Orchestration state files
+17. Session bootstrap and handoff protocol
 
 ## Later Capabilities
 

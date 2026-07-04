@@ -10,56 +10,62 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 foundation
-- Current sprint: Sprint 1 — Runtime foundation and orchestration discipline
+- Current sprint: Sprint 2 — Operating Loop and first runtime proof
 - Source of truth: GitHub repository
-- Plane status: local instance may be unavailable; markdown state files are fallback execution board
+- First runtime target: Windows 11 + WSL 2 Ubuntu
+- Plane status: pinned/offline due to local power outage; markdown state files remain fallback execution board
 
 ## Recently Merged
 
 - PR #1: Runtime foundation
 - PR #2: CI and deterministic PR Guardian
 - PR #3: CI enforcement and branch protection documentation
-- PR #6: Verification Protocol
 - PR #5: Repository Registry MVP
+- PR #6: Verification Protocol
+- PR #7: Agent Communication Bus and PR Monitoring skill
+- PR #8: Branch Isolation / Worktree Protocol
+- PR #10: Independent Architecture Review artifact
+- PR #11: Engineering OS Strategy and WSL Windows 11 Runtime Target
+- PR #12: Operating Loop planning docs recovery
 
 ## Current Objective
 
-Document branch isolation and worktree discipline before expanding parallel agent work.
+Reconcile state files after recent merges, then assign AOS-RUNTIME-002 — Repository Scanner MVP as the next implementation task.
 
 ## Active Branch
 
-- `docs/branch-isolation-worktree-protocol`
+- `docs/state-reconciliation`
 
 ## CI Status
 
 - CI exists
 - PR Guardian exists
-- Branch protection should be enforced or documented according to `docs/BRANCH_PROTECTION.md`
-- Verification Protocol is active; PR Guardian expects verification metadata in PR bodies
-- AOS-ORCH-002 documentation changes are pending GitHub CI / PR Guardian verification
+- Verification Protocol is active
+- PR Monitoring skill exists
+- Branch Isolation / Worktree Protocol is active
+- WSL Windows 11 is the accepted first runtime target
 
 ## Verification Status
 
 - Status: Verification pending
 - Level: Level 1
-- Method: GitHub connector repository inspection for documentation and state updates; pending GitHub CI / PR Guardian
-- Evidence: `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added and state docs updated on `docs/branch-isolation-worktree-protocol`
-- Limitations: Local Level 2 execution unavailable in connector-only session
-- Required Next Verifier: GitHub CI / PR Guardian
+- Method: GitHub connector documentation/state inspection; pending GitHub CI / PR Guardian after PR creation
+- Evidence: `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/HANDOFF.md`, and `docs/RECENT_CHANGES.md` reconciled on `docs/state-reconciliation`
+- Limitations: Local Level 2 WSL/Docker verification unavailable until power and workstation access return
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- branch isolation protocol
-- worktree protocol
-- connector fallback rules
-- backup head preservation before force/reset
-- branch freshness checks before ready-for-review
-- local-agent versus ChatGPT-connector responsibility split
-- durable state updates for AOS-ORCH-002
+- state reconciliation after PRs #7, #8, #10, #11, #12
+- durable handoff update
+- next-task clarity for Repository Scanner MVP
+- preserve Plane as pinned/offline
 
 ## Out Of Scope Now
 
 - repository scanner implementation
+- local WSL/Docker verification
+- Plane sync
 - desktop automation
 - browser automation
 - wake word
@@ -70,18 +76,20 @@ Document branch isolation and worktree discipline before expanding parallel agen
 
 | Decision | Status | Notes |
 | --- | --- | --- |
-| Plane integration depth | Deferred | Start with markdown fallback and later sync Plane when available. |
-| Agent dashboard implementation | Deferred | Document first, build after v0.1 runtime stabilizes. |
-| Multi-agent live communication | Deferred | Start with durable artifact communication. |
+| Plane integration depth | Pinned | Resume when local Plane returns. |
+| Agent dashboard implementation | Deferred | Engineering Control Tower design exists; implementation comes after scanner/runtime data. |
+| Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
+| Local Level 2 verification | Blocked | Resume when Windows 11/WSL workstation access returns. |
 
 ## Blockers
 
-- None known.
+- Local Plane unavailable during power outage.
+- Local WSL/Docker Level 2 verification unavailable during power outage.
 
 ## Next Recommended Task
 
-Review AOS-ORCH-002, wait for CI / PR Guardian, then merge if verification succeeds. After merge, proceed to AOS-RUNTIME-002 using one branch and one isolated worktree.
+Open and merge this state reconciliation PR after CI passes. Then assign AOS-RUNTIME-002 — Repository Scanner MVP to the Runtime Agent using one branch and one isolated worktree.
 
 ## Required Reading For New Sessions
 
@@ -94,7 +102,9 @@ Review AOS-ORCH-002, wait for CI / PR Guardian, then merge if verification succe
 7. `docs/CONCRETE_BUILD_PATH.md`
 8. `docs/VERIFICATION_PROTOCOL.md`
 9. `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md`
-10. Relevant RFCs and domain docs
+10. `docs/ENGINEERING_OS_STRATEGY.md`
+11. `docs/WSL_WIN11_RUNTIME_TARGET.md`
+12. Relevant RFCs and domain docs
 
 ## Update Rule
 

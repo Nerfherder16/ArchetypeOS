@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-archetypeos}
+      POSTGRES_USER: ${POSTGRES_USER:-archetypeos}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-archetypeos}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-archetypeos} -d ${POSTGRES_DB:-archetypeos}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+
+  api:
+    build:
+      context: ./apps/api
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ARTIFACT_ROOT: ${ARTIFACT_ROOT:-/data/artifacts}
+      REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - archetype_data:/data
+      - ${HOST_REPOSITORY_ROOT:-./repositories}:/repositories:ro
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  worker:
+    build:
+      context: ./apps/worker
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ARTIFACT_ROOT: ${ARTIFACT_ROOT:-/data/artifacts}
+      REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
+    depends_on:
+      api:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - archetype_data:/data
+      - ${HOST_REPOSITORY_ROOT:-./repositories}:/repositories:ro
+
+  web:
+    build:
+      context: ./apps/web
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-5173}:5173"
+
+volumes:
+  postgres_data:
+  redis_data:
+  archetype_data:

@@ -20,32 +20,24 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-CI-001 — Verification Protocol
 
-- Status: In Review
+- Status: Merged
 - Owner: CI / DevOps Agent
 - Branch: `codex/verification-protocol`
+- PR: #6
 - Goal: Make verification a mandatory engineering artifact across local, connector, CI, runtime, and human-verification environments.
-- Acceptance Criteria:
-  - `docs/VERIFICATION_PROTOCOL.md` exists
-  - verification levels 0 through 5 are defined
-  - deterministic verification decision tree exists
-  - handoff template includes verification metadata
-  - session bootstrap requires verification metadata
-  - PR Guardian expects verification metadata in PR descriptions
-  - verification provider abstraction is documented
-  - Capability Map updated
-  - draft PR opened
-- Verification Status: Verification pending
-- Verification Level: Level 1
-- Verification Method: GitHub connector repository inspection and patch review
-- Evidence: Protocol, docs, PR template, PR Guardian parser, and local pre-PR fallback body updated on branch
-- Limitations: Local Level 2 execution unavailable in current session
-- Required Next Verifier: GitHub CI / PR Guardian
+- Verification Status: Verified
+- Verification Level: Level 3
+- Verification Method: GitHub Actions CI and PR Guardian
+- Evidence: PR #6 merged after successful CI run `28710292267`.
+- Limitations: Local Level 2 execution was unavailable in the connector-only session.
+- Required Next Verifier: None.
 
 ### AOS-ORCH-001 — Orchestration State Discipline
 
-- Status: In Progress
+- Status: Merged
 - Owner: Chief Architect / Orchestrator
 - Branch: `docs/orchestration-state`
+- PR: #3
 - Goal: Add durable orchestration docs and state files so future sessions can restart without context rot.
 - Acceptance Criteria:
   - `docs/ORCHESTRATION_ENGINE.md` exists
@@ -59,9 +51,10 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-RUNTIME-001 — Repository Registry MVP
 
-- Status: Ready
+- Status: In Review
 - Owner: Runtime Agent
-- Branch: TBD
+- Branch: `codex/repository-registry-mvp`
+- PR: #5
 - Goal: Implement the first project/repository registry flow.
 - Dependencies:
   - Orchestration state discipline merged
@@ -75,6 +68,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
   - API tests exist
   - docs updated
   - verification metadata recorded in handoff and PR
+- Verification Status: Verification pending
+- Verification Level: Level 1
+- Verification Method: CI / DevOps connector-backed rebase onto `main`, repository inspection, and pending GitHub CI rerun.
+- Evidence: PR #5 branch reset onto PR #6 main commit and repository registry tests reapplied.
+- Limitations: Local Level 2 execution unavailable because the runtime cannot resolve `github.com`.
+- Required Next Verifier: GitHub CI / PR Guardian.
 
 ### AOS-RUNTIME-002 — Repository Scanner MVP
 

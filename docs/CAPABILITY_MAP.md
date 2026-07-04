@@ -205,6 +205,7 @@ Capabilities:
 - PR Guardian
 - CI enforcement
 - branch protection setup
+- branch freshness validation
 - post-merge validation
 - Engineering Evaluation Standard
 - Engineering Evolution Score
@@ -219,6 +220,7 @@ Primary artifacts:
 - docs/PR_GUARDIAN.md
 - docs/BRANCH_PROTECTION.md
 - docs/POST_MERGE_VALIDATION.md
+- docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md
 - scripts/pre_pr_guardian.sh
 - scripts/post_merge_validation.sh
 - .github/workflows/ci.yml
@@ -334,6 +336,11 @@ Capabilities:
 - active work tracking
 - handoff protocol
 - verification handoff metadata
+- branch isolation protocol
+- worktree protocol
+- connector fallback branch isolation
+- backup head preservation
+- branch freshness before ready-for-review
 - recent changes log
 - session bootstrap generation
 - Plane integration
@@ -344,6 +351,7 @@ Primary artifacts:
 
 - docs/ORCHESTRATION_ENGINE.md
 - docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
+- docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md
 - docs/CURRENT_STATE.md
 - docs/ACTIVE_WORK.md
 - docs/HANDOFF.md
@@ -366,6 +374,9 @@ Orchestration
   -> Session Bootstrap
   -> Agent Assignment
   -> Handoff
+  -> Branch Isolation
+  -> Worktree Protocol
+  -> Connector Fallback
   -> Verification Metadata
   -> Plane Sync
   -> PR Lifecycle
@@ -408,6 +419,7 @@ Verification
   -> Runtime Health Provider
   -> Connector Inspection Provider
   -> Human Approval Provider
+  -> Branch Freshness Validation
   -> PR Guardian
   -> Release Gates
 
@@ -432,12 +444,13 @@ Minimum coherent product:
 5. Research notes
 6. PR Guardian first pass
 7. Verification Protocol
-8. Nightly self-learning digest
-9. Dashboard shell
-10. Voice inbox capture
-11. Local Docker runtime
-12. Orchestration state files
-13. Session bootstrap and handoff protocol
+8. Branch Isolation / Worktree Protocol
+9. Nightly self-learning digest
+10. Dashboard shell
+11. Voice inbox capture
+12. Local Docker runtime
+13. Orchestration state files
+14. Session bootstrap and handoff protocol
 
 ## Later Capabilities
 

@@ -13,33 +13,48 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #1: Runtime foundation
 - PR #2: CI and deterministic PR Guardian
 - PR #3: CI enforcement and branch protection documentation
-- PR #6: Verification Protocol
 - PR #5: Repository Registry MVP
+- PR #6: Verification Protocol
+- PR #7: Agent Communication Bus and PR Monitoring skill
+- PR #8: Branch Isolation / Worktree Protocol
+- PR #10: Independent Architecture Review artifact
+- PR #11: Engineering OS Strategy and WSL Windows 11 Runtime Target
+- PR #12: Operating Loop planning docs recovery
 
-### Added In Current Branch
+### Important Notes
 
+- PR #9 was closed after branch conflicts; useful planning docs were recovered through PR #12.
+- Backup branches preserve the old PR #9 head.
+- Plane remains pinned/offline due to local power outage.
+- Local WSL/Docker Level 2 verification remains blocked until power and workstation access return.
+- GitHub plus markdown state files remain the fallback execution board.
+
+### Added Recently
+
+- `docs/AGENT_COMMUNICATION_BUS.md`
+- `docs/WORK_PACKAGE_PROTOCOL.md`
+- `skills/ci_devops/monitor_pr.md`
 - `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md`
+- `docs/INDEPENDENT_ARCHITECTURE_REVIEW_V0_1.md`
+- `docs/ENGINEERING_OS_STRATEGY.md`
+- `docs/WSL_WIN11_RUNTIME_TARGET.md`
+- `docs/EXTERNAL_REVIEW_TRIAGE_2026_07_04.md`
+- `docs/ROADMAP_REVIEW.md`
+- `docs/BORIS_CLAUDE_CODE_RESEARCH.md`
+- `docs/APP_CREATION_LOOP.md`
+- `docs/PLANE_PROJECT_BLUEPRINT.md`
 
-### Updated In Current Branch
+### Current Branch
 
-- `docs/SESSION_BOOTSTRAP.md` now requires the Branch Isolation / Worktree Protocol during startup.
-- `docs/CAPABILITY_MAP.md` now includes branch isolation, worktree protocol, connector fallback isolation, backup head preservation, and branch freshness validation.
-- `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, and `docs/HANDOFF.md` now track AOS-ORCH-002.
+- `docs/state-reconciliation`
 
-### Verified In Current Branch
+### Current Work
 
-- One work package = one branch = one isolated worktree documented.
-- Connector fallback documented.
-- Backup head before force/reset documented.
-- Branch freshness before ready-for-review documented.
-- Local agents for heavy edits documented.
-- ChatGPT connector review/orchestration role documented.
+AOS-PMO-002 — State Reconciliation.
 
 ### Why It Matters
 
-AOS-ORCH-002 makes parallel agent work safer by requiring branch and worktree isolation before ArchetypeOS expands into more concurrent runtime, knowledge, and CI work.
-
-Connector-only sessions now have a documented fallback: use one branch as the logical worktree, preserve backup heads before force/reset, and rely on GitHub CI / PR Guardian for final verification.
+The repo must accurately describe its own state before implementation resumes. The next implementation task should be AOS-RUNTIME-002 — Repository Scanner MVP.
 
 ## Update Rule
 

@@ -23,7 +23,8 @@ Read these files first:
 5. `docs/CAPABILITY_MAP.md`
 6. `docs/V0_1_SCOPE_LOCK.md`
 7. `docs/CONCRETE_BUILD_PATH.md`
-8. domain-specific docs for the assigned task
+8. `docs/VERIFICATION_PROTOCOL.md`
+9. domain-specific docs for the assigned task
 
 ## Session Startup Prompt Template
 
@@ -41,6 +42,7 @@ Before doing any work, read:
 - docs/CAPABILITY_MAP.md
 - docs/V0_1_SCOPE_LOCK.md
 - docs/CONCRETE_BUILD_PATH.md
+- docs/VERIFICATION_PROTOCOL.md
 - relevant domain docs
 
 Treat GitHub as the source of truth.
@@ -48,6 +50,7 @@ Do not rely on prior conversation memory.
 Do not expand scope without RFC.
 Do not change architecture silently.
 Do not bypass PR Guardian or CI.
+Do not claim completion without verification metadata.
 
 Assigned task:
 [PASTE TASK]
@@ -60,10 +63,48 @@ Required deliverables:
 - tests where applicable
 - docs updates where applicable
 - handoff update
+- verification metadata
 - PR
 
 Work cycle:
 inspect -> plan -> patch -> verify -> update docs/state -> PR.
+
+Allowed verification states:
+- Verified
+- Verified with warnings
+- Verification pending
+- Verification unavailable
+- Verification blocked
+```
+
+## Verification Startup Rule
+
+Every agent must decide how the assigned work will be verified before implementation begins.
+
+Use this decision order:
+
+```text
+Local execution available?
+  -> run Level 2 checks.
+Else GitHub CI available?
+  -> use Level 3 checks and record pending status until visible.
+Else repository inspection available?
+  -> use Level 1 checks and record limitations.
+Else human judgment required?
+  -> request Level 5 verification.
+Else
+  -> mark Verification unavailable or Verification blocked.
+```
+
+Every final handoff and PR body must include:
+
+```text
+Verification Status:
+Verification Level:
+Verification Method:
+Evidence:
+Limitations:
+Required Next Verifier:
 ```
 
 ## Agent-Specific Notes
@@ -90,7 +131,7 @@ Focus on external repository reviews and pattern extraction.
 
 ### CI / DevOps Agent
 
-Focus on GitHub Actions, PR Guardian, branch protection, Docker validation, and release gates.
+Focus on GitHub Actions, PR Guardian, branch protection, Docker validation, release gates, and verification providers.
 
 ### Research Council
 
@@ -105,6 +146,8 @@ Every session must update or propose updates to:
 - `docs/ACTIVE_WORK.md` if task status changed
 - `docs/RECENT_CHANGES.md` if meaningful work merged or proposed
 
+Every session must also record verification metadata using only the allowed verification states from `docs/VERIFICATION_PROTOCOL.md`.
+
 ## Principle
 
-A new session should be able to recover the project in minutes from repository state alone.
+A new session should be able to recover the project in minutes from repository state alone, including how the last work was verified or why verification remains pending.

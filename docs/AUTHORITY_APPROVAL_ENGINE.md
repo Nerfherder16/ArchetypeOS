@@ -23,6 +23,7 @@ Allowed by default:
 - generate reports
 - analyze diffs
 - produce recommendations
+- inspect verification evidence
 
 ### Level 1: Draft Creation
 
@@ -33,6 +34,7 @@ Allowed with normal user intent:
 - create draft recommendations
 - create draft issues
 - create draft reports
+- create draft verification reports
 
 ### Level 2: Internal Writes
 
@@ -42,6 +44,7 @@ Requires approval:
 - update docs
 - update local metadata
 - update repository knowledge vault
+- update verification metadata
 
 ### Level 3: Repository Modification
 
@@ -51,6 +54,7 @@ Requires explicit approval:
 - apply patches
 - install dependencies
 - run formatters that change files
+- run local verification commands that may create or mutate runtime artifacts
 
 ### Level 4: Source Control Actions
 
@@ -61,6 +65,7 @@ Requires explicit approval:
 - open PR
 - update PR
 - tag release
+- update PR verification status
 
 ### Level 5: High-Impact Actions
 
@@ -73,6 +78,7 @@ Requires explicit approval and elevated confirmation:
 - send external communications
 - spend money through APIs
 - affect production systems
+- approve high-impact verification exceptions
 
 ## Authority Artifacts
 
@@ -89,6 +95,22 @@ Every governed action should record:
 - timestamp
 - output
 - rollback notes
+- verification status when applicable
+
+## Verification Authority
+
+Verification providers must obey the same authority model as every other agent capability.
+
+Default authority levels:
+
+- Connector inspection verification: Level 0 read-only.
+- Documentation-only verification report creation: Level 1 draft creation.
+- Repository documentation updates that record verification metadata: Level 2 internal write.
+- Local CLI, Docker, formatter, test, and build execution: Level 3 repository modification when commands can create files, mutate caches, or affect runtime state.
+- Commit, push, PR creation, and PR verification metadata updates: Level 4 source control action.
+- Production runtime checks, infrastructure changes, destructive testing, and high-impact exception approvals: Level 5 high-impact action.
+
+A verifier may not silently escalate authority. If the strongest verifier requires unavailable authority, the agent must record the limitation and choose the next permitted verifier from `docs/VERIFICATION_PROTOCOL.md`.
 
 ## Temporary Grants
 
@@ -126,7 +148,7 @@ Default state:
 
 Every approval and execution should be logged.
 
-The audit trail must be queryable by project, agent, tool, capability, action level, and time.
+The audit trail must be queryable by project, agent, tool, capability, action level, verification status, and time.
 
 ## Emergency Stop
 

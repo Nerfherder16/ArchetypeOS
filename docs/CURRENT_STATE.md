@@ -22,17 +22,27 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Establish durable orchestration and anti-context-rot workflow before deeper implementation continues.
+Establish durable orchestration and anti-context-rot workflow before deeper implementation continues, including mandatory verification metadata for every future agent handoff and PR.
 
 ## Active Branch
 
-- `docs/orchestration-state`
+- `codex/verification-protocol`
 
 ## CI Status
 
 - CI exists
 - PR Guardian exists
 - Branch protection should be enforced or documented according to `docs/BRANCH_PROTECTION.md`
+- Verification Protocol proposed; PR Guardian now expects verification metadata in PR bodies
+
+## Verification Status
+
+- Status: Verification pending
+- Level: Level 1
+- Method: GitHub connector repository inspection for documentation and deterministic PR Guardian patch
+- Evidence: Verification Protocol branch updates docs, PR template, PR Guardian parser, and local pre-PR fallback metadata
+- Limitations: Local command execution was unavailable in this connector-only session
+- Required Next Verifier: GitHub CI / PR Guardian on the draft PR
 
 ## In Scope Now
 
@@ -42,10 +52,12 @@ Establish durable orchestration and anti-context-rot workflow before deeper impl
 - session bootstrap protocol
 - handoff protocol
 - Plane integration strategy
+- verification protocol
+- verification provider abstraction
 
 ## Out Of Scope Now
 
-- new runtime implementation
+- new runtime implementation beyond assigned work
 - desktop automation
 - browser automation
 - wake word
@@ -59,6 +71,7 @@ Establish durable orchestration and anti-context-rot workflow before deeper impl
 | Plane integration depth | Deferred | Start with markdown fallback and later sync Plane when available. |
 | Agent dashboard implementation | Deferred | Document first, build after v0.1 runtime stabilizes. |
 | Multi-agent live communication | Deferred | Start with durable artifact communication. |
+| Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
 
 ## Blockers
 
@@ -66,7 +79,7 @@ Establish durable orchestration and anti-context-rot workflow before deeper impl
 
 ## Next Recommended Task
 
-Create the first implementation work package for the Runtime Agent: repository registry and repository scan MVP.
+Review and merge the Verification Protocol PR after CI, then create the first implementation work package for the Runtime Agent: repository registry and repository scan MVP.
 
 ## Required Reading For New Sessions
 
@@ -77,7 +90,8 @@ Create the first implementation work package for the Runtime Agent: repository r
 5. `docs/CAPABILITY_MAP.md`
 6. `docs/V0_1_SCOPE_LOCK.md`
 7. `docs/CONCRETE_BUILD_PATH.md`
-8. Relevant RFCs and domain docs
+8. `docs/VERIFICATION_PROTOCOL.md`
+9. Relevant RFCs and domain docs
 
 ## Update Rule
 

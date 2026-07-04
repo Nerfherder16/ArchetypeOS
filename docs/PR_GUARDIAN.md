@@ -20,7 +20,7 @@ It also runs locally through:
 scripts/pre_pr_guardian.sh
 ```
 
-This first version intentionally avoids LLM judgment. It blocks obvious hygiene, scope, documentation, and safety failures before a human review.
+This first version intentionally avoids LLM judgment. It blocks obvious hygiene, scope, documentation, verification, and safety failures before a human review.
 
 ## Checks
 
@@ -37,6 +37,7 @@ This first version intentionally avoids LLM judgment. It blocks obvious hygiene,
 - capability map drift
 - runtime/build junk
 - high-risk file changes
+- verification metadata
 
 ## Deterministic Blocking Rules
 
@@ -49,6 +50,10 @@ The current implementation blocks when:
 - worker code changes without worker test changes
 - implementation/runtime files change without documentation changes
 - new capability docs are added without updating `docs/CAPABILITY_MAP.md`
+- PR body verification metadata is missing
+- PR body verification status is unsupported
+- PR body verification status is `Verification unavailable` or `Verification blocked`
+- PR body verification level is unsupported
 
 ## Warning Rules
 
@@ -56,6 +61,31 @@ The current implementation warns when:
 
 - web source changes without UI tests available yet
 - high-risk files such as workflows, compose config, environment example, auth, or secrets-related files change
+- verification status is `Verification pending`
+- verification metadata uses weak placeholders such as `TBD`, `TODO`, `none`, or `n/a`
+
+## Verification Metadata Requirement
+
+Every PR body must include this metadata:
+
+```text
+Verification Status: Verified | Verified with warnings | Verification pending | Verification unavailable | Verification blocked
+Verification Level: Level 0 | Level 1 | Level 2 | Level 3 | Level 4 | Level 5
+Verification Method:
+Evidence:
+Limitations:
+Required Next Verifier:
+```
+
+Allowed statuses are defined in `docs/VERIFICATION_PROTOCOL.md`.
+
+Mergeability rules:
+
+- `Verified` may merge when all other gates pass.
+- `Verified with warnings` may merge when warnings are acknowledged.
+- `Verification pending` may remain open but must not merge until a stronger verifier records final evidence.
+- `Verification unavailable` blocks merge.
+- `Verification blocked` blocks merge.
 
 ## Override Protocol
 
@@ -72,6 +102,8 @@ PR_GUARDIAN_OVERRIDE_HIGH_RISK_ACK
 ```
 
 Overrides should be used sparingly. They are audit markers, not a way to bypass review casually.
+
+Verification metadata is not optional and has no bypass marker. If verification cannot be completed, use `Verification unavailable`, `Verification blocked`, or `Verification pending` with limitations and required next verifier.
 
 ## Verdicts
 
@@ -93,6 +125,7 @@ Future versions may add:
 - warning findings
 - evidence
 - required fixes
+- verification metadata findings
 
 ## CI Enforcement
 
@@ -132,6 +165,8 @@ The local command is:
 scripts/pre_pr_guardian.sh
 ```
 
+When run without a PR body file, the local script injects temporary `Verification pending` metadata so deterministic checks can run. The PR author must replace that temporary evidence with concrete verification evidence in the PR body.
+
 The RTX 3090 local LLM node may later perform first-pass semantic review, but deterministic checks remain the base gate.
 
 ## Safety
@@ -140,4 +175,4 @@ PR Guardian must not modify files by default. It creates reports, warnings, and 
 
 ## Principle
 
-No PR should merge without understanding its risk, documentation impact, test impact, and architecture impact.
+No PR should merge without understanding its risk, documentation impact, test impact, verification status, and architecture impact.

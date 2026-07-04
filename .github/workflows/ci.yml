@@ -2,23 +2,133 @@ name: CI
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  pr-guardian:
+    name: PR Guardian
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Write PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: printf '%s' "$PR_BODY" > /tmp/pr_body.md
+      - name: Run PR Guardian
+        run: python tools/pr_guardian.py --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}" --body-file /tmp/pr_body.md
+
+  api-tests:
+    name: API tests and lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install -r apps/api/requirements.txt
-      - run: PYTHONPATH=apps/api pytest apps/api/tests
-      - run: pip install -r apps/worker/requirements.txt
-      - run: PYTHONPATH=apps/worker pytest apps/worker/tests
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+      - name: Install API dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/api/requirements.txt
+          pip install ruff==0.8.6
+      - name: Ruff API
+        run: ruff check apps/api
+      - name: Compile API
+        run: python -m compileall apps/api/app apps/api/tests
+      - name: Test API
+        run: PYTHONPATH=apps/api pytest apps/api/tests
+
+  worker-tests:
+    name: Worker tests and lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: apps/worker/requirements.txt
+      - name: Install worker dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/worker/requirements.txt
+          pip install ruff==0.8.6
+      - name: Ruff worker
+        run: ruff check apps/worker
+      - name: Compile worker
+        run: python -m compileall apps/worker/app apps/worker/tests
+      - name: Test worker
+        run: PYTHONPATH=apps/worker pytest apps/worker/tests
+
+  web-build:
+    name: Web typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install
+      - name: Install web dependencies
+        run: npm install
         working-directory: apps/web
-      - run: npm run build
+      - name: Build web
+        run: npm run build
         working-directory: apps/web
+
+  compose-smoke:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare repository mount
+        run: mkdir -p repositories
+      - name: Validate compose config
+        run: docker compose config
+      - name: Build runtime images
+        run: docker compose build api worker web
+      - name: Start core services
+        run: docker compose up -d postgres redis api
+      - name: Wait for API health
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:8000/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs postgres redis api
+          exit 1
+      - name: Start worker and web
+        run: docker compose up -d worker web
+      - name: Verify web responds
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://localhost:5173 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose ps
+          docker compose logs web
+          exit 1
+      - name: Tear down
+        if: always()
+        run: docker compose down -v --remove-orphans

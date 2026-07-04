@@ -96,14 +96,31 @@ Future versions may add:
 
 ## CI Enforcement
 
-GitHub Actions runs:
+GitHub Actions runs these check names:
 
-- PR Guardian
-- API lint, compile, tests
-- Worker lint, compile, tests
-- Web dependency install and build
-- Docker Compose config validation
-- Docker Compose smoke test for API health and web response
+```text
+PR Guardian
+API tests and lint
+Worker tests and lint
+Web typecheck and build
+Docker Compose smoke test
+```
+
+Branch protection for `main` must require those exact check names. See `docs/BRANCH_PROTECTION.md`.
+
+The local pre-PR command is:
+
+```bash
+scripts/pre_pr_guardian.sh
+```
+
+The post-merge validation command is:
+
+```bash
+scripts/post_merge_validation.sh
+```
+
+See `docs/POST_MERGE_VALIDATION.md`.
 
 ## Local First Use
 

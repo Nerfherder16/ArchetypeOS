@@ -46,6 +46,7 @@ Capabilities:
 - safety model
 - agent contract
 - agent hierarchy
+- external review triage
 
 Primary artifacts:
 
@@ -55,6 +56,7 @@ Primary artifacts:
 - docs/ARBITER_FINAL_JUDGE.md
 - docs/DECISION_LIFECYCLE.md
 - docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
+- docs/EXTERNAL_REVIEW_TRIAGE_2026_07_04.md
 - agents/UNIVERSAL_AGENT_CONTRACT.md
 
 ## Layer 1: Knowledge and Memory
@@ -117,12 +119,14 @@ Capabilities:
 - repository maps
 - trust boundaries
 - data flow
+- Engineering OS strategy
 
 Primary artifacts:
 
 - docs/ARCHITECTURE_STUDIO.md
 - docs/ENGINEERING_DIGITAL_TWIN.md
 - docs/PORTFOLIO_ARCHITECTURE.md
+- docs/ENGINEERING_OS_STRATEGY.md
 - agents/architecture_cartographer/CLAUDE.md
 
 ## Layer 4: Decision and Recommendation
@@ -206,6 +210,7 @@ Capabilities:
 - CI enforcement
 - branch protection setup
 - branch freshness validation
+- WSL local Level 2 verification
 - post-merge validation
 - Engineering Evaluation Standard
 - Engineering Evolution Score
@@ -221,6 +226,7 @@ Primary artifacts:
 - docs/BRANCH_PROTECTION.md
 - docs/POST_MERGE_VALIDATION.md
 - docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md
+- docs/WSL_WIN11_RUNTIME_TARGET.md
 - scripts/pre_pr_guardian.sh
 - scripts/post_merge_validation.sh
 - .github/workflows/ci.yml
@@ -301,6 +307,10 @@ Owns deployment and execution environment.
 
 Capabilities:
 
+- Windows 11 host runtime
+- WSL 2 Ubuntu runtime target
+- WSL filesystem layout
+- WSL Docker runtime verification
 - CasaOS or Portainer deployment
 - Docker Compose
 - Postgres
@@ -314,6 +324,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/WSL_WIN11_RUNTIME_TARGET.md
 - docs/DISTRIBUTED_RUNTIME.md
 - docs/LOCAL_LLM_GPU_NODE.md
 - docs/CLAUDE_CODE_BRIDGE.md
@@ -367,6 +378,12 @@ Constitution
   -> Arbiter and Final Judge
   -> Decision Lifecycle
   -> Agent Hierarchy
+
+Engineering OS Strategy
+  -> WSL Runtime Target
+  -> Runtime Verification
+  -> Repository Scanner Loop
+  -> Engineering Control Tower
 
 Orchestration
   -> Current State
@@ -438,19 +455,20 @@ The first build should not implement every capability.
 Minimum coherent product:
 
 1. Project registry
-2. Repository scan
-3. Architecture Spine Graph draft
-4. Decision cards and ADRs
-5. Research notes
-6. PR Guardian first pass
-7. Verification Protocol
-8. Branch Isolation / Worktree Protocol
-9. Nightly self-learning digest
-10. Dashboard shell
-11. Voice inbox capture
-12. Local Docker runtime
-13. Orchestration state files
-14. Session bootstrap and handoff protocol
+2. WSL Windows 11 runtime target
+3. Local Docker runtime verification
+4. Repository scan
+5. Architecture Spine Graph draft
+6. Decision cards and ADRs
+7. Research notes
+8. PR Guardian first pass
+9. Verification Protocol
+10. Branch Isolation / Worktree Protocol
+11. Nightly self-learning digest
+12. Dashboard shell
+13. Voice inbox capture
+14. Orchestration state files
+15. Session bootstrap and handoff protocol
 
 ## Later Capabilities
 

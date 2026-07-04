@@ -4,8 +4,6 @@
 
 This file records the latest durable handoff for ArchetypeOS work.
 
-Every engineering session should end by updating this file or creating a dated handoff artifact.
-
 ## Latest Handoff
 
 ### Date
@@ -14,32 +12,31 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Completed
 
-- PR #1 merged: runtime foundation
-- PR #2 merged: CI and deterministic PR Guardian
-- PR #3 merged: CI enforcement and branch protection documentation
-- PR #6 merged: Verification Protocol
-- PR #5 merged: Repository Registry MVP
-- AOS-ORCH-002 branch created from current `main`
-- `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added
-- Session bootstrap, active work, current state, capability map, and recent changes updated for branch/worktree discipline
+- PR #8 merged: Branch Isolation / Worktree Protocol
+- Roadmap review added
+- Claude Code workflow research added
+- App Creation Loop design added
+- Plane Project Blueprint added
+- Engineering Control Tower design added
+- Current state and active work updated
 
 ### Current Branch
 
-- `docs/branch-isolation-worktree-protocol`
+- `docs/operating-loop-roadmap`
 
 ### Current Work
 
-AOS-ORCH-002 — Branch Isolation / Worktree Protocol documents one work package = one branch = one isolated worktree, plus connector fallback behavior for ChatGPT and other constrained connector sessions.
+AOS-PMO-001 — Operating Loop Roadmap Review.
 
 ### Known Risks
 
+- Plane is unavailable during the power outage.
 - Local Level 2 execution is unavailable in this connector-only session.
-- State files are high-conflict coordination files; this PR updates them intentionally and should be reviewed before parallel work continues.
-- Connector-backed branch operations must preserve backup heads before force/reset to avoid unrecoverable history loss.
+- Planning docs must not become implementation without work packages and verification gates.
 
 ### Blockers
 
-- None known.
+- Plane sync is pinned until local Plane is available again.
 
 ### Verification Status
 
@@ -51,18 +48,15 @@ Level 1
 
 ### Verification Method
 
-GitHub connector repository inspection for documentation/state updates and pending GitHub CI / PR Guardian.
+GitHub connector documentation updates and pending GitHub CI / PR Guardian after PR creation.
 
 ### Evidence
 
-- `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added.
-- `docs/SESSION_BOOTSTRAP.md` updated to require reading the branch isolation/worktree protocol.
-- `docs/CAPABILITY_MAP.md` updated under orchestration/work management.
-- `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/HANDOFF.md`, and `docs/RECENT_CHANGES.md` updated for AOS-ORCH-002.
+Planning docs and state updates were committed on `docs/operating-loop-roadmap`.
 
 ### Limitations
 
-Local Level 2 execution was not available in this connector-only session. GitHub CI / PR Guardian must complete after PR creation.
+Local Level 2 execution was not available in this connector-only session.
 
 ### Required Next Verifier
 
@@ -70,37 +64,7 @@ GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Open PR for AOS-ORCH-002 and wait for CI / PR Guardian. Merge only after verification metadata is `Verified` or accepted `Verified with warnings`.
-
-## Handoff Template
-
-```text
-Date:
-Agent:
-Task:
-Branch:
-PR:
-Status:
-Completed:
-Files changed:
-Tests run:
-Docs updated:
-Worktree or connector fallback used:
-Base ref:
-Head SHA:
-Backup head, if any:
-Freshness check:
-Verification Status:
-Verification Level:
-Verification Method:
-Evidence:
-Limitations:
-Required Next Verifier:
-Risks:
-Blockers:
-Next recommended step:
-Required reader context:
-```
+Open PR for AOS-PMO-001. After merge, assign AOS-RUNTIME-002 — Repository Scanner MVP to the Runtime Agent.
 
 ## Rule
 

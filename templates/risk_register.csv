@@ -1,2 +1,2 @@
-id,severity,category,title,likelihood,impact,owner,milestone,effort,status
-R-001,High,Example,Example risk,Medium,High,TBD,M1,M,Open
+id,severity,category,title,description,likelihood,impact,owner,milestone,effort,status,evidence,mitigation,acceptance_criteria
+RISK-0001,High,Example,Example risk,Describe risk,Medium,High,TBD,M1,M,Open,TBD,TBD,TBD

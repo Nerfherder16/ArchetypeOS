@@ -51,28 +51,45 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-RUNTIME-001 — Repository Registry MVP
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent
 - Branch: `codex/repository-registry-mvp`
 - PR: #5
 - Goal: Implement the first project/repository registry flow.
+- Verification Status: Verified
+- Verification Level: Level 3
+- Verification Method: GitHub Actions CI / PR Guardian after CI / DevOps connector-backed rebase onto `main`.
+- Evidence: PR #5 merged after successful CI run `28710932992`.
+- Limitations: Local Level 2 execution unavailable because the runtime could not resolve `github.com`.
+- Required Next Verifier: None.
+
+### AOS-ORCH-002 — Branch Isolation / Worktree Protocol
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator
+- Branch: `docs/branch-isolation-worktree-protocol`
+- Goal: Document one work package = one branch = one isolated worktree, including connector fallback rules.
 - Dependencies:
   - Orchestration state discipline merged
   - Verification Protocol merged
-  - v0.1 scope remains locked
+  - Runtime Registry MVP merged
 - Acceptance Criteria:
-  - Project model exists
-  - Repository model exists
-  - repository can be registered by local path
-  - repository mounts remain read-only by default
-  - API tests exist
-  - docs updated
+  - `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` exists
+  - one work package = one branch = one isolated worktree documented
+  - connector fallback documented
+  - one branch per task documented
+  - backup head before force/reset documented
+  - branch freshness before ready-for-review documented
+  - local agents recommended for heavy edits
+  - ChatGPT connector role constrained to review/orchestration by default
+  - session bootstrap updated
+  - Capability Map updated
   - verification metadata recorded in handoff and PR
 - Verification Status: Verification pending
 - Verification Level: Level 1
-- Verification Method: CI / DevOps connector-backed rebase onto `main`, repository inspection, and pending GitHub CI rerun.
-- Evidence: PR #5 branch reset onto PR #6 main commit and repository registry tests reapplied.
-- Limitations: Local Level 2 execution unavailable because the runtime cannot resolve `github.com`.
+- Verification Method: GitHub connector repository inspection and pending GitHub CI / PR Guardian.
+- Evidence: Protocol doc added and state docs updated on branch.
+- Limitations: Local Level 2 execution unavailable in connector-only session.
 - Required Next Verifier: GitHub CI / PR Guardian.
 
 ### AOS-RUNTIME-002 — Repository Scanner MVP
@@ -83,6 +100,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Goal: Add read-only repository scanner.
 - Dependencies:
   - AOS-RUNTIME-001
+  - AOS-ORCH-002
 - Acceptance Criteria:
   - scanner detects folders, languages, manifests, Docker files, CI files, and basic risks
   - scanner writes report artifact
@@ -97,6 +115,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Goal: Create initial knowledge vault structure and manifest.
 - Dependencies:
   - repository registry model
+  - branch isolation/worktree protocol
 - Acceptance Criteria:
   - `knowledge/` structure exists
   - manifest schema exists

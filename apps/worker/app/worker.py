@@ -1,10 +1,9 @@
 from __future__ import annotations
 from datetime import datetime, timezone
-import json
 import logging
 import time
 import redis
-from sqlalchemy import create_engine, text
+from sqlalchemy import MetaData, Table, create_engine, update
 from sqlalchemy.orm import sessionmaker
 from .config import get_settings
 
@@ -13,19 +12,27 @@ logger = logging.getLogger("archetypeos.worker")
 settings = get_settings()
 engine = create_engine(settings.database_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+metadata = MetaData()
 QUEUE = "archetypeos:jobs"
+
+
+def jobs_table() -> Table:
+    return Table("jobs", metadata, autoload_with=engine)
 
 
 def mark_job(job_id: str, status: str, result: dict | None = None, error: str | None = None) -> None:
     now = datetime.now(timezone.utc)
+    jobs = jobs_table()
+    values: dict = {"status": status, "updated_at": now}
+    if status == "running":
+        values["started_at"] = now
+        values["attempts"] = jobs.c.attempts + 1
+    elif status in {"completed", "failed"}:
+        values["result"] = result
+        values["error"] = error
+        values["finished_at"] = now
     with SessionLocal() as db:
-        if status == "running":
-            db.execute(text("update jobs set status=:status, started_at=:now, attempts=attempts + 1, updated_at=:now where id=:id"), {"status": status, "now": now, "id": job_id})
-        elif status in {"completed", "failed"}:
-            db.execute(
-                text("update jobs set status=:status, result=:result, error=:error, finished_at=:now, updated_at=:now where id=:id"),
-                {"status": status, "result": json.dumps(result) if result is not None else None, "error": error, "now": now, "id": job_id},
-            )
+        db.execute(update(jobs).where(jobs.c.id == job_id).values(**values))
         db.commit()
 
 

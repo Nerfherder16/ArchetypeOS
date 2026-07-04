@@ -22,13 +22,25 @@ Describe affected runtime services, models, graph/data flows, or repository know
 - [ ] Decision/RFC/ADR updated or not affected
 - [ ] Knowledge vault artifacts updated or not affected
 
+## Verification Metadata
+
+Verification Status: Verification pending
+Verification Level: Level 0
+Verification Method:
+Evidence:
+Limitations:
+Required Next Verifier:
+
+Allowed statuses: `Verified`, `Verified with warnings`, `Verification pending`, `Verification unavailable`, `Verification blocked`.
+
 ## Tests / Verification
 
 - [ ] API tests added/updated or not affected
 - [ ] Worker tests added/updated or not affected
 - [ ] Web build passes or not affected
 - [ ] Docker Compose config validates or not affected
-- [ ] Local pre-PR guardian run completed
+- [ ] Local pre-PR guardian run completed or unavailable with limitation recorded
+- [ ] GitHub CI verification completed or pending with required next verifier recorded
 - [ ] Branch protection / required CI impact reviewed or not affected
 
 Command:
@@ -64,3 +76,4 @@ Only use with rationale. Delete unused lines.
 - [ ] No out-of-scope v0.1 capability added without RFC
 - [ ] Human approval required for any destructive/high-impact action remains intact
 - [ ] Required CI checks are expected to gate this PR
+- [ ] Verification status is one of the allowed states from `docs/VERIFICATION_PROTOCOL.md`

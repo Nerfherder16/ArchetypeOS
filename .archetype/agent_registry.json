@@ -1,0 +1,54 @@
+{
+  "agents": [
+    {
+      "id": "research_librarian",
+      "name": "Research Librarian",
+      "mission": "Find, rank, and summarize authoritative sources."
+    },
+    {
+      "id": "architecture_cartographer",
+      "name": "Architecture Cartographer",
+      "mission": "Map repositories and ideas into architecture graphs, dependency graphs, data flows, and trust boundaries."
+    },
+    {
+      "id": "technology_fitness_judge",
+      "name": "Technology Fitness Judge",
+      "mission": "Compare technology choices objectively against workload requirements."
+    },
+    {
+      "id": "design_intelligence",
+      "name": "Design Intelligence Agent",
+      "mission": "Recommend visual language, UI patterns, typography, color direction, and accessibility strategy."
+    },
+    {
+      "id": "security_agent",
+      "name": "Security Agent",
+      "mission": "Threat model systems and verify security risks."
+    },
+    {
+      "id": "compliance_agent",
+      "name": "Compliance Agent",
+      "mission": "Evaluate compliance implications and auditability."
+    },
+    {
+      "id": "external_repo_scout",
+      "name": "External Repo Scout",
+      "mission": "Find and evaluate reusable repositories, MCPs, skills, frameworks, and tools."
+    },
+    {
+      "id": "pr_guardian",
+      "name": "PR Guardian",
+      "mission": "Review changes before PR or merge."
+    },
+    {
+      "id": "builder_agent",
+      "name": "Builder Agent",
+      "mission": "Execute validated implementation plans."
+    },
+    {
+      "id": "final_judge",
+      "name": "Final Judge",
+      "mission": "Resolve conflicts, reject unsupported claims, and issue final recommendations."
+    }
+  ]
+}

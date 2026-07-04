@@ -17,24 +17,26 @@ Every engineering session should end by updating this file or creating a dated h
 - PR #1 merged: runtime foundation
 - PR #2 merged: CI and deterministic PR Guardian
 - PR #3 merged: CI enforcement and branch protection documentation
-- Orchestration state discipline proposed in `docs/orchestration-state`
-- Verification Protocol proposed in `codex/verification-protocol`
+- PR #6 merged: Verification Protocol
+- PR #5 branch reset onto current `main` by CI / DevOps Agent
+- API tests reapplied for project creation and repository registration by local path
+- API tests verify repository registrations remain read-only by default
+- API tests verify repository paths outside the configured repository root are rejected
+- State files reconciled with active Verification Protocol metadata
 
 ### Current Branch
 
-- `codex/verification-protocol`
+- `codex/repository-registry-mvp`
 
 ### Current Work
 
-Add mandatory verification protocol, verification metadata requirements, PR Guardian verification metadata parsing, and provider-based verification architecture notes.
+AOS-RUNTIME-001 — Repository Registry MVP is rebased onto the active Verification Protocol and awaiting fresh CI / PR Guardian verification.
 
 ### Known Risks
 
-- Long-running conversations create context rot.
-- Plane may be unavailable due to local outage.
-- Agents need hierarchy and communication rules before parallel execution expands.
-- Agents may run in constrained environments where local command execution is unavailable.
-- GitHub Actions status may not appear immediately after PR creation.
+- Local container GitHub network access is unavailable, so local Level 2 git and pre-PR execution cannot run in this session.
+- Connector-backed branch reset and file reapplication was used instead of local `git rebase`.
+- CI must rerun on the rebased branch before merge.
 
 ### Blockers
 
@@ -50,27 +52,26 @@ Level 1
 
 ### Verification Method
 
-Repository verification through GitHub connector inspection and committed patch review. GitHub CI must verify after PR creation.
+CI / DevOps connector-backed rebase onto `main`, repository inspection, PR body metadata update, and pending GitHub CI / PR Guardian rerun.
 
 ### Evidence
 
-- `docs/VERIFICATION_PROTOCOL.md` created.
-- `tools/pr_guardian.py` updated to require verification metadata.
-- `.github/pull_request_template.md` updated with verification fields.
-- `scripts/pre_pr_guardian.sh` updated with temporary local verification metadata fallback.
-- Governance docs updated to point future agents at the protocol.
+- Original PR #5 head preserved at `codex/repository-registry-mvp-backup-d811534`.
+- PR #5 branch reset to PR #6 main commit `d84b9eacb1bc730e65c5251d1bc0e672b8f635e0`.
+- `apps/api/tests/test_repository_registry.py` reapplied on top of current `main`.
+- State docs updated with active Verification Protocol metadata.
 
 ### Limitations
 
-Local Level 2 execution was not available in this connector-only session. GitHub CI Level 3 verification must run on the draft PR.
+Local Level 2 execution was not available because the runtime cannot resolve `github.com`. Fresh Level 3 GitHub CI verification must complete before merge.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then human reviewer.
+GitHub CI / PR Guardian.
 
 ### Next Recommended Step
 
-Review the draft PR for the Verification Protocol, wait for CI, and merge only after verification metadata and CI checks satisfy the protocol.
+Wait for PR #5 CI / PR Guardian after rebase. If all required jobs pass, update PR #5 verification status to `Verified` and reassess merge eligibility.
 
 ## Handoff Template
 

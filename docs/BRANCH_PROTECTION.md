@@ -2,11 +2,17 @@
 
 ## Purpose
 
-ArchetypeOS CI must be required before changes enter `main`. This document records the required GitHub settings and the exact check names used by the current workflow.
+ArchetypeOS CI should be required before changes enter `main`. This document records the required GitHub settings, the exact check names used by the current workflow, and the operating process when those settings are not available on the current GitHub plan.
+
+## Plan Availability
+
+GitHub protected branches are available for public repositories on GitHub Free. For private repositories, protected branches require GitHub Pro, GitHub Team, GitHub Enterprise Cloud, or GitHub Enterprise Server.
+
+Because this repository is private, a non-Pro personal account may not show branch protection or required status check settings.
 
 ## Tooling Note
 
-The GitHub connector available in this session can inspect repositories, files, pull requests, commits, and workflow runs. It does not expose branch protection or ruleset edit actions. Apply the settings below in GitHub repository settings unless a future authorized API path is added.
+The GitHub connector available in this session can inspect repositories, files, pull requests, commits, and workflow runs. It does not expose branch protection or ruleset edit actions. Apply the settings below in GitHub repository settings when the GitHub plan supports them.
 
 ## Protected Branch Pattern
 
@@ -14,7 +20,7 @@ The GitHub connector available in this session can inspect repositories, files, 
 main
 ```
 
-## Required Settings
+## Required Settings When Available
 
 For `main`, enable these repository settings:
 
@@ -44,6 +50,8 @@ These names are defined in `.github/workflows/ci.yml`.
 
 ## Manual Setup: Classic Branch Rule
 
+Use this when GitHub branch protection is available for the repository:
+
 1. Open the repository on GitHub.
 2. Open **Settings**.
 3. Open **Branches**.
@@ -62,6 +70,8 @@ These names are defined in `.github/workflows/ci.yml`.
 
 ## Manual Setup: Repository Ruleset
 
+Use this when GitHub Rulesets are available for the repository:
+
 1. Open the repository on GitHub.
 2. Open **Settings**.
 3. Open **Rules**.
@@ -76,6 +86,24 @@ These names are defined in `.github/workflows/ci.yml`.
 12. Keep force pushes and branch deletion disabled.
 13. Save the ruleset.
 
+## Private Free Plan Operating Process
+
+When branch protection is not available, CI cannot be made technically enforceable by GitHub for this private repository. Use this process until the repository plan supports protection:
+
+1. Keep all work on feature branches.
+2. Open a PR for every change.
+3. Wait for all CI jobs to pass before merge:
+   - `PR Guardian`
+   - `API tests and lint`
+   - `Worker tests and lint`
+   - `Web typecheck and build`
+   - `Docker Compose smoke test`
+4. Do not commit directly to `main` during normal work.
+5. After every merge, run post-merge validation.
+6. Move to GitHub Pro/Team or make the repository public before treating CI as technically enforced.
+
+This process is a temporary operating control. It is not equivalent to required status checks.
+
 ## Verification Checklist
 
 After setup, verify with a small PR:
@@ -85,6 +113,8 @@ After setup, verify with a small PR:
 - Pushing a new commit refreshes the required checks.
 - Stale approvals are dismissed after a new commit.
 - The PR cannot merge until required checks pass.
+
+If branch protection settings are unavailable, record that limitation and follow the Private Free Plan Operating Process.
 
 ## Local Pre-PR Command
 
@@ -112,4 +142,6 @@ See `docs/POST_MERGE_VALIDATION.md`.
 
 ## Acceptance Standard
 
-A change is not ready for `main` until the required checks pass and GitHub settings require those checks for merge.
+A change is not ready for `main` until the required checks pass.
+
+Full technical enforcement requires GitHub branch protection or rulesets. On a private Free repository where those settings are unavailable, the operating process above is temporary risk acceptance.

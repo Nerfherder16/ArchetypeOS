@@ -18,25 +18,24 @@ Every engineering session should end by updating this file or creating a dated h
 - PR #2 merged: CI and deterministic PR Guardian
 - PR #3 merged: CI enforcement and branch protection documentation
 - PR #6 merged: Verification Protocol
-- PR #5 branch reset onto current `main` by CI / DevOps Agent
-- API tests reapplied for project creation and repository registration by local path
-- API tests verify repository registrations remain read-only by default
-- API tests verify repository paths outside the configured repository root are rejected
-- State files reconciled with active Verification Protocol metadata
+- PR #5 merged: Repository Registry MVP
+- AOS-ORCH-002 branch created from current `main`
+- `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added
+- Session bootstrap, active work, current state, capability map, and recent changes updated for branch/worktree discipline
 
 ### Current Branch
 
-- `codex/repository-registry-mvp`
+- `docs/branch-isolation-worktree-protocol`
 
 ### Current Work
 
-AOS-RUNTIME-001 — Repository Registry MVP is rebased onto the active Verification Protocol and awaiting fresh CI / PR Guardian verification.
+AOS-ORCH-002 — Branch Isolation / Worktree Protocol documents one work package = one branch = one isolated worktree, plus connector fallback behavior for ChatGPT and other constrained connector sessions.
 
 ### Known Risks
 
-- Local container GitHub network access is unavailable, so local Level 2 git and pre-PR execution cannot run in this session.
-- Connector-backed branch reset and file reapplication was used instead of local `git rebase`.
-- CI must rerun on the rebased branch before merge.
+- Local Level 2 execution is unavailable in this connector-only session.
+- State files are high-conflict coordination files; this PR updates them intentionally and should be reviewed before parallel work continues.
+- Connector-backed branch operations must preserve backup heads before force/reset to avoid unrecoverable history loss.
 
 ### Blockers
 
@@ -52,26 +51,26 @@ Level 1
 
 ### Verification Method
 
-CI / DevOps connector-backed rebase onto `main`, repository inspection, PR body metadata update, and pending GitHub CI / PR Guardian rerun.
+GitHub connector repository inspection for documentation/state updates and pending GitHub CI / PR Guardian.
 
 ### Evidence
 
-- Original PR #5 head preserved at `codex/repository-registry-mvp-backup-d811534`.
-- PR #5 branch reset to PR #6 main commit `d84b9eacb1bc730e65c5251d1bc0e672b8f635e0`.
-- `apps/api/tests/test_repository_registry.py` reapplied on top of current `main`.
-- State docs updated with active Verification Protocol metadata.
+- `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added.
+- `docs/SESSION_BOOTSTRAP.md` updated to require reading the branch isolation/worktree protocol.
+- `docs/CAPABILITY_MAP.md` updated under orchestration/work management.
+- `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/HANDOFF.md`, and `docs/RECENT_CHANGES.md` updated for AOS-ORCH-002.
 
 ### Limitations
 
-Local Level 2 execution was not available because the runtime cannot resolve `github.com`. Fresh Level 3 GitHub CI verification must complete before merge.
+Local Level 2 execution was not available in this connector-only session. GitHub CI / PR Guardian must complete after PR creation.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian.
+GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Wait for PR #5 CI / PR Guardian after rebase. If all required jobs pass, update PR #5 verification status to `Verified` and reassess merge eligibility.
+Open PR for AOS-ORCH-002 and wait for CI / PR Guardian. Merge only after verification metadata is `Verified` or accepted `Verified with warnings`.
 
 ## Handoff Template
 
@@ -86,6 +85,11 @@ Completed:
 Files changed:
 Tests run:
 Docs updated:
+Worktree or connector fallback used:
+Base ref:
+Head SHA:
+Backup head, if any:
+Freshness check:
 Verification Status:
 Verification Level:
 Verification Method:

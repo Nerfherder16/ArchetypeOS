@@ -62,6 +62,7 @@ Capabilities:
 
 - Engineering Memory
 - Knowledge Graph
+- Knowledge Distillation Engine
 - Obsidian integration
 - Graphify-style ingestion
 - documentation lifecycle
@@ -72,6 +73,8 @@ Primary artifacts:
 
 - docs/ENGINEERING_MEMORY.md
 - docs/KNOWLEDGE_GRAPH.md
+- docs/KNOWLEDGE_DISTILLATION_ENGINE.md
+- docs/KARPATHY_OBSIDIAN_REVIEW.md
 - docs/OBSIDIAN_GRAPHIFY_INTEGRATION.md
 - docs/DOCUMENTATION_LIFECYCLE_ENGINE.md
 - docs/REPOSITORY_KNOWLEDGE_STANDARD.md
@@ -235,6 +238,7 @@ Capabilities:
 - Portfolio Knowledge Marketplace
 - Repository DNA
 - Repository Intelligence outputs
+- Knowledge Distillation outputs
 - cross-repository recommendations
 
 Primary artifacts:
@@ -244,6 +248,7 @@ Primary artifacts:
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
 - docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md
 - docs/REPOSITORY_INTELLIGENCE_ENGINE.md
+- docs/KNOWLEDGE_DISTILLATION_ENGINE.md
 - templates/repository_dna.md
 
 ## Layer 10: Interface and Interaction
@@ -305,6 +310,7 @@ Constitution
   -> Decision Lifecycle
 
 Knowledge and Memory
+  -> Knowledge Distillation
   -> Research
   -> Architecture
   -> Decision Intelligence
@@ -334,6 +340,7 @@ Decision Intelligence
   -> Evolution
 
 Nightly Self Learning
+  -> Knowledge Distillation
   -> Meta Agent
   -> Prompt Evolution
   -> Skill Recommendations

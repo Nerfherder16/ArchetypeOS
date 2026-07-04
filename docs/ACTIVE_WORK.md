@@ -20,9 +20,10 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-ORCH-001 — Orchestration State Discipline
 
-- Status: In Progress
+- Status: Merged
 - Owner: Chief Architect / Orchestrator
 - Branch: `docs/orchestration-state`
+- PR: #3
 - Goal: Add durable orchestration docs and state files so future sessions can restart without context rot.
 - Acceptance Criteria:
   - `docs/ORCHESTRATION_ENGINE.md` exists
@@ -36,9 +37,9 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-RUNTIME-001 — Repository Registry MVP
 
-- Status: Ready
+- Status: In Review
 - Owner: Runtime Agent
-- Branch: TBD
+- Branch: `codex/repository-registry-mvp`
 - Goal: Implement the first project/repository registry flow.
 - Dependencies:
   - Orchestration state discipline merged

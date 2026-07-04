@@ -1,7 +1,8 @@
 # Recommendation Card
 
 ## ID
-REC-000
+
+REC-0000
 
 ## Title
 
@@ -9,15 +10,23 @@ REC-000
 
 ## Evidence
 
-## Problem or Opportunity
+## Problem Or Opportunity
 
 ## Proposed Alternative
 
 ## Why This Is Better
 
+## Benefits
+
 ## Pros
 
+- TBD
+
 ## Cons
+
+- TBD
+
+## Migration Path
 
 ## Security Impact
 
@@ -27,12 +36,12 @@ REC-000
 
 ## Maintainability Impact
 
-## Migration Path
-
 ## Effort
+
 S / M / L / XL
 
 ## Risk
+
 Low / Medium / High / Critical
 
 ## Dependencies
@@ -40,7 +49,9 @@ Low / Medium / High / Critical
 ## Acceptance Criteria
 
 ## Decision
+
 Adopt / Defer / Reject / Research Further
 
 ## Confidence
+
 0-100

@@ -85,6 +85,7 @@ Capabilities:
 - Research Engine
 - Continuous Research Engine
 - Research Librarian
+- Repository Intelligence Engine
 - source ranking
 - research notes
 - research freshness
@@ -92,6 +93,7 @@ Capabilities:
 Primary artifacts:
 
 - docs/RESEARCH_ENGINE.md
+- docs/REPOSITORY_INTELLIGENCE_ENGINE.md
 - docs/CONTINUOUS_RESEARCH_ENGINE.md
 - templates/research_note.md
 - agents/research_librarian/CLAUDE.md
@@ -232,6 +234,7 @@ Capabilities:
 - Knowledge Transfer Engine
 - Portfolio Knowledge Marketplace
 - Repository DNA
+- Repository Intelligence outputs
 - cross-repository recommendations
 
 Primary artifacts:
@@ -240,6 +243,7 @@ Primary artifacts:
 - docs/PORTFOLIO_ARCHITECTURE.md
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
 - docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md
+- docs/REPOSITORY_INTELLIGENCE_ENGINE.md
 - templates/repository_dna.md
 
 ## Layer 10: Interface and Interaction
@@ -307,9 +311,16 @@ Knowledge and Memory
   -> Portfolio Intelligence
 
 Research
+  -> Repository Intelligence
   -> Technology Fitness
   -> Design Intelligence
   -> Strategy Engine
+
+Repository Intelligence
+  -> Architecture Reverse Engineering
+  -> Pattern Mining
+  -> Reuse Analysis
+  -> Portfolio Knowledge
 
 Architecture
   -> Digital Twin

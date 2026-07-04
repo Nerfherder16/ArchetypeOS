@@ -16,6 +16,13 @@ if [[ -z "$BODY_FILE" ]]; then
   BODY_FILE="$TMP_BODY"
   cat > "$BODY_FILE" <<'BODY'
 Local pre-PR run.
+
+Verification Status: Verification pending
+Verification Level: Level 2
+Verification Method: scripts/pre_pr_guardian.sh local execution
+Evidence: Local pre-PR script is running; final evidence must be copied into the PR body after completion.
+Limitations: Local default body is not a substitute for PR evidence.
+Required Next Verifier: PR author must update PR body with final verification evidence.
 BODY
 fi
 

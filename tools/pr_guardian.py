@@ -56,6 +56,27 @@ GOVERNANCE_DOC_ALLOWLIST = {
     "docs/CONCRETE_BUILD_PATH.md",
 }
 
+ALLOWED_VERIFICATION_STATUSES = {
+    "Verified",
+    "Verified with warnings",
+    "Verification pending",
+    "Verification unavailable",
+    "Verification blocked",
+}
+ALLOWED_VERIFICATION_LEVELS = {f"Level {level}" for level in range(6)}
+REQUIRED_VERIFICATION_FIELDS = [
+    "Verification Status",
+    "Verification Level",
+    "Verification Method",
+    "Evidence",
+    "Limitations",
+    "Required Next Verifier",
+]
+MERGE_BLOCKING_VERIFICATION_STATUSES = {
+    "Verification unavailable",
+    "Verification blocked",
+}
+
 
 class GuardianError(RuntimeError):
     pass
@@ -106,6 +127,13 @@ def has_override(body: str, key: str) -> bool:
 
 def any_path(paths: Iterable[str], prefixes: tuple[str, ...]) -> bool:
     return any(path.startswith(prefixes) for path in paths)
+
+
+def field_value(body: str, field: str) -> str | None:
+    match = re.search(rf"(?im)^\s*{re.escape(field)}\s*:\s*(.+?)\s*$", body)
+    if not match:
+        return None
+    return match.group(1).strip()
 
 
 def check_required_files() -> list[Finding]:
@@ -206,6 +234,69 @@ def check_no_runtime_junk(files: list[str]) -> list[Finding]:
     return findings
 
 
+def check_verification_metadata(body: str) -> list[Finding]:
+    findings: list[Finding] = []
+    missing = [field for field in REQUIRED_VERIFICATION_FIELDS if field_value(body, field) is None]
+    if missing:
+        findings.append(
+            Finding(
+                "block",
+                "missing-verification-metadata",
+                "PR body is missing required verification metadata fields: " + ", ".join(missing),
+            )
+        )
+        return findings
+
+    status = field_value(body, "Verification Status")
+    level = field_value(body, "Verification Level")
+    if status not in ALLOWED_VERIFICATION_STATUSES:
+        findings.append(
+            Finding(
+                "block",
+                "invalid-verification-status",
+                "Verification Status must be one of: " + ", ".join(sorted(ALLOWED_VERIFICATION_STATUSES)),
+            )
+        )
+    elif status in MERGE_BLOCKING_VERIFICATION_STATUSES:
+        findings.append(
+            Finding(
+                "block",
+                "verification-not-mergeable",
+                f"Verification Status '{status}' is not mergeable. Resolve verification before merge.",
+            )
+        )
+    elif status == "Verification pending":
+        findings.append(
+            Finding(
+                "warn",
+                "verification-pending",
+                "Verification is pending. This PR must not merge until the required next verifier records a stronger status.",
+            )
+        )
+
+    if level not in ALLOWED_VERIFICATION_LEVELS:
+        findings.append(
+            Finding(
+                "block",
+                "invalid-verification-level",
+                "Verification Level must be one of: " + ", ".join(sorted(ALLOWED_VERIFICATION_LEVELS)),
+            )
+        )
+
+    for field in ("Verification Method", "Evidence", "Limitations", "Required Next Verifier"):
+        value = field_value(body, field)
+        if value is not None and value.strip().lower() in {"", "n/a", "none", "tbd", "todo"}:
+            findings.append(
+                Finding(
+                    "warn",
+                    "weak-verification-metadata",
+                    f"{field} should contain concrete verification detail, not '{value}'.",
+                )
+            )
+
+    return findings
+
+
 def render(findings: list[Finding], files: list[str]) -> int:
     blocks = [finding for finding in findings if finding.severity == "block"]
     warnings = [finding for finding in findings if finding.severity == "warn"]
@@ -254,6 +345,7 @@ def main() -> int:
     findings.extend(check_docs_for_code_changes(files, body))
     findings.extend(check_capability_map(files, statuses, body))
     findings.extend(check_high_risk_files(files, body))
+    findings.extend(check_verification_metadata(body))
 
     return render(findings, files)
 

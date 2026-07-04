@@ -17,21 +17,25 @@ Every engineering session should end by updating this file or creating a dated h
 - PR #1 merged: runtime foundation
 - PR #2 merged: CI and deterministic PR Guardian
 - PR #3 merged: CI enforcement and branch protection documentation
-- Orchestration state discipline proposed in `docs/orchestration-state`
+- AOS-RUNTIME-001 branch created: `codex/repository-registry-mvp`
+- API tests added for project creation and repository registration by local path
+- API tests verify repository registrations remain read-only by default
+- API tests verify repository paths outside the configured repository root are rejected
+- State files updated for AOS-RUNTIME-001 review
 
 ### Current Branch
 
-- `docs/orchestration-state`
+- `codex/repository-registry-mvp`
 
 ### Current Work
 
-Add orchestration engine, agent hierarchy, durable state files, and session bootstrap protocol.
+AOS-RUNTIME-001 — Repository Registry MVP is ready for PR review.
 
 ### Known Risks
 
-- Long-running conversations create context rot.
-- Plane may be unavailable due to local outage.
-- Agents need hierarchy and communication rules before parallel execution expands.
+- Local container GitHub network access was unavailable during this session, so repository operations used the GitHub connector.
+- Full local PR Guardian execution could not be run from the local container because the repository could not be cloned there.
+- CI should run on the opened PR and remains the merge gate.
 
 ### Blockers
 
@@ -39,7 +43,7 @@ Add orchestration engine, agent hierarchy, durable state files, and session boot
 
 ### Next Recommended Step
 
-Merge orchestration docs, then assign `AOS-RUNTIME-001 — Repository Registry MVP` to the Runtime Agent.
+Review the AOS-RUNTIME-001 PR. After merge, assign `AOS-RUNTIME-002 — Repository Scanner MVP` to the Runtime Agent.
 
 ## Handoff Template
 

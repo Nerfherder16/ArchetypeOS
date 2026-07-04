@@ -19,45 +19,47 @@ Every new engineering session should read this before planning or implementation
 - PR #1: Runtime foundation
 - PR #2: CI and deterministic PR Guardian
 - PR #3: CI enforcement and branch protection documentation
+- PR #6: Verification Protocol
 
 ## Current Objective
 
-Establish durable orchestration and anti-context-rot workflow before deeper implementation continues, including mandatory verification metadata for every future agent handoff and PR.
+Review and verify AOS-RUNTIME-001 — Repository Registry MVP without expanding v0.1 scope.
 
 ## Active Branch
 
-- `codex/verification-protocol`
+- `codex/repository-registry-mvp`
 
 ## CI Status
 
 - CI exists
 - PR Guardian exists
 - Branch protection should be enforced or documented according to `docs/BRANCH_PROTECTION.md`
-- Verification Protocol proposed; PR Guardian now expects verification metadata in PR bodies
+- Verification Protocol is active; PR Guardian expects verification metadata in PR bodies
+- AOS-RUNTIME-001 API tests have been added on the active branch
+- Fresh GitHub CI rerun is required after connector-backed rebase onto `main`
 
 ## Verification Status
 
 - Status: Verification pending
 - Level: Level 1
-- Method: GitHub connector repository inspection for documentation and deterministic PR Guardian patch
-- Evidence: Verification Protocol branch updates docs, PR template, PR Guardian parser, and local pre-PR fallback metadata
-- Limitations: Local command execution was unavailable in this connector-only session
-- Required Next Verifier: GitHub CI / PR Guardian on the draft PR
+- Method: CI / DevOps connector-backed rebase onto `main`, repository inspection, and pending GitHub CI rerun
+- Evidence: PR #5 branch reset onto PR #6 main commit and repository registry API tests reapplied
+- Limitations: Local Level 2 execution was unavailable because the runtime cannot resolve `github.com`
+- Required Next Verifier: GitHub CI / PR Guardian
 
 ## In Scope Now
 
-- Orchestration Engine documentation
-- agent hierarchy and communication model
-- state files
-- session bootstrap protocol
-- handoff protocol
-- Plane integration strategy
-- verification protocol
-- verification provider abstraction
+- project model verification
+- repository model verification
+- local-path repository registration
+- read-only repository registration default
+- API tests for the repository registry flow
+- durable state updates for AOS-RUNTIME-001
+- verification metadata compliance
 
 ## Out Of Scope Now
 
-- new runtime implementation beyond assigned work
+- repository scanner expansion beyond existing registry-adjacent behavior
 - desktop automation
 - browser automation
 - wake word
@@ -79,7 +81,7 @@ Establish durable orchestration and anti-context-rot workflow before deeper impl
 
 ## Next Recommended Task
 
-Review and merge the Verification Protocol PR after CI, then create the first implementation work package for the Runtime Agent: repository registry and repository scan MVP.
+Wait for PR #5 CI / PR Guardian after rebase. Merge only when verification status is `Verified` or approved `Verified with warnings`.
 
 ## Required Reading For New Sessions
 

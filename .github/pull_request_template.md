@@ -29,11 +29,18 @@ Describe affected runtime services, models, graph/data flows, or repository know
 - [ ] Web build passes or not affected
 - [ ] Docker Compose config validates or not affected
 - [ ] Local pre-PR guardian run completed
+- [ ] Branch protection / required CI impact reviewed or not affected
 
 Command:
 
 ```bash
 scripts/pre_pr_guardian.sh
+```
+
+Post-merge command:
+
+```bash
+scripts/post_merge_validation.sh
 ```
 
 ## Risk Notes
@@ -56,3 +63,4 @@ Only use with rationale. Delete unused lines.
 - [ ] No runtime junk committed
 - [ ] No out-of-scope v0.1 capability added without RFC
 - [ ] Human approval required for any destructive/high-impact action remains intact
+- [ ] Required CI checks are expected to gate this PR

@@ -4,7 +4,7 @@
 
 The Capability Map defines how ArchetypeOS capabilities fit together.
 
-It prevents the platform from becoming a collection of unrelated good ideas. Every engine, agent, dashboard, workflow, and runtime component should map to a coherent capability layer.
+It prevents the platform from becoming a collection of unrelated ideas. Every engine, agent, dashboard, workflow, and runtime component should map to a coherent capability layer.
 
 ## North Star
 
@@ -49,6 +49,8 @@ Primary artifacts:
 
 - docs/ENGINEERING_CONSTITUTION.md
 - docs/CONSTITUTION_AMENDMENTS.md
+- docs/RFC_PROCESS.md
+- docs/ARBITER_FINAL_JUDGE.md
 - docs/DECISION_LIFECYCLE.md
 - agents/UNIVERSAL_AGENT_CONTRACT.md
 
@@ -69,6 +71,7 @@ Capabilities:
 Primary artifacts:
 
 - docs/ENGINEERING_MEMORY.md
+- docs/KNOWLEDGE_GRAPH.md
 - docs/OBSIDIAN_GRAPHIFY_INTEGRATION.md
 - docs/DOCUMENTATION_LIFECYCLE_ENGINE.md
 - docs/REPOSITORY_KNOWLEDGE_STANDARD.md
@@ -88,6 +91,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/RESEARCH_ENGINE.md
 - docs/CONTINUOUS_RESEARCH_ENGINE.md
 - templates/research_note.md
 - agents/research_librarian/CLAUDE.md
@@ -108,6 +112,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/ARCHITECTURE_STUDIO.md
 - docs/ENGINEERING_DIGITAL_TWIN.md
 - docs/PORTFOLIO_ARCHITECTURE.md
 - agents/architecture_cartographer/CLAUDE.md
@@ -127,6 +132,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/TECHNOLOGY_FITNESS_ENGINE.md
 - docs/STRATEGY_ENGINE.md
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
 - docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md
@@ -148,6 +154,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/DESIGN_INTELLIGENCE.md
 - docs/DASHBOARD_INTERFACE.md
 - docs/WORKSPACE_LAYOUT_ENGINE.md
 - docs/VISUAL_ENGINEERING_INTELLIGENCE.md
@@ -166,7 +173,7 @@ Capabilities:
 - proof labs
 - builder workflows
 
-Primary artifacts needed:
+Primary artifacts:
 
 - docs/CLAUDE_CODE_BRIDGE.md
 - docs/DISTRIBUTED_RUNTIME.md
@@ -188,6 +195,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/PR_GUARDIAN.md
 - docs/ENGINEERING_EVOLUTION_SCORE.md
 - templates/benchmark_record.md
 - templates/experiment_record.md
@@ -231,6 +239,7 @@ Primary artifacts:
 - docs/ORGANIZATIONAL_INTELLIGENCE_ENGINE.md
 - docs/PORTFOLIO_ARCHITECTURE.md
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
+- docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md
 - templates/repository_dna.md
 
 ## Layer 10: Interface and Interaction
@@ -260,7 +269,7 @@ Owns deployment and execution environment.
 
 Capabilities:
 
-- CasaOS / Portainer deployment
+- CasaOS or Portainer deployment
 - Docker Compose
 - Postgres
 - Redis
@@ -271,22 +280,24 @@ Capabilities:
 - WSL node
 - GitHub integration
 
-Primary artifacts needed:
+Primary artifacts:
 
+- docs/DISTRIBUTED_RUNTIME.md
+- docs/LOCAL_LLM_GPU_NODE.md
+- docs/CLAUDE_CODE_BRIDGE.md
 - docker-compose.yml
 - .env.example
 - apps/web
 - apps/api
 - apps/worker
-- docs/DISTRIBUTED_RUNTIME.md
-- docs/LOCAL_LLM_GPU_NODE.md
 
 ## Capability Dependency Graph
 
 ```text
 Constitution
+  -> RFC Process
   -> Agent Contract
-  -> Final Judge
+  -> Arbiter and Final Judge
   -> Decision Lifecycle
 
 Knowledge and Memory
@@ -335,15 +346,19 @@ Minimum coherent product:
 9. Voice inbox capture
 10. Local Docker runtime
 
-## Non-MVP Later Capabilities
+## Later Capabilities
 
 - full marketplace
 - full simulation lab
-- full autonomous strategy engine
+- full strategy engine
 - advanced multi-monitor support
 - production-grade voice session streaming
 - advanced digital twin prediction
-- autonomous code changes
+- write-capable build workflows after approval gates mature
+
+## Update Rule
+
+Whenever a new capability, engine, agent, or runtime component is added, this capability map must be updated in the same change set or explicitly marked as not affected.
 
 ## Principle
 

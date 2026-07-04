@@ -11,7 +11,7 @@ It prevents the platform from becoming a collection of unrelated ideas. Every en
 ArchetypeOS is an Engineering Intelligence Platform that helps users:
 
 ```text
-Research -> Model -> Decide -> Build -> Validate -> Learn -> Evolve
+Research -> Model -> Decide -> Build -> Verify -> Validate -> Learn -> Evolve
 ```
 
 ## Capability Layers
@@ -189,10 +189,19 @@ Primary artifacts:
 
 ## Layer 7: Validation and Release Gates
 
-Owns correctness and readiness.
+Owns correctness, readiness, and verification.
 
 Capabilities:
 
+- Verification Protocol
+- Verification Engine
+- Verification Provider abstraction
+- Local CLI verification provider
+- GitHub Actions verification provider
+- Docker verification provider
+- Runtime Health verification provider
+- Connector Inspection verification provider
+- Human Approval verification provider
 - PR Guardian
 - CI enforcement
 - branch protection setup
@@ -206,6 +215,7 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/VERIFICATION_PROTOCOL.md
 - docs/PR_GUARDIAN.md
 - docs/BRANCH_PROTECTION.md
 - docs/POST_MERGE_VALIDATION.md
@@ -323,6 +333,7 @@ Capabilities:
 - current state tracking
 - active work tracking
 - handoff protocol
+- verification handoff metadata
 - recent changes log
 - session bootstrap generation
 - Plane integration
@@ -355,6 +366,7 @@ Orchestration
   -> Session Bootstrap
   -> Agent Assignment
   -> Handoff
+  -> Verification Metadata
   -> Plane Sync
   -> PR Lifecycle
 
@@ -380,12 +392,24 @@ Repository Intelligence
 Architecture
   -> Digital Twin
   -> PR Guardian
+  -> Verification Protocol
   -> Release Gates
 
 Decision Intelligence
   -> Build Intelligence
+  -> Verification
   -> Validation
   -> Evolution
+
+Verification
+  -> Local CLI Provider
+  -> GitHub Actions Provider
+  -> Docker Provider
+  -> Runtime Health Provider
+  -> Connector Inspection Provider
+  -> Human Approval Provider
+  -> PR Guardian
+  -> Release Gates
 
 Nightly Self Learning
   -> Knowledge Distillation
@@ -407,12 +431,13 @@ Minimum coherent product:
 4. Decision cards and ADRs
 5. Research notes
 6. PR Guardian first pass
-7. Nightly self-learning digest
-8. Dashboard shell
-9. Voice inbox capture
-10. Local Docker runtime
-11. Orchestration state files
-12. Session bootstrap and handoff protocol
+7. Verification Protocol
+8. Nightly self-learning digest
+9. Dashboard shell
+10. Voice inbox capture
+11. Local Docker runtime
+12. Orchestration state files
+13. Session bootstrap and handoff protocol
 
 ## Later Capabilities
 
@@ -425,6 +450,7 @@ Minimum coherent product:
 - write-capable build workflows after approval gates mature
 - live multi-agent communication bus
 - full Plane synchronization
+- automatic Verification Engine provider selection
 
 ## Update Rule
 

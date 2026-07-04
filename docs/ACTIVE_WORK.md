@@ -22,90 +22,110 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 - Status: Merged
 - Owner: CI / DevOps Agent
-- Branch: `codex/verification-protocol`
 - PR: #6
-- Goal: Make verification a mandatory engineering artifact across local, connector, CI, runtime, and human-verification environments.
 - Verification Status: Verified
-- Verification Level: Level 3
-- Verification Method: GitHub Actions CI and PR Guardian
-- Evidence: PR #6 merged after successful CI run `28710292267`.
-- Limitations: Local Level 2 execution was unavailable in the connector-only session.
 - Required Next Verifier: None.
 
 ### AOS-ORCH-001 — Orchestration State Discipline
 
 - Status: Merged
 - Owner: Chief Architect / Orchestrator
-- Branch: `docs/orchestration-state`
 - PR: #3
-- Goal: Add durable orchestration docs and state files so future sessions can restart without context rot.
-- Acceptance Criteria:
-  - `docs/ORCHESTRATION_ENGINE.md` exists
-  - `docs/AGENT_HIERARCHY_AND_COMMUNICATION.md` exists
-  - `docs/CURRENT_STATE.md` exists
-  - `docs/ACTIVE_WORK.md` exists
-  - `docs/HANDOFF.md` exists
-  - `docs/RECENT_CHANGES.md` exists
-  - `docs/SESSION_BOOTSTRAP.md` exists
-  - Capability Map updated
+- Verification Status: Verified
+- Required Next Verifier: None.
 
 ### AOS-RUNTIME-001 — Repository Registry MVP
 
 - Status: Merged
 - Owner: Runtime Agent
-- Branch: `codex/repository-registry-mvp`
 - PR: #5
-- Goal: Implement the first project/repository registry flow.
 - Verification Status: Verified
-- Verification Level: Level 3
-- Verification Method: GitHub Actions CI / PR Guardian after CI / DevOps connector-backed rebase onto `main`.
-- Evidence: PR #5 merged after successful CI run `28710932992`.
-- Limitations: Local Level 2 execution unavailable because the runtime could not resolve `github.com`.
 - Required Next Verifier: None.
 
 ### AOS-ORCH-002 — Branch Isolation / Worktree Protocol
 
+- Status: Merged
+- Owner: Chief Architect / Orchestrator
+- PR: #8
+- Verification Status: Verified
+- Required Next Verifier: None.
+
+### AOS-ORCH-003 — Agent Communication Bus / PR Monitoring Skill
+
+- Status: Merged
+- Owner: Chief Architect / Orchestrator
+- PR: #7
+- Verification Status: Verified
+- Required Next Verifier: None.
+
+### AOS-REVIEW-001 — Independent Architecture Review Artifact
+
+- Status: Merged
+- Owner: External Review / Chief Architect triage
+- PR: #10
+- Verification Status: Verified
+- Required Next Verifier: None.
+
+### AOS-STRATEGY-001 — Engineering OS Strategy / WSL Runtime Target
+
+- Status: Merged
+- Owner: Chief Architect / Orchestrator
+- PR: #11
+- Verification Status: Verified
+- Required Next Verifier: None.
+
+### AOS-PMO-001 — Operating Loop Planning Recovery
+
+- Status: Merged
+- Owner: Chief Architect / Orchestrator
+- PR: #12
+- Verification Status: Verified
+- Notes: Restored planning docs from closed PR #9 without stale state file changes.
+- Required Next Verifier: None.
+
+### AOS-PMO-002 — State Reconciliation
+
 - Status: In Review
 - Owner: Chief Architect / Orchestrator
-- Branch: `docs/branch-isolation-worktree-protocol`
-- Goal: Document one work package = one branch = one isolated worktree, including connector fallback rules.
+- Branch: `docs/state-reconciliation`
+- Goal: Reconcile durable state files after recent PRs so the repo accurately reflects current status before implementation resumes.
 - Dependencies:
-  - Orchestration state discipline merged
-  - Verification Protocol merged
-  - Runtime Registry MVP merged
+  - PR #7 merged
+  - PR #8 merged
+  - PR #10 merged
+  - PR #11 merged
+  - PR #12 merged
 - Acceptance Criteria:
-  - `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` exists
-  - one work package = one branch = one isolated worktree documented
-  - connector fallback documented
-  - one branch per task documented
-  - backup head before force/reset documented
-  - branch freshness before ready-for-review documented
-  - local agents recommended for heavy edits
-  - ChatGPT connector role constrained to review/orchestration by default
-  - session bootstrap updated
-  - Capability Map updated
-  - verification metadata recorded in handoff and PR
+  - `docs/CURRENT_STATE.md` reflects latest merged PRs
+  - `docs/ACTIVE_WORK.md` reflects true task statuses
+  - `docs/HANDOFF.md` has current next step
+  - `docs/RECENT_CHANGES.md` is updated
+  - Plane remains pinned/offline
+  - AOS-RUNTIME-002 is clearly next
 - Verification Status: Verification pending
 - Verification Level: Level 1
-- Verification Method: GitHub connector repository inspection and pending GitHub CI / PR Guardian.
-- Evidence: Protocol doc added and state docs updated on branch.
-- Limitations: Local Level 2 execution unavailable in connector-only session.
+- Verification Method: GitHub connector state-file update; pending GitHub CI / PR Guardian.
+- Evidence: State files updated on `docs/state-reconciliation`.
+- Limitations: Local Level 2 execution unavailable during power outage.
 - Required Next Verifier: GitHub CI / PR Guardian.
 
 ### AOS-RUNTIME-002 — Repository Scanner MVP
 
-- Status: Proposed
+- Status: Ready
 - Owner: Runtime Agent
 - Branch: TBD
 - Goal: Add read-only repository scanner.
 - Dependencies:
   - AOS-RUNTIME-001
   - AOS-ORCH-002
+  - AOS-STRATEGY-001
+  - AOS-PMO-002
 - Acceptance Criteria:
   - scanner detects folders, languages, manifests, Docker files, CI files, and basic risks
   - scanner writes report artifact
   - no repository writes occur
   - verification metadata recorded in handoff and PR
+  - tests exist and pass in CI
 
 ### AOS-KNOW-001 — Knowledge Vault Seed
 
@@ -116,6 +136,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Dependencies:
   - repository registry model
   - branch isolation/worktree protocol
+  - repository scanner output shape
 - Acceptance Criteria:
   - `knowledge/` structure exists
   - manifest schema exists
@@ -124,7 +145,8 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Blocked Work
 
-None.
+- Plane sync is blocked until local Plane is available again.
+- Local WSL/Docker Level 2 verification is blocked until power and workstation access return.
 
 ## Deferred Work
 
@@ -132,7 +154,7 @@ None.
 - browser automation
 - wake word
 - full voice streaming
-- autonomous coding
+- autonomous coding without approval gates
 - marketplace
 - simulation lab
 - graph database

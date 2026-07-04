@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r apps/api/requirements.txt
+      - run: PYTHONPATH=apps/api pytest apps/api/tests
+      - run: pip install -r apps/worker/requirements.txt
+      - run: PYTHONPATH=apps/worker pytest apps/worker/tests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+        working-directory: apps/web
+      - run: npm run build
+        working-directory: apps/web

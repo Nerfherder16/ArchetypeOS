@@ -1,0 +1,17 @@
+{
+  "source_id": "archetypeos-v0.1-runtime",
+  "source_type": "repository",
+  "source_path_or_uri": "Nerfherder16/ArchetypeOS",
+  "checksum": "initial",
+  "last_seen": "2026-07-04",
+  "last_ingested": "2026-07-04",
+  "generated_pages": [
+    "knowledge/wiki/index.md",
+    "knowledge/wiki/hot.md",
+    "knowledge/wiki/log.md",
+    "knowledge/wiki/overview.md"
+  ],
+  "generated_graph_nodes": [],
+  "confidence": 0.8,
+  "status": "active"
+}

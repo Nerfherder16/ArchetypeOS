@@ -1,0 +1,18 @@
+{
+  "engines": [
+    "engineering_evaluation_standard",
+    "research_engine",
+    "knowledge_graph",
+    "architecture_studio",
+    "architecture_spine_graph",
+    "decision_intelligence",
+    "technology_fitness_engine",
+    "recommendation_intelligence",
+    "design_intelligence",
+    "build_intelligence",
+    "evolution_engine",
+    "pr_guardian",
+    "report_generator",
+    "release_gates"
+  ]
+}

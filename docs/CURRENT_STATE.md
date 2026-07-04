@@ -22,30 +22,31 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Establish durable orchestration and anti-context-rot workflow before deeper implementation continues.
+Implement the first Runtime Agent project/repository registry flow without expanding v0.1 scope.
 
 ## Active Branch
 
-- `docs/orchestration-state`
+- `codex/repository-registry-mvp`
 
 ## CI Status
 
 - CI exists
 - PR Guardian exists
 - Branch protection should be enforced or documented according to `docs/BRANCH_PROTECTION.md`
+- AOS-RUNTIME-001 API tests have been added on the active branch
 
 ## In Scope Now
 
-- Orchestration Engine documentation
-- agent hierarchy and communication model
-- state files
-- session bootstrap protocol
-- handoff protocol
-- Plane integration strategy
+- project model verification
+- repository model verification
+- local-path repository registration
+- read-only repository registration default
+- API tests for the repository registry flow
+- durable state updates for AOS-RUNTIME-001
 
 ## Out Of Scope Now
 
-- new runtime implementation
+- repository scanner expansion beyond existing registry-adjacent behavior
 - desktop automation
 - browser automation
 - wake word
@@ -66,7 +67,7 @@ Establish durable orchestration and anti-context-rot workflow before deeper impl
 
 ## Next Recommended Task
 
-Create the first implementation work package for the Runtime Agent: repository registry and repository scan MVP.
+Review and merge AOS-RUNTIME-001, then proceed to `AOS-RUNTIME-002 — Repository Scanner MVP`.
 
 ## Required Reading For New Sessions
 

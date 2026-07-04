@@ -6,6 +6,22 @@ PR Guardian reviews changes before pull request or merge.
 
 It is a release gate and engineering reviewer, not a replacement for human judgment.
 
+## v0.1 Implementation
+
+The v0.1 PR Guardian is deterministic and runs in GitHub Actions through:
+
+```text
+tools/pr_guardian.py
+```
+
+It also runs locally through:
+
+```bash
+scripts/pre_pr_guardian.sh
+```
+
+This first version intentionally avoids LLM judgment. It blocks obvious hygiene, scope, documentation, and safety failures before a human review.
+
 ## Checks
 
 - diff scope
@@ -18,38 +34,93 @@ It is a release gate and engineering reviewer, not a replacement for human judgm
 - secrets exposure
 - configuration changes
 - release gate status
+- capability map drift
+- runtime/build junk
+- high-risk file changes
+
+## Deterministic Blocking Rules
+
+The current implementation blocks when:
+
+- required foundation files are missing
+- potential secrets are added to the diff
+- runtime/build artifacts are committed
+- API code changes without API test changes
+- worker code changes without worker test changes
+- implementation/runtime files change without documentation changes
+- new capability docs are added without updating `docs/CAPABILITY_MAP.md`
+
+## Warning Rules
+
+The current implementation warns when:
+
+- web source changes without UI tests available yet
+- high-risk files such as workflows, compose config, environment example, auth, or secrets-related files change
+
+## Override Protocol
+
+Overrides are allowed only with rationale in the PR body.
+
+Supported override markers:
+
+```text
+PR_GUARDIAN_OVERRIDE_TESTS
+PR_GUARDIAN_OVERRIDE_WEB_TESTS
+PR_GUARDIAN_OVERRIDE_DOCS
+PR_GUARDIAN_OVERRIDE_CAPABILITY_MAP
+PR_GUARDIAN_OVERRIDE_HIGH_RISK_ACK
+```
+
+Overrides should be used sparingly. They are audit markers, not a way to bypass review casually.
 
 ## Verdicts
 
-- Approve
-- Approve with warnings
-- Block
+- PASS
+- PASS_WITH_WARNINGS
+- BLOCK
+
+Future versions may add:
+
 - Research further
 - Human review required
+- Final Judge escalation
 
 ## Required Output
 
 - verdict
-- risk score
-- required fixes
-- suggested fixes
+- changed files
+- blocking findings
+- warning findings
 - evidence
-- affected files
-- affected architecture nodes
-- missing tests
-- missing docs
-- confidence
+- required fixes
+
+## CI Enforcement
+
+GitHub Actions runs:
+
+- PR Guardian
+- API lint, compile, tests
+- Worker lint, compile, tests
+- Web dependency install and build
+- Docker Compose config validation
+- Docker Compose smoke test for API health and web response
 
 ## Local First Use
 
 PR Guardian should run locally before PR creation and later as GitHub CI.
 
-The RTX 3090 local LLM node can perform first-pass triage. Complex or high-risk issues can escalate to premium models or Final Judge.
+The local command is:
+
+```bash
+scripts/pre_pr_guardian.sh
+```
+
+The RTX 3090 local LLM node may later perform first-pass semantic review, but deterministic checks remain the base gate.
 
 ## Safety
 
-PR Guardian should not modify files by default. It creates review reports, warnings, and draft issues.
+PR Guardian must not modify files by default. It creates reports, warnings, and blockers only.
 
 ## Principle
 
-No PR should merge without understanding its risk, documentation impact, and architecture impact.
+No PR should merge without understanding its risk, documentation impact, test impact, and architecture impact.

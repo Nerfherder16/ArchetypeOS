@@ -14,31 +14,32 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #2: CI and deterministic PR Guardian
 - PR #3: CI enforcement and branch protection documentation
 - PR #6: Verification Protocol
+- PR #5: Repository Registry MVP
 
 ### Added In Current Branch
 
-- `apps/api/tests/test_repository_registry.py`
-- AOS-RUNTIME-001 state updates in `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/HANDOFF.md`, and `docs/RECENT_CHANGES.md`
+- `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md`
 
 ### Updated In Current Branch
 
-- PR #5 branch was reset onto current `main` after PR #6.
-- PR #5 state files were reconciled with the active Verification Protocol.
-- PR #5 PR body now requires fresh Level 3 GitHub CI verification before merge.
+- `docs/SESSION_BOOTSTRAP.md` now requires the Branch Isolation / Worktree Protocol during startup.
+- `docs/CAPABILITY_MAP.md` now includes branch isolation, worktree protocol, connector fallback isolation, backup head preservation, and branch freshness validation.
+- `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, and `docs/HANDOFF.md` now track AOS-ORCH-002.
 
 ### Verified In Current Branch
 
-- Project creation API flow covered by tests
-- Repository registration by local path covered by tests
-- Read-only repository default covered by tests
-- Repository path boundary rejection covered by tests
-- Missing project rejection covered by tests
+- One work package = one branch = one isolated worktree documented.
+- Connector fallback documented.
+- Backup head before force/reset documented.
+- Branch freshness before ready-for-review documented.
+- Local agents for heavy edits documented.
+- ChatGPT connector review/orchestration role documented.
 
 ### Why It Matters
 
-AOS-RUNTIME-001 turns the existing registry API/model surface into a guarded MVP flow with explicit API tests and durable handoff state.
+AOS-ORCH-002 makes parallel agent work safer by requiring branch and worktree isolation before ArchetypeOS expands into more concurrent runtime, knowledge, and CI work.
 
-The branch is now based on the active Verification Protocol, so PR Guardian and CI can verify it using the current rules instead of stale pre-PR #6 rules.
+Connector-only sessions now have a documented fallback: use one branch as the logical worktree, preserve backup heads before force/reset, and rely on GitHub CI / PR Guardian for final verification.
 
 ## Update Rule
 

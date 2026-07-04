@@ -20,14 +20,15 @@ Every new engineering session should read this before planning or implementation
 - PR #2: CI and deterministic PR Guardian
 - PR #3: CI enforcement and branch protection documentation
 - PR #6: Verification Protocol
+- PR #5: Repository Registry MVP
 
 ## Current Objective
 
-Review and verify AOS-RUNTIME-001 — Repository Registry MVP without expanding v0.1 scope.
+Document branch isolation and worktree discipline before expanding parallel agent work.
 
 ## Active Branch
 
-- `codex/repository-registry-mvp`
+- `docs/branch-isolation-worktree-protocol`
 
 ## CI Status
 
@@ -35,35 +36,34 @@ Review and verify AOS-RUNTIME-001 — Repository Registry MVP without expanding 
 - PR Guardian exists
 - Branch protection should be enforced or documented according to `docs/BRANCH_PROTECTION.md`
 - Verification Protocol is active; PR Guardian expects verification metadata in PR bodies
-- AOS-RUNTIME-001 API tests have been added on the active branch
-- Fresh GitHub CI rerun is required after connector-backed rebase onto `main`
+- AOS-ORCH-002 documentation changes are pending GitHub CI / PR Guardian verification
 
 ## Verification Status
 
 - Status: Verification pending
 - Level: Level 1
-- Method: CI / DevOps connector-backed rebase onto `main`, repository inspection, and pending GitHub CI rerun
-- Evidence: PR #5 branch reset onto PR #6 main commit and repository registry API tests reapplied
-- Limitations: Local Level 2 execution was unavailable because the runtime cannot resolve `github.com`
+- Method: GitHub connector repository inspection for documentation and state updates; pending GitHub CI / PR Guardian
+- Evidence: `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md` added and state docs updated on `docs/branch-isolation-worktree-protocol`
+- Limitations: Local Level 2 execution unavailable in connector-only session
 - Required Next Verifier: GitHub CI / PR Guardian
 
 ## In Scope Now
 
-- project model verification
-- repository model verification
-- local-path repository registration
-- read-only repository registration default
-- API tests for the repository registry flow
-- durable state updates for AOS-RUNTIME-001
-- verification metadata compliance
+- branch isolation protocol
+- worktree protocol
+- connector fallback rules
+- backup head preservation before force/reset
+- branch freshness checks before ready-for-review
+- local-agent versus ChatGPT-connector responsibility split
+- durable state updates for AOS-ORCH-002
 
 ## Out Of Scope Now
 
-- repository scanner expansion beyond existing registry-adjacent behavior
+- repository scanner implementation
 - desktop automation
 - browser automation
 - wake word
-- autonomous coding
+- autonomous coding without approval gates
 - production deployment
 
 ## Open Decisions
@@ -81,19 +81,20 @@ Review and verify AOS-RUNTIME-001 — Repository Registry MVP without expanding 
 
 ## Next Recommended Task
 
-Wait for PR #5 CI / PR Guardian after rebase. Merge only when verification status is `Verified` or approved `Verified with warnings`.
+Review AOS-ORCH-002, wait for CI / PR Guardian, then merge if verification succeeds. After merge, proceed to AOS-RUNTIME-002 using one branch and one isolated worktree.
 
 ## Required Reading For New Sessions
 
 1. `docs/CURRENT_STATE.md`
 2. `docs/ACTIVE_WORK.md`
 3. `docs/HANDOFF.md`
-4. `docs/SESSION_BOOTSTRAP.md`
+4. `docs/RECENT_CHANGES.md`
 5. `docs/CAPABILITY_MAP.md`
 6. `docs/V0_1_SCOPE_LOCK.md`
 7. `docs/CONCRETE_BUILD_PATH.md`
 8. `docs/VERIFICATION_PROTOCOL.md`
-9. Relevant RFCs and domain docs
+9. `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md`
+10. Relevant RFCs and domain docs
 
 ## Update Rule
 

@@ -24,7 +24,8 @@ Read these files first:
 6. `docs/V0_1_SCOPE_LOCK.md`
 7. `docs/CONCRETE_BUILD_PATH.md`
 8. `docs/VERIFICATION_PROTOCOL.md`
-9. domain-specific docs for the assigned task
+9. `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md`
+10. domain-specific docs for the assigned task
 
 ## Session Startup Prompt Template
 
@@ -43,6 +44,7 @@ Before doing any work, read:
 - docs/V0_1_SCOPE_LOCK.md
 - docs/CONCRETE_BUILD_PATH.md
 - docs/VERIFICATION_PROTOCOL.md
+- docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md
 - relevant domain docs
 
 Treat GitHub as the source of truth.
@@ -51,6 +53,8 @@ Do not expand scope without RFC.
 Do not change architecture silently.
 Do not bypass PR Guardian or CI.
 Do not claim completion without verification metadata.
+Use one work package = one branch = one isolated worktree.
+If no local worktree is available, use one branch as the connector isolation boundary.
 
 Assigned task:
 [PASTE TASK]
@@ -67,7 +71,7 @@ Required deliverables:
 - PR
 
 Work cycle:
-inspect -> plan -> patch -> verify -> update docs/state -> PR.
+inspect -> plan -> isolate branch/worktree -> patch -> verify -> update docs/state -> PR.
 
 Allowed verification states:
 - Verified
@@ -76,6 +80,23 @@ Allowed verification states:
 - Verification unavailable
 - Verification blocked
 ```
+
+## Branch Isolation Startup Rule
+
+Every agent must choose its isolation mode before patching.
+
+Use this decision order:
+
+```text
+Local Git worktree available?
+  -> create one task branch and one isolated worktree.
+Else connector-only branch access available?
+  -> create one task branch and treat it as the logical worktree.
+Else
+  -> report Verification unavailable or Verification blocked before editing.
+```
+
+Before marking ready-for-review, every agent must verify branch freshness against `main` and record whether a backup head was required.
 
 ## Verification Startup Rule
 
@@ -111,19 +132,19 @@ Required Next Verifier:
 
 ### Orchestrator
 
-Focus on sequencing, scope, decisions, coordination, and review.
+Focus on sequencing, scope, decisions, coordination, review, and branch/worktree isolation policy.
 
 ### Runtime Agent
 
-Focus on API, worker, database, Docker, Redis, and jobs.
+Focus on API, worker, database, Docker, Redis, and jobs. Use local isolated worktrees for implementation-heavy runtime work whenever available.
 
 ### Frontend Agent
 
-Focus on dashboard, UI, workspace, graphs, and interaction.
+Focus on dashboard, UI, workspace, graphs, and interaction. Use isolated worktrees for UI feature work.
 
 ### Knowledge Agent
 
-Focus on vault, wiki, graph artifacts, distillation, and memory.
+Focus on vault, wiki, graph artifacts, distillation, and memory. Use isolated branches for vault/schema changes.
 
 ### Repository Intelligence Agent
 
@@ -131,11 +152,15 @@ Focus on external repository reviews and pattern extraction.
 
 ### CI / DevOps Agent
 
-Focus on GitHub Actions, PR Guardian, branch protection, Docker validation, release gates, and verification providers.
+Focus on GitHub Actions, PR Guardian, branch protection, Docker validation, release gates, verification providers, and branch freshness checks.
 
 ### Research Council
 
 Focus on evidence and alternatives. Do not implement code.
+
+### ChatGPT Connector Agent
+
+Focus on review, orchestration, PR metadata, CI observation, documentation, and verification handoffs. Escalate heavy edits to local agents when possible.
 
 ## End-Of-Session Requirement
 
@@ -148,6 +173,8 @@ Every session must update or propose updates to:
 
 Every session must also record verification metadata using only the allowed verification states from `docs/VERIFICATION_PROTOCOL.md`.
 
+Every session that changed branches, rebased, reset, or repaired PR state must also record branch/worktree metadata from `docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md`.
+
 ## Principle
 
-A new session should be able to recover the project in minutes from repository state alone, including how the last work was verified or why verification remains pending.
+A new session should be able to recover the project in minutes from repository state alone, including how the last work was isolated, verified, or why verification remains pending.

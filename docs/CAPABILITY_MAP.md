@@ -191,6 +191,9 @@ Owns correctness and readiness.
 Capabilities:
 
 - PR Guardian
+- CI enforcement
+- branch protection setup
+- post-merge validation
 - Engineering Evaluation Standard
 - Engineering Evolution Score
 - benchmarks
@@ -201,6 +204,11 @@ Capabilities:
 Primary artifacts:
 
 - docs/PR_GUARDIAN.md
+- docs/BRANCH_PROTECTION.md
+- docs/POST_MERGE_VALIDATION.md
+- scripts/pre_pr_guardian.sh
+- scripts/post_merge_validation.sh
+- .github/workflows/ci.yml
 - docs/ENGINEERING_EVOLUTION_SCORE.md
 - templates/benchmark_record.md
 - templates/experiment_record.md
@@ -331,7 +339,6 @@ Repository Intelligence
 Architecture
   -> Digital Twin
   -> PR Guardian
-  -> Simulation Lab
   -> Release Gates
 
 Decision Intelligence

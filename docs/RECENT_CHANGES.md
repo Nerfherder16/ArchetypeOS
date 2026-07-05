@@ -8,7 +8,11 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ## 2026-07-05 — Control-plane hardening (Lead-Architect critique)
 
-### In Review
+### Merged
+
+- PR #50 — AOS-APIROUTES-001 Split API routes by domain (merge commit `2c5cdcb`; Plane AOS-24 Done). Verified at Level 4 (CI run 28759105408, all 6 jobs green; plus Orchestrator's route-table diff `origin/main` vs working tree → byte-identical 43 pairs, api 94 [92 unchanged + 2 guards], FakeRedis 11 in isolation, `main.py` 487→49). Pure behavior-preserving refactor — API modularized into 10 `routes/*.py`. Env-pinned branch constraint documented (Decision 2a).
+
+### (package detail)
 
 - AOS-APIROUTES-001 — Split API routes by domain (Plane AOS-24). Lead-Architect critique flagged `apps/api/app/main.py` growth (487 lines / 39 routes / ~13 domains, just grew with the council routes); operator directed "route split first, then AOS-COUNCIL-002." Pure behavior-preserving refactor: `main.py` split into 10 per-domain `APIRouter` modules under `apps/api/app/routes/` (`projects`/`repositories`/`scans`/`architecture`/`jobs`/`schedules`/`artifacts`/`decisions`/`digests`/`council`); `main.py` → 49 lines (app + CORS + startup + `/health` + ordered `include_router` loop, retains `import redis` so the FakeRedis `main.redis` patch target survives). New `test_route_inventory.py` freezes the (method, path) set. No endpoint/schema/behavior change. Orchestrator-verified: route table byte-identical `origin/main` vs working tree (43 pairs, empty diff); api 94 (92 unchanged + 2 guards); FakeRedis 11 in isolation. Also this change: the env-pinned branch-name constraint documented in HANDOFF + the Orchestrator Playbook (operator Decision 2a). Spec: `.archetype/work/AOS-APIROUTES-001.md`.
 

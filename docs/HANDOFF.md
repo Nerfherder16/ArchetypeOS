@@ -26,11 +26,11 @@ AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening). Lead
 
 ### PR
 
-To be opened.
+#50 — **Merged** as `2c5cdcb` (squash). CI run 28759105408 all 6 jobs green on head `65c3286`.
 
 ### Status
 
-In Review — `main.py` (487 lines / 39 routes) split into 10 `apps/api/app/routes/*.py` `APIRouter` modules; `main.py` → 49 lines (app + CORS + startup + `/health` + ordered `include_router` loop, retains `import redis` so the FakeRedis `main.redis` patch target survives). Orchestrator-verified: **route table byte-identical `origin/main` vs working tree (43 pairs, empty diff)**; api **94** (92 unchanged + 2 inventory guards); FakeRedis jobs/schedules/council **11** in isolation; ruff/compile clean; diff scope `apps/api/app/**` + new test + docs. No endpoint/schema/behavior change. **Next after merge: AOS-COUNCIL-002 (Agent Council Dashboard, reframed around the Control Tower IA).**
+Merged — `main.py` (487 lines / 39 routes) split into 10 `apps/api/app/routes/*.py` `APIRouter` modules; `main.py` → 49 lines (app + CORS + startup + `/health` + ordered `include_router` loop, retains `import redis` so the FakeRedis `main.redis` patch target survives). Orchestrator-verified: **route table byte-identical `origin/main` vs working tree (43 pairs, empty diff)**; api **94** (92 unchanged + 2 inventory guards); FakeRedis jobs/schedules/council **11** in isolation. No endpoint/schema/behavior change; AOS-24 Done. Branch restarted from `main` at `2c5cdcb`. Env-pinned branch constraint documented (Decision 2a). **Next: AOS-COUNCIL-002 (Agent Council Dashboard, reframed around the Control Tower IA) — awaiting operator go-ahead.**
 
 ### Orchestrator Transition
 
@@ -75,7 +75,7 @@ In Review — `main.py` (487 lines / 39 routes) split into 10 `apps/api/app/rout
 
 ### Verification Status
 
-Verification pending (AOS-APIROUTES-001 in review)
+Verified (PR #50 merged as `2c5cdcb`)
 
 ### Verification Level
 
@@ -83,7 +83,7 @@ Level 4
 
 ### Verification Method
 
-Orchestrator independently (3.12 venv) diffed the full route table via a worktree of `origin/main` vs the working tree → **byte-identical (43 (method,path) pairs, empty diff)** — the refactor guard. api suite **94 passed** (92 prior unchanged + 2 new inventory tests); FakeRedis jobs/schedules/council tests **11 passed in isolation** (the `main.redis.Redis.from_url` patch target preserved); ruff/compile clean; `main.py` 487→49; diff scope limited to `apps/api/app/**` + the new test + docs. GitHub CI (api-tests, compose-smoke boots the api image) pending on the PR; merge under the Manual Merge Gate.
+CI run 28759105408 all 6 jobs green on head `65c3286` plus Orchestrator's independent 3.12-venv run: full route table diffed via a worktree of `origin/main` vs the working tree → **byte-identical (43 (method,path) pairs, empty diff)** — the refactor guard. api **94 passed** (92 prior unchanged + 2 inventory tests); FakeRedis jobs/schedules/council **11 passed in isolation** (`main.redis.Redis.from_url` patch target preserved); ruff/compile clean; `main.py` 487→49. AOS-24 → Done; branch restarted from `main` at `2c5cdcb`.
 
 ### Evidence
 

@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 merged (AOS-COUNCIL-001, PR #49, AOS-19 Done). Control-plane hardening interlude open — AOS-APIROUTES-001 (Plane AOS-24) in review; then AOS-COUNCIL-002. Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 merged (AOS-COUNCIL-001, PR #49, AOS-19 Done). Control-plane hardening: AOS-APIROUTES-001 merged (PR #50, AOS-24 Done). Next: AOS-COUNCIL-002 (awaiting operator go-ahead). Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -59,10 +59,11 @@ Every new engineering session should read this before planning or implementation
 - PR #47: Scheduler seed — schedules-as-data + control-plane scheduler, RFC-0007 (AOS-SCHED-001); first real Alembic migration
 - PR #48: Scheduler dashboard — schedules UI + enqueue + job history, RFC-0007/RFC-0006 Phase 3b (AOS-SCHED-002) — **closes AOS-18 and the worker pipeline; RFC-0006 + RFC-0007 realized end to end**
 - PR #49: Agent Council seed — LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (AOS-COUNCIL-001) — **the Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done**
+- PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
 
 ## Current Objective
 
-**Control-plane hardening interlude** (Lead-Architect critique, operator-directed "route split first"): AOS-APIROUTES-001 (Plane AOS-24) in review — a pure, behavior-preserving split of `apps/api/app/main.py` (487 lines / 39 routes) into per-domain `APIRouter` modules under `apps/api/app/routes/` (main.py → 49 lines). Route table proven byte-identical `origin/main` vs working tree; 94 api tests (92 unchanged + 2 inventory guards). Then **AOS-COUNCIL-002 — the Agent Council Dashboard**, reframed around the Control Tower information hierarchy (what the operator sees first/second/third), closing the Phase-9 "disagreements are visible" acceptance. The Intelligence Layer Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done) is live and advisory/draft-only.
+**Awaiting operator go-ahead on AOS-COUNCIL-002** — the Agent Council Dashboard, reframed per the Lead-Architect critique (#3) around the **Control Tower information hierarchy** (what the operator sees first/second/third), not a bolted-on panel; it closes the Phase-9 "disagreements are visible" acceptance. The control-plane hardening interlude is done (AOS-APIROUTES-001, PR #50, AOS-24 Done — API modularized). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done) is live and advisory/draft-only. The critique's substrate priorities queue after: AOS-23 (knowledge read path), AOS-21 (second repo), AOS-20 (doc-staleness), AOS-22 (backups).
 
 ## Active Branch
 
@@ -79,16 +80,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verification pending (AOS-APIROUTES-001 in review; PR #49 merged as `a56d317`)
+- Status: Verified (PR #50 merged as `2c5cdcb`)
 - Level: Level 4
-- Method: Orchestrator independently (3.12 venv) **diffed the full route table `origin/main` vs working tree → byte-identical (43 (method,path) pairs, empty diff)**; api suite **94 passed** (92 prior unchanged + 2 inventory guards); FakeRedis jobs/schedules/council tests 11 passed in isolation (patch target preserved); ruff/compile clean; `main.py` 487→49; diff scope limited to `apps/api/app/**` + the new test + docs. CI (api-tests, compose-smoke) pending on the PR
+- Method: CI run 28759105408 all 6 jobs green on head `65c3286` plus Orchestrator's independent 3.12-venv run — **route table byte-identical `origin/main` vs working tree (43 (method,path) pairs, empty diff)**; api 94 (92 unchanged + 2 inventory guards); FakeRedis jobs/schedules/council 11 in isolation; ruff/compile clean; `main.py` 487→49
 - Evidence: route table identical before/after (the refactor guard); all prior tests pass unchanged; 10 `routes/*.py` modules
 - Limitations: none — pure refactor, no behavior change
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Required Next Verifier: None — package merged and reconciled
 
 ## In Scope Now
 
-- AOS-APIROUTES-001 (Plane AOS-24): split `apps/api/app/main.py` into per-domain `APIRouter` modules. Behavior-preserving; no new endpoints.
+- Nothing active. Next: AOS-COUNCIL-002 (Agent Council Dashboard, reframed around the Control Tower IA). Awaiting operator go-ahead.
 
 ## Out Of Scope Now
 

@@ -363,23 +363,18 @@ Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligenc
 
 ## Control-Plane Hardening (open)
 
-Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator chose "route split first, then AOS-COUNCIL-002." AOS-COUNCIL-002 will be reframed around the Control Tower IA (not a bolted-on panel).
+Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator chose "route split first, then AOS-COUNCIL-002." AOS-APIROUTES-001 (PR #50, AOS-24 Done) merged. Next: AOS-COUNCIL-002, reframed around the Control Tower IA (not a bolted-on panel) — awaiting operator go-ahead. Critique's substrate priorities to follow: AOS-23 (knowledge read path), AOS-21 (second repo), AOS-20 (doc-staleness), AOS-22 (backups).
 
 ### AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening)
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
-- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned — see HANDOFF branch note)
-- Plane: AOS-24 (In Progress)
-- PR: to be opened
+- PR: #50
+- Plane: AOS-24 (Done)
 - Spec: `.archetype/work/AOS-APIROUTES-001.md`
-- Goal: pure behavior-preserving split of `apps/api/app/main.py` (487 lines / 39 routes) into per-domain `APIRouter` modules under `apps/api/app/routes/`. No endpoint/schema/behavior change. `main.py` → 49 lines; a route-inventory equivalence test freezes the (method, path) set.
-- Verification Status: Verification pending
-- Verification Level: Level 4
-- Verification Method: Orchestrator independently (3.12 venv) **diffed the full route table `origin/main` vs working tree → byte-identical (43 (method,path) pairs, empty diff)**; api suite **94 passed** (92 prior unchanged + 2 inventory guards); FakeRedis jobs/schedules/council tests **11 passed in isolation** (the `main.redis.Redis.from_url` patch target preserved); ruff/compile clean; diff scope limited to `apps/api/app/**` + the new test (+ docs). CI (api-tests, compose-smoke boots the api image) pending on the PR.
-- Evidence: route table identical before/after; `main.py` 487→49; 10 `routes/*.py` modules; all prior tests pass unchanged
-- Limitations: none — no behavior change; `/health` stays app-level in `main.py`
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28759105408 all 6 jobs green on head `65c3286` (incl. compose-smoke booting the api image from the split package) plus Orchestrator's independent 3.12-venv run: **route table byte-identical `origin/main` vs working tree (43 (method,path) pairs, empty diff)**, api 94 (92 unchanged + 2 inventory guards), FakeRedis jobs/schedules/council 11 in isolation (patch target preserved), ruff/compile clean, `main.py` 487→49. Merge commit `2c5cdcb`. Pure behavior-preserving refactor — API now modular (10 `routes/*.py`). Also documented the env-pinned branch constraint in HANDOFF + Playbook (Decision 2a).
+- Required Next Verifier: None.
 
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 

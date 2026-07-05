@@ -13,7 +13,7 @@ Every new engineering session should read this before planning or implementation
 - Current sprint: Sprint 2 — Operating Loop and first runtime proof
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
-- Plane status: back online as of 2026-07-05; `ArchetypeOS` project seeded (AOS-1..AOS-9); markdown state files remain the durable fallback board
+- Plane status: `ArchetypeOS` project live and seeded (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); briefly down again late 2026-07-05 (AOS-3 → Done update pending); markdown state files remain the durable fallback board and win on conflict
 
 ## Recently Merged
 
@@ -31,10 +31,12 @@ Every new engineering session should read this before planning or implementation
 - PR #14: Repository Scanner MVP (AOS-RUNTIME-002)
 - PR #15: Post-merge state reconciliation for AOS-RUNTIME-002
 - PR #21: Build Process Hardening (AOS-PROC-001)
+- PR #22: Post-merge state reconciliation for AOS-PROC-001
+- PR #23: Knowledge Vault Seed (AOS-KNOW-001)
 
 ## Current Objective
 
-AOS-KNOW-001 — Knowledge Vault Seed is in progress on this branch; PR to be opened.
+Reconcile state after the PR #23 merge, then pick the next package from Plane/board: AOS-4 (scan history), AOS-5 (architecture graph API), AOS-7 (WSL local verification), AOS-8 (control tower slice), or AOS-9 (Plane sync discipline).
 
 ## Active Branch
 
@@ -53,15 +55,15 @@ AOS-KNOW-001 — Knowledge Vault Seed is in progress on this branch; PR to be op
 
 - Status: Verification pending
 - Level: Level 1
-- Method: repository inspection of the vault structure against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, plus local PR Guardian run on the diff; GitHub CI pending after PR creation.
-- Evidence: vault tree matches the required structure; wiki pages refreshed from state docs; manifest updated.
-- Limitations: content-only change, no executable surface; `KnowledgePage` API read path deferred.
+- Method: post-merge state-file reconciliation; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-KNOW-001 itself is Verified (Level 3, PR #23, CI run 28728964219 all green).
+- Evidence: state files reconciled to the PR #23 merge (`87fa769`)
+- Limitations: Plane temporarily down at merge time — AOS-3 → Done update pending on the board; markdown carries state per the precedence rule
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- knowledge vault seed
-- state updates
+- post-merge state reconciliation for PR #23
+- next-package selection from the board
 
 ## Out Of Scope Now
 
@@ -89,7 +91,7 @@ AOS-KNOW-001 — Knowledge Vault Seed is in progress on this branch; PR to be op
 
 ## Next Recommended Task
 
-Merge the AOS-KNOW-001 PR after CI passes. Then pick the next package from Plane (AOS-4, AOS-5, AOS-7, AOS-8, or AOS-9).
+Merge this state reconciliation PR after CI passes. Then pick the next package from the board (AOS-4, AOS-5, AOS-7, AOS-8, or AOS-9); Orchestrator recommendation: AOS-5 — architecture graph API (models exist, Opus-delegable, strong CI verification, unlocks the control tower).
 
 ## Required Reading For New Sessions
 

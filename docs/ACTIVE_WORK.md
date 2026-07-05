@@ -172,6 +172,22 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Notes: Level 4 evidence — GitHub CI run 28730415566 all green plus Orchestrator-driven headless-Chromium verification (10/10 checks). Merge commit `32399e0`. Added `GET /repositories/{id}/dna`.
 - Required Next Verifier: None.
 
+### AOS-RUNTIME-003 — Repository Scan Persistence and History
+
+- Status: In Review
+- Owner: Runtime Agent
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-4 (In Progress)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-RUNTIME-003.md`
+- Goal: Versioned scan artifact files (fixes rescan overwrite bug), per-repository scan history list, stored-report retrieval.
+- Verification Status: Verification pending
+- Verification Level: Level 2
+- Verification Method: local ruff/compileall/pytest (32 API tests incl. 4 new history tests, one an overwrite regression) in isolated remote session; GitHub CI pending on PR
+- Evidence: exit codes 0; independent Orchestrator re-run confirmed 32 passed
+- Limitations: SQLite locally; artifact retention/pruning explicitly out of scope
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+
 ## Blocked Work
 
 - None. Plane is back online and fully synced (AOS-3 and AOS-5 marked Done). Workstation `teevee-1` is confirmed available via Tailscale, unblocking AOS-LOCAL-001.

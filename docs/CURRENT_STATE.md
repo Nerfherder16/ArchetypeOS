@@ -9,8 +9,8 @@ Every new engineering session should read this before planning or implementation
 ## Status
 
 - Project: ArchetypeOS
-- Phase: v0.1 COMPLETE (2026-07-05) — Phase 10 Alpha Review merged (PR #37); post-v0.1 planning next
-- Current sprint: none — Sprint 3 closed with AOS-ALPHA-001; next sprint awaits user direction
+- Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
+- Current sprint: Sprint 4 — Self-Healing & Learning Loop (operator-approved principle: every PR, learning moment, and failure ties back into the loops; guardian and the system get better as we go)
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -50,7 +50,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-v0.1 is complete. No active work package. Next objective is post-v0.1 planning: pick from the ranked, evidence-backed candidates in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance) — first candidate is the `/health` Redis-degradation fix (decision already recorded during the alpha run).
+Sprint 4 package 1: AOS-RUNTIME-004 (/health graceful degradation, Plane AOS-13) in review on this branch — closes Alpha Review finding #1 and demonstrates the feedback loop end-to-end (live self-found failure → recorded decision → fix → verified). Next in sprint: AOS-LEARN-002 (Learning Feedback Loop, RFC-0004) and AOS-PRG-003 (guardian evolution).
 
 ## Active Branch
 
@@ -67,16 +67,16 @@ v0.1 is complete. No active work package. Next objective is post-v0.1 planning: 
 
 ## Verification Status
 
-- Status: Verified
+- Status: Verification pending
 - Level: Level 4
-- Method: AOS-ALPHA-001 merged under the Manual Merge Gate — GitHub CI run 28744117867 (all 5 jobs green on `bf2f4c6`) plus the live self-evaluation run as Level 4 evidence
-- Evidence: merge commit `74c2406`; `.archetype/alpha/` captured outputs; `docs/ALPHA_REVIEW_V0_1.md`
-- Limitations: none outstanding for v0.1; known open defect (/health without Redis) is recorded as a decision, not a verification gap
-- Required Next Verifier: None — next verification cycle starts with the first post-v0.1 package
+- Method: local ruff/compileall/pytest (55 tests incl. 3 new health tests) + Orchestrator live probe of both health states (without Redis → 200 degraded, the exact alpha-run reproduction; with real redis-server → 200 ok all-true); GitHub CI pending after PR creation
+- Evidence: exit codes 0; live curl outputs in the PR body; conftest hermeticity hardened (Redis pinned to a dead port so the degraded assertion holds on machines running a real local Redis, e.g. teevee-1)
+- Limitations: worker Redis-loop resilience out of scope
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Post-v0.1 planning only (no active package)
+- Sprint 4 package 1: /health graceful degradation (AOS-RUNTIME-004)
 
 ## Out Of Scope Now
 
@@ -103,7 +103,7 @@ v0.1 is complete. No active work package. Next objective is post-v0.1 planning: 
 
 ## Next Recommended Task
 
-Plan post-v0.1 work from `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance). Recommended first package: `/health` Redis graceful degradation (smallest, highest-signal; decision recorded with research linkage). Larger candidates (architecture-graph semantics, doc-staleness detection, digest breadth) should open as scoped work packages, with RFCs where they exceed the v0.1 scope lock.
+Merge the AOS-RUNTIME-004 PR after CI passes under the Manual Merge Gate. Then AOS-LEARN-002 (Learning Feedback Loop, RFC-0004) followed by AOS-PRG-003 (guardian evolution) complete Sprint 4.
 
 ## Required Reading For New Sessions
 

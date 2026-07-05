@@ -40,12 +40,18 @@ def on_startup() -> None:
 def health() -> dict:
     db_ok = False
     redis_ok = False
-    with engine.connect() as connection:
-        connection.execute(text("select 1"))
-        db_ok = True
-    client = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
-    redis_ok = bool(client.ping())
-    return {"status": "ok", "api": True, "database": db_ok, "redis": redis_ok}
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("select 1"))
+            db_ok = True
+    except Exception:
+        db_ok = False
+    try:
+        client = redis.Redis.from_url(settings.redis_url, socket_connect_timeout=1, socket_timeout=1)
+        redis_ok = bool(client.ping())
+    except Exception:
+        redis_ok = False
+    return {"status": "ok" if (db_ok and redis_ok) else "degraded", "api": True, "database": db_ok, "redis": redis_ok}
 
 
 @app.post("/projects", response_model=ProjectRead)

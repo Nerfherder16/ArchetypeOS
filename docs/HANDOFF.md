@@ -14,46 +14,46 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Orchestrator (Fable 5) — no builder delegation; this package is execution + interpretation, the Orchestrator's verification role
+Runtime Agent (Opus) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-ALPHA-001 — Phase 10 Alpha Review: ArchetypeOS evaluates ArchetypeOS (Plane AOS-12; Sprint 3 capstone), folding in the AOS-LEARN-001 (PR #36) reconciliation
+AOS-RUNTIME-004 — /health graceful degradation (Plane AOS-13; Sprint 4 package 1, first package under the operator's feedback-loop principle)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8b39e67`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `cb21414`)
 
 ### PR
 
-#37 — MERGED (merge commit `74c2406`, Verified at Level 4 under the Manual Merge Gate: CI run 28744117867 all green + the live self-evaluation run).
+To be opened.
 
 ### Status
 
-Merged — **Sprint 3 and v0.1 are complete.** Plane AOS-1..AOS-12 all Done. This reconciliation is the final v0.1 change; no active work package remains. AOS-LEARN-001 merged earlier the same day as `8b39e67` (PR #36).
+In Review — fix + 3 tests implemented, Orchestrator live-verified both health states (degraded without Redis = the alpha reproduction now 200; all-ok with real redis-server unchanged). Sprint 3 / v0.1 closed earlier today (PRs #37, #38).
 
 ### Completed
 
-- Full v0.1 loop run against this repository through the public API (`REPOSITORY_ROOT=/home/user`, sqlite, real Redis): register, two self-scans (versioned artifacts), DNA, architecture graph, research note + two decisions from live findings, digest twice, end-to-end worker job, health probed with and without Redis.
-- All five Phase 10 questions answered with evidence in `docs/ALPHA_REVIEW_V0_1.md`; captures committed under `.archetype/alpha/`.
-- Live defect found and recorded as a linked decision: `GET /health` 500s when Redis is unreachable.
-- Learning loop validated: digest caught the deliberately unlinked decision as a draft-only suggestion; repeated-task detection counted 2 scans.
-- PR #36 reconciled (AOS-LEARN-001 → Merged; Plane AOS-11 Done; AOS-12 In Progress).
+- `health()` probes each wrapped independently: probe failure → flag False, `status` "degraded", always HTTP 200; response keys unchanged (`status`/`api`/`database`/`redis`).
+- 3 new tests in `apps/api/tests/test_health.py` (degraded-Redis, all-ok via stubbed ping, degraded-DB via patched connect); 55 total.
+- Orchestrator review remediation: conftest `REDIS_URL` pinned to a dead port (9999) — the degraded assertion must hold on machines running a real local Redis (teevee-1); hermeticity lesson from AOS-LOCAL-001 applied forward.
+- Sprint 4 opened in Plane (cycle `b0547f2d`): AOS-13 In Progress, AOS-14/AOS-15 Ready.
 
 ### Files changed
 
-- `docs/ALPHA_REVIEW_V0_1.md` (new), `.archetype/alpha/` (new captures)
-- `.archetype/work/AOS-ALPHA-001.md` (new spec)
+- `apps/api/app/main.py` (health() only), `apps/api/tests/test_health.py`, `apps/api/tests/conftest.py` (one line + comment)
+- `.archetype/work/AOS-RUNTIME-004.md` (new spec)
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- No code changes; `PYTHONPATH=apps/api pytest apps/api/tests -q` re-run required green (52 passed) before push
-- Guardian self-run captured to `.archetype/alpha/self-guardian.txt`
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` → 55 passed (Opus run and Orchestrator re-run)
+- `python3 -m ruff check apps/api` + compileall → exit 0
+- Live probes on uvicorn: without Redis → `{"status":"degraded",...,"redis":false}` HTTP 200 (alpha reproduction fixed); with redis-server on 6390 → `{"status":"ok",...}` HTTP 200
 
 ### Known Risks
 
-- Alpha findings are recorded as decisions, not fixed in-package (scope: read-only evaluation). The /health defect remains live until the post-v0.1 fix package.
+- Compose healthchecks treat HTTP 200 as healthy; a degraded-Redis API now reports healthy at transport level. Acceptable: body carries the truth, and the alternative (500) hid db/api status entirely. Revisit if orchestrators need hard-fail semantics.
 
 ### Blockers
 
@@ -61,7 +61,7 @@ Merged — **Sprint 3 and v0.1 are complete.** Plane AOS-1..AOS-12 all Done. Thi
 
 ### Verification Status
 
-Verified
+Verification pending
 
 ### Verification Level
 
@@ -69,16 +69,15 @@ Level 4
 
 ### Verification Method
 
-The review was itself the Level 4 run: every artifact produced by live API calls against the running system on the declared self-target. GitHub CI run 28744117867 all 5 jobs green on `bf2f4c6`; merged under the Manual Merge Gate as `74c2406`.
+Local ruff/compileall/pytest (55) + Orchestrator live probe of both health states on running uvicorn. GitHub CI pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
-- `.archetype/alpha/self-scan.json`, `self-dna.json`, `self-architecture.json`, `self-decisions.json`, `self-digest.json`, `self-job.json`, `self-health.json`, `self-guardian.txt`
-- `docs/ALPHA_REVIEW_V0_1.md` conformance table: 11/11 v0.1 acceptance criteria assessed, all Met (one "Met with defect")
+- Command exit codes 0; live curl outputs in the PR body; spec criteria mapped to named tests.
 
 ### Limitations
 
-Dashboard leg covered by the PR #36 browser drive (same code, hours earlier) rather than re-driven. Deterministic evaluation only per scope lock.
+Worker Redis-loop resilience out of scope (separate package if needed).
 
 ### Required Next Verifier
 
@@ -86,7 +85,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Post-v0.1 planning with the user. Pick from the Alpha Review's Next Development Guidance (first: /health Redis degradation fix, decision already recorded). Do not start a package without direction; anything beyond the v0.1 scope lock needs an RFC.
+Merge the AOS-RUNTIME-004 PR after CI passes. Sprint 4 continues: AOS-LEARN-002 (Learning Feedback Loop, RFC-0004), then AOS-PRG-003 (guardian evolution).
 
 ## Handoff Template
 

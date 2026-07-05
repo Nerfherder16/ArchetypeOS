@@ -132,7 +132,7 @@ jobs:
       - name: Validate compose config
         run: docker compose config
       - name: Build runtime images
-        run: docker compose build api worker web
+        run: docker compose build api worker web scheduler
       - name: Start core services
         run: docker compose up -d postgres redis api
       - name: Wait for API health
@@ -146,8 +146,8 @@ jobs:
           docker compose ps
           docker compose logs postgres redis api
           exit 1
-      - name: Start worker and web
-        run: docker compose up -d worker web
+      - name: Start worker, web, and scheduler
+        run: docker compose up -d worker web scheduler
       - name: Verify web responds
         run: |
           for i in {1..30}; do

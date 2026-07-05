@@ -209,6 +209,19 @@ class Job(AuditMixin, Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
+class Schedule(AuditMixin, Base):
+    __tablename__ = "schedules"
+
+    project_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("projects.id"), index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    job_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    interval_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+
+
 class Agent(AuditMixin, Base):
     __tablename__ = "agents"
 

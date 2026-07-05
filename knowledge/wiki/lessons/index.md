@@ -40,6 +40,7 @@ Single registry for learning events per RFC-0004. Every guardian BLOCK, CI failu
 | [[LES-008]] | 2026-07-05 | review-remediation | Opaque identifiers (UUIDs/SHAs) are copied from tool output or fetched at write time — never reconstructed from memory | PR #42 prep, self-caught | closed | Corrected registry row; registry-verification practice; guardian format-check candidate |
 | [[LES-009]] | 2026-07-05 | process | A dated warning-acceptance (`review_by`) is a forcing function — the expiry drove the web-tests package before 2026-08-01 rather than letting the gap persist; the accepted-warnings mechanism (AOS-PRG-003) worked as designed | PR #42 → AOS-WEB-001 | closed | AOS-WEB-001: acceptance retired by real Playwright tests + guardian enforcement |
 | [[LES-010]] | 2026-07-05 | process | Moving code across a package boundary must carry its test-enforcement with it — extract to `packages/aos_core/` without extending the guardian and the "code changed without tests" BLOCK goes blind to the moved code | AOS-CORE-001 | closed | AOS-CORE-001: `missing-core-tests` guardian rule + tests added in the same change set |
+| [[LES-011]] | 2026-07-05 | review-remediation | compose-smoke builds an explicit service list — a new compose service must be added to its build/up steps or it ships CI-unverified | AOS-SCHED-001 review, self-caught | closed | ci.yml fix; build-all hardening noted |
 
 ## Update rule
 

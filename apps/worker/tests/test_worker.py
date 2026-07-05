@@ -163,3 +163,11 @@ def test_retry_then_fail(worker_db):
         assert job.error
     # Re-enqueued on every attempt except the final (failing) one.
     assert len(client.queue) == worker.MAX_ATTEMPTS - 1
+
+
+def test_queue_is_single_sourced_from_core():
+    # The worker's QUEUE must be the shared aos_core constant, not a local
+    # literal (RFC-0007 / AOS-SCHED-001: one job-origination source of truth).
+    from aos_core.services.jobs import QUEUE as CORE_QUEUE
+
+    assert worker.QUEUE is CORE_QUEUE

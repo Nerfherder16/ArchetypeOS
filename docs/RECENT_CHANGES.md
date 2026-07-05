@@ -127,9 +127,17 @@ Operator-approved 2026-07-05: extract an installable `aos_core` package both app
 
 - PR #45: AOS-CORE-001 — extract aos_core shared package, RFC-0006 Phase 1 (merge commit `5d00a18`): `packages/aos_core/` (config/database/models/scanner moved verbatim + new scan/digest services); api reduced to routes + schemas; repo-root api Docker context; alembic + guardian scanner fallback retargeted; guardian BLOCKs `packages/aos_core/` changes without tests (LES-010). Zero behavior change. Verified at Level 4 — CI run 28753264841 all 6 jobs green + Orchestrator 3.12-venv run (69 tests, 67 unchanged; no-drift 0 ops; guardian works without aos_core installed).
 
+### Sprint 5 Merged (continued 3)
+
+- PR #46: AOS-WORKERRUN-001 — worker runs scan/digest jobs, RFC-0006 Phase 2 (merge commit `3fe8afb`): the worker imports `aos_core` and runs `repository_scan` → `run_scan` / `project_digest` → `build_digest` off the Redis queue with attempt-based retries; `config.py` deleted; worker Docker repo-root context. Verified at Level 4 — CI run 28753706406 all 6 jobs green + Orchestrator 3.12-venv run (5 worker tests incl. the e2e scan-job persistence proof).
+
+### RFC-0007 Accepted — Scheduling & Control-Plane Job Origination
+
+Operator-directed after weighing the mature-state architecture (roadmap Phase 5: "the control plane decides and stores; nodes execute"). Scheduling is a control-plane concern backed by schedules-as-data, decoupled from executors — not an in-worker loop (which would duplicate every recurring task once a second node exists). `docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md`. Cheap now because AOS-17 (Alembic) + AOS-CORE-001 (aos_core) landed.
+
 ### Current Work
 
-AOS-WORKERRUN-001 (RFC-0006 Phase 2) in review on this branch — the worker now imports `aos_core` and runs real jobs off the Redis queue: `run_job` dispatches `repository_scan` → `run_scan` and `project_digest` → `build_digest` (+ persist), with a `handle_failure` retry helper (re-enqueue up to `MAX_ATTEMPTS=3` then `failed`); the `test` job and `QUEUE` string are preserved; `apps/worker/app/config.py` deleted (uses `aos_core.config`); worker Docker repo-root build context. Orchestrator verified on a 3.12 venv: 5 worker tests pass incl. `test_run_scan_job` (enqueue → run_job → Artifact + RepositoryDNA rows exist); api 69 unaffected. Delivers scans/digests as queued jobs.
+AOS-SCHED-001 (RFC-0007 backend seed / Phase 3a) in review on this branch — a `Schedule` model + **Alembic migration `0002` (the first real migration; no-drift probe = 0 ops)**; `aos_core.services.jobs.enqueue_job` (one origination path, `QUEUE` constant shared by api + worker); `aos_core.services.scheduler.run_due_schedules` (tested tick); a single-instance control-plane `apps/scheduler` service; Schedule CRUD + run-now API. Orchestrator verified on a 3.12 venv: 75 api tests (69 + 6 new), worker 5 unchanged, `0002` no-drift clean; added the scheduler to the compose-smoke build/up lists (review remediation, LES-011). Dashboard is AOS-SCHED-002.
 
 ### Why It Matters
 

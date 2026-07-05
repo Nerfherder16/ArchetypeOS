@@ -322,18 +322,29 @@ Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (w
 
 ### AOS-WORKERRUN-001 — Worker Runs Scan/Digest Jobs (RFC-0006 Phase 2)
 
+- Status: Merged
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- PR: #46
+- Plane: AOS-18 (In Progress — 3-phase tracker; Phase 2 done)
+- Spec: `.archetype/work/AOS-WORKERRUN-001.md`
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28753706406 all 6 jobs green (compose-smoke built the worker image from the new context) + Orchestrator 3.12-venv run (5 worker tests incl. the e2e scan-job persistence proof; api 69 unchanged). Merge commit `3fe8afb`. Scans/digests now run as queued jobs.
+- Required Next Verifier: None.
+
+### AOS-SCHED-001 — Scheduler Seed: Schedules-as-Data + Control-Plane Scheduler (RFC-0007 / RFC-0006 Phase 3a)
+
 - Status: In Review
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-18 (In Progress — Phase 2 of 3), Sprint 5 cycle
+- Plane: AOS-18 (In Progress — Phase 3a of 3), Sprint 5 cycle
 - PR: to be opened
-- Spec: `.archetype/work/AOS-WORKERRUN-001.md`
-- Goal: the worker imports `aos_core` and runs real `repository_scan` / `project_digest` jobs off the Redis queue (via `run_scan` / `build_digest`), with attempt-based retries (re-enqueue up to 3× then fail); `test` job + `QUEUE` string preserved; worker Docker repo-root context. Delivers scans/digests as queued jobs.
+- Spec: `.archetype/work/AOS-SCHED-001.md`; RFC: `docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md` (Accepted)
+- Goal: schedules-as-data (`Schedule` model + Alembic migration `0002` — the first real migration) + a single-instance control-plane `apps/scheduler` service that materializes due schedules into jobs, via one shared `aos_core.services.jobs.enqueue_job` path; Schedule CRUD + run-now API. Backend seed (dashboard is AOS-SCHED-002).
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator independently ran the worker suite on a 3.12 venv — **5 passed**, incl. `test_run_scan_job` (enqueue → run_job → Artifact + RepositoryDNA rows exist), digest job, backward-compat test job, retry-then-fail — plus api suite (69, unchanged) + ruff/compileall; CI worker-tests (installs aos_core) + compose-smoke (worker image from new context) pending on PR
-- Evidence: 5 worker tests pass incl. the e2e scan-job persistence proof; api 69 unaffected; config.py deleted; worker imports aos_core
-- Limitations: worker Docker restructure proven only by CI compose-smoke; scheduling + dashboard enqueue is Phase 3
+- Verification Method: Orchestrator independently verified on a 3.12 venv — migration `0002` upgrade → 22 tables incl. `schedules`, no-drift probe = 0 ops; api suite **75 passed** (69 + 6 new: schedule CRUD, run-now, `run_due_schedules` tick, disabled-skip); worker 5 unchanged; ruff clean incl. `apps/scheduler`. Review remediation: added the scheduler to the compose-smoke build/up lists (LES-011). CI compose-smoke (migration `0002` on Postgres + scheduler container builds/boots) pending on PR
+- Evidence: no-drift 0 ops after `0002`; 75 api tests; `run_due_schedules` enqueues due + skips not-due/disabled; scheduler service + compose block
+- Limitations: interval-based cadence only (no cron yet); single-instance scheduler (HA deferred per RFC-0007); dashboard is AOS-SCHED-002
 - Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator
 
 ## Blocked Work

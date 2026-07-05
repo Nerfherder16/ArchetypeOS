@@ -39,10 +39,12 @@ Every new engineering session should read this before planning or implementation
 - PR #27: Engineering Control Tower first dashboard surface (AOS-CTRL-001)
 - PR #28: Post-merge state reconciliation for AOS-CTRL-001
 - PR #29: Repository scan persistence and history (AOS-RUNTIME-003)
+- PR #30: Plane board sync discipline (AOS-PLANE-001)
+- PR #31: Executable-bit fix for shell scripts (AOS-LOCAL-001 finding 1)
 
 ## Current Objective
 
-AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs) is in review on this branch, folding in the PR #29 reconciliation; PR to be opened. This closes the remote Sprint 2 board; AOS-LOCAL-001 runs on `teevee-1` tomorrow.
+AOS-LOCAL-001 executed on `teevee-1`: the full runtime is Verified at Level 4 on the declared Windows 11 + WSL 2 target. This branch carries the Level 4 handoff plus remediations (test hermeticity, port guidance); Sprint 2 completes when it merges.
 
 ## Active Branch
 
@@ -59,17 +61,16 @@ AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs) is in review o
 
 ## Verification Status
 
-- Status: Verification pending
-- Level: Level 1
-- Method: repository inspection of the Sync Discipline section and board id registry against the live Plane project; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-RUNTIME-003 itself is Verified (Level 3, PR #29, CI run 28730851673 all green).
-- Evidence: id registry matches the API responses captured this session; state files reconciled to the PR #29 merge (`7697265`)
-- Limitations: docs-only; two-way sync automation deferred
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Status: Verified
+- Level: Level 4
+- Method: operator-executed AOS-LOCAL-001 runbook on `teevee-1` (Windows 11 + WSL 2): compose runtime, health, dashboard-driven scan loop, scan history, read-only mount probe; hermeticity fix verified locally (32/32 with and without `.env`)
+- Evidence: `/health` all true with real Redis; two versioned scan artifacts; "Read-only file system" write probe; post-reload dashboard screenshot; five findings recorded and remediated (see `.archetype/work/AOS-LOCAL-001.md`)
+- Limitations: guardian script not yet re-run on the target post-fixes (its commands are CI-covered)
+- Required Next Verifier: GitHub CI / PR Guardian on the handoff PR, then Orchestrator
 
 ## In Scope Now
 
-- Plane board sync discipline (AOS-PLANE-001)
-- PR #29 reconciliation
+- AOS-LOCAL-001 Level 4 handoff + remediations (test hermeticity, port guidance)
 
 ## Out Of Scope Now
 
@@ -88,7 +89,7 @@ AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs) is in review o
 | Agent dashboard implementation | First surface shipped | AOS-CTRL-001 merged (PR #27); richer views come after scan history (AOS-4). |
 | Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
-| Local Level 2 verification | Unblocked | Workstation `teevee-1` available via Tailscale; execute AOS-LOCAL-001 there. |
+| Local Level 2 verification | Done | AOS-LOCAL-001 executed on `teevee-1` 2026-07-05; runtime Verified at Level 4 on the declared target. |
 
 ## Blockers
 
@@ -96,7 +97,7 @@ AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs) is in review o
 
 ## Next Recommended Task
 
-Merge the AOS-PLANE-001 PR after CI passes under the Manual Merge Gate — that closes the remote Sprint 2 board. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the dashboard.
+Merge the AOS-LOCAL-001 handoff PR after CI passes under the Manual Merge Gate — Sprint 2 is then fully complete. Next sprint candidates: AOS-PRG-002 (guardian reads scanner output, now unblocked by scan history), nightly digest (Phase 7), decision/research CRUD (Phase 5).
 
 ## Required Reading For New Sessions
 

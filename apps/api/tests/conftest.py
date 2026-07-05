@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 
 import pytest
@@ -5,12 +6,21 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.database import Base, get_db
-from app.main import app, settings
+# Pin runtime settings before any app import so the suite is hermetic when a
+# local .env exists (its docker-network hostnames are unreachable from the
+# host — AOS-LOCAL-001 finding). Environment variables take precedence over
+# .env in pydantic-settings, so this forces the same defaults CI runs with.
+os.environ["DATABASE_URL"] = "sqlite:///./archetypeos_dev.db"
+os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+os.environ["ARTIFACT_ROOT"] = "./data/artifacts"
+os.environ["REPOSITORY_ROOT"] = "./repositories"
 
 
 @pytest.fixture()
 def client(tmp_path) -> Generator[TestClient, None, None]:
+    from app.database import Base, get_db
+    from app.main import app, settings
+
     repository_root = tmp_path / "repositories"
     repository_root.mkdir()
     settings.repository_root = repository_root

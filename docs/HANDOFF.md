@@ -14,11 +14,11 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Orchestrator (Fable 5)
+Human operator on `teevee-1` with Orchestrator (Fable 5) remote support
 
 ### Task
 
-AOS-PLANE-001 — Plane Board Sync Discipline (Plane AOS-9), folding in the AOS-RUNTIME-003 (PR #29) post-merge reconciliation
+AOS-LOCAL-001 — WSL Windows 11 Local Verification (Plane AOS-7); first Level 4 runtime verification on the declared v0.1 target
 
 ### Branch
 
@@ -26,37 +26,42 @@ AOS-PLANE-001 — Plane Board Sync Discipline (Plane AOS-9), folding in the AOS-
 
 ### PR
 
-To be opened.
+To be opened (handoff + remediations).
 
 ### Status
 
-In Review — docs complete, PR pending. AOS-RUNTIME-003 is Merged (PR #29, `7697265`, Verified at Level 3, CI run 28730851673).
+Verification executed and Verified; PR pending.
 
 ### Completed
 
-- Sync Discipline section in `docs/PLANE_PROJECT_BLUEPRINT.md`: Plane update points (start/PR/merge), markdown update points (in-PR + reconciliation), conflict rule (markdown wins, fix Plane to match), outage handling (pending-updates list — exercised twice on 2026-07-05).
-- Board ID Registry: project, cycle, state, work-item (with work package + spec mapping), and module UUIDs recorded so future sessions update Plane idempotently without discovery calls.
-- `docs/ACTIVE_WORK.md` update rule now points at the discipline; AOS-RUNTIME-003 marked Merged; AOS-PLANE-001 entry added.
-- Plane board synced: AOS-4 Done, AOS-9 In Progress.
+- Full compose runtime brought up on Windows 11 + WSL 2: six services healthy; `GET /health` returned all true — the first fully healthy stack including real Redis in the project's history.
+- Operator drove the complete loop through the control tower dashboard: project created, repository registered by local path, scanned twice.
+- Scan history verified via API: two `repository-scan-<uuid>.json` artifacts, identical checksums (deterministic scanner), distinct files (no overwrite).
+- Read-only guarantee proven at the container runtime: write probe inside the api container rejected with "Read-only file system" (probed twice).
+- Five findings recorded (see `.archetype/work/AOS-LOCAL-001.md`); remediations in PR #31 (exec bit) and this PR (test hermeticity via conftest env pinning — verified 32/32 with and without a local `.env`; `.env.example` co-hosting port guidance).
+- PR #30 (AOS-PLANE-001) and PR #31 reconciled into the state files.
 
 ### Files changed
 
+- `apps/api/tests/conftest.py`
+- `.env.example`
+- `.archetype/work/AOS-LOCAL-001.md` (new)
+- `.archetype/work/AOS-PLANE-001.md`
 - `docs/PLANE_PROJECT_BLUEPRINT.md`
 - `docs/ACTIVE_WORK.md`
 - `docs/CURRENT_STATE.md`
 - `docs/HANDOFF.md`
 - `docs/RECENT_CHANGES.md`
-- `.archetype/work/AOS-PLANE-001.md`
-- `.archetype/work/AOS-RUNTIME-003.md`
 
 ### Tests run
 
-Docs-only: local PR Guardian on the diff; GitHub CI on the PR.
+- On `teevee-1`: compose up (6/6 healthy), health endpoint, dashboard loop, scan history API, read-only probe.
+- In the orchestration session: `.env`-coupling bug reproduced, fixed, and verified — `PYTHONPATH=apps/api pytest apps/api/tests -q` 32 passed with `.env` present and absent; ruff clean.
 
 ### Known Risks
 
-- Board UUIDs in the registry go stale if the Plane project is ever recreated — the registry must be updated in the same change.
-- Two-way sync automation remains deferred; the discipline is manual protocol.
+- Guardian script not yet re-run on the target post-fixes; its constituent commands are CI-covered on these commits.
+- Operator Python 3.13 vs pinned 3.12 remains an environment footgun (documented; deadsnakes venv is the path).
 
 ### Blockers
 
@@ -64,32 +69,34 @@ Docs-only: local PR Guardian on the diff; GitHub CI on the PR.
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
-Level 1
+Level 4
 
 ### Verification Method
 
-Repository inspection of the Sync Discipline section and id registry against the live board (ids captured from API responses this session); local PR Guardian on the docs diff; GitHub CI pending on the PR.
+Operator-executed runbook on the physical runtime target (compose runtime, health, dashboard-driven scan loop, scan history API, read-only mount probe) plus orchestration-session regression verification of the hermeticity fix.
 
 ### Evidence
 
-- Id registry values match the Plane API responses recorded in this session's operating log.
-- State files reconciled to the PR #29 merge (`7697265`).
+- `docker compose ps`: six services Up/healthy; `{"status":"ok","api":true,"database":true,"redis":true}`.
+- Two versioned scan artifacts with matching checksums; post-reload dashboard screenshot (all-green health).
+- "Read-only file system" on the write probe.
+- 32/32 tests with a `.env` present (previously 20 errors).
 
 ### Limitations
 
-Docs-only change. Sync remains manual by design.
+Guardian script pending a clean local re-run; CI covers its commands.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
+GitHub CI / PR Guardian on this PR, then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge the AOS-PLANE-001 PR after CI passes — the remote Sprint 2 board is then complete. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the dashboard, recorded as a Level 4 handoff.
+Merge this PR — Sprint 2 is then fully complete (AOS-1..AOS-9 all Done). Next sprint candidates: AOS-PRG-002 (guardian reads scanner output), nightly digest (Phase 7), decision/research CRUD (Phase 5).
 
 ## Handoff Template
 

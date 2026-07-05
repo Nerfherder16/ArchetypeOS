@@ -149,17 +149,17 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-LOCAL-001 — WSL Windows 11 Local Verification
 
-- Status: Ready
-- Owner: Runtime Agent / Human operator
-- Plane: AOS-7
-- Goal: Run the full local Level 2/Level 4 verification pass on the Windows 11 + WSL 2 runtime target.
-- Notes: UNBLOCKED 2026-07-05 — workstation `teevee-1` confirmed available with Docker/WSL via Tailscale. Must be executed on that machine (human or local Claude Code session); the remote orchestration session cannot reach the tailnet.
-- Acceptance Criteria:
-  - `scripts/pre_pr_guardian.sh` passes locally on WSL
-  - `docker compose up` brings all services healthy; API/web respond
-  - a real repository is registered and scanned end to end; artifact written
-  - `/repositories` mount confirmed read-only at runtime
-  - results recorded as a Level 4 verification handoff
+- Status: In Review
+- Owner: Human operator (`teevee-1`) + Orchestrator
+- Plane: AOS-7 (In Progress; Done after this PR merges)
+- PR: to be opened (Level 4 handoff + remediations)
+- Spec: `.archetype/work/AOS-LOCAL-001.md`
+- Verification Status: Verified
+- Verification Level: Level 4
+- Verification Method: operator-executed runbook on the Windows 11 + WSL 2 runtime target — compose up, health check, dashboard-driven register/scan, scan history API, read-only mount probe; guardian commands CI-covered (local run blocked by findings 1 and 4, both now fixed)
+- Evidence: all six services healthy; `/health` all true (first time with real Redis); two versioned scan artifacts with matching checksums; "Read-only file system" on write probe; post-reload dashboard screenshot
+- Limitations: guardian script itself not yet re-run locally post-fixes; five findings recorded in the spec, all remediated or dispositioned
+- Required Next Verifier: GitHub CI / PR Guardian on this PR, then Orchestrator
 
 ### AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface
 
@@ -185,19 +185,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-PLANE-001 — Plane Board Sync Discipline
 
-- Status: In Review
+- Status: Merged
 - Owner: Chief Architect / Orchestrator
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-9 (In Progress)
-- PR: to be opened
+- PR: #30
+- Plane: AOS-9 (Done)
 - Spec: `.archetype/work/AOS-PLANE-001.md`
-- Goal: Document the manual Plane<->markdown sync protocol (update points, precedence, outage handling) and record the board id registry so agents can update Plane idempotently across sessions.
-- Verification Status: Verification pending
-- Verification Level: Level 1
-- Verification Method: repository inspection of the Sync Discipline section and id registry against the live board; local PR Guardian on the docs diff; GitHub CI pending on PR
-- Evidence: id registry matches API responses captured this session; discipline matches the exercised outage handling
-- Limitations: docs-only; two-way sync automation explicitly deferred
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+- Verification Status: Verified
+- Notes: Level 3 GitHub CI evidence in PR #30 (run 28731234910, all 5 jobs green). Merge commit `12dc5f7`. Sync Discipline + Board ID Registry live in `docs/PLANE_PROJECT_BLUEPRINT.md`.
+- Required Next Verifier: None.
 
 ## Blocked Work
 

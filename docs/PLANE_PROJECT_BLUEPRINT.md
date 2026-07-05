@@ -4,7 +4,7 @@
 
 This document defines the Plane structure for ArchetypeOS and records its live status.
 
-Plane is back online as of 2026-07-05 (power restored to the local instance). The `ArchetypeOS` project has been created and seeded per this blueprint. Plane is now the live working board; this document and the other markdown state files remain the durable fallback and win on conflict until AOS-9 defines full sync discipline. Note: the user's workstation WSL/Docker status is a separate concern and is not yet confirmed — see the WSL local-verification blocker in `docs/ACTIVE_WORK.md` / `docs/CURRENT_STATE.md`, which stays pending confirmation.
+The `ArchetypeOS` Plane project is live and is the working board; this document and the other markdown state files remain the durable fallback and win on conflict per the Sync Discipline below (AOS-PLANE-001, merged PR #30).
 
 ## Project
 
@@ -38,15 +38,15 @@ Status: live. Modules, Cycles, Pages, Intake, and Views were enabled in Project 
 
 These are the actual seeded Plane work items (identifier `AOS-<n>`), superseding the conceptual `Suggested Issues` below where they overlap:
 
-- AOS-1 — Repository Scanner MVP — Done
-- AOS-2 — Build process hardening — Done (work package `AOS-PROC-001`, PR #21 merged)
-- AOS-3 — Knowledge Vault Seed — Todo, `status/ready` (work package `AOS-KNOW-001`)
-- AOS-4 — Scan persistence/history — Backlog
-- AOS-5 — Architecture Spine Graph draft — Backlog
+- AOS-1 — Repository Scanner MVP — Done (PR #14)
+- AOS-2 — Build process hardening — Done (PR #21)
+- AOS-3 — Knowledge Vault Seed — Done (PR #23)
+- AOS-4 — Scan persistence/history — Done (PR #29)
+- AOS-5 — Architecture Spine Graph API — Done (PR #25)
 - AOS-6 — PR Guardian reads scanner output — Backlog
-- AOS-7 — WSL Win11 local verification — Todo
-- AOS-8 — Control Tower first dashboard surface — Backlog
-- AOS-9 — Plane board sync discipline — Todo
+- AOS-7 — WSL Win11 local verification — executed on `teevee-1` 2026-07-05; Done when the handoff PR merges
+- AOS-8 — Control Tower first dashboard surface — Done (PR #27)
+- AOS-9 — Plane board sync discipline — Done (PR #30)
 
 GitHub issues #16-#20 were briefly opened to mirror this seed and have since been closed as migrated to Plane; Plane is the source for these items going forward.
 
@@ -128,7 +128,7 @@ Work items:
 | AOS-4 | AOS-RUNTIME-003 | `.archetype/work/AOS-RUNTIME-003.md` | `49669cd1-6f40-4899-a36d-b568de86ee54` |
 | AOS-5 | AOS-ARCH-001 | `.archetype/work/AOS-ARCH-001.md` | `29211eaa-5e39-42e2-82f5-53f78436936b` |
 | AOS-6 | AOS-PRG-002 | TBD | `ca03441d-411c-4055-abc8-7eaf5b65c52b` |
-| AOS-7 | AOS-LOCAL-001 | TBD | `1de85361-4cf9-48a2-ab7e-191419c9cdd3` |
+| AOS-7 | AOS-LOCAL-001 | `.archetype/work/AOS-LOCAL-001.md` | `1de85361-4cf9-48a2-ab7e-191419c9cdd3` |
 | AOS-8 | AOS-CTRL-001 | `.archetype/work/AOS-CTRL-001.md` | `0f61f00b-98bd-45cd-bc59-045666b0a7b8` |
 | AOS-9 | AOS-PLANE-001 | `.archetype/work/AOS-PLANE-001.md` | `4e0f1c47-4635-4da5-bc8f-68a03e922635` |
 

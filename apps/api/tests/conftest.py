@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session, sessionmaker
 # local .env exists (its docker-network hostnames are unreachable from the
 # host — AOS-LOCAL-001 finding). Environment variables take precedence over
 # .env in pydantic-settings, so this forces the same defaults CI runs with.
+# Redis is pinned to a dead port, not 6379: health tests assert the degraded
+# state, which must hold even on machines running a real local Redis.
 os.environ["DATABASE_URL"] = "sqlite:///./archetypeos_dev.db"
-os.environ["REDIS_URL"] = "redis://localhost:6379/0"
+os.environ["REDIS_URL"] = "redis://localhost:9999/0"
 os.environ["ARTIFACT_ROOT"] = "./data/artifacts"
 os.environ["REPOSITORY_ROOT"] = "./repositories"
 

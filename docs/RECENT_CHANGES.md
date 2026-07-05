@@ -87,9 +87,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 - Operator ran the Level 4 runbook on `teevee-1` (Windows 11 + WSL 2): 6/6 services healthy, `/health` all true with real Redis (first time), dashboard-driven scan loop, two versioned scan artifacts, read-only mount probe rejected with "Read-only file system". Five findings recorded (`.archetype/work/AOS-LOCAL-001.md`); remediations: PR #31 (exec bit) and this branch (hermetic tests, `.env.example` port guidance).
 
+### Sprint 4 Opened — Self-Healing & Learning Loop
+
+Operator-approved principle: every PR, learning moment, and failure ties back into the loops; the guardian and the system itself get better as we go. Plane cycle `b0547f2d` with AOS-13 (/health fix), AOS-14 (Learning Feedback Loop, RFC-0004), AOS-15 (guardian evolution).
+
 ### Current Work
 
-None — v0.1 is complete. Post-v0.1 candidates are ranked in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance); the first is the `/health` Redis-degradation fix.
+AOS-RUNTIME-004 in review on this branch: `/health` returns 200 `degraded` instead of 500 when a probe fails — Alpha Review finding #1 closed via the full loop (live self-found failure → recorded decision → fix → both states verified live). 3 new tests (55 total); conftest Redis pinned to a dead port for hermeticity on machines with a real local Redis.
 
 ### Why It Matters
 

@@ -14,11 +14,11 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Knowledge Agent (Sonnet) under Orchestrator (Fable 5)
+Runtime Agent (Opus) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-KNOW-001 — Knowledge Vault Seed
+AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5)
 
 ### Branch
 
@@ -26,45 +26,27 @@ AOS-KNOW-001 — Knowledge Vault Seed
 
 ### PR
 
-#23 — https://github.com/Nerfherder16/ArchetypeOS/pull/23
+To be opened.
 
 ### Status
 
-Merged (merge commit `87fa769`).
+In Review — implementation complete and locally verified, PR pending.
 
 ### Completed
 
-- Built out `knowledge/` to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` structure: `raw/`, `sources/`, all 10 `wiki/` domain directories (`projects`, `repositories`, `technologies`, `decisions`, `research`, `risks`, `experiments`, `benchmarks`, `lessons`, `patterns`), `meta/graph.json`, `meta/lint-report.md`, `meta/dashboard.md`, `templates/page-template.md`.
-- Refreshed `knowledge/wiki/hot.md`, `index.md`, `overview.md` with real current content derived from `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/RECENT_CHANGES.md`, and `docs/REPOSITORY_SCANNER.md`.
-- Appended a 2026-07-05 entry to `knowledge/wiki/log.md`.
-- Updated `knowledge/.manifest.json`: `last_seen`/`last_ingested` to 2026-07-05, `checksum` to `seed-2026-07-05`, `generated_pages` extended with the new meta pages.
-- Updated `.archetype/work/AOS-KNOW-001.md`: Status to In Review, Branch recorded, and a note that the `KnowledgePage` API read path is explicitly deferred (table not yet populated by any writer).
-- Updated `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/RECENT_CHANGES.md` to reflect AOS-KNOW-001 in progress.
+- Rescan upsert in `POST /repositories/{id}/scan`: root/directory nodes and edges are matched by identity keys and updated in place, preserving node ids, status, and `manual_correction`; scan response shape unchanged.
+- `GET /projects/{project_id}/architecture` (optional `repository_id` filter) returning nodes/edges with confidence, evidence, and manual_correction, deterministically ordered.
+- `PATCH /architecture/nodes/{id}` and `PATCH /architecture/edges/{id}` updating only `manual_correction`.
+- Schemas: `ArchitectureNodeRead`, `ArchitectureEdgeRead`, `ArchitectureGraphRead`, `ArchitectureCorrectionUpdate`.
+- 5 new integration tests in `apps/api/tests/test_architecture_api.py` (graph query, repository filter, correction persistence, rescan id/correction preservation, 404s).
+- Spec `.archetype/work/AOS-ARCH-001.md` (dogfooded) and state files updated.
 
 ### Files changed
 
-- `knowledge/raw/.gitkeep`
-- `knowledge/sources/.gitkeep`
-- `knowledge/wiki/projects/.gitkeep`
-- `knowledge/wiki/repositories/.gitkeep`
-- `knowledge/wiki/technologies/.gitkeep`
-- `knowledge/wiki/decisions/.gitkeep`
-- `knowledge/wiki/research/.gitkeep`
-- `knowledge/wiki/risks/.gitkeep`
-- `knowledge/wiki/experiments/.gitkeep`
-- `knowledge/wiki/benchmarks/.gitkeep`
-- `knowledge/wiki/lessons/.gitkeep`
-- `knowledge/wiki/patterns/.gitkeep`
-- `knowledge/meta/graph.json`
-- `knowledge/meta/lint-report.md`
-- `knowledge/meta/dashboard.md`
-- `knowledge/templates/page-template.md`
-- `knowledge/wiki/hot.md`
-- `knowledge/wiki/index.md`
-- `knowledge/wiki/log.md`
-- `knowledge/wiki/overview.md`
-- `knowledge/.manifest.json`
-- `.archetype/work/AOS-KNOW-001.md`
+- `apps/api/app/main.py`
+- `apps/api/app/schemas.py`
+- `apps/api/tests/test_architecture_api.py`
+- `.archetype/work/AOS-ARCH-001.md`
 - `docs/ACTIVE_WORK.md`
 - `docs/CURRENT_STATE.md`
 - `docs/HANDOFF.md`
@@ -72,7 +54,9 @@ Merged (merge commit `87fa769`).
 
 ### Tests run
 
-None applicable (content-only change) beyond local PR Guardian and GitHub CI.
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 25 passed (20 existing + 5 new)
+- `python3 -m ruff check apps/api` (ruff 0.8.6) -> exit 0
+- `python3 -m compileall` -> exit 0
 
 ### Known Risks
 
@@ -85,33 +69,31 @@ None applicable (content-only change) beyond local PR Guardian and GitHub CI.
 
 ### Verification Status
 
-Verified
+Verification pending
 
 ### Verification Level
 
-Level 3
+Level 2
 
 ### Verification Method
 
-GitHub CI workflow run on PR #23 plus repository inspection of the vault tree against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, JSON validation, and local PR Guardian on the diff.
+Local ruff/compileall/pytest (25 API tests including 5 new architecture tests) in the isolated remote session. GitHub CI pending on the PR to be opened.
 
 ### Evidence
 
-- CI run 28728964219 on head `d501931`: all 5 jobs concluded success.
-- Manual Merge Gate verification comment posted on PR #23 pinned to `d501931`; merged as `87fa769`.
-- Vault tree matches the required structure; wiki pages refreshed from current state docs; manifest and graph.json parse clean.
+- pytest 25 passed; ruff and compileall exit 0; existing scan-endpoint tests unchanged and green.
 
 ### Limitations
 
-Content-only change. Vault pages remain `raw`-status knowledge until validated per the Safety rules. Plane was temporarily down at merge time — AOS-3 → Done board update pending; markdown carries state per the precedence rule. `KnowledgePage` API read path deferred.
+SQLite-only locally (CI exercises Python 3.12 and the compose smoke). Plane still down — AOS-3 -> Done and AOS-5 -> In Progress board updates pending; markdown carries state per the precedence rule.
 
 ### Required Next Verifier
 
-None for AOS-KNOW-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
+GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge the post-merge state reconciliation PR after CI passes, push the pending AOS-3 → Done update when Plane returns, then pick the next package (Orchestrator recommendation: AOS-5 — architecture graph API).
+Open the AOS-ARCH-001 PR, babysit CI, merge under the Manual Merge Gate, push pending Plane updates when the instance returns, then pick AOS-8 (control tower slice) or AOS-4 (scan history).
 
 ## Handoff Template
 

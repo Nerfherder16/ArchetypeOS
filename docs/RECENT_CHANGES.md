@@ -19,6 +19,10 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #22: Post-merge state reconciliation for AOS-PROC-001.
 - PR #23: AOS-KNOW-001 — Knowledge Vault Seed (merge commit `87fa769`): vault built out to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` structure, `hot.md`/`index.md`/`overview.md`/`log.md` refreshed with current content, `.manifest.json` updated, `KnowledgePage` API read path explicitly deferred. Verified at Level 3 (CI run 28728964219, all 5 jobs green).
 
+### In Progress
+
+- AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5): graph query endpoint with repository filter, node/edge manual-correction PATCH endpoints, and rescan upsert preserving node ids and corrections; 5 new integration tests (25 API tests total).
+
 ### Important Notes
 
 - Verification: Verified at Level 3. GitHub CI green on both PR heads (runs 28726472816 and 28726897393, all 5 jobs including PR Guardian and the compose smoke test), plus local ruff/compileall/pytest and a correct self-scan of the ArchetypeOS repo.
@@ -40,7 +44,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-Post-merge state reconciliation for PR #23; next package to be selected from the board (Orchestrator recommendation: AOS-5 — architecture graph API). Note: Plane briefly down again after the PR #23 merge; AOS-3 → Done board update pending.
+AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5), in review on this branch; PR to be opened. Note: Plane still down; AOS-3 → Done and AOS-5 → In Progress board updates pending.
 
 ### Why It Matters
 

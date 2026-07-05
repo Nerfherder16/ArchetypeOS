@@ -55,10 +55,11 @@ Every new engineering session should read this before planning or implementation
 - PR #43: Playwright e2e suite, enforced (AOS-WEB-001) — web tests real + guardian-enforced; LES-006 deadline closed early
 - PR #44: Adopt Alembic migrations, baseline (AOS-ALEMBIC-001) — migration path adopted, no schema change
 - PR #45: Extract aos_core shared package, RFC-0006 Phase 1 (AOS-CORE-001) — domain layer is now a shared package
+- PR #46: Worker runs scan/digest jobs, RFC-0006 Phase 2 (AOS-WORKERRUN-001) — scans/digests run as queued jobs
 
 ## Current Objective
 
-Sprint 5 package 4: AOS-WORKERRUN-001 (RFC-0006 Phase 2, Plane AOS-18) in review on this branch — the worker imports `aos_core` and runs real `repository_scan` / `project_digest` jobs off the Redis queue via `run_scan` / `build_digest`, with attempt-based retries. Delivers scans/digests as queued jobs (the "system runs itself" step). Folds in the PR #45 reconciliation. Phase 3 (AOS-SCHED-001) adds dashboard enqueue + a nightly scheduler.
+Sprint 5 package 5: AOS-SCHED-001 (RFC-0007 backend seed / RFC-0006 Phase 3a, Plane AOS-18) in review on this branch — schedules-as-data (`Schedule` model + Alembic migration `0002`, the first real migration) + a single-instance control-plane `apps/scheduler` service that turns due schedules into queued jobs via one shared `enqueue_job` path; Schedule CRUD API. Folds in the PR #46 reconciliation. The dashboard (AOS-SCHED-002) closes AOS-18.
 
 ## Active Branch
 
@@ -77,14 +78,14 @@ Sprint 5 package 4: AOS-WORKERRUN-001 (RFC-0006 Phase 2, Plane AOS-18) in review
 
 - Status: Verification pending
 - Level: Level 4
-- Method: Orchestrator independently ran the worker suite on a Python 3.12 venv — 5 passed, incl. `test_run_scan_job` (enqueue a repository_scan job → run_job → an Artifact + RepositoryDNA row exist), a digest job, the backward-compat test job, and retry-then-fail — plus the api suite (69, unchanged) + ruff/compileall clean. CI worker-tests (installs aos_core) + compose-smoke (worker image from the new repo-root context) pending after PR creation
-- Evidence: 5 worker tests pass incl. the e2e scan-job persistence proof; api 69 unaffected; `apps/worker/app/config.py` deleted; worker imports aos_core
-- Limitations: worker Docker restructure proven only by CI compose-smoke; scheduling + dashboard enqueue is Phase 3
+- Method: Orchestrator independently verified on a Python 3.12 venv — Alembic migration `0002` upgrade → 22 tables incl. `schedules`, no-drift autogenerate probe = 0 ops (the first real migration matches the model exactly); api suite **75 passed** (69 + 6 new: schedule CRUD, run-now, `run_due_schedules` tick enqueues due + skips not-due/disabled); worker 5 unchanged; ruff clean incl. `apps/scheduler`. CI compose-smoke (migration `0002` on fresh Postgres + the new scheduler container builds/boots — added to the build/up lists, LES-011) pending after PR creation
+- Evidence: no-drift 0 ops after `0002`; 75 api tests; scheduler service + compose block; one enqueue path (`aos_core.services.jobs`)
+- Limitations: interval cadence only (no cron); single-instance scheduler (HA deferred per RFC-0007); dashboard is AOS-SCHED-002
 - Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 5 package 4: worker runs scan/digest jobs (AOS-WORKERRUN-001, RFC-0006 Phase 2)
+- Sprint 5 package 5: scheduler seed — schedules-as-data + control-plane scheduler (AOS-SCHED-001, RFC-0007)
 
 ## Out Of Scope Now
 
@@ -111,7 +112,7 @@ Sprint 5 package 4: AOS-WORKERRUN-001 (RFC-0006 Phase 2, Plane AOS-18) in review
 
 ## Next Recommended Task
 
-Merge the AOS-WORKERRUN-001 PR after CI passes under the Manual Merge Gate. Then RFC-0006 Phase 3 (AOS-SCHED-001 — dashboard enqueue + nightly scheduler) closes the worker pipeline and AOS-18. AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) after the worker foundations land.
+Merge the AOS-SCHED-001 PR after CI passes under the Manual Merge Gate. Then AOS-SCHED-002 (scheduler dashboard: schedules UI + enqueue buttons + job history) closes AOS-18 and the worker pipeline. AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) after the worker/scheduler foundations land.
 
 ## Required Reading For New Sessions
 

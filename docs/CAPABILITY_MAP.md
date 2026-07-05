@@ -348,8 +348,10 @@ Primary artifacts:
 - apps/api/alembic/ (Alembic migrations; baseline schema)
 - apps/api/docker-entrypoint.sh (runs migrations before serving)
 - apps/worker
-- packages/aos_core (shared domain library: config/database/models/scanner + scan/digest services; RFC-0006)
+- apps/scheduler (control-plane scheduler: materializes due schedules into jobs; RFC-0007)
+- packages/aos_core (shared domain library: config/database/models/scanner + scan/digest/jobs/scheduler services; RFC-0006)
 - docs/rfc/RFC-0006-Shared-Core-Domain-Library.md
+- docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md (schedules-as-data; control plane decides + stores, nodes execute)
 
 ## Layer 12: Orchestration and Work Management
 

@@ -6,13 +6,13 @@ import redis
 from aos_core.config import get_settings
 from aos_core.database import SessionLocal
 from aos_core.models import Job
+from aos_core.services.jobs import QUEUE
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("archetypeos.worker")
 settings = get_settings()
-QUEUE = "archetypeos:jobs"
 MAX_ATTEMPTS = 3
 
 

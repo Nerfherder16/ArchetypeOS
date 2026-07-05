@@ -8,11 +8,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from aos_core.config import get_settings
 from aos_core.database import engine, get_db, init_db
-from aos_core.models import ArchitectureEdge, ArchitectureNode, Artifact, Decision, Job, NightlyDigest, Project, Recommendation, Repository, RepositoryDNA, ResearchNote
+from aos_core.models import ArchitectureEdge, ArchitectureNode, Artifact, Decision, Job, NightlyDigest, Project, Recommendation, Repository, RepositoryDNA, ResearchNote, Schedule, now_utc
 from aos_core.repository_scanner import safe_repo_path
+from aos_core.services.jobs import enqueue_job
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
-from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, DecisionCreate, DecisionRead, JobCreate, JobRead, NightlyDigestRead, ProjectCreate, ProjectRead, RecommendationCreate, RecommendationRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead, ResearchNoteCreate, ResearchNoteRead
+from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, DecisionCreate, DecisionRead, JobCreate, JobRead, NightlyDigestRead, ProjectCreate, ProjectRead, RecommendationCreate, RecommendationRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead, ResearchNoteCreate, ResearchNoteRead, ScheduleCreate, ScheduleRead, ScheduleUpdate
 
 settings = get_settings()
 app = FastAPI(title="ArchetypeOS API", version="0.1.0")
@@ -184,20 +185,15 @@ def correct_architecture_edge(edge_id: str, payload: ArchitectureCorrectionUpdat
 
 @app.post("/jobs", response_model=JobRead)
 def create_job(payload: JobCreate, db: Session = Depends(get_db)) -> Job:
-    job = Job(
+    return enqueue_job(
+        db,
+        redis.Redis.from_url(settings.redis_url),
+        job_type=payload.job_type,
         project_id=payload.project_id,
         repository_id=payload.repository_id,
-        job_type=payload.job_type,
         payload=payload.payload,
         priority=payload.priority,
-        status="queued",
     )
-    db.add(job)
-    db.commit()
-    db.refresh(job)
-    client = redis.Redis.from_url(settings.redis_url)
-    client.lpush("archetypeos:jobs", job.id)
-    return job
 
 
 @app.get("/jobs/{job_id}", response_model=JobRead)
@@ -205,6 +201,81 @@ def get_job(job_id: str, db: Session = Depends(get_db)) -> Job:
     job = db.get(Job, job_id)
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    return job
+
+
+@app.post("/projects/{project_id}/schedules", response_model=ScheduleRead)
+def create_schedule(project_id: str, payload: ScheduleCreate, db: Session = Depends(get_db)) -> Schedule:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    schedule = Schedule(
+        project_id=project_id,
+        name=payload.name,
+        job_type=payload.job_type,
+        interval_seconds=payload.interval_seconds,
+        payload=payload.payload,
+        enabled=payload.enabled,
+        next_run_at=now_utc(),
+    )
+    db.add(schedule)
+    db.commit()
+    db.refresh(schedule)
+    return schedule
+
+
+@app.get("/projects/{project_id}/schedules", response_model=list[ScheduleRead])
+def list_schedules(project_id: str, db: Session = Depends(get_db)) -> list[Schedule]:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return db.query(Schedule).filter(Schedule.project_id == project_id).order_by(Schedule.created_at.desc(), Schedule.id).all()
+
+
+@app.get("/schedules/{schedule_id}", response_model=ScheduleRead)
+def get_schedule(schedule_id: str, db: Session = Depends(get_db)) -> Schedule:
+    schedule = db.get(Schedule, schedule_id)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    return schedule
+
+
+@app.patch("/schedules/{schedule_id}", response_model=ScheduleRead)
+def update_schedule(schedule_id: str, payload: ScheduleUpdate, db: Session = Depends(get_db)) -> Schedule:
+    schedule = db.get(Schedule, schedule_id)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    for field, value in payload.model_dump(exclude_unset=True).items():
+        setattr(schedule, field, value)
+    db.add(schedule)
+    db.commit()
+    db.refresh(schedule)
+    return schedule
+
+
+@app.delete("/schedules/{schedule_id}", status_code=204)
+def delete_schedule(schedule_id: str, db: Session = Depends(get_db)) -> None:
+    schedule = db.get(Schedule, schedule_id)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    db.delete(schedule)
+    db.commit()
+    return None
+
+
+@app.post("/schedules/{schedule_id}/run", response_model=JobRead)
+def run_schedule_now(schedule_id: str, db: Session = Depends(get_db)) -> Job:
+    schedule = db.get(Schedule, schedule_id)
+    if not schedule:
+        raise HTTPException(status_code=404, detail="Schedule not found")
+    job = enqueue_job(
+        db,
+        redis.Redis.from_url(settings.redis_url),
+        job_type=schedule.job_type,
+        project_id=schedule.project_id,
+        payload=schedule.payload,
+    )
+    schedule.last_run_at = now_utc()
+    db.add(schedule)
+    db.commit()
     return job
 
 

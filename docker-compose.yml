@@ -72,6 +72,24 @@ services:
       - archetype_data:/data
       - ${HOST_REPOSITORY_ROOT:-./repositories}:/repositories:ro
 
+  scheduler:
+    build:
+      context: .
+      dockerfile: apps/scheduler/Dockerfile
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      ARTIFACT_ROOT: ${ARTIFACT_ROOT:-/data/artifacts}
+      REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - archetype_data:/data
+      - ${HOST_REPOSITORY_ROOT:-./repositories}:/repositories:ro
+
   web:
     build:
       context: ./apps/web

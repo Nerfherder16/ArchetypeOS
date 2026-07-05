@@ -71,6 +71,34 @@ class JobRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ScheduleCreate(BaseModel):
+    name: str
+    job_type: str
+    interval_seconds: int
+    payload: dict = Field(default_factory=dict)
+    enabled: bool = True
+
+
+class ScheduleRead(BaseModel):
+    id: str
+    project_id: str | None
+    name: str
+    job_type: str
+    interval_seconds: int
+    enabled: bool
+    last_run_at: datetime | None
+    next_run_at: datetime
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ScheduleUpdate(BaseModel):
+    name: str | None = None
+    interval_seconds: int | None = None
+    enabled: bool | None = None
+
+
 class ArtifactCreate(BaseModel):
     project_id: str
     repository_id: str | None = None

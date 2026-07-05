@@ -34,7 +34,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Reconcile state after the PR #21 merge, then assign AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3, spec `.archetype/work/AOS-KNOW-001.md`) as the next implementation task.
+AOS-KNOW-001 — Knowledge Vault Seed is in progress on this branch; PR to be opened.
 
 ## Active Branch
 
@@ -52,16 +52,16 @@ Reconcile state after the PR #21 merge, then assign AOS-KNOW-001 — Knowledge V
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: post-merge state-file reconciliation; local PR Guardian run on the docs diff; GitHub CI pending after PR creation. AOS-PROC-001 itself is Verified (Level 3, PR #21, CI run 28728454334 all green).
-- Evidence: state files reconciled to the PR #21 merge (`783f329`); Plane modules (10 epics) and Sprint 2 cycle populated after the Features toggle
-- Limitations: merge gating stays manual per the Manual Merge Gate (`docs/PR_GUARDIAN.md`); user workstation WSL/Docker verification still pending confirmation
+- Level: Level 1
+- Method: repository inspection of the vault structure against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, plus local PR Guardian run on the diff; GitHub CI pending after PR creation.
+- Evidence: vault tree matches the required structure; wiki pages refreshed from state docs; manifest updated.
+- Limitations: content-only change, no executable surface; `KnowledgePage` API read path deferred.
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- post-merge state reconciliation for PR #21
-- next-task clarity for AOS-KNOW-001 — Knowledge Vault Seed
+- knowledge vault seed
+- state updates
 
 ## Out Of Scope Now
 
@@ -89,7 +89,7 @@ Reconcile state after the PR #21 merge, then assign AOS-KNOW-001 — Knowledge V
 
 ## Next Recommended Task
 
-Merge this state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3, spec `.archetype/work/AOS-KNOW-001.md`) to the Knowledge Agent using one branch and one isolated worktree.
+Merge the AOS-KNOW-001 PR after CI passes. Then pick the next package from Plane (AOS-4, AOS-5, AOS-7, AOS-8, or AOS-9).
 
 ## Required Reading For New Sessions
 

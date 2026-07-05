@@ -26,11 +26,11 @@ AOS-COUNCIL-001 — Agent Council seed: LLM provider abstraction + Council MVP +
 
 ### PR
 
-To be opened.
+#49 — **Merged** as `a56d317` (squash). CI run 28757387442 all 6 jobs green on head `8dd2fb7`.
 
 ### Status
 
-In Review — `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` + migration `0003`, worker `council_review` dispatch, council trigger/read API. Orchestrator-verified (3.12 venv): ruff/compile clean; api **92**, worker **7**; `run_council` exercised (4 outputs, disagreement, abstention, 404, determinism, provider mapping); alembic no-drift after `0003` (24 tables, 0 ops). Backend only; the Agent Council Dashboard is AOS-COUNCIL-002. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget), four agents, dedicated tables.
+Merged — `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` + migration `0003`, worker `council_review` dispatch, council trigger/read API. **The Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done.** Advisory/draft-only. Branch restarted from `main` at `a56d317`. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget), four agents, dedicated tables. **Next: AOS-COUNCIL-002 — the Agent Council Dashboard.**
 
 ### Orchestrator Transition
 
@@ -74,7 +74,7 @@ In Review — `Provider` abstraction (`DeterministicProvider` CI default + `Clau
 
 ### Verification Status
 
-Verification pending (AOS-COUNCIL-001 in review)
+Verified (PR #49 merged as `a56d317`)
 
 ### Verification Level
 
@@ -82,7 +82,7 @@ Level 4
 
 ### Verification Method
 
-Orchestrator independently (3.12 venv) ran ruff/compile clean; api **92 passed** (77 + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly (4 agent outputs; disagreement surfaced — security unfavorable vs the rest; abstention → `Insufficient evidence` on an evidence-less project; 404 on missing project; deterministic-provider stability; `get_provider` mapping incl. ValueError); alembic no-drift after `0003` — chain applies, 24 tables incl. `council_reviews`+`council_agent_outputs`, **0 drift ops**. GitHub CI (api-tests, worker-tests, compose-smoke applying `0003` on Postgres) pending on the PR; merge under the Manual Merge Gate.
+CI run 28757387442 all 6 jobs green on head `8dd2fb7` (compose-smoke applied migration `0003` on fresh Postgres + booted all services; api-tests ran the 15 new council tests; worker-tests the dispatch test) plus Orchestrator's independent 3.12-venv run (api 92 / worker 7; `run_council` branch checks — 4 outputs, disagreement, abstention, 404, determinism, `get_provider` mapping; alembic no-drift after `0003` → 24 tables, 0 ops). AOS-19 → Done; branch restarted from `main` at `a56d317`.
 
 ### Evidence
 

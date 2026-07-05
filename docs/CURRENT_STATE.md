@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence thrust open — AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19) in review; orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence thrust open — AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19) **merged (PR #49; AOS-19 Done)**; next is AOS-COUNCIL-002 (Agent Council Dashboard). Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -58,10 +58,11 @@ Every new engineering session should read this before planning or implementation
 - PR #46: Worker runs scan/digest jobs, RFC-0006 Phase 2 (AOS-WORKERRUN-001) — scans/digests run as queued jobs
 - PR #47: Scheduler seed — schedules-as-data + control-plane scheduler, RFC-0007 (AOS-SCHED-001); first real Alembic migration
 - PR #48: Scheduler dashboard — schedules UI + enqueue + job history, RFC-0007/RFC-0006 Phase 3b (AOS-SCHED-002) — **closes AOS-18 and the worker pipeline; RFC-0006 + RFC-0007 realized end to end**
+- PR #49: Agent Council seed — LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (AOS-COUNCIL-001) — **the Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done**
 
 ## Current Objective
 
-**Intelligence thrust underway** (operator-directed): AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19) in review on this branch — the Agent Council seed. A `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), the four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` tables + migration `0003`, worker `council_review` dispatch, and council trigger/read API. Backend only; the Agent Council Dashboard is AOS-COUNCIL-002 (Phase 2). This is where the platform starts to reason, atop the Sprint 5 substrate (AOS-18 Done: shared core + worker + scheduler).
+**Intelligence thrust underway** (operator-directed). Phase 1 merged: AOS-COUNCIL-001 (RFC-0005, Plane AOS-19 Done, PR #49) — the Agent Council seed: a `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), the four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` tables + migration `0003`, worker `council_review` dispatch, and council trigger/read API. Advisory/draft-only. **Next: AOS-COUNCIL-002 — the Agent Council Dashboard** (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e), which closes the Phase-9 "disagreements are visible" acceptance end to end. Awaiting operator go-ahead.
 
 ## Active Branch
 
@@ -78,16 +79,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verification pending (AOS-COUNCIL-001 in review; PR #48 merged as `350c8b0`)
+- Status: Verified (PR #49 merged as `a56d317`)
 - Level: Level 4
-- Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **92 passed** (77 + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly (4 agent outputs, disagreement surfaced, abstention on evidence-less project, 404, deterministic provider, `get_provider` mapping); alembic no-drift after `0003` — 24 tables incl. both council tables, **0 drift ops**. CI (api-tests, worker-tests, compose-smoke on Postgres) pending on the PR
-- Evidence: 4 structured agent outputs + Final Judge verdict per project; disagreement explicit; abstention enforced; council trigger/read API; `council_review` job dispatch; migration `0003` applies
+- Method: CI run 28757387442 all 6 jobs green on head `8dd2fb7` (PR Guardian, Web typecheck/build, API tests, Worker tests, Docker Compose smoke applying migration `0003` on fresh Postgres + booting all services, Web e2e); plus Orchestrator's independent 3.12-venv run — api 92 / worker 7; `run_council` branch checks (4 outputs, disagreement, abstention, 404, determinism, `get_provider` mapping); alembic no-drift after `0003` (24 tables, 0 ops)
+- Evidence: 4 structured agent outputs + Final Judge verdict per project; disagreement explicit; abstention enforced; council trigger/read API; `council_review` job dispatch; migration `0003` applies on Postgres
 - Limitations: `ClaudeCodeProvider` runs only on an authed node (mocked in CI); advisory/draft-only
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Required Next Verifier: None — package merged and reconciled
 
 ## In Scope Now
 
-- AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19): Agent Council seed — provider abstraction + 4 agents + Final Judge + tables/migration `0003` + worker dispatch + council API. Backend only.
+- Nothing active. Next recommended: AOS-COUNCIL-002 (Agent Council Dashboard). Awaiting operator go-ahead.
 
 ## Out Of Scope Now
 

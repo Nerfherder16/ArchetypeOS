@@ -26,11 +26,11 @@ AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface (Plane AOS-8)
 
 ### PR
 
-To be opened.
+#27 — https://github.com/Nerfherder16/ArchetypeOS/pull/27
 
 ### Status
 
-In Review — implementation complete, Level 4 local verification passed, PR pending.
+Merged (merge commit `32399e0`).
 
 ### Completed
 
@@ -70,7 +70,7 @@ In Review — implementation complete, Level 4 local verification passed, PR pen
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
@@ -78,10 +78,11 @@ Level 4
 
 ### Verification Method
 
-Local ruff/compileall/pytest + strict tsc/vite build + headless-Chromium drive of the full dashboard flow against a live API with redis absent (health-failure isolation confirmed). GitHub CI pending on the PR to be opened.
+GitHub CI workflow run on PR #27 (all 5 jobs) plus local ruff/compileall/pytest, strict tsc/vite build, and a headless-Chromium drive of the full dashboard flow against a live API with redis absent (health-failure isolation confirmed).
 
 ### Evidence
 
+- CI run 28730415566 on head `bc7814a`: all 5 jobs success; merged as `32399e0`; head-SHA-pinned merge-gate comment posted.
 - 28 pytest passes; ruff/compileall/tsc/vite exit 0.
 - Browser: create project, register repository, "never" state, run scan, summary rendered (Python, docker, .env risk flag), architecture counts, stored DNA survives reload. 10/10 checks; screenshot artifact.
 
@@ -91,11 +92,11 @@ Browser verification is manual (Orchestrator-driven), not part of CI. Local DB i
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
+None for AOS-CTRL-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Open the AOS-CTRL-001 PR, babysit CI, merge under the Manual Merge Gate. Tomorrow: AOS-LOCAL-001 on `teevee-1`, exercising the loop through the new dashboard.
+Merge the post-merge state reconciliation PR after CI passes. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the new dashboard; remaining board items are AOS-4 (scan history) and AOS-9 (Plane sync discipline).
 
 ## Handoff Template
 

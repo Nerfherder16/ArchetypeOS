@@ -28,14 +28,15 @@ Every new engineering session should read this before planning or implementation
 - PR #11: Engineering OS Strategy and WSL Windows 11 Runtime Target
 - PR #12: Operating Loop planning docs recovery
 - PR #13: State reconciliation
+- PR #14: Repository Scanner MVP (AOS-RUNTIME-002)
 
 ## Current Objective
 
-AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-002-scanner-1egyjw`; PR #14 open with CI green (run 28726472816), awaiting Orchestrator/human merge review.
+Reconcile state after the PR #14 merge, then assign AOS-KNOW-001 — Knowledge Vault Seed as the next implementation task.
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw`
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` for post-merge state reconciliation)
 
 ## CI Status
 
@@ -48,18 +49,18 @@ AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-00
 
 ## Verification Status
 
-- Status: Verified
-- Level: Level 3
-- Method: GitHub CI on PR #14 (PR Guardian, API/worker tests, web build, compose smoke) plus local Level 2 execution
-- Evidence: CI run 28726472816 all 5 jobs green on head `aa6b4ef`; local ruff/compileall/pytest exit 0 (16 API + 1 worker tests); self-scan of ArchetypeOS repo produced a correct report
-- Limitations: required status checks cannot be enforced as a merge gate on this repository plan; CI green must be confirmed manually on the head SHA at merge time; user workstation WSL/Docker still blocked
-- Required Next Verifier: Orchestrator / human merge review
+- Status: Verification pending
+- Level: Level 1
+- Method: post-merge state-file reconciliation on `claude/aos-runtime-002-scanner-1egyjw`; pending GitHub CI / PR Guardian after PR creation. AOS-RUNTIME-002 itself is Verified (Level 3, PR #14, CI runs 28726472816 and 28726897393 all green).
+- Evidence: state files reconciled to reflect the PR #14 merge (`856e5ff`)
+- Limitations: required status checks cannot be enforced as a merge gate on this repository plan, so merge gating stays manual; user workstation WSL/Docker still blocked
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- repository scanner MVP extension
-- scanner docs
-- state updates
+- post-merge state reconciliation for PR #14
+- next-task clarity for AOS-KNOW-001 — Knowledge Vault Seed
+- preserve Plane as pinned/offline
 
 ## Out Of Scope Now
 
@@ -88,7 +89,7 @@ AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-00
 
 ## Next Recommended Task
 
-Merge AOS-RUNTIME-002 — Repository Scanner MVP after CI and PR Guardian pass. Then assign AOS-KNOW-001 — Knowledge Vault Seed.
+Merge this state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed to the Knowledge Agent using one branch and one isolated worktree.
 
 ## Required Reading For New Sessions
 

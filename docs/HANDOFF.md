@@ -30,7 +30,7 @@ AOS-RUNTIME-002 — Repository Scanner MVP
 
 ### Status
 
-In Review — CI green, awaiting Orchestrator/human merge review
+Merged (merge commit `856e5ff`)
 
 ### Completed
 
@@ -89,8 +89,9 @@ GitHub CI workflow run on PR #14 (PR Guardian, API/worker tests and lint on Pyth
 
 ### Evidence
 
-- CI run 28726472816 (run #31) on head `aa6b4ef`: all 5 jobs concluded success, including the Docker Compose smoke test (images built, Postgres/Redis/API healthy, worker and web started, web responded).
+- CI run 28726472816 on head `aa6b4ef` and CI run 28726897393 on final head `b616cb2`: all 5 jobs concluded success both times, including the Docker Compose smoke test (images built, Postgres/Redis/API healthy, worker and web started, web responded).
 - Local: ruff/compileall exit 0; 16 API tests + 1 worker test passed; self-scan of the ArchetypeOS repo produced a correct report.
+- PR #14 merged into `main` as `856e5ff`; verification handoff and merge recommendation posted on the PR.
 
 ### Limitations
 
@@ -98,11 +99,11 @@ Required status checks cannot be enforced as a merge gate on this repository pla
 
 ### Required Next Verifier
 
-Orchestrator / human merge review (confirm CI green on the current head SHA, then merge).
+None for AOS-RUNTIME-002. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Merge PR #14 after confirming CI is green on the current head SHA. Then assign AOS-KNOW-001 — Knowledge Vault Seed.
+Merge the post-merge state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed to the Knowledge Agent using one branch and one isolated worktree.
 
 ## Handoff Template
 

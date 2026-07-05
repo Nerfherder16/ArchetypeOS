@@ -107,32 +107,17 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-RUNTIME-002 — Repository Scanner MVP
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
 - PR: #14
-- Goal: Add read-only repository scanner.
-- Dependencies:
-  - AOS-RUNTIME-001
-  - AOS-ORCH-002
-  - AOS-STRATEGY-001
-  - AOS-PMO-002
-- Acceptance Criteria:
-  - scanner detects folders, languages, manifests, Docker files, CI files, and basic risks
-  - scanner writes report artifact
-  - no repository writes occur
-  - verification metadata recorded in handoff and PR
-  - tests exist and pass in CI
 - Verification Status: Verified
-- Verification Level: Level 3
-- Verification Method: GitHub CI on PR #14 (PR Guardian, API/worker tests, web build, compose smoke) plus local Level 2 execution
-- Evidence: CI run 28726472816 all 5 jobs green on head `aa6b4ef`; local ruff/compileall/pytest exit 0 (16 API + 1 worker tests); self-scan of ArchetypeOS repo produced a correct report
-- Limitations: required status checks cannot be enforced as a merge gate on this repository plan; CI green must be confirmed manually on the head SHA at merge time; user workstation WSL/Docker still blocked
-- Required Next Verifier: Orchestrator / human merge review.
+- Notes: Level 3 GitHub CI evidence in PR #14 (runs 28726472816 and 28726897393, all jobs green including compose smoke). Merge commit `856e5ff`.
+- Required Next Verifier: None.
 
 ### AOS-KNOW-001 — Knowledge Vault Seed
 
-- Status: Proposed
+- Status: Ready
+- Notes: Dependencies are now satisfied; scanner output shape is documented in `docs/REPOSITORY_SCANNER.md`.
 - Owner: Knowledge Agent
 - Branch: TBD
 - Goal: Create initial knowledge vault structure and manifest.

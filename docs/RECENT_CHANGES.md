@@ -11,10 +11,8 @@ It is not a replacement for Git history. It is a human-readable coordination log
 ### Merged
 
 - PR #14: AOS-RUNTIME-002 — Repository Scanner MVP (merge commit `856e5ff`). Scanner extended with structured manifests/docker_files/ci_files with kinds, folder_structure with depth, summary block, structured risk_signals (severity/code/path/message), primary language hints, expanded ignore list pruned before descent, MAX_FILES truncation guard, deterministic sorted traversal, no timestamps, strict superset of legacy report keys. Tests extended to 11 scanner tests (16 API tests total). `.gitignore` gained `archetypeos_dev.db`. Added `docs/REPOSITORY_SCANNER.md`.
-
-### In Progress
-
-- AOS-PROC-001 — Build Process Hardening: PR Guardian acceptance-evidence enforcement for code-path PRs, a shared API test fixture, 4 new scan-endpoint integration tests, pinned dev toolchain (ruff==0.8.6, pytest==8.3.4, Python 3.12), plus docs: RFC-0003 work-package specs, `.archetype/work/` specs, PR Guardian merge-gate and acceptance-evidence documentation, and scanner runtime-enforcement note.
+- PR #15: Post-merge state reconciliation for AOS-RUNTIME-002.
+- PR #21: AOS-PROC-001 — Build Process Hardening (merge commit `783f329`): PR Guardian acceptance-evidence enforcement for code-path PRs, a shared API test fixture, 4 new scan-endpoint integration tests, pinned dev toolchain (ruff==0.8.6, pytest==8.3.4, Python 3.12), RFC-0003 work-package specs, `.archetype/work/` specs, PR Guardian merge-gate and acceptance-evidence documentation, scanner runtime-enforcement note. First merge executed under the Manual Merge Gate. Verified at Level 3 (CI run 28728454334, all 5 jobs green).
 
 ### Important Notes
 
@@ -22,7 +20,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - GitHub Actions does run on this private repo; what the plan lacks is enforceable required status checks, so merge gating stays manual via the local guardian and Orchestrator review.
 - Plane is back online. The `ArchetypeOS` Plane project (AOS) has been seeded with 12 labels, default states, and work items AOS-1..AOS-9.
 - GitHub issues #16-#20 were briefly opened to mirror the Plane seed and have been closed as migrated to Plane.
-- Plane Modules (epics) and the Sprint 2 cycle are pending a Features toggle in Plane Project Settings.
+- Plane Modules, Cycles, Pages, Intake, and Views were enabled in Project Settings; all 10 epic Modules and the "Sprint 2 — Operating Loop" cycle are now populated.
 - Local WSL/Docker Level 2 verification on the user's workstation remains pending confirmation.
 
 ### Added Recently
@@ -37,7 +35,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-AOS-PROC-001 — Build Process Hardening (PR to be opened); next implementation task is AOS-KNOW-001 — Knowledge Vault Seed.
+Post-merge state reconciliation for PR #21; next implementation task is AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3).
 
 ### Why It Matters
 

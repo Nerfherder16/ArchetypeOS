@@ -32,14 +32,14 @@ Name: Operating Loop
 
 Goal: prove that ArchetypeOS can manage work, agents, branches, verification, PRs, state, and the WSL runtime target before broader product expansion.
 
-Status: the Sprint 2 cycle could not yet be created via the Plane API because the project's Cycles feature is disabled. Modules (the 10 epics above, as Plane Modules) are blocked the same way. A human must enable Modules and Cycles in Plane Project Settings -> Features before either can be created.
+Status: live. Modules, Cycles, Pages, Intake, and Views were enabled in Project Settings -> Features on 2026-07-05. All 10 epics exist as Plane Modules with their issues assigned (cycle id `8f6103fe-f2f2-457b-973b-571bde6c5795`), and the "Sprint 2 — Operating Loop" cycle contains AOS-1, AOS-2, AOS-3, AOS-7, and AOS-9.
 
 ## Current Items (Live in Plane)
 
 These are the actual seeded Plane work items (identifier `AOS-<n>`), superseding the conceptual `Suggested Issues` below where they overlap:
 
 - AOS-1 — Repository Scanner MVP — Done
-- AOS-2 — Build process hardening — In Progress (work package `AOS-PROC-001`)
+- AOS-2 — Build process hardening — Done (work package `AOS-PROC-001`, PR #21 merged)
 - AOS-3 — Knowledge Vault Seed — Todo, `status/ready` (work package `AOS-KNOW-001`)
 - AOS-4 — Scan persistence/history — Backlog
 - AOS-5 — Architecture Spine Graph draft — Backlog

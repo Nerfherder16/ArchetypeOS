@@ -42,10 +42,11 @@ Every new engineering session should read this before planning or implementation
 - PR #30: Plane board sync discipline (AOS-PLANE-001)
 - PR #31: Executable-bit fix for shell scripts (AOS-LOCAL-001 finding 1)
 - PR #32: AOS-LOCAL-001 Level 4 verification handoff and remediations — Sprint 2 complete
+- PR #33: PR Guardian reads repository scanner output (AOS-PRG-002)
 
 ## Current Objective
 
-Sprint 3 opened (Plane cycle `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`): AOS-6/AOS-PRG-002 (scanner-informed guardian, in review on this branch), then AOS-10/AOS-DEC-001 (decision/research artifacts), AOS-11/AOS-LEARN-001 (nightly digest), AOS-12/AOS-ALPHA-001 (Alpha Review capstone).
+Sprint 3 package 2: AOS-DEC-001 (decision/research artifacts, Plane AOS-10) in review on this branch, folding in the PR #33 reconciliation. Remaining: AOS-LEARN-001 (nightly digest), AOS-ALPHA-001 (Alpha Review capstone).
 
 ## Active Branch
 
@@ -63,15 +64,15 @@ Sprint 3 opened (Plane cycle `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`): AOS-6/AOS-
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: local ruff/compileall/pytest (40 API tests incl. 8 new guardian-scanner tests) plus guardian self-run exercising the live in-repo scan; GitHub CI pending after PR creation
-- Evidence: exit codes 0; "Scanner-informed checks: consulted 3 risk signals." on self-run
-- Limitations: Level 3 pending
+- Level: Level 4
+- Method: local ruff/compileall/pytest (46 API tests incl. 6 new) + strict tsc/vite build + headless-Chromium drive of the Decisions & Research section (7/7 checks); GitHub CI pending after PR creation
+- Evidence: exit codes 0; browser drive confirmed form-create, reload persistence, and the typed research_note evidence link via API
+- Limitations: browser drive is a manual Level 4 pass
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 3 package 1: scanner-informed guardian (AOS-PRG-002)
+- Sprint 3 package 2: decision/research artifacts (AOS-DEC-001)
 
 ## Out Of Scope Now
 
@@ -98,7 +99,7 @@ Sprint 3 opened (Plane cycle `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`): AOS-6/AOS-
 
 ## Next Recommended Task
 
-Merge the AOS-PRG-002 PR after CI passes under the Manual Merge Gate. Then AOS-DEC-001 (decision/research artifacts), AOS-LEARN-001 (nightly digest), and AOS-ALPHA-001 (Alpha Review) complete Sprint 3 and v0.1.
+Merge the AOS-DEC-001 PR after CI passes under the Manual Merge Gate. Then AOS-LEARN-001 (nightly digest) and AOS-ALPHA-001 (Alpha Review) complete Sprint 3 and v0.1.
 
 ## Required Reading For New Sessions
 

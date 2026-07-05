@@ -196,18 +196,29 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-PRG-002 — PR Guardian Reads Repository Scanner Output
 
+- Status: Merged
+- Owner: Runtime Agent
+- PR: #33
+- Plane: AOS-6 (Done)
+- Spec: `.archetype/work/AOS-PRG-002.md`
+- Verification Status: Verified
+- Notes: Level 3 evidence — CI green on PR #33 including the guardian job executing the new scanner-informed code live. Merge commit `5f0cfdc`.
+- Required Next Verifier: None.
+
+### AOS-DEC-001 — Decision and Research Artifacts
+
 - Status: In Review
 - Owner: Runtime Agent
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-6 (In Progress), Sprint 3 cycle
+- Plane: AOS-10 (In Progress), Sprint 3 cycle
 - PR: to be opened
-- Spec: `.archetype/work/AOS-PRG-002.md`
-- Goal: First engine-to-engine flow — guardian consumes scanner risk signals (path-based secret/env blocks, MISSING_TESTS corroboration, ecosystem-expansion warning) with `--scan-report` input, stdlib-only in-repo scan fallback, and graceful degradation.
+- Spec: `.archetype/work/AOS-DEC-001.md`
+- Goal: Phase 5 scope-lock criteria — decision/research/recommendation create+list+read routes over existing models (no schema changes), evidence-required recommendations, validated research→decision links as typed evidence entries, minimal Decisions & Research dashboard section.
 - Verification Status: Verification pending
-- Verification Level: Level 2
-- Verification Method: local ruff/compileall/pytest (40 API tests incl. 8 new guardian tests) plus guardian self-run exercising the live in-repo scan path; GitHub CI pending on PR
-- Evidence: exit codes 0; self-run printed "Scanner-informed checks: consulted 3 risk signals."
-- Limitations: manifest basename list intentionally self-contained (could drift from scanner MANIFEST_KINDS; documented)
+- Verification Level: Level 4
+- Verification Method: local ruff/compileall/pytest (46 API tests incl. 6 new) + strict tsc/vite build + Orchestrator headless-Chromium drive (7/7 checks incl. form-create, reload persistence, typed-evidence link confirmed via API); GitHub CI pending on PR
+- Evidence: exit codes 0; 7/7 browser checks; screenshot captured
+- Limitations: browser drive is a manual Level 4 pass, not CI-repeatable
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
 
 ## Blocked Work

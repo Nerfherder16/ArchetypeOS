@@ -43,9 +43,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 - `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` after PR #15 merged)
 
+### In Progress
+
+- AOS-CTRL-001 — Engineering Control Tower first dashboard surface (Plane AOS-8): `GET /repositories/{id}/dna` endpoint + 3 tests; dashboard rebuilt (project create/select, repository register/scan, stored scan summary, architecture counts, per-section error isolation). Verified locally at Level 4 via headless-Chromium drive (10/10 checks).
+
 ### Current Work
 
-Post-merge state reconciliation for PR #25. Next: AOS-LOCAL-001 on `teevee-1` and/or AOS-8 (control tower slice).
+AOS-CTRL-001 in review on this branch; PR to be opened. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the new dashboard.
 
 ### Why It Matters
 

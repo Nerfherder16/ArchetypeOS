@@ -103,6 +103,22 @@ class RepositoryScanRead(BaseModel):
     artifacts: list[dict]
 
 
+class RepositoryDnaRead(BaseModel):
+    repository_id: str
+    language_mix: dict
+    package_managers: list
+    deployment_files: list
+    risk_flags: list
+    scan_summary: dict
+    confidence: float
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ArchitectureNodeRead(BaseModel):
     id: str
     project_id: str

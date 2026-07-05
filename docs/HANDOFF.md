@@ -26,7 +26,7 @@ AOS-RUNTIME-002 — Repository Scanner MVP
 
 ### PR
 
-to be opened
+#14 — https://github.com/Nerfherder16/ArchetypeOS/pull/14
 
 ### Status
 

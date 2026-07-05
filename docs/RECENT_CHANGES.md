@@ -14,7 +14,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Important Notes
 
-- Local verification (ruff, compileall, pytest) passed in an isolated remote session; self-scan of the ArchetypeOS repo produced a correct report. GitHub CI / PR Guardian still pending; PR not yet opened.
+- Local verification (ruff, compileall, pytest) passed in an isolated remote session; self-scan of the ArchetypeOS repo produced a correct report. GitHub CI / PR Guardian pending on PR #14.
 - Plane remains pinned/offline due to local power outage.
 - Local WSL/Docker Level 2 verification on the user's workstation remains blocked.
 

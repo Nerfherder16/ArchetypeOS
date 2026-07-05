@@ -31,7 +31,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-002-scanner-1egyjw`; PR to be opened and verified by CI.
+AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-002-scanner-1egyjw`; PR #14 open and awaiting CI / PR Guardian verification.
 
 ## Active Branch
 

@@ -110,7 +110,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Status: In Review
 - Owner: Runtime Agent
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- PR: to be opened
+- PR: #14
 - Goal: Add read-only repository scanner.
 - Dependencies:
   - AOS-RUNTIME-001

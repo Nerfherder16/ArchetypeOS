@@ -123,9 +123,13 @@ Cycle `8bc59801`. Operator-approved order: AOS-16 web tests (deadline 2026-08-01
 
 Operator-approved 2026-07-05: extract an installable `aos_core` package both apps import (worker runs scans in-process). Reshapes AOS-18 into 3 phases: AOS-CORE-001 (extract), AOS-WORKERRUN-001 (worker runs jobs), AOS-SCHED-001 (schedule). `docs/rfc/RFC-0006-Shared-Core-Domain-Library.md`.
 
+### Sprint 5 Merged (continued 2)
+
+- PR #45: AOS-CORE-001 — extract aos_core shared package, RFC-0006 Phase 1 (merge commit `5d00a18`): `packages/aos_core/` (config/database/models/scanner moved verbatim + new scan/digest services); api reduced to routes + schemas; repo-root api Docker context; alembic + guardian scanner fallback retargeted; guardian BLOCKs `packages/aos_core/` changes without tests (LES-010). Zero behavior change. Verified at Level 4 — CI run 28753264841 all 6 jobs green + Orchestrator 3.12-venv run (69 tests, 67 unchanged; no-drift 0 ops; guardian works without aos_core installed).
+
 ### Current Work
 
-AOS-CORE-001 (RFC-0006 Phase 1) in review on this branch — extracted `packages/aos_core/` (config/database/models/repository_scanner moved verbatim; scan-persistence + digest logic pulled from `main.py` into `aos_core/services/scan.py` + `digest.py`). The api imports `aos_core`; `apps/api/app` is down to `main.py` + `schemas.py`. Repo-root api Docker build context; alembic + the guardian's scanner fallback retargeted to `aos_core`; the guardian now BLOCKs `packages/aos_core/` changes without a test change (LES-010). **Zero behavior change** — Orchestrator verified on a Python 3.12 venv: 69 tests pass (67 original unchanged + 2 new), alembic no-drift = 0 ops, guardian runs without aos_core installed. Enables the worker (Phase 2).
+AOS-WORKERRUN-001 (RFC-0006 Phase 2) in review on this branch — the worker now imports `aos_core` and runs real jobs off the Redis queue: `run_job` dispatches `repository_scan` → `run_scan` and `project_digest` → `build_digest` (+ persist), with a `handle_failure` retry helper (re-enqueue up to `MAX_ATTEMPTS=3` then `failed`); the `test` job and `QUEUE` string are preserved; `apps/worker/app/config.py` deleted (uses `aos_core.config`); worker Docker repo-root build context. Orchestrator verified on a 3.12 venv: 5 worker tests pass incl. `test_run_scan_job` (enqueue → run_job → Artifact + RepositoryDNA rows exist); api 69 unaffected. Delivers scans/digests as queued jobs.
 
 ### Why It Matters
 

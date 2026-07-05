@@ -311,18 +311,29 @@ Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (w
 
 ### AOS-CORE-001 — Extract aos_core Shared Package (RFC-0006 Phase 1)
 
+- Status: Merged
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- PR: #45
+- Plane: AOS-18 (In Progress — 3-phase tracker; Phase 1 done)
+- Spec: `.archetype/work/AOS-CORE-001.md`; RFC: `docs/rfc/RFC-0006-Shared-Core-Domain-Library.md` (Accepted)
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28753264841 all 6 jobs green (compose-smoke built the api image from the new repo-root context; api-tests + web-e2e installed aos_core; pr-guardian ran without it) plus Orchestrator's 3.12-venv run (69 tests, 67 unchanged; no-drift 0 ops). Merge commit `5d00a18`. Zero behavior change.
+- Required Next Verifier: None.
+
+### AOS-WORKERRUN-001 — Worker Runs Scan/Digest Jobs (RFC-0006 Phase 2)
+
 - Status: In Review
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-18 (In Progress, high — Phase 1 tracker), Sprint 5 cycle
+- Plane: AOS-18 (In Progress — Phase 2 of 3), Sprint 5 cycle
 - PR: to be opened
-- Spec: `.archetype/work/AOS-CORE-001.md`; RFC: `docs/rfc/RFC-0006-Shared-Core-Domain-Library.md` (Accepted)
-- Goal: extract an installable `aos_core` package (config/database/models/scanner + new scan/digest service modules) the api consumes; repo-root api Docker build context; alembic retargeted to `aos_core.database.Base`; guardian guards the new boundary. ZERO behavior change. Enables the worker (Phase 2) to run scans in-process.
+- Spec: `.archetype/work/AOS-WORKERRUN-001.md`
+- Goal: the worker imports `aos_core` and runs real `repository_scan` / `project_digest` jobs off the Redis queue (via `run_scan` / `build_digest`), with attempt-based retries (re-enqueue up to 3× then fail); `test` job + `QUEUE` string preserved; worker Docker repo-root context. Delivers scans/digests as queued jobs.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator independently verified on a Python 3.12 venv (the pinned interpreter) — `pip install -e ./packages/aos_core`, `PYTHONPATH=apps/api pytest` → **69 passed** (67 original unchanged + 2 new guardian tests), ruff/compileall clean, alembic no-drift = 0 ops with `aos_core.models`, and the guardian running standalone WITHOUT aos_core installed (scanner `sys.path` fallback) — the pr-guardian CI condition; CI (api-tests + web-e2e install aos_core; compose-smoke builds the api image from the new context) pending on PR
-- Evidence: 69 tests pass on 3.12; no-drift 0 ops; guardian works without aos_core installed; apps/api/app reduced to main.py + schemas.py
-- Limitations: Docker restructure proven only by CI compose-smoke (no local docker); worker unchanged (Phase 2)
+- Verification Method: Orchestrator independently ran the worker suite on a 3.12 venv — **5 passed**, incl. `test_run_scan_job` (enqueue → run_job → Artifact + RepositoryDNA rows exist), digest job, backward-compat test job, retry-then-fail — plus api suite (69, unchanged) + ruff/compileall; CI worker-tests (installs aos_core) + compose-smoke (worker image from new context) pending on PR
+- Evidence: 5 worker tests pass incl. the e2e scan-job persistence proof; api 69 unaffected; config.py deleted; worker imports aos_core
+- Limitations: worker Docker restructure proven only by CI compose-smoke; scheduling + dashboard enqueue is Phase 3
 - Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator
 
 ## Blocked Work

@@ -54,10 +54,11 @@ Every new engineering session should read this before planning or implementation
 - PR #42: Sprint 4 close-out + Orchestrator Handoff Pack (AOS-ORCH-004) — orchestration → Opus 4.8
 - PR #43: Playwright e2e suite, enforced (AOS-WEB-001) — web tests real + guardian-enforced; LES-006 deadline closed early
 - PR #44: Adopt Alembic migrations, baseline (AOS-ALEMBIC-001) — migration path adopted, no schema change
+- PR #45: Extract aos_core shared package, RFC-0006 Phase 1 (AOS-CORE-001) — domain layer is now a shared package
 
 ## Current Objective
 
-Sprint 5 package 3: AOS-CORE-001 (RFC-0006 Phase 1, Plane AOS-18) in review on this branch — extract an installable `aos_core` package (config/database/models/scanner + scan/digest services) the api consumes, with zero behavior change (69 tests pass, incl. 67 unchanged). Repo-root api Docker build context; alembic retargeted to `aos_core`; guardian guards the new boundary. Folds in the PR #44 reconciliation. Enables the worker (Phase 2) to run scans in-process. RFC-0006 (Accepted) governs the 3-phase plan.
+Sprint 5 package 4: AOS-WORKERRUN-001 (RFC-0006 Phase 2, Plane AOS-18) in review on this branch — the worker imports `aos_core` and runs real `repository_scan` / `project_digest` jobs off the Redis queue via `run_scan` / `build_digest`, with attempt-based retries. Delivers scans/digests as queued jobs (the "system runs itself" step). Folds in the PR #45 reconciliation. Phase 3 (AOS-SCHED-001) adds dashboard enqueue + a nightly scheduler.
 
 ## Active Branch
 
@@ -76,14 +77,14 @@ Sprint 5 package 3: AOS-CORE-001 (RFC-0006 Phase 1, Plane AOS-18) in review on t
 
 - Status: Verification pending
 - Level: Level 4
-- Method: Orchestrator independently verified on a Python 3.12 venv (the pinned interpreter): `pip install -e ./packages/aos_core`; `PYTHONPATH=apps/api pytest apps/api/tests` → 69 passed (67 original unchanged + 2 new guardian tests); ruff/compileall clean; alembic no-drift = 0 ops with `aos_core.models`; guardian runs standalone WITHOUT aos_core installed (scanner sys.path fallback — the pr-guardian CI condition). CI (api-tests + web-e2e install aos_core; compose-smoke builds the api image from the new repo-root context) pending after PR creation
-- Evidence: 69 tests pass on 3.12; no-drift 0 ops; guardian works without aos_core installed; apps/api/app reduced to main.py + schemas.py
-- Limitations: Docker restructure proven only by CI compose-smoke (no local docker); worker unchanged (Phase 2)
+- Method: Orchestrator independently ran the worker suite on a Python 3.12 venv — 5 passed, incl. `test_run_scan_job` (enqueue a repository_scan job → run_job → an Artifact + RepositoryDNA row exist), a digest job, the backward-compat test job, and retry-then-fail — plus the api suite (69, unchanged) + ruff/compileall clean. CI worker-tests (installs aos_core) + compose-smoke (worker image from the new repo-root context) pending after PR creation
+- Evidence: 5 worker tests pass incl. the e2e scan-job persistence proof; api 69 unaffected; `apps/worker/app/config.py` deleted; worker imports aos_core
+- Limitations: worker Docker restructure proven only by CI compose-smoke; scheduling + dashboard enqueue is Phase 3
 - Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 5 package 3: extract aos_core shared package (AOS-CORE-001, RFC-0006 Phase 1)
+- Sprint 5 package 4: worker runs scan/digest jobs (AOS-WORKERRUN-001, RFC-0006 Phase 2)
 
 ## Out Of Scope Now
 
@@ -110,7 +111,7 @@ Sprint 5 package 3: AOS-CORE-001 (RFC-0006 Phase 1, Plane AOS-18) in review on t
 
 ## Next Recommended Task
 
-Merge the AOS-CORE-001 PR after CI passes under the Manual Merge Gate. Then RFC-0006 Phase 2 (AOS-WORKERRUN-001 — worker runs scan/digest jobs via aos_core) and Phase 3 (AOS-SCHED-001 — dashboard enqueue + nightly scheduler). AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) after the worker foundations land.
+Merge the AOS-WORKERRUN-001 PR after CI passes under the Manual Merge Gate. Then RFC-0006 Phase 3 (AOS-SCHED-001 — dashboard enqueue + nightly scheduler) closes the worker pipeline and AOS-18. AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) after the worker foundations land.
 
 ## Required Reading For New Sessions
 

@@ -37,6 +37,7 @@ Single registry for learning events per RFC-0004. Every guardian BLOCK, CI failu
 | [[LES-005]] | 2026-07-05 | self-found-defect | Health/probe endpoints must degrade per-probe, never propagate probe exceptions | Alpha Review (PR #37) → fix PR #39 | closed | AOS-RUNTIME-004 (the loop's reference demonstration) |
 | [[LES-006]] | 2026-07-05 | guardian-gap | `MISSING_TESTS` warnings for `apps/web` have fired on every UI package and were never actioned | PRs #27, #34, #36 | closed | AOS-PRG-003: accepted-warnings registry (expires 2026-08-01); web tests still a package candidate |
 | [[LES-007]] | 2026-07-05 | process | Doc staleness is only caught by human review — the one Phase 10 "NO by machine" | Alpha Review Q2 | open | Doc-staleness detection package candidate (Alpha guidance #3) |
+| [[LES-008]] | 2026-07-05 | review-remediation | Opaque identifiers (UUIDs/SHAs) are copied from tool output or fetched at write time — never reconstructed from memory | PR #42 prep, self-caught | closed | Corrected registry row; registry-verification practice; guardian format-check candidate |
 
 ## Update rule
 

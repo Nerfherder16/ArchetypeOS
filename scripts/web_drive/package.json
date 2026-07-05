@@ -1,0 +1,17 @@
+{
+  "name": "archetypeos-web-drive",
+  "version": "1.0.0",
+  "description": "Level 4 headless-Chromium verification drives for the ArchetypeOS dashboard",
+  "scripts": {
+    "drive:tower": "node drive.mjs",
+    "drive:decisions": "node drive_dec.mjs",
+    "drive:digest": "node drive_digest.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "playwright": "^1.61.1"
+  },
+  "private": true
+}

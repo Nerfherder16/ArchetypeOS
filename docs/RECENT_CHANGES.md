@@ -99,9 +99,13 @@ Operator-approved principle: every PR, learning moment, and failure ties back in
 
 - PR #40: AOS-LEARN-002 — Learning Feedback Loop Phase 1, RFC-0004 (merge commit `e8527b9`): lessons contract + `knowledge/wiki/lessons/` registry seeded with the 7 real Sprint 3–4 events, CLAUDE.md recording rule, capability map Layer 8 entry. Verified at Level 2 (docs-only; CI run 28747618699 all green).
 
+### Sprint 4 Closed
+
+- PR #41: AOS-PRG-003 — guardian evolution (merge commit `98914f7`): metadata errors teach their fix (LES-003), accepted-warnings registry with expiry (LES-006, web-tests entry expires 2026-08-01), guardian changes require lessons, overrides require LES citations; 10 new tests (65 total). Verified at Level 3 — the CI guardian job ran the evolved code live on its own PR. **Sprint 4 (Self-Healing & Learning Loop) complete: PRs #39, #40, #41.**
+
 ### Current Work
 
-AOS-PRG-003 in review on this branch — the guardian evolves by consuming its own miss log by lesson ID: LES-003 (the metadata BLOCK message now teaches the plain `Field: value` format), LES-006 (accepted-warnings registry with expiry 2026-08-01 — accepted warnings are annotated with their lesson, expired ones escalate to BLOCK), plus RFC-0004 enforcement (guardian changes require a lessons change; override tokens require a LES-<n> citation). 10 new guardian-evolution tests (65 total); nothing weakened. LES-003 and LES-006 closed.
+AOS-ORCH-004 in review on this branch — Sprint 4 close-out + Orchestrator Handoff Pack for the Fable 5 → Opus 4.8 switch: `docs/ORCHESTRATOR_PLAYBOOK.md` (loop + babysitter recipe + environment quirks), committed `scripts/web_drive/` browser-drive harness, Board ID Registry backfill (Sprint 3/4 cycles, AOS-10..15 — AOS-10's ID fetched from Plane after a from-memory near-miss, LES-008), HANDOFF transition section.
 
 ### Why It Matters
 

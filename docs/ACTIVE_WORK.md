@@ -127,10 +127,11 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-KNOW-001 — Knowledge Vault Seed
 
-- Status: Ready
-- Notes: Dependencies are now satisfied; scanner output shape is documented in `docs/REPOSITORY_SCANNER.md`.
+- Status: In Review
+- Notes: Dependencies satisfied; scanner output shape is documented in `docs/REPOSITORY_SCANNER.md`. Vault built out to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` shape; content-only change.
 - Owner: Knowledge Agent
-- Branch: TBD
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- PR: to be opened
 - Plane: AOS-3
 - Spec: `.archetype/work/AOS-KNOW-001.md`
 - Goal: Create initial knowledge vault structure and manifest.
@@ -143,6 +144,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
   - manifest schema exists
   - hot/index/log/overview pages exist
   - verification metadata recorded in handoff and PR
+- Verification Status: Verification pending
+- Verification Level: Level 1
+- Verification Method: repository inspection of the vault structure against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, plus local PR Guardian run on the diff; GitHub CI pending after PR creation.
+- Evidence: vault tree matches the required structure (`raw/`, `sources/`, `wiki/` with all 10 domain directories plus `hot.md`/`index.md`/`log.md`/`overview.md`, `meta/graph.json`/`lint-report.md`/`dashboard.md`, `templates/page-template.md`, `.manifest.json`); wiki pages refreshed from current state docs; manifest updated.
+- Limitations: content-only change, no executable surface; `KnowledgePage` API read path deferred (table not yet populated by any writer).
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator.
 
 ## Blocked Work
 

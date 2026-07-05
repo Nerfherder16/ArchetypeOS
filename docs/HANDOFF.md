@@ -14,11 +14,11 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Orchestrator (Fable 5), delegating to Runtime Agent (Opus) for the code slice and Docs and State Support Agent (Sonnet) for the docs slice
+Knowledge Agent (Sonnet) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-PROC-001 — Build Process Hardening
+AOS-KNOW-001 — Knowledge Vault Seed
 
 ### Branch
 
@@ -26,40 +26,45 @@ AOS-PROC-001 — Build Process Hardening
 
 ### PR
 
-#21 — https://github.com/Nerfherder16/ArchetypeOS/pull/21
+to be opened
 
 ### Status
 
-Merged (merge commit `783f329`).
+In Review, pending CI.
 
 ### Completed
 
-- Added a deterministic acceptance-evidence check to PR Guardian (`tools/pr_guardian.py`): code-path PRs (`apps/api/app/`, `apps/worker/app/`, `apps/web/src/`) must carry an `## Acceptance Evidence` section with at least one `evidence:` bullet; blocking codes `missing-acceptance-evidence` and `empty-acceptance-evidence`; override `PR_GUARDIAN_OVERRIDE_ACCEPTANCE`.
-- Refactored `apps/api/tests/conftest.py` into a shared `client` fixture used across test modules.
-- Added 4 scan-endpoint integration tests in `apps/api/tests/test_scan_endpoint.py`: report+DNA+artifact checksum, read-only snapshot, 404 for unknown repository, rescan updates DNA.
-- Fixed a guardian lint issue (F841) surfaced while adding the acceptance-evidence check.
-- Pinned the local dev toolchain: `requirements-dev.txt` (ruff==0.8.6, pytest==8.3.4), `.python-version` (3.12).
-- Added `docs/rfc/RFC-0003-Work-Package-Specs.md`, `.archetype/work/TEMPLATE.md`, `.archetype/work/AOS-PROC-001.md` (dogfood spec), and `.archetype/work/AOS-KNOW-001.md` (next-task spec).
-- Documented the acceptance-evidence check and a new Manual Merge Gate protocol in `docs/PR_GUARDIAN.md`.
-- Documented the pre-existing compose `:ro` read-only runtime enforcement in `docs/REPOSITORY_SCANNER.md`.
-- Recorded the Plane board going live: project `ArchetypeOS` (AOS) seeded with 12 labels, default states, and work items AOS-1..AOS-9; GitHub issues #16-#20 migrated and closed.
-- After the Features toggle was enabled: created all 10 epic Modules, assigned issues to them, and created the "Sprint 2 — Operating Loop" cycle with AOS-1/2/3/7/9.
-- Merged PR #21 under the new Manual Merge Gate (head-SHA-pinned verification comment on `bfe020c`, CI run 28728454334 all 5 jobs green); Plane AOS-2 moved to Done.
+- Built out `knowledge/` to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` structure: `raw/`, `sources/`, all 10 `wiki/` domain directories (`projects`, `repositories`, `technologies`, `decisions`, `research`, `risks`, `experiments`, `benchmarks`, `lessons`, `patterns`), `meta/graph.json`, `meta/lint-report.md`, `meta/dashboard.md`, `templates/page-template.md`.
+- Refreshed `knowledge/wiki/hot.md`, `index.md`, `overview.md` with real current content derived from `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/RECENT_CHANGES.md`, and `docs/REPOSITORY_SCANNER.md`.
+- Appended a 2026-07-05 entry to `knowledge/wiki/log.md`.
+- Updated `knowledge/.manifest.json`: `last_seen`/`last_ingested` to 2026-07-05, `checksum` to `seed-2026-07-05`, `generated_pages` extended with the new meta pages.
+- Updated `.archetype/work/AOS-KNOW-001.md`: Status to In Review, Branch recorded, and a note that the `KnowledgePage` API read path is explicitly deferred (table not yet populated by any writer).
+- Updated `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/RECENT_CHANGES.md` to reflect AOS-KNOW-001 in progress.
 
 ### Files changed
 
-- `tools/pr_guardian.py`
-- `apps/api/tests/conftest.py`
-- `apps/api/tests/test_scan_endpoint.py`
-- `requirements-dev.txt`
-- `.python-version`
-- `docs/rfc/RFC-0003-Work-Package-Specs.md`
-- `.archetype/work/TEMPLATE.md`
-- `.archetype/work/AOS-PROC-001.md`
+- `knowledge/raw/.gitkeep`
+- `knowledge/sources/.gitkeep`
+- `knowledge/wiki/projects/.gitkeep`
+- `knowledge/wiki/repositories/.gitkeep`
+- `knowledge/wiki/technologies/.gitkeep`
+- `knowledge/wiki/decisions/.gitkeep`
+- `knowledge/wiki/research/.gitkeep`
+- `knowledge/wiki/risks/.gitkeep`
+- `knowledge/wiki/experiments/.gitkeep`
+- `knowledge/wiki/benchmarks/.gitkeep`
+- `knowledge/wiki/lessons/.gitkeep`
+- `knowledge/wiki/patterns/.gitkeep`
+- `knowledge/meta/graph.json`
+- `knowledge/meta/lint-report.md`
+- `knowledge/meta/dashboard.md`
+- `knowledge/templates/page-template.md`
+- `knowledge/wiki/hot.md`
+- `knowledge/wiki/index.md`
+- `knowledge/wiki/log.md`
+- `knowledge/wiki/overview.md`
+- `knowledge/.manifest.json`
 - `.archetype/work/AOS-KNOW-001.md`
-- `docs/PR_GUARDIAN.md`
-- `docs/REPOSITORY_SCANNER.md`
-- `docs/PLANE_PROJECT_BLUEPRINT.md`
 - `docs/ACTIVE_WORK.md`
 - `docs/CURRENT_STATE.md`
 - `docs/HANDOFF.md`
@@ -67,16 +72,12 @@ Merged (merge commit `783f329`).
 
 ### Tests run
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 20 passed
-- `python3 -m ruff check apps/api apps/worker tools` (ruff 0.8.6) -> exit 0
-- `python3 -m compileall` -> exit 0
+None applicable (content-only change) beyond local PR Guardian and GitHub CI.
 
 ### Known Risks
 
-- Local WSL/Docker Level 2 verification on the user's workstation remains pending confirmation (not cleared by Plane coming back online).
-- Plane and the markdown state files are now dual sources of truth; full sync discipline is not yet defined (tracked as AOS-9).
-- State files are high-conflict coordination files and should be updated carefully in focused PRs.
-- Connector write/branch operations can be brittle; preserve backup heads before destructive branch operations.
+- Local WSL/Docker Level 2 verification on the user's workstation remains pending confirmation.
+- Vault content is seed-level; canonical validation per the Safety section of `docs/KNOWLEDGE_VAULT_STRUCTURE.md` still requires review before any page is treated as validated.
 
 ### Blockers
 
@@ -84,33 +85,32 @@ Merged (merge commit `783f329`).
 
 ### Verification Status
 
-Verified
+Verification pending
 
 ### Verification Level
 
-Level 3
+Level 1
 
 ### Verification Method
 
-GitHub CI workflow run on PR #21 (PR Guardian including the new acceptance-evidence check, API tests and lint on Python 3.12, worker tests and lint, web build, Docker Compose smoke), plus local Level 2 execution (ruff 0.8.6, compileall, pytest 20 API + 1 worker tests, guardian self-checks) in the isolated remote session.
+Repository inspection of the vault structure against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, plus local PR Guardian run on the diff. GitHub CI pending after PR creation.
 
 ### Evidence
 
-- CI run 28728454334 on head `bfe020c`: all 5 jobs concluded success.
-- Manual Merge Gate verification comment posted on PR #21 pinned to `bfe020c`; merged as `783f329`.
-- Local: ruff/compileall exit 0; 20 API + 1 worker tests passed; guardian caught a credential-shaped test string pre-push (renamed).
+- Vault tree matches the required structure (`raw/`, `sources/`, `wiki/` with all 10 domain directories plus `hot.md`/`index.md`/`log.md`/`overview.md`, `meta/graph.json`/`lint-report.md`/`dashboard.md`, `templates/page-template.md`, `.manifest.json`).
+- Wiki pages refreshed from current state docs; manifest updated.
 
 ### Limitations
 
-Required status checks cannot be enforced on this repository plan; the Manual Merge Gate comment is the merge evidence. User workstation WSL/Docker verification remains pending confirmation.
+Content-only change, no executable surface. `KnowledgePage` API read path deferred (table not yet populated by any writer).
 
 ### Required Next Verifier
 
-None for AOS-PROC-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
+GitHub CI / PR Guardian, then Orchestrator.
 
 ### Next Recommended Step
 
-Merge the post-merge state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3, spec `.archetype/work/AOS-KNOW-001.md`) to the Knowledge Agent using one branch and one isolated worktree.
+Open the PR, babysit CI, merge under the Manual Merge Gate, then pick the next Plane item (AOS-4, AOS-5, AOS-7, AOS-8, or AOS-9).
 
 ## Handoff Template
 

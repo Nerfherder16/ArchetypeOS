@@ -2,7 +2,7 @@
 
 ## Status
 
-Ready
+In Review
 
 ## Verified Baseline
 
@@ -25,6 +25,7 @@ Confirmed by inspection:
 - changing the `KnowledgePage` schema
 - scanner report schema changes
 - distillation pipeline automation (future work per RFC-0002)
+- the optional `KnowledgePage` API read path is explicitly deferred: the model exists (`apps/api/app/models.py`) but no writer populates the table yet, so a read endpoint would have nothing to read; deferred until a distillation or ingestion path exists
 
 ## Acceptance Criteria
 
@@ -44,4 +45,4 @@ Knowledge Agent: seed `knowledge/wiki/*` with real hot/index/log/overview conten
 ## Board Linkage
 
 - Plane: AOS-3 (Knowledge Vault Seed, Todo / status:ready)
-- Branch: TBD
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`

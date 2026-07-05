@@ -14,6 +14,10 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #15: Post-merge state reconciliation for AOS-RUNTIME-002.
 - PR #21: AOS-PROC-001 — Build Process Hardening (merge commit `783f329`): PR Guardian acceptance-evidence enforcement for code-path PRs, a shared API test fixture, 4 new scan-endpoint integration tests, pinned dev toolchain (ruff==0.8.6, pytest==8.3.4, Python 3.12), RFC-0003 work-package specs, `.archetype/work/` specs, PR Guardian merge-gate and acceptance-evidence documentation, scanner runtime-enforcement note. First merge executed under the Manual Merge Gate. Verified at Level 3 (CI run 28728454334, all 5 jobs green).
 
+### In Progress
+
+- AOS-KNOW-001 — Knowledge Vault Seed: vault built out to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` structure, `hot.md`/`index.md`/`overview.md`/`log.md` refreshed with current content, `.manifest.json` updated, `KnowledgePage` API read path explicitly deferred.
+
 ### Important Notes
 
 - Verification: Verified at Level 3. GitHub CI green on both PR heads (runs 28726472816 and 28726897393, all 5 jobs including PR Guardian and the compose smoke test), plus local ruff/compileall/pytest and a correct self-scan of the ArchetypeOS repo.
@@ -35,7 +39,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-Post-merge state reconciliation for PR #21; next implementation task is AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3).
+AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3), in progress on this branch; PR to be opened.
 
 ### Why It Matters
 

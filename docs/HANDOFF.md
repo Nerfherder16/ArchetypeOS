@@ -26,11 +26,11 @@ AOS-PROC-001 — Build Process Hardening
 
 ### PR
 
-To be opened.
+#21 — https://github.com/Nerfherder16/ArchetypeOS/pull/21
 
 ### Status
 
-In Progress — implementation complete, PR pending.
+Merged (merge commit `783f329`).
 
 ### Completed
 
@@ -43,6 +43,8 @@ In Progress — implementation complete, PR pending.
 - Documented the acceptance-evidence check and a new Manual Merge Gate protocol in `docs/PR_GUARDIAN.md`.
 - Documented the pre-existing compose `:ro` read-only runtime enforcement in `docs/REPOSITORY_SCANNER.md`.
 - Recorded the Plane board going live: project `ArchetypeOS` (AOS) seeded with 12 labels, default states, and work items AOS-1..AOS-9; GitHub issues #16-#20 migrated and closed.
+- After the Features toggle was enabled: created all 10 epic Modules, assigned issues to them, and created the "Sprint 2 — Operating Loop" cycle with AOS-1/2/3/7/9.
+- Merged PR #21 under the new Manual Merge Gate (head-SHA-pinned verification comment on `bfe020c`, CI run 28728454334 all 5 jobs green); Plane AOS-2 moved to Done.
 
 ### Files changed
 
@@ -82,33 +84,33 @@ In Progress — implementation complete, PR pending.
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
-Level 2
+Level 3
 
 ### Verification Method
 
-Local ruff/compileall/pytest (20 API tests including the 4 new scan-endpoint integration tests) plus PR Guardian self-checks, run in an isolated remote session bound to `claude/aos-runtime-002-scanner-1egyjw`.
+GitHub CI workflow run on PR #21 (PR Guardian including the new acceptance-evidence check, API tests and lint on Python 3.12, worker tests and lint, web build, Docker Compose smoke), plus local Level 2 execution (ruff 0.8.6, compileall, pytest 20 API + 1 worker tests, guardian self-checks) in the isolated remote session.
 
 ### Evidence
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 20 passed
-- `ruff check apps/api apps/worker tools` -> exit 0
-- `python -m compileall` -> exit 0
+- CI run 28728454334 on head `bfe020c`: all 5 jobs concluded success.
+- Manual Merge Gate verification comment posted on PR #21 pinned to `bfe020c`; merged as `783f329`.
+- Local: ruff/compileall exit 0; 20 API + 1 worker tests passed; guardian caught a credential-shaped test string pre-push (renamed).
 
 ### Limitations
 
-GitHub CI has not yet run because the PR is not yet opened. Required status checks cannot be enforced as a merge gate on this repository plan, so CI green must be confirmed manually on the head SHA at merge time (see `docs/PR_GUARDIAN.md` Manual Merge Gate). User workstation WSL/Docker verification remains pending confirmation.
+Required status checks cannot be enforced on this repository plan; the Manual Merge Gate comment is the merge evidence. User workstation WSL/Docker verification remains pending confirmation.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator review.
+None for AOS-PROC-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Open the PR for AOS-PROC-001, babysit CI, merge once green and confirmed on the head SHA, then assign AOS-KNOW-001 — Knowledge Vault Seed to the Knowledge Agent using one branch and one isolated worktree.
+Merge the post-merge state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3, spec `.archetype/work/AOS-KNOW-001.md`) to the Knowledge Agent using one branch and one isolated worktree.
 
 ## Handoff Template
 

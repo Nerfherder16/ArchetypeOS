@@ -30,14 +30,15 @@ Every new engineering session should read this before planning or implementation
 - PR #13: State reconciliation
 - PR #14: Repository Scanner MVP (AOS-RUNTIME-002)
 - PR #15: Post-merge state reconciliation for AOS-RUNTIME-002
+- PR #21: Build Process Hardening (AOS-PROC-001)
 
 ## Current Objective
 
-AOS-PROC-001 — Build Process Hardening is in progress on this branch (PR Guardian acceptance-evidence check, scan-endpoint integration tests, toolchain pins, work-package specs). PR to be opened.
+Reconcile state after the PR #21 merge, then assign AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3, spec `.archetype/work/AOS-KNOW-001.md`) as the next implementation task.
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main`; now carrying AOS-PROC-001)
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` for post-merge state reconciliation)
 
 ## CI Status
 
@@ -52,16 +53,15 @@ AOS-PROC-001 — Build Process Hardening is in progress on this branch (PR Guard
 
 - Status: Verification pending
 - Level: Level 2
-- Method: local ruff/compileall/pytest (20 API tests including the 4 new scan-endpoint integration tests) plus PR Guardian self-checks, run in an isolated remote session bound to `claude/aos-runtime-002-scanner-1egyjw`. GitHub CI pending on the PR to be opened.
-- Evidence: exit codes 0 for ruff, compileall, and pytest
-- Limitations: CI pending on PR; required status checks cannot be enforced as a merge gate on this repository plan, so merge gating stays manual (see `docs/PR_GUARDIAN.md` Manual Merge Gate); user workstation WSL/Docker verification still pending confirmation
+- Method: post-merge state-file reconciliation; local PR Guardian run on the docs diff; GitHub CI pending after PR creation. AOS-PROC-001 itself is Verified (Level 3, PR #21, CI run 28728454334 all green).
+- Evidence: state files reconciled to the PR #21 merge (`783f329`); Plane modules (10 epics) and Sprint 2 cycle populated after the Features toggle
+- Limitations: merge gating stays manual per the Manual Merge Gate (`docs/PR_GUARDIAN.md`); user workstation WSL/Docker verification still pending confirmation
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- build process hardening (AOS-PROC-001)
-- Plane board adoption
-- state updates
+- post-merge state reconciliation for PR #21
+- next-task clarity for AOS-KNOW-001 — Knowledge Vault Seed
 
 ## Out Of Scope Now
 
@@ -89,7 +89,7 @@ AOS-PROC-001 — Build Process Hardening is in progress on this branch (PR Guard
 
 ## Next Recommended Task
 
-Merge the AOS-PROC-001 PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed to the Knowledge Agent using one branch and one isolated worktree.
+Merge this state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed (Plane AOS-3, spec `.archetype/work/AOS-KNOW-001.md`) to the Knowledge Agent using one branch and one isolated worktree.
 
 ## Required Reading For New Sessions
 

@@ -56,7 +56,8 @@ services:
 
   worker:
     build:
-      context: ./apps/worker
+      context: .
+      dockerfile: apps/worker/Dockerfile
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}

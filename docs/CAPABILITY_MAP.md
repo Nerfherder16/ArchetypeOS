@@ -246,6 +246,7 @@ Owns continuous improvement.
 Capabilities:
 
 - Nightly Self Learning Loop
+- Learning Feedback Loop (lessons registry; RFC-0004)
 - Evolution Intelligence
 - Meta Agent
 - Prompt and Workflow Evolution
@@ -253,6 +254,8 @@ Capabilities:
 
 Primary artifacts:
 
+- docs/rfc/RFC-0004-Learning-Feedback-Loop.md
+- knowledge/wiki/lessons/index.md
 - docs/NIGHTLY_SELF_LEARNING_LOOP.md
 - docs/EVOLUTION_INTELLIGENCE.md
 - docs/META_AGENT.md

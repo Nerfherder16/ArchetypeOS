@@ -91,9 +91,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 Operator-approved principle: every PR, learning moment, and failure ties back into the loops; the guardian and the system itself get better as we go. Plane cycle `b0547f2d` with AOS-13 (/health fix), AOS-14 (Learning Feedback Loop, RFC-0004), AOS-15 (guardian evolution).
 
+### Sprint 4 Merged
+
+- PR #39: AOS-RUNTIME-004 — /health graceful degradation (merge commit `2b8febf`): per-probe guarding, 200 `degraded` instead of 500, 3 new tests (55 total), conftest Redis pinned to a dead port. Verified at Level 4 — CI exercised both states (API job = degraded path, compose smoke = healthy path) plus Orchestrator dual live probes. Alpha finding #1 closed (LES-005).
+
 ### Current Work
 
-AOS-RUNTIME-004 in review on this branch: `/health` returns 200 `degraded` instead of 500 when a probe fails — Alpha Review finding #1 closed via the full loop (live self-found failure → recorded decision → fix → both states verified live). 3 new tests (55 total); conftest Redis pinned to a dead port for hermeticity on machines with a real local Redis.
+AOS-LEARN-002 in review on this branch: RFC-0004 Learning Feedback Loop + `knowledge/wiki/lessons/` registry seeded with the 7 real Sprint 3–4 learning events (LES-001..007; 3 open, each feeding a named loop), CLAUDE.md operating rule, capability map Layer 8 entry. Phase 2 (deterministic guardian enforcement) is AOS-PRG-003, which must consume lessons by ID.
 
 ### Why It Matters
 

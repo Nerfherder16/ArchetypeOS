@@ -18,7 +18,7 @@ This vault stores human-readable engineering memory for ArchetypeOS.
 - risks
 - experiments
 - benchmarks
-- lessons
+- [[lessons/index|lessons]] — learning feedback registry (RFC-0004)
 - patterns
 
 ## Meta

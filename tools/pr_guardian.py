@@ -9,6 +9,7 @@ before reviewers spend time on a PR.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import re
 import subprocess
@@ -95,6 +96,9 @@ SCANNER_MANIFEST_BASENAMES = {
     "Cargo.toml",
     "go.mod",
 }
+
+ACCEPTED_WARNINGS_PATH = Path(__file__).resolve().parent.parent / ".archetype" / "guardian" / "accepted_warnings.json"
+LESSON_ID_PATTERN = re.compile(r"LES-\d+")
 
 
 class GuardianError(RuntimeError):
@@ -304,7 +308,9 @@ def check_verification_metadata(body: str) -> list[Finding]:
             Finding(
                 "block",
                 "missing-verification-metadata",
-                "PR body is missing required verification metadata fields: " + ", ".join(missing),
+                "PR body is missing required verification metadata fields: "
+                + ", ".join(missing)
+                + ". Fields must be plain `Field: value` lines at the start of a line; markdown bold/bullet wrappers (e.g. `- **Field:** value`) do not parse.",
             )
         )
         return findings
@@ -441,6 +447,100 @@ def check_scanner_signals(files: list[str], scan: dict | None, body: str) -> lis
     return findings
 
 
+def check_guardian_change_lesson(files: list[str], body: str) -> list[Finding]:
+    findings: list[Finding] = []
+    if (
+        "tools/pr_guardian.py" in files
+        and not any(path.startswith("knowledge/wiki/lessons/") for path in files)
+        and not has_override(body, "LESSON")
+    ):
+        findings.append(
+            Finding(
+                "block",
+                "guardian-change-without-lesson",
+                "Guardian rule changes must cite a lesson per RFC-0004. Update knowledge/wiki/lessons/ or include PR_GUARDIAN_OVERRIDE_LESSON with rationale.",
+            )
+        )
+    return findings
+
+
+def check_override_lesson_citation(body: str) -> list[Finding]:
+    findings: list[Finding] = []
+    if "PR_GUARDIAN_OVERRIDE_" in body and not LESSON_ID_PATTERN.search(body):
+        findings.append(
+            Finding(
+                "block",
+                "override-without-lesson-citation",
+                "Override tokens must cite a lesson ID (LES-<n>) per RFC-0004.",
+            )
+        )
+    return findings
+
+
+def load_accepted_warnings(path: Path | None = None) -> list[dict]:
+    """Return the accepted-warnings registry as a list, or [] if unavailable.
+
+    Mirrors ``load_scan_report``'s graceful degradation: a missing, unreadable,
+    or invalid registry yields an empty list and a stdout note, never a crash.
+    """
+    if path is None:
+        path = ACCEPTED_WARNINGS_PATH
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        print(f"Accepted-warnings registry: unavailable at {path} (treating as empty).")
+        return []
+    if not isinstance(data, list):
+        print(f"Accepted-warnings registry: not a JSON list at {path} (treating as empty).")
+        return []
+    return [entry for entry in data if isinstance(entry, dict)]
+
+
+def apply_accepted_warnings(
+    findings: list[Finding],
+    accepted: list[dict],
+    today: datetime.date | None = None,
+) -> list[Finding]:
+    if today is None:
+        today = datetime.date.today()
+    by_code = {entry["code"]: entry for entry in accepted if entry.get("code")}
+
+    result: list[Finding] = []
+    for finding in findings:
+        entry = by_code.get(finding.code)
+        if finding.severity != "warn" or entry is None:
+            result.append(finding)
+            continue
+
+        review_by = entry.get("review_by", "")
+        lesson = entry.get("lesson", "")
+        rationale = entry.get("rationale", "")
+        try:
+            review_date = datetime.date.fromisoformat(review_by)
+        except (ValueError, TypeError):
+            result.append(finding)
+            continue
+
+        if today <= review_date:
+            result.append(
+                Finding(
+                    "warn",
+                    finding.code,
+                    finding.message + f" [accepted per {lesson} until {review_by}: {rationale}]",
+                )
+            )
+        else:
+            result.append(
+                Finding(
+                    "block",
+                    "accepted-warning-expired",
+                    f"Accepted warning '{finding.code}' (per {lesson}) expired on {review_by}. "
+                    "Re-decide: renew the entry in .archetype/guardian/accepted_warnings.json or fix the underlying gap.",
+                )
+            )
+    return result
+
+
 def render(findings: list[Finding], files: list[str]) -> int:
     blocks = [finding for finding in findings if finding.severity == "block"]
 
@@ -498,6 +598,11 @@ def main() -> int:
     findings.extend(check_high_risk_files(files, body))
     findings.extend(check_verification_metadata(body))
     findings.extend(check_scanner_signals(files, scan, body))
+    findings.extend(check_guardian_change_lesson(files, body))
+    findings.extend(check_override_lesson_citation(body))
+
+    accepted = load_accepted_warnings()
+    findings = apply_accepted_warnings(findings, accepted)
 
     return render(findings, files)
 

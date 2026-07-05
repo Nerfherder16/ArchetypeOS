@@ -252,19 +252,30 @@ v0.1 is COMPLETE (2026-07-05). All Sprint 1–3 packages merged and verified; Ph
 
 ### AOS-LEARN-002 — Learning Feedback Loop, Phase 1 (RFC-0004)
 
-- Status: In Review
+- Status: Merged
 - Owner: Chief Architect / Orchestrator
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-14 (In Progress, high), Sprint 4 cycle `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b`
-- PR: to be opened
+- PR: #40
+- Plane: AOS-14 (Done)
 - Spec: `.archetype/work/AOS-LEARN-002.md`
-- Goal: institutionalize the operator's feedback principle — RFC-0004 contract, `knowledge/wiki/lessons/` registry seeded with the 7 real Sprint 3–4 learning events (3 open, feeding named loops), CLAUDE.md operating rule. Guardian enforcement is Phase 2 (AOS-PRG-003).
+- Verification Status: Verified
+- Notes: Level 2 (docs-only) — CI run 28747618699 all 5 jobs green; RFC-0004 + lessons registry (LES-001..007) live. Merge commit `e8527b9`.
+- Required Next Verifier: None.
+
+### AOS-PRG-003 — Guardian Evolution: Lessons Become Rules (RFC-0004 Phase 2)
+
+- Status: In Review
+- Owner: Runtime Agent (Opus) under Orchestrator
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-15 (In Progress), Sprint 4 cycle `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b`
+- PR: to be opened
+- Spec: `.archetype/work/AOS-PRG-003.md`
+- Goal: the guardian consumes its own miss log by lesson ID — LES-003 (metadata error teaches its fix), LES-006 (accepted-warnings registry with expiry, ending silent warning repetition), plus RFC-0004 enforcement (guardian changes require lessons; overrides require lesson citations). Nothing weakened.
 - Verification Status: Verification pending
-- Verification Level: Level 2
-- Verification Method: docs-only — suite unchanged-green (55/55, ruff clean); every lesson cites a checkable source; GitHub CI pending on PR
-- Evidence: RFC-0004; lessons index open/closed queue; PR body Acceptance Evidence
-- Limitations: digest/API visibility of lessons deferred per RFC-0004; enforcement is convention until AOS-PRG-003
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+- Verification Level: Level 3
+- Verification Method: local ruff/compileall/pytest (55 + new guardian-evolution tests, 8 existing guardian tests unchanged) + the CI guardian job executing the evolved code live on its own PR (precedent PR #33); Orchestrator local self-run before push
+- Evidence: PR body Acceptance Evidence; LES-003/LES-006 closed by ID
+- Limitations: warning-history persistence across runs not included (stateless acceptance registry chosen); web tests themselves remain a separate candidate
+- Required Next Verifier: GitHub CI / PR Guardian (self-test), then Orchestrator
 
 ### AOS-PRG-003 — Guardian Evolution Discipline
 

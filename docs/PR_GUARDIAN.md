@@ -119,6 +119,33 @@ The scan comes from the optional `--scan-report <path>` argument (a JSON report)
 
 The four checks are suppressed together by `PR_GUARDIAN_OVERRIDE_SCANNER` with rationale in the PR body.
 
+## Guardian Evolution (RFC-0004 Phase 2)
+
+The guardian evolves from logged reality, never speculation: every rule change consumes a lesson **by ID**. Three mechanisms enforce and support that discipline.
+
+### Guardian changes must cite a lesson
+
+- `guardian-change-without-lesson` (block) — the diff touches `tools/pr_guardian.py` but no changed path starts with `knowledge/wiki/lessons/`. Update the lessons registry to record the reality that motivated the rule change, or include `PR_GUARDIAN_OVERRIDE_LESSON` with rationale (for non-rule refactors).
+
+### Overrides must cite a lesson ID
+
+- `override-without-lesson-citation` (block) — the PR body uses any `PR_GUARDIAN_OVERRIDE_*` token but contains no `LES-<n>` reference. Every override is an exception to a rule; the exception must point at the logged lesson (`LES-<n>`) that justifies it.
+
+### Accepted-warnings registry
+
+Warnings that are consciously accepted (rather than silently repeated) are recorded in `.archetype/guardian/accepted_warnings.json`, a JSON list of entries:
+
+```json
+{"code": "web-tests-not-enforced", "lesson": "LES-006", "rationale": "why this warning is accepted", "review_by": "YYYY-MM-DD"}
+```
+
+After all findings are collected, each warn-severity finding whose `code` matches an entry is post-processed:
+
+- today `<= review_by` — the finding stays a warning, but its message is annotated ` [accepted per <lesson> until <review_by>: <rationale>]` so the acceptance is cited and dated, never silent.
+- today `> review_by` — the finding escalates to a block with code `accepted-warning-expired`, forcing a re-decision: renew the entry (new `review_by`) or fix the underlying gap.
+
+Only warn-severity findings are eligible; blocks are never softened by the registry. A missing, unreadable, or invalid registry is treated as an empty list (graceful degradation, with a stdout note), exactly like the scan report. The registry is stdlib-only (`json`, `datetime`, `pathlib`).
+
 ## Override Protocol
 
 Overrides are allowed only with rationale in the PR body.
@@ -133,7 +160,10 @@ PR_GUARDIAN_OVERRIDE_CAPABILITY_MAP
 PR_GUARDIAN_OVERRIDE_HIGH_RISK_ACK
 PR_GUARDIAN_OVERRIDE_ACCEPTANCE
 PR_GUARDIAN_OVERRIDE_SCANNER
+PR_GUARDIAN_OVERRIDE_LESSON
 ```
+
+`PR_GUARDIAN_OVERRIDE_LESSON` suppresses `guardian-change-without-lesson` for guardian edits that are not rule changes (refactors). Note that any override token still requires a `LES-<n>` citation in the body (`override-without-lesson-citation`).
 
 `PR_GUARDIAN_OVERRIDE_SCANNER` suppresses all four scanner-informed checks (`scanner-secret-path`, `scanner-env-committed`, `scanner-missing-tests`, `scanner-new-ecosystem`).
 

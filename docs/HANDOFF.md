@@ -14,15 +14,15 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Chief Architect / Orchestrator (Fable 5) — direct authorship; the lessons are this session's first-hand events
+Runtime Agent (Opus) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-LEARN-002 — Learning Feedback Loop Phase 1, RFC-0004 (Plane AOS-14; Sprint 4 package 2), folding in the AOS-RUNTIME-004 (PR #39) reconciliation
+AOS-PRG-003 — Guardian Evolution, RFC-0004 Phase 2 (Plane AOS-15; Sprint 4 finale), folding in the AOS-LEARN-002 (PR #40) reconciliation
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `2b8febf`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `e8527b9`)
 
 ### PR
 
@@ -30,30 +30,34 @@ To be opened.
 
 ### Status
 
-In Review — RFC + registry + 7 lessons written, docs-only. AOS-RUNTIME-004 merged as `2b8febf` (PR #39, Verified at Level 4; Plane AOS-13 Done; Alpha finding #1 closed, recorded as LES-005).
+In Review — guardian evolution implemented and Orchestrator-verified (65/65 tests; annotation and expiry exercised live). AOS-LEARN-002 merged as `e8527b9` (PR #40; Plane AOS-14 Done).
 
 ### Completed
 
-- RFC-0004 Learning Feedback Loop: learning-event taxonomy, lesson page contract, loop-feed assignments, staged enforcement (convention now, guardian in AOS-PRG-003), digest integration explicitly deferred with rationale.
-- `knowledge/wiki/lessons/` seeded with the 7 real Sprint 3–4 events: LES-001/002/003 (guardian catches), LES-004 (PR #39 conftest review remediation), LES-005 (/health self-found defect, closed), LES-006 (unactioned web MISSING_TESTS warnings, open), LES-007 (machine-invisible doc staleness, open). Registry index with open/closed queue; linked from `wiki/index.md`; `wiki/log.md` entry.
-- CLAUDE.md operating rule: record a lesson for every BLOCK/CI failure/review remediation/self-found defect in the same change set.
-- Capability map Layer 8: Learning Feedback Loop capability + artifacts.
-- PR #39 reconciled (AOS-RUNTIME-004 → Merged; Plane AOS-13 Done, AOS-14 In Progress).
+- LES-003 consumed: `missing-verification-metadata` BLOCK message now teaches the plain `Field: value` line format (markdown wrappers don't parse).
+- LES-006 consumed: `.archetype/guardian/accepted_warnings.json` registry — accepted WARN codes are annotated with their lesson + expiry (web-tests entry expires 2026-08-01); expired acceptances escalate to BLOCK `accepted-warning-expired`, forcing a re-decision. Missing/invalid registry degrades gracefully. Blocks are never touched.
+- RFC-0004 enforcement: `guardian-change-without-lesson` BLOCK (guardian diff without a lessons change; `PR_GUARDIAN_OVERRIDE_LESSON` escape) and `override-without-lesson-citation` BLOCK (any override token requires a `LES-<n>` citation).
+- 10 new tests in `apps/api/tests/test_guardian_evolution.py` (65 total); all 8 existing guardian tests unchanged; guardian stays stdlib-only.
+- `docs/PR_GUARDIAN.md` "Guardian Evolution (RFC-0004 Phase 2)" section.
+- LES-003 and LES-006 closed in the registry, each citing this package.
+- PR #40 reconciled (AOS-LEARN-002 → Merged; Plane AOS-14 Done, AOS-15 In Progress).
 
 ### Files changed
 
-- `docs/rfc/RFC-0004-Learning-Feedback-Loop.md`, `knowledge/wiki/lessons/` (index + LES-001..007), `knowledge/wiki/index.md`, `knowledge/wiki/log.md`
-- `CLAUDE.md`, `docs/CAPABILITY_MAP.md`
-- `.archetype/work/AOS-LEARN-002.md` (new spec)
+- `tools/pr_guardian.py`, `.archetype/guardian/accepted_warnings.json` (new), `apps/api/tests/test_guardian_evolution.py` (new), `docs/PR_GUARDIAN.md`
+- `knowledge/wiki/lessons/LES-003.md`, `LES-006.md`, `index.md` (closures)
+- `.archetype/work/AOS-PRG-003.md` (new spec)
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- Docs-only: `PYTHONPATH=apps/api pytest apps/api/tests -q` → 55 passed unchanged; ruff/compileall exit 0.
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` → 65 passed (builder run + Orchestrator re-run); ruff + compileall exit 0
+- Orchestrator live exercise: acceptance annotation (2026-07-05 → warn with lesson citation) and expiry (2026-08-02 → BLOCK) against the real seed registry
+- Self-application: this PR touches the guardian AND the lessons registry, satisfying its own new rule; CI guardian job executes the evolved code live on this PR
 
 ### Known Risks
 
-- Lessons are convention-enforced until AOS-PRG-003; the open-lesson queue could rot if reconciliation PRs skip reviewing it (mitigation is the queue's visibility in the index).
+- The acceptance registry is stateless by design; if the web-tests entry expires unrenewed on 2026-08-01, every web PR will BLOCK until a re-decision — intentional forcing function, but worth calendaring.
 
 ### Blockers
 
@@ -65,27 +69,27 @@ Verification pending
 
 ### Verification Level
 
-Level 2
+Level 3
 
 ### Verification Method
 
-Docs-only package: suite unchanged-green locally; every lesson cites a checkable source (PR / CI run / captured artifact). GitHub CI pending on the PR; merge under the Manual Merge Gate.
+Local ruff/compileall/pytest (65) + live function exercise of both acceptance paths + the CI guardian job running the evolved code on its own PR. Merge under the Manual Merge Gate.
 
 ### Evidence
 
-- RFC-0004; lessons index table (7 rows, 3 open with named loop feeds); 55/55 pytest, ruff/compileall exit 0.
+- Exit codes 0; 65/65; live annotation/expiry outputs in the PR body; LES-003/LES-006 closures by ID.
 
 ### Limitations
 
-Lessons not yet machine-consumed — guardian enforcement and rule evolution land in AOS-PRG-003.
+Cross-run warning history not persisted (stateless registry chosen); web tests remain a separate package candidate.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
+GitHub CI / PR Guardian (live self-test), then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge the AOS-LEARN-002 PR after CI passes. Then AOS-PRG-003 (guardian evolution) — its spec must consume LES-003 and LES-006 by ID — completes Sprint 4.
+Merge the AOS-PRG-003 PR after CI passes — that completes Sprint 4 (Self-Healing & Learning Loop). Remaining open lesson: LES-007 (doc staleness) → next sprint candidate alongside web tests and architecture-graph semantics.
 
 ## Handoff Template
 

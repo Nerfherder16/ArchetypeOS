@@ -95,9 +95,13 @@ Operator-approved principle: every PR, learning moment, and failure ties back in
 
 - PR #39: AOS-RUNTIME-004 — /health graceful degradation (merge commit `2b8febf`): per-probe guarding, 200 `degraded` instead of 500, 3 new tests (55 total), conftest Redis pinned to a dead port. Verified at Level 4 — CI exercised both states (API job = degraded path, compose smoke = healthy path) plus Orchestrator dual live probes. Alpha finding #1 closed (LES-005).
 
+### Sprint 4 Merged (continued)
+
+- PR #40: AOS-LEARN-002 — Learning Feedback Loop Phase 1, RFC-0004 (merge commit `e8527b9`): lessons contract + `knowledge/wiki/lessons/` registry seeded with the 7 real Sprint 3–4 events, CLAUDE.md recording rule, capability map Layer 8 entry. Verified at Level 2 (docs-only; CI run 28747618699 all green).
+
 ### Current Work
 
-AOS-LEARN-002 in review on this branch: RFC-0004 Learning Feedback Loop + `knowledge/wiki/lessons/` registry seeded with the 7 real Sprint 3–4 learning events (LES-001..007; 3 open, each feeding a named loop), CLAUDE.md operating rule, capability map Layer 8 entry. Phase 2 (deterministic guardian enforcement) is AOS-PRG-003, which must consume lessons by ID.
+AOS-PRG-003 in review on this branch — the guardian evolves by consuming its own miss log by lesson ID: LES-003 (the metadata BLOCK message now teaches the plain `Field: value` format), LES-006 (accepted-warnings registry with expiry 2026-08-01 — accepted warnings are annotated with their lesson, expired ones escalate to BLOCK), plus RFC-0004 enforcement (guardian changes require a lessons change; override tokens require a LES-<n> citation). 10 new guardian-evolution tests (65 total); nothing weakened. LES-003 and LES-006 closed.
 
 ### Why It Matters
 

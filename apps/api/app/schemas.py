@@ -267,3 +267,19 @@ class RecommendationRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class NightlyDigestRead(BaseModel):
+    id: str
+    project_id: str
+    digest_date: datetime
+    summary: str | None
+    changes: list
+    recommendations: list
+    repeated_tasks: list
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

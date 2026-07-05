@@ -6,6 +6,7 @@ import {
   createResearchNote,
   fetchArchitecture,
   fetchDecisions,
+  fetchDigests,
   fetchDna,
   fetchHealth,
   fetchProjects,
@@ -13,10 +14,12 @@ import {
   fetchRepositories,
   fetchResearchNotes,
   registerRepository,
+  runDigest,
   scanRepository,
   type ArchitectureGraph,
   type Decision,
   type Health,
+  type NightlyDigest,
   type Project,
   type Recommendation,
   type Repository,
@@ -71,6 +74,10 @@ function App() {
   const [newDecisionText, setNewDecisionText] = useState('');
   const [newDecisionNoteId, setNewDecisionNoteId] = useState('');
   const [creatingDecision, setCreatingDecision] = useState(false);
+
+  const [digests, setDigests] = useState<NightlyDigest[]>([]);
+  const [digestsError, setDigestsError] = useState<string | null>(null);
+  const [runningDigest, setRunningDigest] = useState(false);
 
   const loadHealth = useCallback(async () => {
     setHealthError(null);
@@ -143,6 +150,16 @@ function App() {
     }
   }, []);
 
+  const loadDigests = useCallback(async (projectId: string) => {
+    setDigestsError(null);
+    try {
+      setDigests(await fetchDigests(projectId));
+    } catch (err) {
+      setDigests([]);
+      setDigestsError(errorMessage(err));
+    }
+  }, []);
+
   useEffect(() => {
     void loadHealth();
     void loadProjects();
@@ -158,11 +175,14 @@ function App() {
     setRecommendations([]);
     setArtifactsError(null);
     setNewDecisionNoteId('');
+    setDigests([]);
+    setDigestsError(null);
     if (selectedProjectId) {
       void loadRepositories(selectedProjectId);
       void loadArtifacts(selectedProjectId);
+      void loadDigests(selectedProjectId);
     }
-  }, [selectedProjectId, loadRepositories, loadArtifacts]);
+  }, [selectedProjectId, loadRepositories, loadArtifacts, loadDigests]);
 
   useEffect(() => {
     if (selectedProjectId && selectedRepositoryId) {
@@ -304,6 +324,22 @@ function App() {
     },
     [selectedProjectId, newDecisionTitle, newDecisionText, newDecisionNoteId, loadArtifacts],
   );
+
+  const handleRunDigest = useCallback(async () => {
+    if (!selectedProjectId) {
+      return;
+    }
+    setRunningDigest(true);
+    setDigestsError(null);
+    try {
+      await runDigest(selectedProjectId);
+      await loadDigests(selectedProjectId);
+    } catch (err) {
+      setDigestsError(errorMessage(err));
+    } finally {
+      setRunningDigest(false);
+    }
+  }, [selectedProjectId, loadDigests]);
 
   const summary = dna?.scan_summary.summary;
   const primaryLanguages =
@@ -640,10 +676,43 @@ function App() {
         </section>
       ) : null}
 
+      {selectedProjectId ? (
+        <section style={sectionStyle}>
+          <h2>Nightly Digest</h2>
+          {digestsError ? (
+            <p role="alert" style={errorStyle}>
+              {digestsError}
+            </p>
+          ) : null}
+          <button type="button" disabled={runningDigest} onClick={() => void handleRunDigest()}>
+            {runningDigest ? 'Running...' : 'Run digest'}
+          </button>
+          {digests.length === 0 ? (
+            <p>No digests yet.</p>
+          ) : (
+            <ul>
+              {digests.map((digest, index) => (
+                <li key={digest.id}>
+                  {new Date(digest.digest_date).toLocaleDateString()} — {digest.summary ?? 'no summary'}
+                  {index === 0 && digest.recommendations.length > 0 ? (
+                    <ul>
+                      {digest.recommendations.map((recommendation, recIndex) => (
+                        <li key={recIndex}>
+                          {recommendation.title ?? 'Untitled'} — {recommendation.reason ?? ''}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
       <section style={sectionStyle}>
         <h2>v0.1 Placeholders</h2>
         <ul>
-          <li>Nightly digest view</li>
           <li>Voice inbox text capture</li>
         </ul>
       </section>

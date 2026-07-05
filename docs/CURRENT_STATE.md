@@ -44,10 +44,11 @@ Every new engineering session should read this before planning or implementation
 - PR #32: AOS-LOCAL-001 Level 4 verification handoff and remediations — Sprint 2 complete
 - PR #33: PR Guardian reads repository scanner output (AOS-PRG-002)
 - PR #34: Decision and Research artifacts (AOS-DEC-001)
+- PR #35: /guardian Claude Code command
 
 ## Current Objective
 
-Micro-PR in review: `/guardian` Claude Code command committed to the repo so every session shares the same guardian invocation; folds in the PR #34 reconciliation. Then AOS-LEARN-001 (nightly digest) and AOS-ALPHA-001 (Alpha Review) close Sprint 3 and v0.1.
+Sprint 3 package 3: AOS-LEARN-001 (nightly digest, Plane AOS-11) in review on this branch, folding in the PR #35 reconciliation. Only AOS-ALPHA-001 (Alpha Review) remains for v0.1.
 
 ## Active Branch
 
@@ -65,15 +66,15 @@ Micro-PR in review: `/guardian` Claude Code command committed to the repo so eve
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: command-file-only micro-change; local PR Guardian on the diff; GitHub CI pending after PR creation. AOS-DEC-001 itself is Verified (Level 4, PR #34, CI run 28742814441 all green plus 7/7 browser drive).
-- Evidence: `.claude/commands/guardian.md` wraps the exact invocations exercised 12+ times this cycle
-- Limitations: command ergonomics only; no behavior change to the guardian itself
+- Level: Level 4
+- Method: local ruff/compileall/pytest (52 API tests incl. 6 new digest tests) + strict tsc/vite build + headless-Chromium drive of the Nightly Digest section (7/7 checks); GitHub CI pending after PR creation
+- Evidence: exit codes 0; browser drive confirmed run-digest, summary counts, draft recommendation rendering, placeholder retirement, reload persistence
+- Limitations: browser drive is a manual Level 4 pass; aggregation deterministic-only per scope lock
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- `/guardian` command micro-PR + PR #34 reconciliation
+- Sprint 3 package 3: nightly digest (AOS-LEARN-001)
 
 ## Out Of Scope Now
 
@@ -100,7 +101,7 @@ Micro-PR in review: `/guardian` Claude Code command committed to the repo so eve
 
 ## Next Recommended Task
 
-Merge the `/guardian` micro-PR after CI passes. Then AOS-LEARN-001 (nightly digest) and AOS-ALPHA-001 (Alpha Review) complete Sprint 3 and v0.1.
+Merge the AOS-LEARN-001 PR after CI passes under the Manual Merge Gate. Then AOS-ALPHA-001 (Alpha Review) — the final v0.1 package.
 
 ## Required Reading For New Sessions
 

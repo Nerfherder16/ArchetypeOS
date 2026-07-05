@@ -1,0 +1,57 @@
+[
+    {
+        "id": "96b000ed-916f-4a7d-9c2e-da301de37cf1",
+        "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+        "title": "Deepen architecture graph beyond directory containment in v0.2",
+        "context": "Self-graph is 12 nodes / 11 contains-edges at confidence 0.65 - it locates the apps but expresses no service, dependency, or data-flow semantics.",
+        "decision": "Treat import/manifest-derived edges (api->db, worker->redis, web->api) as a v0.2 architecture-spine candidate.",
+        "alternatives": [
+            "keep directory-level graph",
+            "adopt an external analyzer"
+        ],
+        "tradeoffs": [
+            "deeper analysis costs scanner complexity; directory graph stays as the fallback layer"
+        ],
+        "consequences": [
+            "graph becomes decision-grade instead of navigational"
+        ],
+        "evidence": [],
+        "confidence": 0.7,
+        "status": "active",
+        "version": 1,
+        "created_at": "2026-07-05T14:24:18.813657",
+        "updated_at": "2026-07-05T14:24:18.813663"
+    },
+    {
+        "id": "5627652f-555f-4705-9bdd-51d0061661fc",
+        "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+        "title": "Fix /health Redis degradation as first post-v0.1 runtime task",
+        "context": "Alpha self-run showed GET /health raises 500 when Redis is down; on teevee-1 with Redis present it was healthy, so the defect only appears in degraded environments - exactly where a health endpoint matters most.",
+        "decision": "Queue a small post-v0.1 package to catch the Redis ConnectionError in health() and report redis:false with HTTP 200.",
+        "alternatives": [
+            "leave as-is (500 signals unhealthiness)",
+            "remove redis from health"
+        ],
+        "tradeoffs": [
+            "200-with-flags requires callers to inspect the body, but keeps db/api status visible when only redis is degraded"
+        ],
+        "consequences": [
+            "health endpoint becomes usable for partial-outage triage"
+        ],
+        "evidence": [
+            {
+                "type": "research_note",
+                "research_note_id": "607317a7-ec99-4ab4-9553-661f6b618e7f"
+            },
+            {
+                "type": "research_note",
+                "id": "607317a7-ec99-4ab4-9553-661f6b618e7f"
+            }
+        ],
+        "confidence": 0.85,
+        "status": "active",
+        "version": 1,
+        "created_at": "2026-07-05T14:24:18.774296",
+        "updated_at": "2026-07-05T14:24:18.774303"
+    }
+]

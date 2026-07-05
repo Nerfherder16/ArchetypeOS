@@ -1,0 +1,409 @@
+{
+    "nodes": [
+        {
+            "id": "3c9e983e-9e2d-4bb0-9d26-18bc39cbf09b",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": ".archetype",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                ".archetype"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.766524",
+            "updated_at": "2026-07-05T14:23:34.766527"
+        },
+        {
+            "id": "404401a8-91e8-41c5-8cee-b27c1d168fba",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": ".claude",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                ".claude"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.767408",
+            "updated_at": "2026-07-05T14:23:34.767410"
+        },
+        {
+            "id": "a0ee024e-352c-4aa7-a037-f91144740cd2",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": ".github",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                ".github"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.768238",
+            "updated_at": "2026-07-05T14:23:34.768241"
+        },
+        {
+            "id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "ArchetypeOS",
+            "type": "repository",
+            "parent_id": null,
+            "confidence": 0.9,
+            "evidence": [
+                "registered repository"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.760216",
+            "updated_at": "2026-07-05T14:23:34.760221"
+        },
+        {
+            "id": "91319daa-023d-4f01-8024-1b3f750227db",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "agents",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "agents"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.768889",
+            "updated_at": "2026-07-05T14:23:34.768890"
+        },
+        {
+            "id": "b8d686a1-884a-46eb-815b-548d84c56d6f",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "apps",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "apps"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.769580",
+            "updated_at": "2026-07-05T14:23:34.769582"
+        },
+        {
+            "id": "2ea66765-7768-4975-8388-5e5d4521d520",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "docs",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "docs"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.770239",
+            "updated_at": "2026-07-05T14:23:34.770241"
+        },
+        {
+            "id": "721fa9d9-d785-4566-8ca2-4451f05ec4d3",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "knowledge",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "knowledge"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.770838",
+            "updated_at": "2026-07-05T14:23:34.770839"
+        },
+        {
+            "id": "69820104-2fc4-47f6-8046-883ef8e248aa",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "scripts",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "scripts"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.771540",
+            "updated_at": "2026-07-05T14:23:34.771542"
+        },
+        {
+            "id": "6626a678-dbd5-473a-ba15-79754ea6d09b",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "skills",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "skills"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.772310",
+            "updated_at": "2026-07-05T14:23:34.772313"
+        },
+        {
+            "id": "5640c8b1-f10e-45ff-bfdc-5c1f7da67808",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "templates",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "templates"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.772922",
+            "updated_at": "2026-07-05T14:23:34.772924"
+        },
+        {
+            "id": "64ce4d95-aa77-473d-86d7-9c6a7a7c0909",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "label": "tools",
+            "type": "directory",
+            "parent_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "confidence": 0.65,
+            "evidence": [
+                "tools"
+            ],
+            "risks": [],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.773491",
+            "updated_at": "2026-07-05T14:23:34.773493"
+        }
+    ],
+    "edges": [
+        {
+            "id": "0f0901f6-08b2-4c9b-a5da-318e1579c610",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "6626a678-dbd5-473a-ba15-79754ea6d09b",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "skills"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.782349",
+            "updated_at": "2026-07-05T14:23:34.782351"
+        },
+        {
+            "id": "33ebb982-541f-4a04-9b41-e0cb8c9cc65c",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "64ce4d95-aa77-473d-86d7-9c6a7a7c0909",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "tools"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.783547",
+            "updated_at": "2026-07-05T14:23:34.783549"
+        },
+        {
+            "id": "4d344266-43a8-4f0a-95a4-bb880afb666f",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "404401a8-91e8-41c5-8cee-b27c1d168fba",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                ".claude"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.777638",
+            "updated_at": "2026-07-05T14:23:34.777641"
+        },
+        {
+            "id": "5c852e18-87e5-49a6-a6c7-db95e4c35d61",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "b8d686a1-884a-46eb-815b-548d84c56d6f",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "apps"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.779756",
+            "updated_at": "2026-07-05T14:23:34.779758"
+        },
+        {
+            "id": "60f544be-83b0-41ec-9ab4-90d0947c55e8",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "3c9e983e-9e2d-4bb0-9d26-18bc39cbf09b",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                ".archetype"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.776627",
+            "updated_at": "2026-07-05T14:23:34.776630"
+        },
+        {
+            "id": "75bd8d99-e0a9-417e-82d3-1cdc662551e8",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "721fa9d9-d785-4566-8ca2-4451f05ec4d3",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "knowledge"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.781078",
+            "updated_at": "2026-07-05T14:23:34.781081"
+        },
+        {
+            "id": "a553928c-e614-4412-ad6e-da9e41bb4d3b",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "5640c8b1-f10e-45ff-bfdc-5c1f7da67808",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "templates"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.782868",
+            "updated_at": "2026-07-05T14:23:34.782870"
+        },
+        {
+            "id": "a5dd6ae3-915e-4b04-8ff4-aaded8ac8d97",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "a0ee024e-352c-4aa7-a037-f91144740cd2",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                ".github"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.778425",
+            "updated_at": "2026-07-05T14:23:34.778428"
+        },
+        {
+            "id": "c69f8afd-009a-4893-bab8-47d1b27616b7",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "69820104-2fc4-47f6-8046-883ef8e248aa",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "scripts"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.781680",
+            "updated_at": "2026-07-05T14:23:34.781682"
+        },
+        {
+            "id": "c9e7db37-4bee-428e-9add-c037252b0289",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "91319daa-023d-4f01-8024-1b3f750227db",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "agents"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.779081",
+            "updated_at": "2026-07-05T14:23:34.779083"
+        },
+        {
+            "id": "d9595765-c6f5-48b8-97ea-8056be5e007b",
+            "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "from_node_id": "c50668b6-4e64-4765-9807-e6244bb3c331",
+            "to_node_id": "2ea66765-7768-4975-8388-5e5d4521d520",
+            "type": "contains",
+            "confidence": 0.75,
+            "evidence": [
+                "docs"
+            ],
+            "manual_correction": null,
+            "status": "draft",
+            "version": 1,
+            "created_at": "2026-07-05T14:23:34.780422",
+            "updated_at": "2026-07-05T14:23:34.780425"
+        }
+    ]
+}

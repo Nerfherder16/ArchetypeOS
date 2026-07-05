@@ -1,0 +1,582 @@
+{
+    "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+    "language_mix": {
+        "Markdown": 122,
+        "YAML": 2,
+        "Python": 23,
+        "HTML": 1,
+        "TypeScript": 3,
+        "TypeScript React": 1,
+        "Shell": 2
+    },
+    "package_managers": [
+        "npm",
+        "pip",
+        "python"
+    ],
+    "deployment_files": [
+        "apps/api/Dockerfile",
+        "apps/web/Dockerfile",
+        "apps/worker/Dockerfile",
+        "docker-compose.yml"
+    ],
+    "risk_flags": [],
+    "scan_summary": {
+        "root_name": "ArchetypeOS",
+        "repository_path": "/home/user/ArchetypeOS",
+        "folder_map": [
+            ".archetype",
+            ".claude",
+            ".github",
+            "agents",
+            "apps",
+            "docs",
+            "knowledge",
+            "scripts",
+            "skills",
+            "templates",
+            "tools"
+        ],
+        "file_count": 184,
+        "language_mix": {
+            "Markdown": 122,
+            "YAML": 2,
+            "Python": 23,
+            "HTML": 1,
+            "TypeScript": 3,
+            "TypeScript React": 1,
+            "Shell": 2
+        },
+        "package_managers": [
+            "npm",
+            "pip",
+            "python"
+        ],
+        "package_manifests": [
+            "apps/api/requirements.txt",
+            "apps/web/package.json",
+            "apps/worker/requirements.txt",
+            "pyproject.toml"
+        ],
+        "deployment_files": [
+            "apps/api/Dockerfile",
+            "apps/web/Dockerfile",
+            "apps/worker/Dockerfile",
+            "docker-compose.yml"
+        ],
+        "readme_files": [
+            "README.md"
+        ],
+        "risk_flags": [],
+        "architecture_nodes": [
+            {
+                "label": "ArchetypeOS",
+                "type": "repository",
+                "confidence": 0.9,
+                "evidence": [
+                    "registered repository path"
+                ]
+            },
+            {
+                "label": ".archetype",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    ".archetype"
+                ]
+            },
+            {
+                "label": ".claude",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    ".claude"
+                ]
+            },
+            {
+                "label": ".github",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    ".github"
+                ]
+            },
+            {
+                "label": "agents",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "agents"
+                ]
+            },
+            {
+                "label": "apps",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "apps"
+                ]
+            },
+            {
+                "label": "docs",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "docs"
+                ]
+            },
+            {
+                "label": "knowledge",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "knowledge"
+                ]
+            },
+            {
+                "label": "scripts",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "scripts"
+                ]
+            },
+            {
+                "label": "skills",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "skills"
+                ]
+            },
+            {
+                "label": "templates",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "templates"
+                ]
+            },
+            {
+                "label": "tools",
+                "type": "directory",
+                "confidence": 0.65,
+                "evidence": [
+                    "tools"
+                ]
+            }
+        ],
+        "architecture_edges": [
+            {
+                "from": "ArchetypeOS",
+                "to": ".archetype",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    ".archetype"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": ".claude",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    ".claude"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": ".github",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    ".github"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "agents",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "agents"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "apps",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "apps"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "docs",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "docs"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "knowledge",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "knowledge"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "scripts",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "scripts"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "skills",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "skills"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "templates",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "templates"
+                ]
+            },
+            {
+                "from": "ArchetypeOS",
+                "to": "tools",
+                "type": "contains",
+                "confidence": 0.75,
+                "evidence": [
+                    "tools"
+                ]
+            }
+        ],
+        "manifests": [
+            {
+                "path": ".env.example",
+                "kind": "env_template"
+            },
+            {
+                "path": "apps/api/requirements.txt",
+                "kind": "python"
+            },
+            {
+                "path": "apps/web/package.json",
+                "kind": "node"
+            },
+            {
+                "path": "apps/worker/requirements.txt",
+                "kind": "python"
+            },
+            {
+                "path": "pyproject.toml",
+                "kind": "python"
+            }
+        ],
+        "docker_files": [
+            {
+                "path": "apps/api/Dockerfile",
+                "kind": "dockerfile"
+            },
+            {
+                "path": "apps/web/Dockerfile",
+                "kind": "dockerfile"
+            },
+            {
+                "path": "apps/worker/Dockerfile",
+                "kind": "dockerfile"
+            },
+            {
+                "path": "docker-compose.yml",
+                "kind": "compose"
+            }
+        ],
+        "ci_files": [
+            {
+                "path": ".github/workflows/ci.yml",
+                "kind": "github_actions"
+            }
+        ],
+        "folder_structure": [
+            {
+                "path": ".archetype",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": ".archetype/alpha",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": ".archetype/work",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": ".claude",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": ".claude/commands",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": ".github",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": ".github/workflows",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "agents",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "agents/architecture_cartographer",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "agents/final_judge",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "agents/research_librarian",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "apps",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "apps/api",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "apps/api/app",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "apps/api/tests",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "apps/web",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "apps/web/src",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "apps/worker",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "apps/worker/app",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "apps/worker/tests",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "docs",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "docs/rfc",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "knowledge",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "knowledge/meta",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "knowledge/raw",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "knowledge/sources",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "knowledge/templates",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "knowledge/wiki",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "knowledge/wiki/benchmarks",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/decisions",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/experiments",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/lessons",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/patterns",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/projects",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/repositories",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/research",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/risks",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "knowledge/wiki/technologies",
+                "type": "directory",
+                "depth": 3
+            },
+            {
+                "path": "scripts",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "skills",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "skills/ci_devops",
+                "type": "directory",
+                "depth": 2
+            },
+            {
+                "path": "templates",
+                "type": "directory",
+                "depth": 1
+            },
+            {
+                "path": "tools",
+                "type": "directory",
+                "depth": 1
+            }
+        ],
+        "summary": {
+            "total_files_seen": 184,
+            "total_dirs_seen": 43,
+            "languages": [
+                "HTML",
+                "Markdown",
+                "Python",
+                "Shell",
+                "TypeScript",
+                "TypeScript React",
+                "YAML"
+            ],
+            "primary_language_hints": [
+                "Python",
+                "TypeScript",
+                "Shell"
+            ],
+            "has_docker": true,
+            "has_ci": true,
+            "has_tests": true,
+            "has_env_example": true
+        },
+        "risk_signals": [
+            {
+                "severity": "info",
+                "code": "BUILD_ARTIFACT_DIR_PRESENT",
+                "path": "apps/web/dist",
+                "message": "Build artifact directory present and skipped: dist"
+            },
+            {
+                "severity": "info",
+                "code": "DEPENDENCY_DIR_PRESENT",
+                "path": "apps/web/node_modules",
+                "message": "Dependency directory present and skipped: node_modules"
+            },
+            {
+                "severity": "info",
+                "code": "MULTIPLE_ECOSYSTEMS",
+                "path": null,
+                "message": "Manifests span multiple language ecosystems"
+            }
+        ],
+        "notes": []
+    },
+    "confidence": 0.65,
+    "status": "draft",
+    "version": 1,
+    "created_at": "2026-07-05T14:23:34.762546",
+    "updated_at": "2026-07-05T14:23:34.762550"
+}

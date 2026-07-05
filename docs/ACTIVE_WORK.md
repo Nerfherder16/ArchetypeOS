@@ -215,18 +215,29 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-LEARN-001 — Nightly Learning Digest (Manual Run)
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-11 (In Progress), Sprint 3 cycle
-- PR: to be opened
+- PR: #36
+- Plane: AOS-11 (Done)
 - Spec: `.archetype/work/AOS-LEARN-001.md`
-- Goal: Phase 7 scope-lock criterion — manual digest run aggregating scans/decisions/research into a saved NightlyDigest with draft-only recommendations and repeated-task detection; dashboard Run Digest section.
+- Verification Status: Verified
+- Notes: Level 4 evidence — CI run 28743687095 all 5 jobs green plus headless-Chromium drive (7/7). Merge commit `8b39e67`. Phase 7 scope-lock criteria closed.
+- Required Next Verifier: None.
+
+### AOS-ALPHA-001 — Phase 10 Alpha Review: ArchetypeOS Evaluates ArchetypeOS
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-12 (In Progress), Sprint 3 cycle
+- PR: to be opened
+- Spec: `.archetype/work/AOS-ALPHA-001.md`
+- Goal: Phase 10 — run the full v0.1 loop against this repository through the public API (self-scan, DNA, architecture graph, decisions from real findings, digest, end-to-end job, guardian self-run) and publish `docs/ALPHA_REVIEW_V0_1.md` answering the five Phase 10 questions. Closes Sprint 3 and v0.1. Folds in PR #36 reconciliation.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: local ruff/compileall/pytest (52 API tests incl. 6 new) + strict tsc/vite build + Orchestrator headless-Chromium drive (7/7: run digest, summary counts, "Add tests" draft visible, placeholder retired, reload persistence); GitHub CI pending on PR
-- Evidence: exit codes 0; 7/7 browser checks; screenshot captured
-- Limitations: deterministic aggregation only (no LLM, per scope lock); browser drive manual
+- Verification Method: the review is itself a live Level 4 run — every artifact in `.archetype/alpha/` produced by live API calls (two self-scans, digest with draft-only assertion, worker job via real Redis, health both with and without Redis); full test suite must stay green (no code changes); GitHub CI pending on PR
+- Evidence: `.archetype/alpha/` captures; `docs/ALPHA_REVIEW_V0_1.md` conformance table
+- Limitations: dashboard leg covered by the PR #36 drive rather than re-driven; deterministic-only evaluation per scope lock
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
 
 ## Blocked Work

@@ -219,9 +219,12 @@ Capabilities:
 - experiments
 - risk register
 - release readiness
+- alpha self-evaluation review (system evaluates its own repository)
 
 Primary artifacts:
 
+- docs/ALPHA_REVIEW_V0_1.md
+- .archetype/alpha/ (captured self-evaluation evidence)
 - docs/VERIFICATION_PROTOCOL.md
 - docs/PR_GUARDIAN.md
 - docs/BRANCH_PROTECTION.md

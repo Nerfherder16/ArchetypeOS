@@ -1,0 +1,53 @@
+{
+    "id": "abf5c94c-dfef-41d8-857c-f439d397573a",
+    "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+    "digest_date": "2026-07-05T14:24:45.044667",
+    "summary": "1 repositories, 2 scan runs, 2 decisions, 1 research notes, 0 recommendations; 1 draft suggestions",
+    "changes": [
+        {
+            "type": "repository_scan",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "artifact": "repository-scan-d21b0b88-92ff-447f-afd3-29a2a2a988f8.json",
+            "at": "2026-07-05T14:24:45.001464"
+        },
+        {
+            "type": "repository_scan",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "artifact": "repository-scan-c98a4caa-371b-4103-abb0-64e193a1fc1a.json",
+            "at": "2026-07-05T14:23:34.785609"
+        },
+        {
+            "type": "decision",
+            "title": "Deepen architecture graph beyond directory containment in v0.2",
+            "at": "2026-07-05T14:24:18.813657"
+        },
+        {
+            "type": "decision",
+            "title": "Fix /health Redis degradation as first post-v0.1 runtime task",
+            "at": "2026-07-05T14:24:18.774296"
+        },
+        {
+            "type": "research_note",
+            "title": "Alpha Review self-evaluation findings",
+            "at": "2026-07-05T14:24:18.727335"
+        }
+    ],
+    "recommendations": [
+        {
+            "title": "Link research to decision: Deepen architecture graph beyond directory containment in v0.2",
+            "reason": "decision has no linked research",
+            "status": "draft"
+        }
+    ],
+    "repeated_tasks": [
+        {
+            "task": "repository_scan",
+            "repository_id": "ccb8be87-e2c3-4aa6-9fd3-23e567bd0ac5",
+            "count": 2
+        }
+    ],
+    "status": "active",
+    "version": 1,
+    "created_at": "2026-07-05T14:24:45.044977",
+    "updated_at": "2026-07-05T14:24:45.044979"
+}

@@ -333,19 +333,30 @@ Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (w
 
 ### AOS-SCHED-001 — Scheduler Seed: Schedules-as-Data + Control-Plane Scheduler (RFC-0007 / RFC-0006 Phase 3a)
 
+- Status: Merged
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- PR: #47
+- Plane: AOS-18 (In Progress — 3-phase tracker; Phase 3a done)
+- Spec: `.archetype/work/AOS-SCHED-001.md`; RFC: `docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md` (Accepted)
+- Verification Status: Verified
+- Notes: Level 4 — CI (all 6 jobs green incl. compose-smoke applying migration `0002` on Postgres + building/booting the scheduler container) + Orchestrator 3.12-venv run (no-drift 0 ops, 75 api tests). Merge commit `915aa34`. First real Alembic migration; control-plane scheduler live.
+- Required Next Verifier: None.
+
+### AOS-SCHED-002 — Scheduler Dashboard: Schedules UI + Enqueue + Job History (RFC-0007 / RFC-0006 Phase 3b)
+
 - Status: In Review
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-18 (In Progress — Phase 3a of 3), Sprint 5 cycle
+- Plane: AOS-18 (In Progress — Phase 3b; **this closes it**), Sprint 5 cycle
 - PR: to be opened
-- Spec: `.archetype/work/AOS-SCHED-001.md`; RFC: `docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md` (Accepted)
-- Goal: schedules-as-data (`Schedule` model + Alembic migration `0002` — the first real migration) + a single-instance control-plane `apps/scheduler` service that materializes due schedules into jobs, via one shared `aos_core.services.jobs.enqueue_job` path; Schedule CRUD + run-now API. Backend seed (dashboard is AOS-SCHED-002).
+- Spec: `.archetype/work/AOS-SCHED-002.md`
+- Goal: dashboard "Scheduling & Jobs" section (create/list schedules, enable-disable, run-now; "enqueue scan/digest as job" buttons; job history) + a new `GET /projects/{id}/jobs` endpoint. Closes AOS-18 and the worker pipeline.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator independently verified on a 3.12 venv — migration `0002` upgrade → 22 tables incl. `schedules`, no-drift probe = 0 ops; api suite **75 passed** (69 + 6 new: schedule CRUD, run-now, `run_due_schedules` tick, disabled-skip); worker 5 unchanged; ruff clean incl. `apps/scheduler`. Review remediation: added the scheduler to the compose-smoke build/up lists (LES-011). CI compose-smoke (migration `0002` on Postgres + scheduler container builds/boots) pending on PR
-- Evidence: no-drift 0 ops after `0002`; 75 api tests; `run_due_schedules` enqueues due + skips not-due/disabled; scheduler service + compose block
-- Limitations: interval-based cadence only (no cron yet); single-instance scheduler (HA deferred per RFC-0007); dashboard is AOS-SCHED-002
-- Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator
+- Verification Method: Orchestrator independently ran the full Playwright suite headless (`PW_LOCAL_CHROMIUM` seam) — **4/4 pass** incl. the new `scheduling.spec.ts` (create schedule → run now → job in history) — plus api suite **77 passed** (75 + 2 new jobs-list tests), worker 6, strict tsc/vite build exit 0, ruff clean. Hardened the web-e2e CI job to ensure `redis-server` (the e2e enqueue path needs it; explicit per LES-011). CI (api-tests, web-e2e, compose-smoke) pending on PR
+- Evidence: 4/4 e2e specs pass headless; 77 api tests; `GET /projects/{id}/jobs` list; job-history + schedule controls render + drive
+- Limitations: e2e enqueue starts an ephemeral redis in serve-api.sh (local) / ensured in CI; schedule editing is enable-disable only
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator; on merge AOS-18 → Done
 
 ## Blocked Work
 

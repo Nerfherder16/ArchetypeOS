@@ -30,9 +30,15 @@ test('decisions & research: create note, link a decision, confirm typed evidence
   await expect(page.getByRole('listitem').filter({ hasText: noteTitle })).toBeVisible();
 
   // Create a decision linked to the note via the select (index 1 = the note).
+  // Scope to the decision form's research-note select (identified by its
+  // "No linked research" option) so unrelated selects elsewhere on the page
+  // (e.g. the Scheduling & Jobs section) can't shadow it.
   await page.getByPlaceholder('Decision title').fill(decisionTitle);
   await page.getByPlaceholder('Decision text').fill('Postgres in compose, SQLite in tests, per research.');
-  await page.locator('select').last().selectOption({ index: 1 });
+  await page
+    .getByRole('combobox')
+    .filter({ has: page.getByRole('option', { name: 'No linked research' }) })
+    .selectOption({ index: 1 });
   await page.getByRole('button', { name: /add decision/i }).click();
   await expect(page.getByText(decisionTitle)).toBeVisible();
 

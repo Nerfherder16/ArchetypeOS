@@ -129,6 +129,27 @@ export type NightlyDigest = {
   repeated_tasks: unknown[];
 };
 
+export type Schedule = {
+  id: string;
+  project_id: string | null;
+  name: string;
+  job_type: string;
+  interval_seconds: number;
+  enabled: boolean;
+  last_run_at: string | null;
+  next_run_at: string;
+};
+
+export type Job = {
+  id: string;
+  job_type: string;
+  status: string;
+  queued_at: string;
+  attempts: number;
+  project_id: string | null;
+  repository_id: string | null;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
@@ -236,4 +257,58 @@ export async function fetchDigests(projectId: string): Promise<NightlyDigest[]> 
 
 export async function runDigest(projectId: string): Promise<NightlyDigest> {
   return request<NightlyDigest>(`/projects/${projectId}/digests`, { method: 'POST' });
+}
+
+export async function fetchSchedules(projectId: string): Promise<Schedule[]> {
+  return request<Schedule[]>(`/projects/${projectId}/schedules`);
+}
+
+export async function createSchedule(
+  projectId: string,
+  payload: { name: string; job_type: string; interval_seconds: number },
+): Promise<Schedule> {
+  return request<Schedule>(`/projects/${projectId}/schedules`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: payload.name,
+      job_type: payload.job_type,
+      interval_seconds: payload.interval_seconds,
+    }),
+  });
+}
+
+export async function setScheduleEnabled(scheduleId: string, enabled: boolean): Promise<Schedule> {
+  return request<Schedule>(`/schedules/${scheduleId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+export async function deleteSchedule(scheduleId: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/schedules/${scheduleId}`, { method: 'DELETE' });
+  if (!response.ok) {
+    throw new Error(`Failed to delete schedule with status ${response.status}`);
+  }
+}
+
+export async function runSchedule(scheduleId: string): Promise<Job> {
+  return request<Job>(`/schedules/${scheduleId}/run`, { method: 'POST' });
+}
+
+export async function enqueueJob(body: {
+  project_id?: string;
+  repository_id?: string;
+  job_type: string;
+}): Promise<Job> {
+  return request<Job>('/jobs', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function fetchJobs(projectId: string): Promise<Job[]> {
+  return request<Job[]>(`/projects/${projectId}/jobs`);
 }

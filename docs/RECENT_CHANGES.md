@@ -135,9 +135,13 @@ Operator-approved 2026-07-05: extract an installable `aos_core` package both app
 
 Operator-directed after weighing the mature-state architecture (roadmap Phase 5: "the control plane decides and stores; nodes execute"). Scheduling is a control-plane concern backed by schedules-as-data, decoupled from executors — not an in-worker loop (which would duplicate every recurring task once a second node exists). `docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md`. Cheap now because AOS-17 (Alembic) + AOS-CORE-001 (aos_core) landed.
 
+### Sprint 5 Merged (continued 4)
+
+- PR #47: AOS-SCHED-001 — scheduler seed, RFC-0007 (merge commit `915aa34`): `Schedule` model + **Alembic migration `0002` (first real migration, no-drift 0 ops)**; `aos_core.services.jobs.enqueue_job` (one origination path, shared `QUEUE`); `run_due_schedules` tick; a single-instance control-plane `apps/scheduler` service; Schedule CRUD API. Verified at Level 4 — CI all green incl. compose-smoke applying `0002` on Postgres + booting the scheduler. Added the scheduler to compose-smoke build/up (LES-011).
+
 ### Current Work
 
-AOS-SCHED-001 (RFC-0007 backend seed / Phase 3a) in review on this branch — a `Schedule` model + **Alembic migration `0002` (the first real migration; no-drift probe = 0 ops)**; `aos_core.services.jobs.enqueue_job` (one origination path, `QUEUE` constant shared by api + worker); `aos_core.services.scheduler.run_due_schedules` (tested tick); a single-instance control-plane `apps/scheduler` service; Schedule CRUD + run-now API. Orchestrator verified on a 3.12 venv: 75 api tests (69 + 6 new), worker 5 unchanged, `0002` no-drift clean; added the scheduler to the compose-smoke build/up lists (review remediation, LES-011). Dashboard is AOS-SCHED-002.
+AOS-SCHED-002 (RFC-0007 / Phase 3b, **closes AOS-18**) in review on this branch — the dashboard "Scheduling & Jobs" section: create/list/enable-disable/run-now schedules, "enqueue scan/digest as job" buttons, and a job-history list; plus a new `GET /projects/{id}/jobs` endpoint. Orchestrator verified on the 3.12 venv + headless Playwright: **4/4 e2e specs pass** (incl. the new `scheduling.spec.ts`: create schedule → run now → job in history), 77 api tests, strict web build clean. Hardened the web-e2e CI job to ensure `redis-server` (the e2e enqueue path needs it; LES-011 family). Merging closes AOS-18 and the worker pipeline — schedules → scheduler → jobs → workers → dashboard, end to end.
 
 ### Why It Matters
 

@@ -201,6 +201,8 @@ Merging without confirming that the head SHA in the merge matches the SHA report
 
 ## Local First Use
 
+
+The `/guardian` Claude Code command (`.claude/commands/guardian.md`) wraps the invocations below for any session — local, remote, or on the runtime workstation. Pass `full` for the complete pre-PR gate.
 PR Guardian should run locally before PR creation and later as GitHub CI.
 
 The local command is:

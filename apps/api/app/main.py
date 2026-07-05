@@ -11,7 +11,7 @@ from .config import get_settings
 from .database import engine, get_db, init_db
 from .models import ArchitectureEdge, ArchitectureNode, Artifact, Job, Project, Repository, RepositoryDNA
 from .repository_scanner import safe_repo_path, scan_repository
-from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RepositoryCreate, RepositoryRead, RepositoryScanRead
+from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead
 
 settings = get_settings()
 app = FastAPI(title="ArchetypeOS API", version="0.1.0")
@@ -243,6 +243,16 @@ def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)
         "architecture_edges": edges_out,
         "artifacts": [{"id": artifact.id, "name": artifact.name, "path": artifact.path, "checksum": artifact.checksum}],
     }
+
+
+@app.get("/repositories/{repository_id}/dna", response_model=RepositoryDnaRead)
+def get_repository_dna(repository_id: str, db: Session = Depends(get_db)) -> RepositoryDNA:
+    repository = db.get(Repository, repository_id)
+    if not repository:
+        raise HTTPException(status_code=404, detail="Repository not found")
+    if repository.dna is None:
+        raise HTTPException(status_code=404, detail="Repository has not been scanned")
+    return repository.dna
 
 
 @app.get("/projects/{project_id}/architecture", response_model=ArchitectureGraphRead)

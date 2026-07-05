@@ -38,7 +38,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Reconcile state after the PR #25 merge, then start AOS-LOCAL-001 (WSL verification on `teevee-1`) and/or AOS-8 (control tower dashboard slice, now unblocked by the graph API).
+AOS-CTRL-001 — Engineering Control Tower first dashboard surface (Plane AOS-8) is in review on this branch; PR to be opened. AOS-LOCAL-001 runs on `teevee-1` tomorrow.
 
 ## Active Branch
 
@@ -56,16 +56,16 @@ Reconcile state after the PR #25 merge, then start AOS-LOCAL-001 (WSL verificati
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 1
-- Method: post-merge state-file reconciliation; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-ARCH-001 itself is Verified (Level 3, PR #25, CI run 28729930724 all green).
-- Evidence: state files reconciled to the PR #25 merge (`b9b3024`); Plane synced (AOS-3/AOS-5 Done)
-- Limitations: docs-only change
+- Level: Level 4
+- Method: local ruff/compileall/pytest (28 API tests) + strict tsc/vite build + headless-Chromium drive of the full dashboard flow against a live API (redis absent); GitHub CI pending after PR creation
+- Evidence: 10/10 browser checks passed (create project, register repo, scan, stored summary after reload, architecture counts, health-failure isolation); screenshot captured
+- Limitations: browser run is a manual Level 4 pass, not CI-repeatable yet
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- post-merge state reconciliation for PR #25
-- AOS-LOCAL-001 readiness (workstation unblocked)
+- control tower first dashboard surface (AOS-CTRL-001)
+- state updates
 
 ## Out Of Scope Now
 
@@ -81,7 +81,7 @@ Reconcile state after the PR #25 merge, then start AOS-LOCAL-001 (WSL verificati
 | Decision | Status | Notes |
 | --- | --- | --- |
 | Plane integration depth | Board adopted | Sync discipline = AOS-9. |
-| Agent dashboard implementation | Deferred | Engineering Control Tower design exists; implementation comes after scanner/runtime data. |
+| Agent dashboard implementation | In progress | First control tower surface implemented as AOS-CTRL-001 (in review). |
 | Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
 | Local Level 2 verification | Unblocked | Workstation `teevee-1` available via Tailscale; execute AOS-LOCAL-001 there. |
@@ -92,7 +92,7 @@ Reconcile state after the PR #25 merge, then start AOS-LOCAL-001 (WSL verificati
 
 ## Next Recommended Task
 
-Merge this state reconciliation PR after CI passes. Then execute AOS-LOCAL-001 on `teevee-1` (first Level 4 runtime verification on the real target) and/or start AOS-8 (control tower dashboard slice).
+Merge the AOS-CTRL-001 PR after CI passes under the Manual Merge Gate. Then execute AOS-LOCAL-001 on `teevee-1` (tomorrow), exercising the loop through the new dashboard.
 
 ## Required Reading For New Sessions
 

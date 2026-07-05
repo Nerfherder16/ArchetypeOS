@@ -18,7 +18,7 @@ Runtime Agent (Opus) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5)
+AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface (Plane AOS-8)
 
 ### Branch
 
@@ -26,27 +26,27 @@ AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5)
 
 ### PR
 
-#25 — https://github.com/Nerfherder16/ArchetypeOS/pull/25
+To be opened.
 
 ### Status
 
-Merged (merge commit `b9b3024`).
+In Review — implementation complete, Level 4 local verification passed, PR pending.
 
 ### Completed
 
-- Rescan upsert in `POST /repositories/{id}/scan`: root/directory nodes and edges are matched by identity keys and updated in place, preserving node ids, status, and `manual_correction`; scan response shape unchanged.
-- `GET /projects/{project_id}/architecture` (optional `repository_id` filter) returning nodes/edges with confidence, evidence, and manual_correction, deterministically ordered.
-- `PATCH /architecture/nodes/{id}` and `PATCH /architecture/edges/{id}` updating only `manual_correction`.
-- Schemas: `ArchitectureNodeRead`, `ArchitectureEdgeRead`, `ArchitectureGraphRead`, `ArchitectureCorrectionUpdate`.
-- 5 new integration tests in `apps/api/tests/test_architecture_api.py` (graph query, repository filter, correction persistence, rescan id/correction preservation, 404s).
-- Spec `.archetype/work/AOS-ARCH-001.md` (dogfooded) and state files updated.
+- `GET /repositories/{repository_id}/dna` read endpoint (`RepositoryDnaRead` schema; 404 for unknown repo and for never-scanned repo) with 3 new tests.
+- Dashboard rebuilt as the first control tower surface: project create/select, repository register/list with last-scanned and Run Scan actions, stored scan summary panel (primary languages, package managers, has_docker/has_ci/has_tests/has_env_example, risk flags, confidence), architecture node/edge counts with labelled nodes, per-section error isolation, no new dependencies.
+- Typed API module `apps/web/src/api.ts`.
+- Orchestrator-driven headless-Chromium verification: 10/10 checks across the full flow against a live API with redis absent.
 
 ### Files changed
 
 - `apps/api/app/main.py`
 - `apps/api/app/schemas.py`
-- `apps/api/tests/test_architecture_api.py`
-- `.archetype/work/AOS-ARCH-001.md`
+- `apps/api/tests/test_dna_endpoint.py`
+- `apps/web/src/main.tsx`
+- `apps/web/src/api.ts`
+- `.archetype/work/AOS-CTRL-001.md`
 - `docs/ACTIVE_WORK.md`
 - `docs/CURRENT_STATE.md`
 - `docs/HANDOFF.md`
@@ -54,48 +54,48 @@ Merged (merge commit `b9b3024`).
 
 ### Tests run
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 25 passed (20 existing + 5 new)
-- `python3 -m ruff check apps/api` (ruff 0.8.6) -> exit 0
-- `python3 -m compileall` -> exit 0
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 28 passed (25 existing + 3 new)
+- `python3 -m ruff check apps/api` (ruff 0.8.6) -> exit 0; compileall -> exit 0
+- `npm run build` (strict tsc + vite) -> exit 0
+- Headless Chromium drive (uvicorn + sqlite, redis absent, vite dev): 10/10 checks passed; screenshot captured
 
 ### Known Risks
 
-- Vault content is seed-level; canonical validation per the Safety section of `docs/KNOWLEDGE_VAULT_STRUCTURE.md` still requires review before any page is treated as validated.
-- AOS-LOCAL-001 must run on `teevee-1` (human or local Claude Code session); the remote orchestration session cannot reach the tailnet.
+- No automated UI tests in v0.1; the browser run is a manual Level 4 pass, not CI-repeatable yet (candidate future work: promote the drive script to CI).
+- Vault content is seed-level; canonical validation still requires review.
 
 ### Blockers
 
-- None. Plane back online and synced; workstation `teevee-1` confirmed available via Tailscale.
+- None.
 
 ### Verification Status
 
-Verified
+Verification pending
 
 ### Verification Level
 
-Level 3
+Level 4
 
 ### Verification Method
 
-GitHub CI workflow run on PR #25 plus local Level 2 execution (ruff 0.8.6, compileall, pytest 25 API tests) independently re-run by the Orchestrator.
+Local ruff/compileall/pytest + strict tsc/vite build + headless-Chromium drive of the full dashboard flow against a live API with redis absent (health-failure isolation confirmed). GitHub CI pending on the PR to be opened.
 
 ### Evidence
 
-- CI run 28729930724 on head `9cd983a`: all 5 jobs concluded success; merged as `b9b3024`.
-- Local: pytest 25 passed; ruff and compileall exit 0.
-- Plane synced after the outage: AOS-3 and AOS-5 marked Done; AOS-7 annotated as unblocked.
+- 28 pytest passes; ruff/compileall/tsc/vite exit 0.
+- Browser: create project, register repository, "never" state, run scan, summary rendered (Python, docker, .env risk flag), architecture counts, stored DNA survives reload. 10/10 checks; screenshot artifact.
 
 ### Limitations
 
-None blocking. Vault/graph staleness lifecycle remains future work.
+Browser verification is manual (Orchestrator-driven), not part of CI. Local DB is SQLite.
 
 ### Required Next Verifier
 
-None for AOS-ARCH-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
+GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge the post-merge state reconciliation PR after CI passes. Then execute AOS-LOCAL-001 on `teevee-1` (workstation now available via Tailscale) and/or start AOS-8 (control tower dashboard slice).
+Open the AOS-CTRL-001 PR, babysit CI, merge under the Manual Merge Gate. Tomorrow: AOS-LOCAL-001 on `teevee-1`, exercising the loop through the new dashboard.
 
 ## Handoff Template
 

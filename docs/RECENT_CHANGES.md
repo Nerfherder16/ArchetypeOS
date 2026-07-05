@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-05 — Intelligence thrust begins (RFC-0005)
+
+### In Review
+
+- AOS-COUNCIL-001 — Agent Council seed (RFC-0005 Phase 1; Plane AOS-19). Operator-directed ("write RFC-0005 and start AOS-19"). Adds an LLM **provider abstraction** (`packages/aos_core/aos_core/llm/`: `Provider` protocol, `DeterministicProvider` CI default, `ClaudeCodeProvider` — headless `claude` via the operator's subscription, never called in CI, mocked-boundary test), a **council service** (`services/council.py`: four Phase-9 agents — Research Librarian / Architecture Cartographer / Technology Fitness Judge / Security Agent — each reading the project's scan/DNA/decisions, + a rule-based **Final Judge** emitting agreements/disagreements/unsupported-claims/verdict with an abstention floor → `Insufficient evidence`), dedicated `CouncilReview`/`CouncilAgentOutput` tables + Alembic migration `0003`, a worker `council_review` dispatch, and council trigger/read API (`POST/GET /projects/{id}/council-reviews`, `GET /council-reviews/{id}`). Operator decisions: Claude Code SDK via subscription (no metered API/budget gate), four agents, dedicated tables. Backend only — the Agent Council Dashboard is AOS-COUNCIL-002. Orchestrator-verified (3.12 venv): ruff/compile clean, api 92 / worker 7, `run_council` branch checks (4 outputs, disagreement, abstention, 404, determinism), alembic no-drift after `0003` (24 tables, 0 ops). RFC: `docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md`; provider doc: `docs/LLM_PROVIDER_ABSTRACTION.md`.
+
 ## 2026-07-05 — Sprint 5 close (worker pipeline complete)
 
 ### Merged

@@ -355,7 +355,27 @@ Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (w
 
 ## Sprint 5 Status
 
-Sprint 5 — Enforcement & Foundations. Delivered packages 1–6: AOS-16 (web tests, PR #43), AOS-17 (Alembic baseline, PR #44), AOS-18 in three phases (AOS-CORE-001 PR #45, AOS-WORKERRUN-001 PR #46, AOS-SCHED-001 PR #47, AOS-SCHED-002 PR #48). The distributed-runtime substrate — shared core, worker job execution, control-plane scheduler + first real migration, operator dashboard — is complete. Remaining backlog (unscheduled): AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path); AOS-19 (Intelligence Layer + Council, RFC-0005) is the recommended next major thrust. Awaiting operator direction on the next package.
+Sprint 5 — Enforcement & Foundations. Delivered packages 1–6: AOS-16 (web tests, PR #43), AOS-17 (Alembic baseline, PR #44), AOS-18 in three phases (AOS-CORE-001 PR #45, AOS-WORKERRUN-001 PR #46, AOS-SCHED-001 PR #47, AOS-SCHED-002 PR #48). The distributed-runtime substrate — shared core, worker job execution, control-plane scheduler + first real migration, operator dashboard — is complete. Remaining backlog (unscheduled): AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path).
+
+## Intelligence Thrust (open)
+
+Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligence Layer + Agent Council + Final Judge begins here, atop the completed Sprint 5 substrate.
+
+### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
+
+- Status: In Review
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-19 (In Progress — Phase 1; the dashboard AOS-COUNCIL-002 is Phase 2)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-COUNCIL-001.md`; RFC: `docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md` (Accepted)
+- Goal: a hermetic, deterministic Agent Council — a `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), the four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` tables + migration `0003`, worker `council_review` dispatch, and council trigger/read API. Backend only; no dashboard. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget gate), four agents, dedicated tables.
+- Verification Status: Verification pending
+- Verification Level: Level 4
+- Verification Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api suite **92 passed** (77 prior + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly — 4 agent outputs, disagreement surfaced (security vs the rest), abstention → `Insufficient evidence` on an evidence-less project, 404 on missing project, deterministic-provider stability, `get_provider` mapping incl. ValueError; alembic no-drift after `0003` — chain applies, 24 tables incl. `council_reviews`+`council_agent_outputs`, **0 drift ops**. CI (api-tests, worker-tests, compose-smoke applying `0003` on Postgres) pending on the PR.
+- Evidence: 4 structured agent outputs + Final Judge verdict per project; disagreement explicit; abstention rule enforced; `POST/GET /projects/{id}/council-reviews` + `GET /council-reviews/{id}`; `council_review` job dispatch
+- Limitations: `ClaudeCodeProvider` runs only on an authed node (never in CI — mocked-boundary test); deterministic agents reason over the project's latest scan/DNA/decisions; advisory/draft-only (no approve/promote route yet)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate
 
 ## Blocked Work
 

@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     artifact_root: Path = Path("./data/artifacts")
     repository_root: Path = Path("./repositories")
     cors_origins: str = "http://localhost:5173"
+    llm_provider: str = "deterministic"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

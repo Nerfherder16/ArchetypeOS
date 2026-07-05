@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-SCHED-002 — Scheduler dashboard: schedules UI + enqueue + job history, RFC-0007 / RFC-0006 Phase 3b (Plane AOS-18; Sprint 5 package 6 — **closes AOS-18**), folding in the AOS-SCHED-001 (PR #47) reconciliation
+AOS-COUNCIL-001 — Agent Council seed: LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (Plane AOS-19; the intelligence thrust's first package). Sprint 5 (PRs #43–#48) is fully merged; AOS-18 Done.
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `915aa34`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `350c8b0` after the PR #48 merge)
 
 ### PR
 
-#48 — **Merged** as `350c8b0` (squash). CI run 28756145778 all 6 jobs green on head `b6dc146`.
+To be opened.
 
 ### Status
 
-Merged — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs`. **AOS-18 is Done; the worker pipeline is complete** (RFC-0006 shared core + RFC-0007 control-plane scheduling realized end to end: schedules → scheduler → queued jobs → workers → dashboard). Sprint 5 packages 1–6 all delivered (PRs #43–#48). Branch restarted from `main` at `350c8b0`. **Awaiting operator direction on the next package** — recommended: AOS-19 / RFC-0005 (Intelligence Layer + Agent Council + Final Judge, Phase 9).
+In Review — `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` + migration `0003`, worker `council_review` dispatch, council trigger/read API. Orchestrator-verified (3.12 venv): ruff/compile clean; api **92**, worker **7**; `run_council` exercised (4 outputs, disagreement, abstention, 404, determinism, provider mapping); alembic no-drift after `0003` (24 tables, 0 ops). Backend only; the Agent Council Dashboard is AOS-COUNCIL-002. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget), four agents, dedicated tables.
 
 ### Orchestrator Transition
 
@@ -74,7 +74,7 @@ Merged — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs`. **
 
 ### Verification Status
 
-Verified (PR #48 merged as `350c8b0`)
+Verification pending (AOS-COUNCIL-001 in review)
 
 ### Verification Level
 
@@ -82,7 +82,7 @@ Level 4
 
 ### Verification Method
 
-CI run 28756145778 all 6 jobs green on head `b6dc146` (compose-smoke built/booted api+worker+web+scheduler; web-e2e ran the new scheduling spec with ensured redis; api-tests ran the jobs-list tests) plus Orchestrator's independent 3.12-venv run (Playwright 4/4 headless, 77 api, 6 worker, strict tsc/vite). AOS-18 → Done; branch restarted from `main` at `350c8b0`.
+Orchestrator independently (3.12 venv) ran ruff/compile clean; api **92 passed** (77 + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly (4 agent outputs; disagreement surfaced — security unfavorable vs the rest; abstention → `Insufficient evidence` on an evidence-less project; 404 on missing project; deterministic-provider stability; `get_provider` mapping incl. ValueError); alembic no-drift after `0003` — chain applies, 24 tables incl. `council_reviews`+`council_agent_outputs`, **0 drift ops**. GitHub CI (api-tests, worker-tests, compose-smoke applying `0003` on Postgres) pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
@@ -98,7 +98,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Await operator direction on the next package. AOS-18 and the worker pipeline are complete. Recommended next major thrust: AOS-19 / RFC-0005 — the Intelligence Layer + Agent Council + Final Judge (Phase 9), where the platform becomes genuinely intelligent atop the now-complete runtime substrate. Lighter backlog: AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path).
+Merge AOS-COUNCIL-001 after CI passes under the Manual Merge Gate (Plane AOS-19 Phase 1). Then AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e) — closes the Phase-9 "disagreements are visible" acceptance end to end. A real council run on an authed node (flip `llm_provider=claude_code`) is the operator-side validation. Lighter backlog: AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path).
 
 ## Handoff Template
 

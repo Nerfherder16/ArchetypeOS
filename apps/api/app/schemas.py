@@ -311,3 +311,46 @@ class NightlyDigestRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class CouncilReviewCreate(BaseModel):
+    question: str
+
+
+class CouncilAgentOutputRead(BaseModel):
+    id: str
+    review_id: str
+    agent_name: str
+    agent_type: str
+    status: str
+    summary: str | None
+    findings: list
+    evidence: list
+    concerns: list
+    confidence: float
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class CouncilReviewRead(BaseModel):
+    id: str
+    project_id: str
+    question: str | None
+    verdict: str
+    confidence: float
+    agreements: list
+    disagreements: list
+    unsupported_claims: list
+    follow_up: list
+    provider: str | None
+    job_id: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    agent_outputs: list[CouncilAgentOutputRead] = []
+
+    model_config = {"from_attributes": True}

@@ -79,9 +79,9 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 - PR #36: AOS-LEARN-001 — nightly learning digest, manual run (merge commit `8b39e67`): POST /projects/{id}/digests with deterministic aggregation (changes, repeated tasks, draft-only recommendations from four rules), list/read endpoints, dashboard Run Digest section; 6 new tests (52 total). Verified at Level 4 (CI run 28743687095 + 7/7 browser drive). Phase 7 scope-lock criteria closed.
 
-### In Progress
+### Sprint 3 Closed — v0.1 COMPLETE
 
-- AOS-ALPHA-001 — Phase 10 Alpha Review (Plane AOS-12, Sprint 3 capstone): ArchetypeOS ran its full v0.1 loop against its own repository through the public API — two self-scans, DNA, architecture graph, decisions from live findings (incl. the /health-without-Redis 500), digest that caught a genuinely unlinked decision, end-to-end worker job via real Redis, guardian self-run. Artifact: `docs/ALPHA_REVIEW_V0_1.md` + `.archetype/alpha/` captures. Merging closes v0.1.
+- PR #37: AOS-ALPHA-001 — Phase 10 Alpha Review (merge commit `74c2406`): ArchetypeOS ran its full v0.1 loop against its own repository through the public API — two self-scans, DNA, architecture graph, decisions from live findings (incl. the /health-without-Redis 500), digest that caught a genuinely unlinked decision, end-to-end worker job via real Redis, guardian self-run (two real first-pass BLOCKs on its own PR, fixed not overridden). Artifact: `docs/ALPHA_REVIEW_V0_1.md` + `.archetype/alpha/` captures. Verified at Level 4 (CI run 28744117867 + the live self-evaluation). **Sprint 3 and v0.1 are complete**: AOS-1..AOS-12 all Done in Plane; all 11 v0.1 acceptance criteria assessed Met.
 
 ### AOS-LOCAL-001 Executed
 
@@ -89,7 +89,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-AOS-ALPHA-001 (Alpha Review) in review on this branch; PR to be opened. It is the last v0.1 package — merge completes Sprint 3.
+None — v0.1 is complete. Post-v0.1 candidates are ranked in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance); the first is the `/health` Redis-degradation fix.
 
 ### Why It Matters
 

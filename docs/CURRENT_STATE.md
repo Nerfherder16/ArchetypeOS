@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 foundation
-- Current sprint: Sprint 2 — Operating Loop and first runtime proof
+- Current sprint: Sprint 3 — v0.1 Completion (close remaining scope-lock criteria, then Phase 10 Alpha Review)
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -41,10 +41,11 @@ Every new engineering session should read this before planning or implementation
 - PR #29: Repository scan persistence and history (AOS-RUNTIME-003)
 - PR #30: Plane board sync discipline (AOS-PLANE-001)
 - PR #31: Executable-bit fix for shell scripts (AOS-LOCAL-001 finding 1)
+- PR #32: AOS-LOCAL-001 Level 4 verification handoff and remediations — Sprint 2 complete
 
 ## Current Objective
 
-AOS-LOCAL-001 executed on `teevee-1`: the full runtime is Verified at Level 4 on the declared Windows 11 + WSL 2 target. This branch carries the Level 4 handoff plus remediations (test hermeticity, port guidance); Sprint 2 completes when it merges.
+Sprint 3 opened (Plane cycle `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`): AOS-6/AOS-PRG-002 (scanner-informed guardian, in review on this branch), then AOS-10/AOS-DEC-001 (decision/research artifacts), AOS-11/AOS-LEARN-001 (nightly digest), AOS-12/AOS-ALPHA-001 (Alpha Review capstone).
 
 ## Active Branch
 
@@ -61,16 +62,16 @@ AOS-LOCAL-001 executed on `teevee-1`: the full runtime is Verified at Level 4 on
 
 ## Verification Status
 
-- Status: Verified
-- Level: Level 4
-- Method: operator-executed AOS-LOCAL-001 runbook on `teevee-1` (Windows 11 + WSL 2): compose runtime, health, dashboard-driven scan loop, scan history, read-only mount probe; hermeticity fix verified locally (32/32 with and without `.env`)
-- Evidence: `/health` all true with real Redis; two versioned scan artifacts; "Read-only file system" write probe; post-reload dashboard screenshot; five findings recorded and remediated (see `.archetype/work/AOS-LOCAL-001.md`)
-- Limitations: guardian script not yet re-run on the target post-fixes (its commands are CI-covered)
-- Required Next Verifier: GitHub CI / PR Guardian on the handoff PR, then Orchestrator
+- Status: Verification pending
+- Level: Level 2
+- Method: local ruff/compileall/pytest (40 API tests incl. 8 new guardian-scanner tests) plus guardian self-run exercising the live in-repo scan; GitHub CI pending after PR creation
+- Evidence: exit codes 0; "Scanner-informed checks: consulted 3 risk signals." on self-run
+- Limitations: Level 3 pending
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- AOS-LOCAL-001 Level 4 handoff + remediations (test hermeticity, port guidance)
+- Sprint 3 package 1: scanner-informed guardian (AOS-PRG-002)
 
 ## Out Of Scope Now
 
@@ -97,7 +98,7 @@ AOS-LOCAL-001 executed on `teevee-1`: the full runtime is Verified at Level 4 on
 
 ## Next Recommended Task
 
-Merge the AOS-LOCAL-001 handoff PR after CI passes under the Manual Merge Gate — Sprint 2 is then fully complete. Next sprint candidates: AOS-PRG-002 (guardian reads scanner output, now unblocked by scan history), nightly digest (Phase 7), decision/research CRUD (Phase 5).
+Merge the AOS-PRG-002 PR after CI passes under the Manual Merge Gate. Then AOS-DEC-001 (decision/research artifacts), AOS-LEARN-001 (nightly digest), and AOS-ALPHA-001 (Alpha Review) complete Sprint 3 and v0.1.
 
 ## Required Reading For New Sessions
 

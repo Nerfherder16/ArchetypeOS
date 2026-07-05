@@ -14,11 +14,11 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Human operator on `teevee-1` with Orchestrator (Fable 5) remote support
+Runtime Agent (Opus) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-LOCAL-001 — WSL Windows 11 Local Verification (Plane AOS-7); first Level 4 runtime verification on the declared v0.1 target
+AOS-PRG-002 — PR Guardian Reads Repository Scanner Output (Plane AOS-6; Sprint 3 package 1)
 
 ### Branch
 
@@ -26,42 +26,36 @@ AOS-LOCAL-001 — WSL Windows 11 Local Verification (Plane AOS-7); first Level 4
 
 ### PR
 
-To be opened (handoff + remediations).
+To be opened.
 
 ### Status
 
-Verification executed and Verified; PR pending.
+In Review — implementation complete and locally verified, PR pending. Sprint 2 closed with PR #32; Sprint 3 cycle live in Plane (`9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`) with AOS-6/10/11/12.
 
 ### Completed
 
-- Full compose runtime brought up on Windows 11 + WSL 2: six services healthy; `GET /health` returned all true — the first fully healthy stack including real Redis in the project's history.
-- Operator drove the complete loop through the control tower dashboard: project created, repository registered by local path, scanned twice.
-- Scan history verified via API: two `repository-scan-<uuid>.json` artifacts, identical checksums (deterministic scanner), distinct files (no overwrite).
-- Read-only guarantee proven at the container runtime: write probe inside the api container rejected with "Read-only file system" (probed twice).
-- Five findings recorded (see `.archetype/work/AOS-LOCAL-001.md`); remediations in PR #31 (exec bit) and this PR (test hermeticity via conftest env pinning — verified 32/32 with and without a local `.env`; `.env.example` co-hosting port guidance).
-- PR #30 (AOS-PLANE-001) and PR #31 reconciled into the state files.
+- Guardian gains scanner-informed checks: `--scan-report <path>` input plus an in-repo scan fallback importing the stdlib-only scanner; graceful degradation to baseline behavior on any failure.
+- Two new BLOCKs: committed secret-like filenames (`scanner-secret-path`) and committed `.env` files (`scanner-env-committed`) — path-based detection the diff-content regexes could not do.
+- Two new WARNs: `scanner-missing-tests` corroboration and `scanner-new-ecosystem` expansion awareness. Override token `PR_GUARDIAN_OVERRIDE_SCANNER`.
+- 8 new tests (40 API tests total); `docs/PR_GUARDIAN.md` documents the checks and fallback.
 
 ### Files changed
 
-- `apps/api/tests/conftest.py`
-- `.env.example`
-- `.archetype/work/AOS-LOCAL-001.md` (new)
-- `.archetype/work/AOS-PLANE-001.md`
-- `docs/PLANE_PROJECT_BLUEPRINT.md`
-- `docs/ACTIVE_WORK.md`
-- `docs/CURRENT_STATE.md`
-- `docs/HANDOFF.md`
-- `docs/RECENT_CHANGES.md`
+- `tools/pr_guardian.py`
+- `apps/api/tests/test_guardian_scanner.py`
+- `docs/PR_GUARDIAN.md`
+- `.archetype/work/AOS-PRG-002.md`
+- `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- On `teevee-1`: compose up (6/6 healthy), health endpoint, dashboard loop, scan history API, read-only probe.
-- In the orchestration session: `.env`-coupling bug reproduced, fixed, and verified — `PYTHONPATH=apps/api pytest apps/api/tests -q` 32 passed with `.env` present and absent; ruff clean.
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 40 passed (32 existing + 8 new)
+- `python3 -m ruff check apps/api tools` -> exit 0; compileall -> exit 0
+- Guardian self-run: "Scanner-informed checks: consulted 3 risk signals." (live in-repo scan path exercised)
 
 ### Known Risks
 
-- Guardian script not yet re-run on the target post-fixes; its constituent commands are CI-covered on these commits.
-- Operator Python 3.13 vs pinned 3.12 remains an environment footgun (documented; deadsnakes venv is the path).
+- Manifest basename list in the guardian is intentionally self-contained and could drift from the scanner's MANIFEST_KINDS if ecosystems are added; documented in code.
 
 ### Blockers
 
@@ -69,34 +63,31 @@ Verification executed and Verified; PR pending.
 
 ### Verification Status
 
-Verified
+Verification pending
 
 ### Verification Level
 
-Level 4
+Level 2
 
 ### Verification Method
 
-Operator-executed runbook on the physical runtime target (compose runtime, health, dashboard-driven scan loop, scan history API, read-only mount probe) plus orchestration-session regression verification of the hermeticity fix.
+Local ruff/compileall/pytest plus guardian self-run exercising the live in-repo scan path. GitHub CI pending on the PR.
 
 ### Evidence
 
-- `docker compose ps`: six services Up/healthy; `{"status":"ok","api":true,"database":true,"redis":true}`.
-- Two versioned scan artifacts with matching checksums; post-reload dashboard screenshot (all-green health).
-- "Read-only file system" on the write probe.
-- 32/32 tests with a `.env` present (previously 20 errors).
+- 40/40 tests green; ruff/compileall exit 0; self-run consulted 3 live risk signals without crashing.
 
 ### Limitations
 
-Guardian script pending a clean local re-run; CI covers its commands.
+Level 3 pending. Guardian exit semantics unchanged (verified against an empty body).
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian on this PR, then Orchestrator merge review under the Manual Merge Gate.
+GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge this PR — Sprint 2 is then fully complete (AOS-1..AOS-9 all Done). Next sprint candidates: AOS-PRG-002 (guardian reads scanner output), nightly digest (Phase 7), decision/research CRUD (Phase 5).
+Merge the AOS-PRG-002 PR after CI passes. Loop continues: AOS-DEC-001 (Plane AOS-10), AOS-LEARN-001 (AOS-11), AOS-ALPHA-001 (AOS-12) close Sprint 3 and v0.1.
 
 ## Handoff Template
 

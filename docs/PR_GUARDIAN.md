@@ -39,6 +39,7 @@ This first version intentionally avoids LLM judgment. It blocks obvious hygiene,
 - high-risk file changes
 - verification metadata
 - acceptance evidence
+- scanner-informed risk signals
 
 ## Deterministic Blocking Rules
 
@@ -57,6 +58,8 @@ The current implementation blocks when:
 - PR body verification level is unsupported
 - any changed file starts with `apps/api/app/`, `apps/worker/app/`, or `apps/web/src/` and the PR body has no `## Acceptance Evidence` heading (code `missing-acceptance-evidence`)
 - an `## Acceptance Evidence` section exists but no bullet under it contains `evidence:` (case-insensitive) (code `empty-acceptance-evidence`)
+- a changed file path matches a scanner `SECRET_LIKE_FILENAME` signal (code `scanner-secret-path`)
+- a changed file path matches a scanner `ENV_FILE_PRESENT` signal (code `scanner-env-committed`)
 
 ## Warning Rules
 
@@ -66,6 +69,8 @@ The current implementation warns when:
 - high-risk files such as workflows, compose config, environment example, auth, or secrets-related files change
 - verification status is `Verification pending`
 - verification metadata uses weak placeholders such as `TBD`, `TODO`, `none`, or `n/a`
+- the scanner reports `MISSING_TESTS` and the PR adds app code under `apps/api/app/`, `apps/worker/app/`, or `apps/web/src/` (code `scanner-missing-tests`)
+- the scanner reports `MULTIPLE_ECOSYSTEMS` and the PR adds a package manifest (code `scanner-new-ecosystem`)
 
 ## Verification Metadata Requirement
 
@@ -101,6 +106,19 @@ Blocking codes:
 
 This check does not apply to PRs that change only docs, config, or other non-code paths. Override marker: `PR_GUARDIAN_OVERRIDE_ACCEPTANCE`.
 
+## Scanner-Informed Checks
+
+The guardian consults the read-only repository scanner (`apps/api/app/repository_scanner.py`) to add four checks driven by its structured `risk_signals`:
+
+- `scanner-secret-path` (block) — a changed file matches a `SECRET_LIKE_FILENAME` signal, catching committed key files by name that the diff-content regexes miss.
+- `scanner-env-committed` (block) — a changed file matches an `ENV_FILE_PRESENT` signal, meaning a real `.env` is being committed.
+- `scanner-missing-tests` (warn) — the scan reports `MISSING_TESTS` and the PR adds app code.
+- `scanner-new-ecosystem` (warn) — the scan reports `MULTIPLE_ECOSYSTEMS` and the PR adds a package manifest.
+
+The scan comes from the optional `--scan-report <path>` argument (a JSON report). When that argument is absent, the guardian runs an in-repo scan by importing the stdlib-only scanner and scanning the working tree. If the report cannot be loaded, or the scanner cannot be imported or run, all four checks are skipped and the guardian behaves exactly as it did before (graceful degradation). The report prints one line noting whether scanner-informed checks ran and how many signals were consulted.
+
+The four checks are suppressed together by `PR_GUARDIAN_OVERRIDE_SCANNER` with rationale in the PR body.
+
 ## Override Protocol
 
 Overrides are allowed only with rationale in the PR body.
@@ -114,7 +132,10 @@ PR_GUARDIAN_OVERRIDE_DOCS
 PR_GUARDIAN_OVERRIDE_CAPABILITY_MAP
 PR_GUARDIAN_OVERRIDE_HIGH_RISK_ACK
 PR_GUARDIAN_OVERRIDE_ACCEPTANCE
+PR_GUARDIAN_OVERRIDE_SCANNER
 ```
+
+`PR_GUARDIAN_OVERRIDE_SCANNER` suppresses all four scanner-informed checks (`scanner-secret-path`, `scanner-env-committed`, `scanner-missing-tests`, `scanner-new-ecosystem`).
 
 `PR_GUARDIAN_OVERRIDE_ACCEPTANCE` suppresses the acceptance-evidence check (`missing-acceptance-evidence`, `empty-acceptance-evidence`). It only applies to that check; it does not suppress the verification metadata requirement below, which has no bypass marker.
 

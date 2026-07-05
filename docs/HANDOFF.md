@@ -10,67 +10,99 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Date
 
-2026-07-04
+2026-07-05
+
+### Agent
+
+Runtime Agent (Fable 5 orchestration with delegated implementation)
+
+### Task
+
+AOS-RUNTIME-002 — Repository Scanner MVP
+
+### Branch
+
+`claude/aos-runtime-002-scanner-1egyjw`
+
+### PR
+
+#14 — https://github.com/Nerfherder16/ArchetypeOS/pull/14
+
+### Status
+
+In Review — CI green, awaiting Orchestrator/human merge review
 
 ### Completed
 
-- PR #7 merged: Agent Communication Bus and PR Monitoring skill
-- PR #8 merged: Branch Isolation / Worktree Protocol
-- PR #10 merged: Independent Architecture Review artifact
-- PR #11 merged: Engineering OS Strategy and WSL Windows 11 Runtime Target
-- PR #12 merged: Operating Loop planning docs recovery
-- Current state, active work, handoff, and recent changes reconciled on `docs/state-reconciliation`
+- Extended the read-only repository scanner (`apps/api/app/repository_scanner.py`) with structured `manifests`, `docker_files`, and `ci_files` (each with `kind`), `folder_structure` with depth, a `summary` block, structured `risk_signals` (`severity`, `code`, `path`, `message`), primary language hints, an expanded ignore list pruned before descent, a `MAX_FILES` (20000) truncation guard, and deterministic sorted `os.walk` traversal with no timestamps in the report.
+- Confirmed the extended report is a strict superset of the legacy report keys, so `POST /repositories/{id}/scan`, `RepositoryDNA` persistence, and artifact writing in `main.py` required zero changes.
+- Extended `apps/api/tests/test_scanner.py` to 11 scanner tests (16 API tests total): detection, ignored-dir pruning, secret path-only flagging (contents never read or echoed), determinism (scan-twice equality), truncation, backward-compat keys, and a read-only before/after filesystem snapshot.
+- Added `archetypeos_dev.db` to `.gitignore`.
+- Added `docs/REPOSITORY_SCANNER.md` reference doc.
+- Updated durable state docs (`docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/RECENT_CHANGES.md`, `docs/CAPABILITY_MAP.md`).
 
-### Current Branch
+### Files changed
 
-- `docs/state-reconciliation`
+- `apps/api/app/repository_scanner.py`
+- `apps/api/tests/test_scanner.py`
+- `.gitignore`
+- `docs/REPOSITORY_SCANNER.md`
+- `docs/CAPABILITY_MAP.md`
+- `docs/ACTIVE_WORK.md`
+- `docs/CURRENT_STATE.md`
+- `docs/HANDOFF.md`
+- `docs/RECENT_CHANGES.md`
 
-### Current Work
+### Tests run
 
-AOS-PMO-002 — State Reconciliation.
+- `python3 -m ruff check apps/api apps/worker` (ruff 0.8.6) -> exit 0
+- `python3 -m compileall` -> exit 0
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 16 passed
+- `PYTHONPATH=apps/worker pytest apps/worker/tests -q` -> 1 passed
+- Self-scan of the ArchetypeOS repo produced a correct report (Python/Shell/TypeScript hints, CI + docker + tests + env template detected, `MULTIPLE_ECOSYSTEMS` info signal)
+- Local web build (vite) succeeded and `docker compose config` -> exit 0
+- GitHub CI run 28726472816 on PR #14: all 5 jobs green (PR Guardian, API tests and lint, Worker tests and lint, Web typecheck and build, Docker Compose smoke test)
 
 ### Known Risks
 
 - Plane remains unavailable during the local power outage.
-- Local Level 2 WSL/Docker verification is unavailable until workstation access returns.
+- Local WSL/Docker Level 2 verification on the user's workstation remains blocked.
 - State files are high-conflict coordination files and should be updated carefully in focused PRs.
 - Connector write/branch operations can be brittle; preserve backup heads before destructive branch operations.
 
 ### Blockers
 
 - Plane sync blocked by local power outage.
-- Local WSL/Docker verification blocked by local power outage.
+- Local WSL/Docker verification blocked on the user's workstation.
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
-Level 1
+Level 3
 
 ### Verification Method
 
-GitHub connector state-file update and pending GitHub CI / PR Guardian after PR creation.
+GitHub CI workflow run on PR #14 (PR Guardian, API/worker tests and lint on Python 3.12, web build, Docker Compose smoke with live API/worker/web health checks), plus local Level 2 execution (ruff 0.8.6, compileall, pytest, vite build, compose config) in an isolated remote session bound to `claude/aos-runtime-002-scanner-1egyjw`.
 
 ### Evidence
 
-- `docs/CURRENT_STATE.md` reconciled.
-- `docs/ACTIVE_WORK.md` reconciled.
-- `docs/HANDOFF.md` reconciled.
-- `docs/RECENT_CHANGES.md` reconciled.
+- CI run 28726472816 (run #31) on head `aa6b4ef`: all 5 jobs concluded success, including the Docker Compose smoke test (images built, Postgres/Redis/API healthy, worker and web started, web responded).
+- Local: ruff/compileall exit 0; 16 API tests + 1 worker test passed; self-scan of the ArchetypeOS repo produced a correct report.
 
 ### Limitations
 
-Local Level 2 execution is unavailable during the power outage.
+Required status checks cannot be enforced as a merge gate on this repository plan (private repo without Pro), so CI green must be confirmed manually on the head SHA at merge time. User workstation WSL/Docker verification remains blocked by the power outage.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator review.
+Orchestrator / human merge review (confirm CI green on the current head SHA, then merge).
 
 ### Next Recommended Step
 
-Open PR for AOS-PMO-002 and merge after CI passes. Then assign AOS-RUNTIME-002 — Repository Scanner MVP to the Runtime Agent.
+Merge PR #14 after confirming CI is green on the current head SHA. Then assign AOS-KNOW-001 — Knowledge Vault Seed.
 
 ## Handoff Template
 

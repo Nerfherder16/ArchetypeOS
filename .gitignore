@@ -7,4 +7,5 @@ node_modules/
 dist/
 coverage/
 repositories/
+archetypeos_dev.db
 .DS_Store

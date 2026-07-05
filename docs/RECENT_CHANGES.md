@@ -6,6 +6,34 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-05
+
+### In Progress
+
+- AOS-RUNTIME-002 — Repository Scanner MVP extended on `claude/aos-runtime-002-scanner-1egyjw`: structured manifests/docker_files/ci_files with kinds, folder_structure with depth, summary block, structured risk_signals (severity/code/path/message), primary language hints, expanded ignore list pruned before descent, MAX_FILES truncation guard, deterministic sorted traversal, no timestamps, strict superset of legacy report keys. Tests extended to 11 scanner tests (16 API tests total). `.gitignore` gained `archetypeos_dev.db`.
+
+### Important Notes
+
+- Local verification (ruff, compileall, pytest) passed in an isolated remote session; self-scan of the ArchetypeOS repo produced a correct report. GitHub CI passed on PR #14 (run 28726472816, all 5 jobs green including PR Guardian and the compose smoke test). Note: GitHub Actions does run on this private repo; what the plan lacks is enforceable required status checks, so merge gating stays manual via the local guardian and Orchestrator review.
+- Plane remains pinned/offline due to local power outage.
+- Local WSL/Docker Level 2 verification on the user's workstation remains blocked.
+
+### Added Recently
+
+- `docs/REPOSITORY_SCANNER.md`
+
+### Current Branch
+
+- `claude/aos-runtime-002-scanner-1egyjw`
+
+### Current Work
+
+AOS-RUNTIME-002 — Repository Scanner MVP.
+
+### Why It Matters
+
+The scanner is the foundation for Repository DNA and future architecture graph and PR Guardian work. Once merged, AOS-KNOW-001 — Knowledge Vault Seed is next.
+
 ## 2026-07-04
 
 ### Merged

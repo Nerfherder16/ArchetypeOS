@@ -85,7 +85,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-PMO-002 — State Reconciliation
 
-- Status: In Review
+- Status: Merged (PR #13)
 - Owner: Chief Architect / Orchestrator
 - Branch: `docs/state-reconciliation`
 - Goal: Reconcile durable state files after recent PRs so the repo accurately reflects current status before implementation resumes.
@@ -102,18 +102,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
   - `docs/RECENT_CHANGES.md` is updated
   - Plane remains pinned/offline
   - AOS-RUNTIME-002 is clearly next
-- Verification Status: Verification pending
-- Verification Level: Level 1
-- Verification Method: GitHub connector state-file update; pending GitHub CI / PR Guardian.
-- Evidence: State files updated on `docs/state-reconciliation`.
-- Limitations: Local Level 2 execution unavailable during power outage.
-- Required Next Verifier: GitHub CI / PR Guardian.
+- Verification Status: Verified (merged via PR #13 with CI)
+- Required Next Verifier: None.
 
 ### AOS-RUNTIME-002 — Repository Scanner MVP
 
-- Status: Ready
+- Status: In Review
 - Owner: Runtime Agent
-- Branch: TBD
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- PR: #14
 - Goal: Add read-only repository scanner.
 - Dependencies:
   - AOS-RUNTIME-001
@@ -126,6 +123,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
   - no repository writes occur
   - verification metadata recorded in handoff and PR
   - tests exist and pass in CI
+- Verification Status: Verified
+- Verification Level: Level 3
+- Verification Method: GitHub CI on PR #14 (PR Guardian, API/worker tests, web build, compose smoke) plus local Level 2 execution
+- Evidence: CI run 28726472816 all 5 jobs green on head `aa6b4ef`; local ruff/compileall/pytest exit 0 (16 API + 1 worker tests); self-scan of ArchetypeOS repo produced a correct report
+- Limitations: required status checks cannot be enforced as a merge gate on this repository plan; CI green must be confirmed manually on the head SHA at merge time; user workstation WSL/Docker still blocked
+- Required Next Verifier: Orchestrator / human merge review.
 
 ### AOS-KNOW-001 — Knowledge Vault Seed
 

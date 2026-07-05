@@ -103,6 +103,7 @@ Primary artifacts:
 - docs/RESEARCH_ENGINE.md
 - docs/REPOSITORY_INTELLIGENCE_ENGINE.md
 - docs/CONTINUOUS_RESEARCH_ENGINE.md
+- docs/REPOSITORY_SCANNER.md
 - templates/research_note.md
 - agents/research_librarian/CLAUDE.md
 

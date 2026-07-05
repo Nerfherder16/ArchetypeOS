@@ -13,7 +13,7 @@ Every new engineering session should read this before planning or implementation
 - Current sprint: Sprint 2 — Operating Loop and first runtime proof
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
-- Plane status: `ArchetypeOS` project live and seeded (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); briefly down again late 2026-07-05 (AOS-3 → Done update pending); markdown state files remain the durable fallback board and win on conflict
+- Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
 
 ## Recently Merged
 
@@ -33,10 +33,12 @@ Every new engineering session should read this before planning or implementation
 - PR #21: Build Process Hardening (AOS-PROC-001)
 - PR #22: Post-merge state reconciliation for AOS-PROC-001
 - PR #23: Knowledge Vault Seed (AOS-KNOW-001)
+- PR #24: Post-merge state reconciliation for AOS-KNOW-001
+- PR #25: Architecture Spine Graph API (AOS-ARCH-001)
 
 ## Current Objective
 
-AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5) is in review on this branch: graph query/correction endpoints plus rescan upsert preserving node ids and manual corrections. PR to be opened.
+Reconcile state after the PR #25 merge, then start AOS-LOCAL-001 (WSL verification on `teevee-1`) and/or AOS-8 (control tower dashboard slice, now unblocked by the graph API).
 
 ## Active Branch
 
@@ -54,21 +56,20 @@ AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5) is in review on this
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: local ruff 0.8.6 + compileall + pytest (25 API tests including 5 new architecture tests, existing scan tests unchanged) in the isolated remote session; GitHub CI pending after PR creation
-- Evidence: exit codes 0 for ruff, compileall, and pytest
-- Limitations: SQLite-only locally; Plane still down (AOS-3 → Done and AOS-5 → In Progress board updates pending); markdown carries state per the precedence rule
+- Level: Level 1
+- Method: post-merge state-file reconciliation; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-ARCH-001 itself is Verified (Level 3, PR #25, CI run 28729930724 all green).
+- Evidence: state files reconciled to the PR #25 merge (`b9b3024`); Plane synced (AOS-3/AOS-5 Done)
+- Limitations: docs-only change
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- architecture graph API (AOS-ARCH-001)
-- state updates
+- post-merge state reconciliation for PR #25
+- AOS-LOCAL-001 readiness (workstation unblocked)
 
 ## Out Of Scope Now
 
-- local WSL/Docker verification
-- Plane sync
+- Plane two-way sync automation (AOS-9, not started)
 - desktop automation
 - browser automation
 - wake word
@@ -83,15 +84,15 @@ AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5) is in review on this
 | Agent dashboard implementation | Deferred | Engineering Control Tower design exists; implementation comes after scanner/runtime data. |
 | Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
-| Local Level 2 verification | Blocked | Resume when Windows 11/WSL workstation access returns. |
+| Local Level 2 verification | Unblocked | Workstation `teevee-1` available via Tailscale; execute AOS-LOCAL-001 there. |
 
 ## Blockers
 
-- Local WSL/Docker Level 2 verification on the user's workstation: pending confirmation.
+- None. Plane is back online and synced; workstation `teevee-1` confirmed available via Tailscale.
 
 ## Next Recommended Task
 
-Merge the AOS-ARCH-001 PR after CI passes under the Manual Merge Gate. Then AOS-8 (control tower dashboard slice, now unblocked by the graph API) or AOS-4 (scan history) are the leading candidates; AOS-7 awaits workstation confirmation.
+Merge this state reconciliation PR after CI passes. Then execute AOS-LOCAL-001 on `teevee-1` (first Level 4 runtime verification on the real target) and/or start AOS-8 (control tower dashboard slice).
 
 ## Required Reading For New Sessions
 

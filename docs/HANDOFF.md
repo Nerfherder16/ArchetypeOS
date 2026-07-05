@@ -26,11 +26,11 @@ AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5)
 
 ### PR
 
-To be opened.
+#25 — https://github.com/Nerfherder16/ArchetypeOS/pull/25
 
 ### Status
 
-In Review — implementation complete and locally verified, PR pending.
+Merged (merge commit `b9b3024`).
 
 ### Completed
 
@@ -60,40 +60,42 @@ In Review — implementation complete and locally verified, PR pending.
 
 ### Known Risks
 
-- Local WSL/Docker Level 2 verification on the user's workstation remains pending confirmation.
 - Vault content is seed-level; canonical validation per the Safety section of `docs/KNOWLEDGE_VAULT_STRUCTURE.md` still requires review before any page is treated as validated.
+- AOS-LOCAL-001 must run on `teevee-1` (human or local Claude Code session); the remote orchestration session cannot reach the tailnet.
 
 ### Blockers
 
-- Local WSL/Docker verification on the user's workstation: pending confirmation.
+- None. Plane back online and synced; workstation `teevee-1` confirmed available via Tailscale.
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
-Level 2
+Level 3
 
 ### Verification Method
 
-Local ruff/compileall/pytest (25 API tests including 5 new architecture tests) in the isolated remote session. GitHub CI pending on the PR to be opened.
+GitHub CI workflow run on PR #25 plus local Level 2 execution (ruff 0.8.6, compileall, pytest 25 API tests) independently re-run by the Orchestrator.
 
 ### Evidence
 
-- pytest 25 passed; ruff and compileall exit 0; existing scan-endpoint tests unchanged and green.
+- CI run 28729930724 on head `9cd983a`: all 5 jobs concluded success; merged as `b9b3024`.
+- Local: pytest 25 passed; ruff and compileall exit 0.
+- Plane synced after the outage: AOS-3 and AOS-5 marked Done; AOS-7 annotated as unblocked.
 
 ### Limitations
 
-SQLite-only locally (CI exercises Python 3.12 and the compose smoke). Plane still down — AOS-3 -> Done and AOS-5 -> In Progress board updates pending; markdown carries state per the precedence rule.
+None blocking. Vault/graph staleness lifecycle remains future work.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
+None for AOS-ARCH-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Open the AOS-ARCH-001 PR, babysit CI, merge under the Manual Merge Gate, push pending Plane updates when the instance returns, then pick AOS-8 (control tower slice) or AOS-4 (scan history).
+Merge the post-merge state reconciliation PR after CI passes. Then execute AOS-LOCAL-001 on `teevee-1` (workstation now available via Tailscale) and/or start AOS-8 (control tower dashboard slice).
 
 ## Handoff Template
 

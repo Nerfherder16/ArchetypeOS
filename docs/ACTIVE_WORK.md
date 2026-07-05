@@ -138,28 +138,32 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-ARCH-001 — Architecture Spine Graph API
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-5 (In Progress update pending — Plane temporarily down)
-- PR: to be opened
+- PR: #25
+- Plane: AOS-5 (Done)
 - Spec: `.archetype/work/AOS-ARCH-001.md`
-- Goal: Query/correction API for the architecture graph plus rescan upsert so regeneration preserves node ids and manual corrections.
-- Acceptance Criteria (summary; full criteria with evidence pointers in the spec):
-  - `GET /projects/{id}/architecture` with optional repository filter returns nodes/edges with confidence and manual_correction.
-  - `PATCH /architecture/nodes/{id}` and `/architecture/edges/{id}` persist manual corrections.
-  - Rescan upserts instead of duplicating; corrected nodes keep ids and corrections.
-- Verification Status: Verification pending
-- Verification Level: Level 2
-- Verification Method: local ruff/compileall/pytest (25 API tests including 5 new architecture tests) in isolated remote session; GitHub CI pending on PR
-- Evidence: exit codes 0 for ruff, compileall, and pytest; existing scan-endpoint tests unchanged and green
-- Limitations: SQLite-only locally; CI pending
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+- Verification Status: Verified
+- Notes: Level 3 GitHub CI evidence in PR #25 (run 28729930724, all 5 jobs green). Merge commit `b9b3024`. Rescan upsert preserves node ids and manual corrections.
+- Required Next Verifier: None.
+
+### AOS-LOCAL-001 — WSL Windows 11 Local Verification
+
+- Status: Ready
+- Owner: Runtime Agent / Human operator
+- Plane: AOS-7
+- Goal: Run the full local Level 2/Level 4 verification pass on the Windows 11 + WSL 2 runtime target.
+- Notes: UNBLOCKED 2026-07-05 — workstation `teevee-1` confirmed available with Docker/WSL via Tailscale. Must be executed on that machine (human or local Claude Code session); the remote orchestration session cannot reach the tailnet.
+- Acceptance Criteria:
+  - `scripts/pre_pr_guardian.sh` passes locally on WSL
+  - `docker compose up` brings all services healthy; API/web respond
+  - a real repository is registered and scanned end to end; artifact written
+  - `/repositories` mount confirmed read-only at runtime
+  - results recorded as a Level 4 verification handoff
 
 ## Blocked Work
 
-- Plane is temporarily down again (brief outage noted 2026-07-05 after PR #23 merged); the `ArchetypeOS` Plane project remains the live board when reachable, and these markdown files carry state meanwhile. Pending Plane updates when it returns: AOS-3 → Done; AOS-5 → In Progress.
-- Local WSL/Docker Level 2 verification is still listed pending workstation confirmation.
+- None. Plane is back online and fully synced (AOS-3 and AOS-5 marked Done). Workstation `teevee-1` is confirmed available via Tailscale, unblocking AOS-LOCAL-001.
 
 ## Deferred Work
 

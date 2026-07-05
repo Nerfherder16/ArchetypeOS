@@ -19,9 +19,10 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #22: Post-merge state reconciliation for AOS-PROC-001.
 - PR #23: AOS-KNOW-001 — Knowledge Vault Seed (merge commit `87fa769`): vault built out to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` structure, `hot.md`/`index.md`/`overview.md`/`log.md` refreshed with current content, `.manifest.json` updated, `KnowledgePage` API read path explicitly deferred. Verified at Level 3 (CI run 28728964219, all 5 jobs green).
 
-### In Progress
+### Also Merged (later on 2026-07-05)
 
-- AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5): graph query endpoint with repository filter, node/edge manual-correction PATCH endpoints, and rescan upsert preserving node ids and corrections; 5 new integration tests (25 API tests total).
+- PR #24: Post-merge state reconciliation for AOS-KNOW-001.
+- PR #25: AOS-ARCH-001 — Architecture Spine Graph API (merge commit `b9b3024`): graph query endpoint with repository filter, node/edge manual-correction PATCH endpoints, and rescan upsert preserving node ids and corrections; 5 new integration tests (25 API tests total). Verified at Level 3 (CI run 28729930724, all 5 jobs green).
 
 ### Important Notes
 
@@ -30,7 +31,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - Plane is back online. The `ArchetypeOS` Plane project (AOS) has been seeded with 12 labels, default states, and work items AOS-1..AOS-9.
 - GitHub issues #16-#20 were briefly opened to mirror the Plane seed and have been closed as migrated to Plane.
 - Plane Modules, Cycles, Pages, Intake, and Views were enabled in Project Settings; all 10 epic Modules and the "Sprint 2 — Operating Loop" cycle are now populated.
-- Local WSL/Docker Level 2 verification on the user's workstation remains pending confirmation.
+- Workstation access CONFIRMED: `teevee-1` can run Docker/WSL via Tailscale — AOS-LOCAL-001 (Plane AOS-7) is unblocked. Plane back online and fully synced (AOS-3, AOS-5 Done).
 
 ### Added Recently
 
@@ -44,7 +45,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5), in review on this branch; PR to be opened. Note: Plane still down; AOS-3 → Done and AOS-5 → In Progress board updates pending.
+Post-merge state reconciliation for PR #25. Next: AOS-LOCAL-001 on `teevee-1` and/or AOS-8 (control tower slice).
 
 ### Why It Matters
 

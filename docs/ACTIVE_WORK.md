@@ -194,6 +194,22 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Notes: Level 3 GitHub CI evidence in PR #30 (run 28731234910, all 5 jobs green). Merge commit `12dc5f7`. Sync Discipline + Board ID Registry live in `docs/PLANE_PROJECT_BLUEPRINT.md`.
 - Required Next Verifier: None.
 
+### AOS-PRG-002 — PR Guardian Reads Repository Scanner Output
+
+- Status: In Review
+- Owner: Runtime Agent
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-6 (In Progress), Sprint 3 cycle
+- PR: to be opened
+- Spec: `.archetype/work/AOS-PRG-002.md`
+- Goal: First engine-to-engine flow — guardian consumes scanner risk signals (path-based secret/env blocks, MISSING_TESTS corroboration, ecosystem-expansion warning) with `--scan-report` input, stdlib-only in-repo scan fallback, and graceful degradation.
+- Verification Status: Verification pending
+- Verification Level: Level 2
+- Verification Method: local ruff/compileall/pytest (40 API tests incl. 8 new guardian tests) plus guardian self-run exercising the live in-repo scan path; GitHub CI pending on PR
+- Evidence: exit codes 0; self-run printed "Scanner-informed checks: consulted 3 risk signals."
+- Limitations: manifest basename list intentionally self-contained (could drift from scanner MANIFEST_KINDS; documented)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+
 ## Blocked Work
 
 - None. Plane is back online and fully synced (AOS-3 and AOS-5 marked Done). Workstation `teevee-1` is confirmed available via Tailscale, unblocking AOS-LOCAL-001.

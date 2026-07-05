@@ -9,6 +9,7 @@ before reviewers spend time on a PR.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import subprocess
 import sys
@@ -75,6 +76,24 @@ REQUIRED_VERIFICATION_FIELDS = [
 MERGE_BLOCKING_VERIFICATION_STATUSES = {
     "Verification unavailable",
     "Verification blocked",
+}
+
+# Scanner-informed check constants (AOS-PRG-002). Kept self-contained: the
+# manifest basenames mirror app.repository_scanner.MANIFEST_KINDS ecosystem
+# entries but are hardcoded so this check does not import the scanner.
+SCANNER_CODE_SUFFIXES = (".py", ".ts", ".tsx", ".js", ".jsx")
+SCANNER_MANIFEST_BASENAMES = {
+    "pyproject.toml",
+    "requirements.txt",
+    "setup.py",
+    "setup.cfg",
+    "poetry.lock",
+    "package.json",
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "Cargo.toml",
+    "go.mod",
 }
 
 
@@ -340,6 +359,88 @@ def check_verification_metadata(body: str) -> list[Finding]:
     return findings
 
 
+def load_scan_report(path: Path | None) -> dict | None:
+    """Return a scan report dict, or None if unavailable (graceful degradation).
+
+    If ``path`` is given, load it as JSON. Otherwise attempt an in-repo scan by
+    importing ``app.repository_scanner`` from the sibling ``apps/api`` tree and
+    scanning the guardian's repository root. Any failure yields None so the
+    scanner-informed checks are skipped and the guardian behaves as before.
+    """
+    if path is not None:
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            return None
+
+    try:
+        repo_root = Path(__file__).resolve().parent.parent
+        api_dir = repo_root / "apps" / "api"
+        if str(api_dir) not in sys.path:
+            sys.path.insert(0, str(api_dir))
+        from app.repository_scanner import scan_repository
+
+        return scan_repository(repo_root)
+    except Exception:
+        return None
+
+
+def check_scanner_signals(files: list[str], scan: dict | None, body: str) -> list[Finding]:
+    findings: list[Finding] = []
+    if scan is None or has_override(body, "SCANNER"):
+        return findings
+
+    changed = set(files)
+    signals = scan.get("risk_signals", [])
+    codes = {signal.get("code") for signal in signals}
+
+    for signal in signals:
+        if signal.get("code") == "SECRET_LIKE_FILENAME" and signal.get("path") in changed:
+            findings.append(
+                Finding(
+                    "block",
+                    "scanner-secret-path",
+                    f"Scanner flagged a secret-like filename in the changed set: {signal.get('path')}. "
+                    "Remove the credential file or add PR_GUARDIAN_OVERRIDE_SCANNER with rationale.",
+                )
+            )
+        if signal.get("code") == "ENV_FILE_PRESENT" and signal.get("path") in changed:
+            findings.append(
+                Finding(
+                    "block",
+                    "scanner-env-committed",
+                    f"Scanner detected a committed .env file in the changed set: {signal.get('path')}. "
+                    "Remove it and use .env.example, or add PR_GUARDIAN_OVERRIDE_SCANNER with rationale.",
+                )
+            )
+
+    if "MISSING_TESTS" in codes and any(
+        path.startswith(CODE_PREFIXES) and path.endswith(SCANNER_CODE_SUFFIXES) for path in files
+    ):
+        findings.append(
+            Finding(
+                "warn",
+                "scanner-missing-tests",
+                "Scanner reports the repository has no tests (MISSING_TESTS) while this PR adds app code. "
+                "Add tests or add PR_GUARDIAN_OVERRIDE_SCANNER with rationale.",
+            )
+        )
+
+    if "MULTIPLE_ECOSYSTEMS" in codes and any(
+        Path(path).name in SCANNER_MANIFEST_BASENAMES for path in files
+    ):
+        findings.append(
+            Finding(
+                "warn",
+                "scanner-new-ecosystem",
+                "Scanner reports multiple language ecosystems (MULTIPLE_ECOSYSTEMS) and this PR adds a package "
+                "manifest. Acknowledge the ecosystem expansion or add PR_GUARDIAN_OVERRIDE_SCANNER with rationale.",
+            )
+        )
+
+    return findings
+
+
 def render(findings: list[Finding], files: list[str]) -> int:
     blocks = [finding for finding in findings if finding.severity == "block"]
 
@@ -372,12 +473,19 @@ def main() -> int:
     parser.add_argument("--base", required=True)
     parser.add_argument("--head", required=True)
     parser.add_argument("--body-file", type=Path)
+    parser.add_argument("--scan-report", type=Path)
     args = parser.parse_args()
 
     body = read_body(args.body_file)
     files = changed_files(args.base, args.head)
     statuses = changed_file_statuses(args.base, args.head)
     diff = diff_text(args.base, args.head)
+
+    scan = load_scan_report(args.scan_report)
+    if scan is None:
+        print("Scanner-informed checks: unavailable (scanner not importable and no --scan-report).")
+    else:
+        print(f"Scanner-informed checks: consulted {len(scan.get('risk_signals', []))} risk signals.")
 
     findings: list[Finding] = []
     findings.extend(check_required_files())
@@ -389,6 +497,7 @@ def main() -> int:
     findings.extend(check_acceptance_evidence(files, body))
     findings.extend(check_high_risk_files(files, body))
     findings.extend(check_verification_metadata(body))
+    findings.extend(check_scanner_signals(files, scan, body))
 
     return render(findings, files)
 

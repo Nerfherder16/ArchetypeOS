@@ -58,13 +58,22 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #30: AOS-PLANE-001 — Plane board sync discipline (merge commit `12dc5f7`): Sync Discipline + Board ID Registry. Verified at Level 3 (CI run 28731234910, all 5 jobs green).
 - PR #31: exec-bit fix for shell scripts (AOS-LOCAL-001 finding 1).
 
+### Sprint 2 Closed / Sprint 3 Opened
+
+- PR #32 merged: AOS-LOCAL-001 Level 4 handoff + remediations — Sprint 2 complete, AOS-1..AOS-9 all Done.
+- Sprint 3 — v0.1 Completion opened in Plane (cycle `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`): AOS-6 scanner-informed guardian (in progress), AOS-10 decision/research artifacts, AOS-11 nightly digest, AOS-12 Alpha Review capstone.
+
+### In Progress
+
+- AOS-PRG-002 — scanner-informed guardian: path-based secret/.env BLOCKs, MISSING_TESTS and ecosystem WARNs, --scan-report input + stdlib-only in-repo scan fallback with graceful degradation; 8 new tests (40 total).
+
 ### AOS-LOCAL-001 Executed
 
 - Operator ran the Level 4 runbook on `teevee-1` (Windows 11 + WSL 2): 6/6 services healthy, `/health` all true with real Redis (first time), dashboard-driven scan loop, two versioned scan artifacts, read-only mount probe rejected with "Read-only file system". Five findings recorded (`.archetype/work/AOS-LOCAL-001.md`); remediations: PR #31 (exec bit) and this branch (hermetic tests, `.env.example` port guidance).
 
 ### Current Work
 
-AOS-LOCAL-001 handoff + remediations in review; Sprint 2 completes when it merges.
+AOS-PRG-002 in review on this branch; PR to be opened. Sprint 3 loop: AOS-DEC-001, AOS-LEARN-001, AOS-ALPHA-001 follow.
 
 ### Why It Matters
 

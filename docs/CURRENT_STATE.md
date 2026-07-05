@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 — Enforcement & Foundations (open, cycle `8bc59801`); Sprint 4 COMPLETE (PRs #39-#42); orchestration now Opus 4.8
+- Current sprint: Sprint 5 — Enforcement & Foundations (packages 1–6 delivered, PRs #43–#48; AOS-18 Done, worker pipeline complete); orchestration Opus 4.8. Awaiting operator direction on the next package.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -57,14 +57,15 @@ Every new engineering session should read this before planning or implementation
 - PR #45: Extract aos_core shared package, RFC-0006 Phase 1 (AOS-CORE-001) — domain layer is now a shared package
 - PR #46: Worker runs scan/digest jobs, RFC-0006 Phase 2 (AOS-WORKERRUN-001) — scans/digests run as queued jobs
 - PR #47: Scheduler seed — schedules-as-data + control-plane scheduler, RFC-0007 (AOS-SCHED-001); first real Alembic migration
+- PR #48: Scheduler dashboard — schedules UI + enqueue + job history, RFC-0007/RFC-0006 Phase 3b (AOS-SCHED-002) — **closes AOS-18 and the worker pipeline; RFC-0006 + RFC-0007 realized end to end**
 
 ## Current Objective
 
-Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) in review on this branch — the dashboard "Scheduling & Jobs" section (schedules CRUD + enable/disable + run-now, enqueue-as-job buttons, job history) + a `GET /projects/{id}/jobs` endpoint. **Merging it closes AOS-18 and the worker pipeline.** Folds in the PR #47 reconciliation.
+Sprint 5 (Enforcement & Foundations) delivered end to end: web tests enforced (PR #43), Alembic baseline (#44), and the worker pipeline in four merges (#45 shared core, #46 worker job execution, #47 scheduler seed + first real migration, #48 operator dashboard). **AOS-18 is Done.** The distributed-runtime substrate the System Architecture names ("control plane decides and stores; nodes execute") now exists end to end. **Awaiting operator direction on the next package** — recommended next thrust is the Intelligence Layer + Agent Council + Final Judge (Phase 9, RFC-0005 / AOS-19), where the platform becomes genuinely intelligent rather than a runtime substrate.
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` for post-merge state reconciliation)
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `350c8b0` after the PR #48 merge)
 
 ## CI Status
 
@@ -77,16 +78,16 @@ Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) i
 
 ## Verification Status
 
-- Status: Verification pending
+- Status: Verified (PR #48 merged as `350c8b0`)
 - Level: Level 4
-- Method: Orchestrator independently ran the full Playwright suite headless (`PW_LOCAL_CHROMIUM` seam) — **4/4 pass** incl. the new `scheduling.spec.ts` (create schedule → run now → job appears in history) — plus api suite **77 passed** (75 + 2 new jobs-list tests), worker 6, strict tsc/vite build exit 0, ruff clean. Hardened the web-e2e CI job to ensure `redis-server` for the e2e enqueue path (explicit per LES-011). CI (api-tests, web-e2e, compose-smoke) pending after PR creation
-- Evidence: 4/4 e2e specs headless; 77 api tests; `GET /projects/{id}/jobs`; job-history + schedule controls drive from the dashboard
-- Limitations: schedule editing is enable-disable + interval only; e2e enqueue uses an ephemeral redis (local serve-api.sh / ensured in CI)
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Method: CI run 28756145778 all 6 jobs green on head `b6dc146` (PR Guardian, Web typecheck/build, API tests, Worker tests, Docker Compose smoke building/booting api+worker+web+scheduler, Web e2e running the new `scheduling.spec.ts`); plus Orchestrator's independent 3.12-venv run — Playwright 4/4 headless, 77 api tests, 6 worker tests, strict tsc/vite exit 0
+- Evidence: schedules → scheduler → queued jobs → workers → dashboard proven end to end; `GET /projects/{id}/jobs` live; create-schedule → run-now → job-in-history driven headless
+- Limitations: schedule editing is enable-disable + interval only
+- Required Next Verifier: None — package merged and reconciled
 
 ## In Scope Now
 
-- Sprint 5 package 6: scheduler dashboard — schedules UI + enqueue + job history (AOS-SCHED-002); closes AOS-18
+- Nothing active. Awaiting operator direction on the next package (recommended: AOS-19 / RFC-0005 Intelligence Layer + Council).
 
 ## Out Of Scope Now
 
@@ -113,7 +114,7 @@ Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) i
 
 ## Next Recommended Task
 
-Merge the AOS-SCHED-002 PR after CI passes under the Manual Merge Gate — that closes AOS-18 and the worker pipeline (RFC-0006 + RFC-0007 fully realized). Remaining Sprint 5 backlog: AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path); AOS-19 (council, RFC-0005) after. Await operator direction on the next package.
+Await operator direction on the next package. Recommended next major thrust: the Intelligence Layer + Agent Council + Final Judge (Phase 9, RFC-0005 / AOS-19) — the substrate is now built, so this is where the platform becomes genuinely intelligent. Lighter backlog alternatives: AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path).
 
 ## Required Reading For New Sessions
 

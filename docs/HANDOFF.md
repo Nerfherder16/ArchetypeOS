@@ -26,11 +26,11 @@ AOS-SCHED-002 — Scheduler dashboard: schedules UI + enqueue + job history, RFC
 
 ### PR
 
-To be opened.
+#48 — **Merged** as `350c8b0` (squash). CI run 28756145778 all 6 jobs green on head `b6dc146`.
 
 ### Status
 
-In Review — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs` (Orchestrator-verified: 4/4 Playwright specs headless incl. the new scheduling spec; 77 api tests; strict web build clean). AOS-SCHED-001 merged as `915aa34` (PR #47; RFC-0007 seed). Merging this closes AOS-18 and the worker pipeline.
+Merged — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs`. **AOS-18 is Done; the worker pipeline is complete** (RFC-0006 shared core + RFC-0007 control-plane scheduling realized end to end: schedules → scheduler → queued jobs → workers → dashboard). Sprint 5 packages 1–6 all delivered (PRs #43–#48). Branch restarted from `main` at `350c8b0`. **Awaiting operator direction on the next package** — recommended: AOS-19 / RFC-0005 (Intelligence Layer + Agent Council + Final Judge, Phase 9).
 
 ### Orchestrator Transition
 
@@ -74,7 +74,7 @@ In Review — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs` 
 
 ### Verification Status
 
-Verification pending
+Verified (PR #48 merged as `350c8b0`)
 
 ### Verification Level
 
@@ -82,7 +82,7 @@ Level 4
 
 ### Verification Method
 
-Orchestrator independently ran the full Playwright suite headless (4/4 incl. the new scheduling spec) + api suite (77) + worker (6) + strict web build + ruff/compile on a 3.12 venv. GitHub CI (api-tests, web-e2e, compose-smoke) pending on the PR; merge under the Manual Merge Gate; then AOS-18 → Done.
+CI run 28756145778 all 6 jobs green on head `b6dc146` (compose-smoke built/booted api+worker+web+scheduler; web-e2e ran the new scheduling spec with ensured redis; api-tests ran the jobs-list tests) plus Orchestrator's independent 3.12-venv run (Playwright 4/4 headless, 77 api, 6 worker, strict tsc/vite). AOS-18 → Done; branch restarted from `main` at `350c8b0`.
 
 ### Evidence
 
@@ -98,7 +98,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge the AOS-SCHED-002 PR after CI passes — closes AOS-18 and the worker pipeline (RFC-0006 + RFC-0007 realized end to end). Then await operator direction: remaining backlog is AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path); AOS-19 (council) after.
+Await operator direction on the next package. AOS-18 and the worker pipeline are complete. Recommended next major thrust: AOS-19 / RFC-0005 — the Intelligence Layer + Agent Council + Final Judge (Phase 9), where the platform becomes genuinely intelligent atop the now-complete runtime substrate. Lighter backlog: AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path).
 
 ## Handoff Template
 

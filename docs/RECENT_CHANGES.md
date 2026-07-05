@@ -6,7 +6,13 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
-## 2026-07-05
+## 2026-07-05 — Sprint 5 close (worker pipeline complete)
+
+### Merged
+
+- PR #48: AOS-SCHED-002 — Scheduler dashboard: schedules UI + enqueue + job history (merge commit `350c8b0`; RFC-0007 / RFC-0006 Phase 3b). Adds `GET /projects/{id}/jobs` (recent jobs, cap 50, 404 on missing project) and a dashboard "Scheduling & Jobs" section: create/list schedules, per-row enable-disable + run-now + delete, enqueue scan/digest as jobs on demand, and a job-history read + refresh. New e2e `scheduling.spec.ts` (create → run-now → job-in-history → disable → reload); `serve-api.sh` starts an ephemeral redis so the enqueue path actually pushes; web-e2e CI job hardened with an "Ensure Redis available" step (LES-011 family). **Closes AOS-18 (Plane Done) and the worker pipeline — RFC-0006 (shared core) + RFC-0007 (control-plane scheduling) realized end to end: schedules → scheduler → queued jobs → workers → dashboard.** Verified at Level 4 (CI run 28756145778, all 6 jobs green, incl. compose-smoke booting api+worker+web+scheduler; plus Orchestrator's 3.12-venv run — Playwright 4/4 headless, 77 api, 6 worker, strict tsc/vite). **Sprint 5 packages 1–6 (PRs #43–#48) all delivered; the distributed-runtime substrate is complete.**
+
+## 2026-07-05 (earlier)
 
 ### Merged
 

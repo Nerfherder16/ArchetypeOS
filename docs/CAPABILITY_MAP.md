@@ -220,11 +220,14 @@ Capabilities:
 - risk register
 - release readiness
 - alpha self-evaluation review (system evaluates its own repository)
+- Level 4 dashboard browser-drive verification
 
 Primary artifacts:
 
 - docs/ALPHA_REVIEW_V0_1.md
 - .archetype/alpha/ (captured self-evaluation evidence)
+- scripts/web_drive/ (headless-Chromium dashboard drives)
+- .archetype/guardian/accepted_warnings.json
 - docs/VERIFICATION_PROTOCOL.md
 - docs/PR_GUARDIAN.md
 - docs/BRANCH_PROTECTION.md
@@ -368,6 +371,7 @@ Capabilities:
 Primary artifacts:
 
 - docs/ORCHESTRATION_ENGINE.md
+- docs/ORCHESTRATOR_PLAYBOOK.md
 - docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
 - docs/BRANCH_ISOLATION_WORKTREE_PROTOCOL.md
 - docs/CURRENT_STATE.md

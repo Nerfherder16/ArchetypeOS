@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 4 — Self-Healing & Learning Loop (operator-approved principle: every PR, learning moment, and failure ties back into the loops; guardian and the system get better as we go)
+- Current sprint: Sprint 4 COMPLETE (Self-Healing & Learning Loop, PRs #39-#41); orchestrator handoff pack in review; Sprint 5 awaits operator direction
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -53,7 +53,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Sprint 4 finale: AOS-PRG-003 (Guardian Evolution, Plane AOS-15) in review on this branch — the guardian consumes LES-003 and LES-006 by ID and gains RFC-0004 enforcement (guardian changes require lessons; overrides require lesson citations). Folds in the PR #40 reconciliation. Merging it completes Sprint 4.
+AOS-ORCH-004 (Sprint 4 close-out + Orchestrator Handoff Pack) in review on this branch — the operating loop made durable for the Fable 5 → Opus 4.8 orchestrator switch: `docs/ORCHESTRATOR_PLAYBOOK.md`, committed `scripts/web_drive/` harness, Board ID Registry backfill. Folds in the PR #41 reconciliation.
 
 ## Active Branch
 
@@ -71,15 +71,15 @@ Sprint 4 finale: AOS-PRG-003 (Guardian Evolution, Plane AOS-15) in review on thi
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 3
-- Method: local ruff/compileall/pytest (8 existing guardian tests unchanged + new guardian-evolution tests) + the CI guardian job executing the evolved code live on its own PR; Orchestrator local self-run before push; GitHub CI pending after PR creation
-- Evidence: LES-003/LES-006 closed by ID; accepted-warnings registry seeded with expiry 2026-08-01
-- Limitations: stateless acceptance registry (no cross-run warning history); web tests remain a separate candidate
-- Required Next Verifier: GitHub CI / PR Guardian (self-test), then Orchestrator review
+- Level: Level 2
+- Method: docs/scripts-only handoff pack — suite unchanged-green (65/65, ruff/compileall exit 0); Board ID Registry entries verified against Plane at write time; GitHub CI pending after PR creation
+- Evidence: `docs/ORCHESTRATOR_PLAYBOOK.md`; `scripts/web_drive/README.md`; LES-008
+- Limitations: drive harness not CI-wired (web-tests package, hard deadline 2026-08-01 acceptance expiry)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 4 finale: Guardian Evolution (AOS-PRG-003)
+- Orchestrator handoff pack (AOS-ORCH-004)
 
 ## Out Of Scope Now
 
@@ -106,7 +106,7 @@ Sprint 4 finale: AOS-PRG-003 (Guardian Evolution, Plane AOS-15) in review on thi
 
 ## Next Recommended Task
 
-Merge the AOS-LEARN-002 PR after CI passes under the Manual Merge Gate. Then AOS-PRG-003 (guardian evolution — Phase 2 enforcement, consumes LES-003/LES-006 by ID) completes Sprint 4.
+Merge the AOS-ORCH-004 handoff-pack PR, then switch orchestrator models (Opus 4.8, per the transition section in `docs/HANDOFF.md`). Sprint 5 candidates, evidence-ranked: web tests (before the 2026-08-01 acceptance expiry), LES-007 doc-staleness detection, architecture-graph semantics, digest breadth, KnowledgePage API.
 
 ## Required Reading For New Sessions
 

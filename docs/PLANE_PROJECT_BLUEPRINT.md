@@ -107,6 +107,8 @@ Recorded so any session can update the board idempotently without discovery call
 
 Project: `765d909a-a20a-4487-967d-866b9ea60ded` (identifier `AOS`)
 Sprint 2 cycle: `8f6103fe-f2f2-457b-973b-571bde6c5795`
+Sprint 3 cycle: `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b` (v0.1 Completion — complete)
+Sprint 4 cycle: `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b` (Self-Healing & Learning Loop — complete)
 
 States:
 
@@ -131,6 +133,12 @@ Work items:
 | AOS-7 | AOS-LOCAL-001 | `.archetype/work/AOS-LOCAL-001.md` | `1de85361-4cf9-48a2-ab7e-191419c9cdd3` |
 | AOS-8 | AOS-CTRL-001 | `.archetype/work/AOS-CTRL-001.md` | `0f61f00b-98bd-45cd-bc59-045666b0a7b8` |
 | AOS-9 | AOS-PLANE-001 | `.archetype/work/AOS-PLANE-001.md` | `4e0f1c47-4635-4da5-bc8f-68a03e922635` |
+| AOS-10 | AOS-DEC-001 | `.archetype/work/AOS-DEC-001.md` | `4cfe76e8-2475-4d5f-be23-e0eb6479dd85` |
+| AOS-11 | AOS-LEARN-001 | `.archetype/work/AOS-LEARN-001.md` | `c0e934ce-272d-4e62-a14e-8beae1afb01d` |
+| AOS-12 | AOS-ALPHA-001 | `.archetype/work/AOS-ALPHA-001.md` | `a59b81eb-f3a4-46ad-a1a0-b42989a10c6c` |
+| AOS-13 | AOS-RUNTIME-004 | `.archetype/work/AOS-RUNTIME-004.md` | `661b98e5-4fed-4fce-b893-daac85801005` |
+| AOS-14 | AOS-LEARN-002 | `.archetype/work/AOS-LEARN-002.md` | `6f232f60-ae61-46bb-9e81-f0829017c6fd` |
+| AOS-15 | AOS-PRG-003 | `.archetype/work/AOS-PRG-003.md` | `7dcfda25-eb2b-4937-8b6d-717d09f34d80` |
 
 Modules (epics): Foundation Runtime `b317c890-f4f2-4727-9822-18cd5f9672e4`; CI/Verification/PR Guardian `70e4eb8e-9d30-4b46-82d6-e06ab35760d7`; Orchestration Engine `437f8047-4ce4-473c-be45-dc4b88fa141d`; Agent Communication Bus `9ad33657-48cd-4d79-a328-dfccd8569232`; Repository Intelligence `05555846-09af-416e-9aa6-1d0b5e8a4209`; Knowledge Vault `1a2b4283-eab9-44c1-a770-441da89892e4`; App Creation Loop `c36805ee-c8eb-48bc-b285-392c3eee86fd`; Dashboard/Operator Console `a0ca9524-38e5-43e1-bff9-e5ad3f79b04d`; Plane Integration `5eb27dc4-5922-4757-8f83-5df0e4fabab5`; Local Agent Runtime/Worktrees `3ae85f73-5f95-4a4f-bc59-e64465bfc804`.
 

@@ -263,19 +263,28 @@ v0.1 is COMPLETE (2026-07-05). All Sprint 1–3 packages merged and verified; Ph
 
 ### AOS-PRG-003 — Guardian Evolution: Lessons Become Rules (RFC-0004 Phase 2)
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent (Opus) under Orchestrator
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-15 (In Progress), Sprint 4 cycle `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b`
-- PR: to be opened
+- PR: #41
+- Plane: AOS-15 (Done) — **Sprint 4 complete**
 - Spec: `.archetype/work/AOS-PRG-003.md`
-- Goal: the guardian consumes its own miss log by lesson ID — LES-003 (metadata error teaches its fix), LES-006 (accepted-warnings registry with expiry, ending silent warning repetition), plus RFC-0004 enforcement (guardian changes require lessons; overrides require lesson citations). Nothing weakened.
+- Verification Status: Verified
+- Notes: Level 3 evidence — CI run 28748052521 all 5 jobs green including the guardian job executing the evolved code live on its own PR. Merge commit `98914f7`. LES-003/LES-006 consumed by ID; web-tests acceptance expires 2026-08-01.
+- Required Next Verifier: None.
+
+### AOS-ORCH-004 — Sprint 4 Close-Out + Orchestrator Handoff Pack
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator (Fable 5 — final Fable package before the Opus 4.8 orchestrator switch)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- PR: to be opened
+- Goal: make the operating loop durable across the model handoff — `docs/ORCHESTRATOR_PLAYBOOK.md`, the committed `scripts/web_drive/` harness, Board ID Registry backfill (Sprints 3–4), HANDOFF transition section, LES-008. Folds in PR #41 reconciliation.
 - Verification Status: Verification pending
-- Verification Level: Level 3
-- Verification Method: local ruff/compileall/pytest (55 + new guardian-evolution tests, 8 existing guardian tests unchanged) + the CI guardian job executing the evolved code live on its own PR (precedent PR #33); Orchestrator local self-run before push
-- Evidence: PR body Acceptance Evidence; LES-003/LES-006 closed by ID
-- Limitations: warning-history persistence across runs not included (stateless acceptance registry chosen); web tests themselves remain a separate candidate
-- Required Next Verifier: GitHub CI / PR Guardian (self-test), then Orchestrator
+- Verification Level: Level 2
+- Verification Method: docs/scripts-only — suite unchanged-green (65/65); registry IDs verified against Plane at write time; GitHub CI pending on PR
+- Evidence: playbook cross-checked against state docs; AOS-10 ID fetched live (LES-008)
+- Limitations: drive harness not CI-wired (web-tests package, due before 2026-08-01)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
 
 ### AOS-PRG-003 — Guardian Evolution Discipline
 

@@ -67,9 +67,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 - PR #33: AOS-PRG-002 — scanner-informed guardian (merge commit `5f0cfdc`): path-based secret/.env BLOCKs, MISSING_TESTS and ecosystem WARNs, --scan-report input + stdlib-only in-repo scan fallback with graceful degradation; 8 new tests (40 total). Verified at Level 3 — the CI guardian job executed the new code live on its own PR.
 
+### Sprint 3 Merged (continued)
+
+- PR #34: AOS-DEC-001 — decision/research artifacts (merge commit `fe158fd`): nine create/list/read routes, evidence-required recommendations (422), validated research→decision links as typed evidence entries, Decisions & Research dashboard section; 6 new tests (46 total). Verified at Level 4 (CI run 28742814441 + 7/7 browser drive). Phase 5 scope-lock criteria closed.
+
 ### In Progress
 
-- AOS-DEC-001 — decision/research artifacts (Plane AOS-10): nine create/list/read routes, evidence-required recommendations, validated research→decision links as typed evidence entries, Decisions & Research dashboard section; 6 new tests (46 total); browser drive 7/7.
+- Micro-PR: `/guardian` command (`.claude/commands/guardian.md`) so local, remote, and workstation sessions share the same guardian invocation; `full` argument runs the complete pre-PR gate.
 
 ### AOS-LOCAL-001 Executed
 
@@ -77,7 +81,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-AOS-DEC-001 in review on this branch; PR to be opened. Sprint 3 loop: AOS-LEARN-001, AOS-ALPHA-001 follow.
+/guardian command micro-PR in review; then AOS-LEARN-001 and AOS-ALPHA-001 close Sprint 3 and v0.1.
 
 ### Why It Matters
 

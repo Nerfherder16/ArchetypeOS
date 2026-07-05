@@ -16,6 +16,7 @@ from tools.pr_guardian import (  # noqa: E402
     apply_accepted_warnings,
     check_guardian_change_lesson,
     check_override_lesson_citation,
+    check_tests_for_code_changes,
     check_verification_metadata,
     load_accepted_warnings,
 )
@@ -118,6 +119,21 @@ def test_guardian_change_requires_lesson() -> None:
 
     unrelated = check_guardian_change_lesson(["apps/api/app/x.py"], "")
     assert unrelated == []
+
+
+def test_web_source_without_e2e_warns() -> None:
+    findings = check_tests_for_code_changes(["apps/web/src/main.tsx"], "")
+    codes = [f.code for f in findings]
+    assert "web-tests-not-enforced" in codes
+    warn = next(f for f in findings if f.code == "web-tests-not-enforced")
+    assert warn.severity == "warn"
+
+
+def test_web_source_with_e2e_clean() -> None:
+    findings = check_tests_for_code_changes(
+        ["apps/web/src/main.tsx", "apps/web/e2e/control-tower.spec.ts"], ""
+    )
+    assert "web-tests-not-enforced" not in [f.code for f in findings]
 
 
 def test_override_requires_lesson_citation() -> None:

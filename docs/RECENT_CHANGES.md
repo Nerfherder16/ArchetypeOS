@@ -103,9 +103,17 @@ Operator-approved principle: every PR, learning moment, and failure ties back in
 
 - PR #41: AOS-PRG-003 — guardian evolution (merge commit `98914f7`): metadata errors teach their fix (LES-003), accepted-warnings registry with expiry (LES-006, web-tests entry expires 2026-08-01), guardian changes require lessons, overrides require LES citations; 10 new tests (65 total). Verified at Level 3 — the CI guardian job ran the evolved code live on its own PR. **Sprint 4 (Self-Healing & Learning Loop) complete: PRs #39, #40, #41.**
 
+### Sprint 4 Closed / Orchestrator Handoff
+
+- PR #42: AOS-ORCH-004 — Sprint 4 close-out + Orchestrator Handoff Pack (merge commit `74e9370`): `docs/ORCHESTRATOR_PLAYBOOK.md`, committed `scripts/web_drive/` harness, Board ID Registry backfill (Sprints 3–4), HANDOFF transition section, LES-008. Verified at Level 2 (CI run 28748558659 all green). Orchestration handed from Fable 5 to Opus 4.8 (same container, model switch).
+
+### Sprint 5 Opened — Enforcement & Foundations
+
+Cycle `8bc59801`. Operator-approved order: AOS-16 web tests (deadline 2026-08-01) → AOS-17 Alembic → AOS-18 worker pipeline; AOS-21 second repo parallel. First package under the Opus 4.8 orchestrator; Board ID Registry backfilled with AOS-16..23 (UUIDs fetched from Plane, LES-008).
+
 ### Current Work
 
-AOS-ORCH-004 in review on this branch — Sprint 4 close-out + Orchestrator Handoff Pack for the Fable 5 → Opus 4.8 switch: `docs/ORCHESTRATOR_PLAYBOOK.md` (loop + babysitter recipe + environment quirks), committed `scripts/web_drive/` browser-drive harness, Board ID Registry backfill (Sprint 3/4 cycles, AOS-10..15 — AOS-10's ID fetched from Plane after a from-memory near-miss, LES-008), HANDOFF transition section.
+AOS-WEB-001 in review on this branch — the `scripts/web_drive/` seed corpus promoted to a real `@playwright/test` suite at `apps/web/e2e/` (3 specs), a new CI `web-e2e` job running it headless, and a guardian evolution: `web-tests-not-enforced` now fires only on web source changed without an `apps/web/e2e/` change, and the accepted-warnings entry is retired to `[]` before its 2026-08-01 expiry. Portable browser resolution via a `PW_LOCAL_CHROMIUM` env seam (no container path committed). Orchestrator ran the suite headless independently (3/3); 67 API + 1 worker tests green. Records LES-009 (the dated-acceptance forcing function worked).
 
 ### Why It Matters
 

@@ -186,13 +186,14 @@ def check_tests_for_code_changes(files: list[str], body: str) -> list[Finding]:
     web_changed = any(path.startswith("apps/web/src/") for path in files)
     api_tests_changed = any(path.startswith("apps/api/tests/") for path in files)
     worker_tests_changed = any(path.startswith("apps/worker/tests/") for path in files)
+    web_tests_changed = any(path.startswith("apps/web/e2e/") for path in files)
 
     if api_changed and not api_tests_changed and not has_override(body, "TESTS"):
         findings.append(Finding("block", "missing-api-tests", "API code changed without API test changes. Add tests or include PR_GUARDIAN_OVERRIDE_TESTS with rationale."))
     if worker_changed and not worker_tests_changed and not has_override(body, "TESTS"):
         findings.append(Finding("block", "missing-worker-tests", "Worker code changed without worker test changes. Add tests or include PR_GUARDIAN_OVERRIDE_TESTS with rationale."))
-    if web_changed and not has_override(body, "WEB_TESTS"):
-        findings.append(Finding("warn", "web-tests-not-enforced", "Web source changed. Build is enforced, but UI tests are not yet available in v0.1."))
+    if web_changed and not web_tests_changed and not has_override(body, "WEB_TESTS"):
+        findings.append(Finding("warn", "web-tests-not-enforced", "Web source changed without web e2e test changes (apps/web/e2e/). Add or update Playwright specs or include PR_GUARDIAN_OVERRIDE_WEB_TESTS with rationale."))
     return findings
 
 

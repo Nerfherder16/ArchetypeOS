@@ -43,16 +43,16 @@ def test_ignored_dirs_are_skipped(tmp_path: Path):
 
 
 def test_env_and_secret_flagged_path_only(tmp_path: Path):
-    secret = "SUPER_SECRET_TOKEN_abc123"
-    (tmp_path / ".env").write_text(f"API_KEY={secret}", encoding="utf-8")
-    (tmp_path / "key.pem").write_text("-----BEGIN PRIVATE KEY-----", encoding="utf-8")
+    planted_value = "fake." + "credential." * 3 + "value"
+    (tmp_path / ".env").write_text(f"API_KEY={planted_value}", encoding="utf-8")
+    (tmp_path / "key.pem").write_text("-----BEGIN FAKE MARKER-----", encoding="utf-8")
 
     result = scan_repository(tmp_path)
 
     signals = {(s["code"], s["path"]) for s in result["risk_signals"]}
     assert ("ENV_FILE_PRESENT", ".env") in signals
     assert ("SECRET_LIKE_FILENAME", "key.pem") in signals
-    assert secret not in json.dumps(result)
+    assert planted_value not in json.dumps(result)
 
 
 def test_ci_detection(tmp_path: Path):

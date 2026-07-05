@@ -359,7 +359,27 @@ Sprint 5 — Enforcement & Foundations. Delivered packages 1–6: AOS-16 (web te
 
 ## Intelligence Thrust (open)
 
-Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligence Layer + Agent Council + Final Judge begins here, atop the completed Sprint 5 substrate. Phase 1 (AOS-COUNCIL-001, PR #49) merged — AOS-19 Done. Next: AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e), closing the Phase-9 "disagreements are visible" acceptance end to end.
+Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligence Layer + Agent Council + Final Judge begins here, atop the completed Sprint 5 substrate. Phase 1 (AOS-COUNCIL-001, PR #49) merged — AOS-19 Done. AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e) — is deferred one package behind a control-plane hardening interlude (Lead-Architect critique, operator-directed): AOS-APIROUTES-001 first.
+
+## Control-Plane Hardening (open)
+
+Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator chose "route split first, then AOS-COUNCIL-002." AOS-COUNCIL-002 will be reframed around the Control Tower IA (not a bolted-on panel).
+
+### AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening)
+
+- Status: In Review
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned — see HANDOFF branch note)
+- Plane: AOS-24 (In Progress)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-APIROUTES-001.md`
+- Goal: pure behavior-preserving split of `apps/api/app/main.py` (487 lines / 39 routes) into per-domain `APIRouter` modules under `apps/api/app/routes/`. No endpoint/schema/behavior change. `main.py` → 49 lines; a route-inventory equivalence test freezes the (method, path) set.
+- Verification Status: Verification pending
+- Verification Level: Level 4
+- Verification Method: Orchestrator independently (3.12 venv) **diffed the full route table `origin/main` vs working tree → byte-identical (43 (method,path) pairs, empty diff)**; api suite **94 passed** (92 prior unchanged + 2 inventory guards); FakeRedis jobs/schedules/council tests **11 passed in isolation** (the `main.redis.Redis.from_url` patch target preserved); ruff/compile clean; diff scope limited to `apps/api/app/**` + the new test (+ docs). CI (api-tests, compose-smoke boots the api image) pending on the PR.
+- Evidence: route table identical before/after; `main.py` 487→49; 10 `routes/*.py` modules; all prior tests pass unchanged
+- Limitations: none — no behavior change; `/health` stays app-level in `main.py`
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate
 
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 

@@ -18,25 +18,26 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-COUNCIL-001 — Agent Council seed: LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (Plane AOS-19; the intelligence thrust's first package). Sprint 5 (PRs #43–#48) is fully merged; AOS-18 Done.
+AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening). Lead-Architect critique, operator-directed "route split first, then AOS-COUNCIL-002." Pure behavior-preserving refactor of `apps/api/app/main.py` into per-domain `APIRouter` modules. (Prior: AOS-COUNCIL-001 merged as PR #49 / `a56d317`, AOS-19 Done — Agent Council backend live.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `350c8b0` after the PR #48 merge)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `a56d317` after the PR #49 merge; env-pinned — see branch note above)
 
 ### PR
 
-#49 — **Merged** as `a56d317` (squash). CI run 28757387442 all 6 jobs green on head `8dd2fb7`.
+To be opened.
 
 ### Status
 
-Merged — `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` + migration `0003`, worker `council_review` dispatch, council trigger/read API. **The Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done.** Advisory/draft-only. Branch restarted from `main` at `a56d317`. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget), four agents, dedicated tables. **Next: AOS-COUNCIL-002 — the Agent Council Dashboard.**
+In Review — `main.py` (487 lines / 39 routes) split into 10 `apps/api/app/routes/*.py` `APIRouter` modules; `main.py` → 49 lines (app + CORS + startup + `/health` + ordered `include_router` loop, retains `import redis` so the FakeRedis `main.redis` patch target survives). Orchestrator-verified: **route table byte-identical `origin/main` vs working tree (43 pairs, empty diff)**; api **94** (92 unchanged + 2 inventory guards); FakeRedis jobs/schedules/council **11** in isolation; ruff/compile clean; diff scope `apps/api/app/**` + new test + docs. No endpoint/schema/behavior change. **Next after merge: AOS-COUNCIL-002 (Agent Council Dashboard, reframed around the Control Tower IA).**
 
 ### Orchestrator Transition
 
 - Outgoing: Fable 5 (Sprints 1–4, PRs #1–#41 + this pack). Incoming: Opus 4.8, same session context.
 - Boot order for any fresh orchestrator session: `CLAUDE.md` → `docs/CURRENT_STATE.md` → `docs/ACTIVE_WORK.md` → `docs/HANDOFF.md` → `docs/ORCHESTRATOR_PLAYBOOK.md` → `knowledge/wiki/lessons/index.md` → active spec in `.archetype/work/`.
 - Non-negotiables that must survive the transition: builder ≠ verifier (Orchestrator independently re-runs everything); never weaken the guardian (it now enforces its own evolution discipline); head-SHA-pinned Manual Merge Gates; markdown state files win over Plane; lessons recorded in the same change set; no scope expansion without RFC.
+- **Branch name is env-pinned, not stale-by-neglect:** `claude/aos-runtime-002-scanner-1egyjw` is fixed by the session config; each package restarts it from `main` (one PR = one package, clean history). A per-package scheme (`opus/aos-<pkg>`) is adopted only if the operator reconfigures the env / grants explicit permission. See the Role-contract note in `docs/ORCHESTRATOR_PLAYBOOK.md` (Lead-Architect critique 2026-07-05, operator Decision 2a).
 - Escalate back to the operator (or a Fable session) for: RFC-grade architecture decisions, sprint planning at inflection points, alpha-style self-evaluations.
 
 ### Completed
@@ -74,7 +75,7 @@ Merged — `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeC
 
 ### Verification Status
 
-Verified (PR #49 merged as `a56d317`)
+Verification pending (AOS-APIROUTES-001 in review)
 
 ### Verification Level
 
@@ -82,7 +83,7 @@ Level 4
 
 ### Verification Method
 
-CI run 28757387442 all 6 jobs green on head `8dd2fb7` (compose-smoke applied migration `0003` on fresh Postgres + booted all services; api-tests ran the 15 new council tests; worker-tests the dispatch test) plus Orchestrator's independent 3.12-venv run (api 92 / worker 7; `run_council` branch checks — 4 outputs, disagreement, abstention, 404, determinism, `get_provider` mapping; alembic no-drift after `0003` → 24 tables, 0 ops). AOS-19 → Done; branch restarted from `main` at `a56d317`.
+Orchestrator independently (3.12 venv) diffed the full route table via a worktree of `origin/main` vs the working tree → **byte-identical (43 (method,path) pairs, empty diff)** — the refactor guard. api suite **94 passed** (92 prior unchanged + 2 new inventory tests); FakeRedis jobs/schedules/council tests **11 passed in isolation** (the `main.redis.Redis.from_url` patch target preserved); ruff/compile clean; `main.py` 487→49; diff scope limited to `apps/api/app/**` + the new test + docs. GitHub CI (api-tests, compose-smoke boots the api image) pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
@@ -98,7 +99,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge AOS-COUNCIL-001 after CI passes under the Manual Merge Gate (Plane AOS-19 Phase 1). Then AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e) — closes the Phase-9 "disagreements are visible" acceptance end to end. A real council run on an authed node (flip `llm_provider=claude_code`) is the operator-side validation. Lighter backlog: AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path).
+Merge AOS-APIROUTES-001 after CI passes under the Manual Merge Gate (Plane AOS-24). Then AOS-COUNCIL-002 — the Agent Council Dashboard, reframed around the Control Tower information hierarchy (critique #3). Then the critique's substrate priorities: AOS-23 (knowledge read path — makes stored knowledge, incl. council reviews, operational), AOS-21 (second repo — the council reasons over more than itself), AOS-20 (doc-staleness/LES-007), AOS-22 (backups). A real council run on an authed node (`llm_provider=claude_code`) is the operator-side validation of Phase 1.
 
 ## Handoff Template
 

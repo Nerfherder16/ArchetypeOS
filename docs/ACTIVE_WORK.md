@@ -130,7 +130,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Status: Merged
 - Owner: Knowledge Agent
 - PR: #23
-- Plane: AOS-3 (Done update pending — Plane temporarily down at merge time)
+- Plane: AOS-3 (Done)
 - Spec: `.archetype/work/AOS-KNOW-001.md`
 - Verification Status: Verified
 - Notes: Level 3 GitHub CI evidence in PR #23 (run 28728964219, all 5 jobs green). Merge commit `87fa769`. Vault built out to full RFC-0002 structure; `KnowledgePage` API read path explicitly deferred.
@@ -174,18 +174,29 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-RUNTIME-003 — Repository Scan Persistence and History
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-4 (In Progress)
-- PR: to be opened
+- PR: #29
+- Plane: AOS-4 (Done)
 - Spec: `.archetype/work/AOS-RUNTIME-003.md`
-- Goal: Versioned scan artifact files (fixes rescan overwrite bug), per-repository scan history list, stored-report retrieval.
+- Verification Status: Verified
+- Notes: Level 3 GitHub CI evidence in PR #29 (run 28730851673, all 5 jobs green). Merge commit `7697265`. Versioned scan artifacts fix the rescan overwrite bug; history endpoints added.
+- Required Next Verifier: None.
+
+### AOS-PLANE-001 — Plane Board Sync Discipline
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-9 (In Progress)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-PLANE-001.md`
+- Goal: Document the manual Plane<->markdown sync protocol (update points, precedence, outage handling) and record the board id registry so agents can update Plane idempotently across sessions.
 - Verification Status: Verification pending
-- Verification Level: Level 2
-- Verification Method: local ruff/compileall/pytest (32 API tests incl. 4 new history tests, one an overwrite regression) in isolated remote session; GitHub CI pending on PR
-- Evidence: exit codes 0; independent Orchestrator re-run confirmed 32 passed
-- Limitations: SQLite locally; artifact retention/pruning explicitly out of scope
+- Verification Level: Level 1
+- Verification Method: repository inspection of the Sync Discipline section and id registry against the live board; local PR Guardian on the docs diff; GitHub CI pending on PR
+- Evidence: id registry matches API responses captured this session; discipline matches the exercised outage handling
+- Limitations: docs-only; two-way sync automation explicitly deferred
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
 
 ## Blocked Work
@@ -208,4 +219,4 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 Every active branch or PR must update this file when work status changes, including verification status and required next verifier.
 
-Work status changes update both Plane and this file; on conflict, this file (markdown) wins until AOS-9 defines full sync discipline.
+Work status changes update both Plane and this file per the Sync Discipline section in `docs/PLANE_PROJECT_BLUEPRINT.md`; on conflict, this file (markdown) wins.

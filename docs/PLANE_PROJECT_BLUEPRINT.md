@@ -78,7 +78,61 @@ Original conceptual work-package naming from before the project was seeded in Pl
 
 ## Precedence Rule
 
-Plane is the live working board. The markdown state files (`docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`) are the durable fallback and win on conflict until AOS-9 — Plane board sync discipline defines full two-way sync.
+Plane is the live working board. The markdown state files (`docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`) are the durable fallback and win on conflict.
+
+## Sync Discipline (AOS-PLANE-001)
+
+Manual, protocol-driven sync. Two-way sync automation is explicitly deferred; no sync code exists.
+
+### When agents update Plane
+
+- Work package starts: item → In Progress; description updated with spec path and branch.
+- PR opens: description updated with the PR link.
+- PR merges: item → Done.
+- New work packages: create the item first, then the `.archetype/work/` spec, then start.
+
+### When agents update markdown
+
+- In the work-package PR itself: `ACTIVE_WORK` entry with verification metadata, `CURRENT_STATE`, `HANDOFF`, `RECENT_CHANGES`.
+- Post-merge reconciliation (own PR, or folded into the next docs package): item → Merged with PR number, merge commit, and CI evidence.
+
+### Conflict and outage handling
+
+- On conflict, markdown wins. Fix Plane to match markdown, never the reverse.
+- When Plane is unreachable: continue on markdown alone; record every deferred board change as a "Pending Plane updates" line under Blocked Work in `docs/ACTIVE_WORK.md`; apply and clear them when Plane returns. (Exercised twice on 2026-07-05.)
+
+### Board ID Registry
+
+Recorded so any session can update the board idempotently without discovery calls. Workspace-local UUIDs only — no credentials.
+
+Project: `765d909a-a20a-4487-967d-866b9ea60ded` (identifier `AOS`)
+Sprint 2 cycle: `8f6103fe-f2f2-457b-973b-571bde6c5795`
+
+States:
+
+| State | ID |
+| --- | --- |
+| Backlog | `24b8392d-2fac-48d0-bbaa-08eabe21f4e6` |
+| Todo | `6b9f3eba-2b23-4438-b643-2b557dcff313` |
+| In Progress | `bc93d571-20d6-4b39-9080-29ab99cd41ea` |
+| Done | `65a682b5-8eac-45b3-98ba-3684b8f6df3d` |
+| Cancelled | `2d9542aa-80c4-41a3-b06b-bbc7c40efcff` |
+
+Work items:
+
+| Item | Work package | Spec | Issue ID |
+| --- | --- | --- | --- |
+| AOS-1 | AOS-RUNTIME-002 | — (predates specs) | `4cbde625-bef8-47cc-99d9-ecac05be823b` |
+| AOS-2 | AOS-PROC-001 | `.archetype/work/AOS-PROC-001.md` | `adc47a82-25d2-4b8c-b667-3dbdf85d0fd4` |
+| AOS-3 | AOS-KNOW-001 | `.archetype/work/AOS-KNOW-001.md` | `0933cd27-f4ec-4965-adfa-3880e6597146` |
+| AOS-4 | AOS-RUNTIME-003 | `.archetype/work/AOS-RUNTIME-003.md` | `49669cd1-6f40-4899-a36d-b568de86ee54` |
+| AOS-5 | AOS-ARCH-001 | `.archetype/work/AOS-ARCH-001.md` | `29211eaa-5e39-42e2-82f5-53f78436936b` |
+| AOS-6 | AOS-PRG-002 | TBD | `ca03441d-411c-4055-abc8-7eaf5b65c52b` |
+| AOS-7 | AOS-LOCAL-001 | TBD | `1de85361-4cf9-48a2-ab7e-191419c9cdd3` |
+| AOS-8 | AOS-CTRL-001 | `.archetype/work/AOS-CTRL-001.md` | `0f61f00b-98bd-45cd-bc59-045666b0a7b8` |
+| AOS-9 | AOS-PLANE-001 | `.archetype/work/AOS-PLANE-001.md` | `4e0f1c47-4635-4da5-bc8f-68a03e922635` |
+
+Modules (epics): Foundation Runtime `b317c890-f4f2-4727-9822-18cd5f9672e4`; CI/Verification/PR Guardian `70e4eb8e-9d30-4b46-82d6-e06ab35760d7`; Orchestration Engine `437f8047-4ce4-473c-be45-dc4b88fa141d`; Agent Communication Bus `9ad33657-48cd-4d79-a328-dfccd8569232`; Repository Intelligence `05555846-09af-416e-9aa6-1d0b5e8a4209`; Knowledge Vault `1a2b4283-eab9-44c1-a770-441da89892e4`; App Creation Loop `c36805ee-c8eb-48bc-b285-392c3eee86fd`; Dashboard/Operator Console `a0ca9524-38e5-43e1-bff9-e5ad3f79b04d`; Plane Integration `5eb27dc4-5922-4757-8f83-5df0e4fabab5`; Local Agent Runtime/Worktrees `3ae85f73-5f95-4a4f-bc59-e64465bfc804`.
 
 ## Rule
 

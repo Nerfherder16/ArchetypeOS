@@ -48,13 +48,18 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #26: Post-merge state reconciliation for AOS-ARCH-001; cleared Plane and workstation blockers.
 - PR #27: AOS-CTRL-001 — Engineering Control Tower first dashboard surface (merge commit `32399e0`): `GET /repositories/{id}/dna` endpoint + 3 tests; dashboard rebuilt (project create/select, repository register/scan, stored scan summary, architecture counts, per-section error isolation). Verified at Level 4 — CI run 28730415566 all green plus headless-Chromium drive (10/10 checks).
 
+### Also Merged (continued)
+
+- PR #28: Post-merge state reconciliation for AOS-CTRL-001.
+- PR #29: AOS-RUNTIME-003 — Scan persistence and history (merge commit `7697265`): versioned scan artifact files fixing the rescan overwrite bug, scan history list and stored-report retrieval endpoints; 4 new tests (32 API tests total). Verified at Level 3 (CI run 28730851673, all 5 jobs green).
+
 ### In Progress
 
-- AOS-RUNTIME-003 — Scan persistence and history (Plane AOS-4): versioned scan artifact files fixing the rescan overwrite bug (old Artifact rows previously pointed at clobbered content), `GET /repositories/{id}/scans` history list, `GET /repositories/{id}/scans/{artifact_id}` stored-report retrieval; 4 new tests (32 API tests total).
+- AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs): Sync Discipline section + Board ID Registry in `docs/PLANE_PROJECT_BLUEPRINT.md`; folds in the PR #29 reconciliation.
 
 ### Current Work
 
-AOS-RUNTIME-003 in review on this branch; PR to be opened. Then AOS-9 (Plane sync discipline). Tomorrow: AOS-LOCAL-001 on `teevee-1`.
+AOS-PLANE-001 in review on this branch; PR to be opened — closes the remote Sprint 2 board. Tomorrow: AOS-LOCAL-001 on `teevee-1`.
 
 ### Why It Matters
 

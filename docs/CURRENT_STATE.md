@@ -27,14 +27,15 @@ Every new engineering session should read this before planning or implementation
 - PR #10: Independent Architecture Review artifact
 - PR #11: Engineering OS Strategy and WSL Windows 11 Runtime Target
 - PR #12: Operating Loop planning docs recovery
+- PR #13: State reconciliation
 
 ## Current Objective
 
-Reconcile state files after recent merges, then assign AOS-RUNTIME-002 — Repository Scanner MVP as the next implementation task.
+AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-002-scanner-1egyjw`; PR to be opened and verified by CI.
 
 ## Active Branch
 
-- `docs/state-reconciliation`
+- `claude/aos-runtime-002-scanner-1egyjw`
 
 ## CI Status
 
@@ -48,22 +49,20 @@ Reconcile state files after recent merges, then assign AOS-RUNTIME-002 — Repos
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 1
-- Method: GitHub connector documentation/state inspection; pending GitHub CI / PR Guardian after PR creation
-- Evidence: `docs/CURRENT_STATE.md`, `docs/ACTIVE_WORK.md`, `docs/HANDOFF.md`, and `docs/RECENT_CHANGES.md` reconciled on `docs/state-reconciliation`
-- Limitations: Local Level 2 WSL/Docker verification unavailable until power and workstation access return
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Level: Level 2
+- Method: local ruff 0.8.6 + compileall + pytest (16 API tests, 1 worker test) in isolated remote session
+- Evidence: exit codes 0 for ruff/compileall/pytest; self-scan of ArchetypeOS repo produced a correct report
+- Limitations: local Python 3.11 vs CI 3.12; web build and compose smoke pending in CI; user workstation WSL/Docker still blocked; GitHub CI / PR Guardian pending
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review
 
 ## In Scope Now
 
-- state reconciliation after PRs #7, #8, #10, #11, #12
-- durable handoff update
-- next-task clarity for Repository Scanner MVP
-- preserve Plane as pinned/offline
+- repository scanner MVP extension
+- scanner docs
+- state updates
 
 ## Out Of Scope Now
 
-- repository scanner implementation
 - local WSL/Docker verification
 - Plane sync
 - desktop automation
@@ -89,7 +88,7 @@ Reconcile state files after recent merges, then assign AOS-RUNTIME-002 — Repos
 
 ## Next Recommended Task
 
-Open and merge this state reconciliation PR after CI passes. Then assign AOS-RUNTIME-002 — Repository Scanner MVP to the Runtime Agent using one branch and one isolated worktree.
+Merge AOS-RUNTIME-002 — Repository Scanner MVP after CI and PR Guardian pass. Then assign AOS-KNOW-001 — Knowledge Vault Seed.
 
 ## Required Reading For New Sessions
 

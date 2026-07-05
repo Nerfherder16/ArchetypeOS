@@ -31,7 +31,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-002-scanner-1egyjw`; PR #14 open and awaiting CI / PR Guardian verification.
+AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-002-scanner-1egyjw`; PR #14 open with CI green (run 28726472816), awaiting Orchestrator/human merge review.
 
 ## Active Branch
 
@@ -48,12 +48,12 @@ AOS-RUNTIME-002 — Repository Scanner MVP implemented on `claude/aos-runtime-00
 
 ## Verification Status
 
-- Status: Verification pending
-- Level: Level 2
-- Method: local ruff 0.8.6 + compileall + pytest (16 API tests, 1 worker test) in isolated remote session
-- Evidence: exit codes 0 for ruff/compileall/pytest; self-scan of ArchetypeOS repo produced a correct report
-- Limitations: local Python 3.11 vs CI 3.12; web build and compose smoke pending in CI; user workstation WSL/Docker still blocked; GitHub CI / PR Guardian pending
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review
+- Status: Verified
+- Level: Level 3
+- Method: GitHub CI on PR #14 (PR Guardian, API/worker tests, web build, compose smoke) plus local Level 2 execution
+- Evidence: CI run 28726472816 all 5 jobs green on head `aa6b4ef`; local ruff/compileall/pytest exit 0 (16 API + 1 worker tests); self-scan of ArchetypeOS repo produced a correct report
+- Limitations: required status checks cannot be enforced as a merge gate on this repository plan; CI green must be confirmed manually on the head SHA at merge time; user workstation WSL/Docker still blocked
+- Required Next Verifier: Orchestrator / human merge review
 
 ## In Scope Now
 

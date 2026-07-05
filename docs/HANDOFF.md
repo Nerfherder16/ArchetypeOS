@@ -30,7 +30,7 @@ AOS-RUNTIME-002 — Repository Scanner MVP
 
 ### Status
 
-In Review pending CI
+In Review — CI green, awaiting Orchestrator/human merge review
 
 ### Completed
 
@@ -60,7 +60,8 @@ In Review pending CI
 - `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 16 passed
 - `PYTHONPATH=apps/worker pytest apps/worker/tests -q` -> 1 passed
 - Self-scan of the ArchetypeOS repo produced a correct report (Python/Shell/TypeScript hints, CI + docker + tests + env template detected, `MULTIPLE_ECOSYSTEMS` info signal)
-- Web build and `docker compose config` running; GitHub CI still pending
+- Local web build (vite) succeeded and `docker compose config` -> exit 0
+- GitHub CI run 28726472816 on PR #14: all 5 jobs green (PR Guardian, API tests and lint, Worker tests and lint, Web typecheck and build, Docker Compose smoke test)
 
 ### Known Risks
 
@@ -76,32 +77,32 @@ In Review pending CI
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
-Level 2
+Level 3
 
 ### Verification Method
 
-Local ruff 0.8.6 + compileall + pytest (16 API tests, 1 worker test) in an isolated remote session bound to `claude/aos-runtime-002-scanner-1egyjw`. GitHub CI / PR Guardian pending.
+GitHub CI workflow run on PR #14 (PR Guardian, API/worker tests and lint on Python 3.12, web build, Docker Compose smoke with live API/worker/web health checks), plus local Level 2 execution (ruff 0.8.6, compileall, pytest, vite build, compose config) in an isolated remote session bound to `claude/aos-runtime-002-scanner-1egyjw`.
 
 ### Evidence
 
-- Exit codes 0 for ruff, compileall, and pytest.
-- Self-scan of the ArchetypeOS repo produced a correct report.
+- CI run 28726472816 (run #31) on head `aa6b4ef`: all 5 jobs concluded success, including the Docker Compose smoke test (images built, Postgres/Redis/API healthy, worker and web started, web responded).
+- Local: ruff/compileall exit 0; 16 API tests + 1 worker test passed; self-scan of the ArchetypeOS repo produced a correct report.
 
 ### Limitations
 
-Local Python is 3.11 vs CI 3.12. Web build and compose smoke are pending in CI. User workstation WSL/Docker verification remains blocked.
+Required status checks cannot be enforced as a merge gate on this repository plan (private repo without Pro), so CI green must be confirmed manually on the head SHA at merge time. User workstation WSL/Docker verification remains blocked by the power outage.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator merge review.
+Orchestrator / human merge review (confirm CI green on the current head SHA, then merge).
 
 ### Next Recommended Step
 
-Open the PR for AOS-RUNTIME-002, babysit CI / PR Guardian, and merge on green. Then assign AOS-KNOW-001 — Knowledge Vault Seed.
+Merge PR #14 after confirming CI is green on the current head SHA. Then assign AOS-KNOW-001 — Knowledge Vault Seed.
 
 ## Handoff Template
 

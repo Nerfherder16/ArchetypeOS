@@ -123,12 +123,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
   - no repository writes occur
   - verification metadata recorded in handoff and PR
   - tests exist and pass in CI
-- Verification Status: Verification pending
-- Verification Level: Level 2
-- Verification Method: local ruff 0.8.6 + compileall + pytest (16 API tests, 1 worker test) in isolated remote session
-- Evidence: exit codes 0 for ruff/compileall/pytest; self-scan of ArchetypeOS repo produced a correct report
-- Limitations: local Python 3.11 vs CI 3.12; web build and compose smoke pending in CI; user workstation WSL/Docker still blocked; GitHub CI / PR Guardian pending
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review.
+- Verification Status: Verified
+- Verification Level: Level 3
+- Verification Method: GitHub CI on PR #14 (PR Guardian, API/worker tests, web build, compose smoke) plus local Level 2 execution
+- Evidence: CI run 28726472816 all 5 jobs green on head `aa6b4ef`; local ruff/compileall/pytest exit 0 (16 API + 1 worker tests); self-scan of ArchetypeOS repo produced a correct report
+- Limitations: required status checks cannot be enforced as a merge gate on this repository plan; CI green must be confirmed manually on the head SHA at merge time; user workstation WSL/Docker still blocked
+- Required Next Verifier: Orchestrator / human merge review.
 
 ### AOS-KNOW-001 — Knowledge Vault Seed
 

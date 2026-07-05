@@ -84,6 +84,35 @@ export type ScanResponse = {
   artifacts: unknown[];
 };
 
+export type EvidenceEntry = {
+  type?: string;
+  id?: string;
+  [key: string]: unknown;
+};
+
+export type Decision = {
+  id: string;
+  title: string;
+  decision?: string | null;
+  confidence: number;
+  evidence: EvidenceEntry[];
+};
+
+export type ResearchNote = {
+  id: string;
+  title: string;
+  summary?: string | null;
+  freshness?: string | null;
+  confidence: number;
+};
+
+export type Recommendation = {
+  id: string;
+  title: string;
+  confidence: number;
+  evidence: EvidenceEntry[];
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
@@ -145,4 +174,42 @@ export async function fetchArchitecture(
 ): Promise<ArchitectureGraph> {
   const query = repositoryId ? `?repository_id=${encodeURIComponent(repositoryId)}` : '';
   return request<ArchitectureGraph>(`/projects/${projectId}/architecture${query}`);
+}
+
+export async function fetchDecisions(projectId: string): Promise<Decision[]> {
+  return request<Decision[]>(`/projects/${projectId}/decisions`);
+}
+
+export async function createDecision(
+  projectId: string,
+  payload: { title: string; decision: string; research_note_ids?: string[] },
+): Promise<Decision> {
+  return request<Decision>(`/projects/${projectId}/decisions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      title: payload.title,
+      decision: payload.decision,
+      research_note_ids: payload.research_note_ids ?? [],
+    }),
+  });
+}
+
+export async function fetchResearchNotes(projectId: string): Promise<ResearchNote[]> {
+  return request<ResearchNote[]>(`/projects/${projectId}/research-notes`);
+}
+
+export async function createResearchNote(
+  projectId: string,
+  payload: { title: string; summary: string },
+): Promise<ResearchNote> {
+  return request<ResearchNote>(`/projects/${projectId}/research-notes`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title: payload.title, summary: payload.summary }),
+  });
+}
+
+export async function fetchRecommendations(projectId: string): Promise<Recommendation[]> {
+  return request<Recommendation[]>(`/projects/${projectId}/recommendations`);
 }

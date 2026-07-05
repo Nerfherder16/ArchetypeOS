@@ -63,9 +63,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #32 merged: AOS-LOCAL-001 Level 4 handoff + remediations — Sprint 2 complete, AOS-1..AOS-9 all Done.
 - Sprint 3 — v0.1 Completion opened in Plane (cycle `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`): AOS-6 scanner-informed guardian (in progress), AOS-10 decision/research artifacts, AOS-11 nightly digest, AOS-12 Alpha Review capstone.
 
+### Sprint 3 Merged
+
+- PR #33: AOS-PRG-002 — scanner-informed guardian (merge commit `5f0cfdc`): path-based secret/.env BLOCKs, MISSING_TESTS and ecosystem WARNs, --scan-report input + stdlib-only in-repo scan fallback with graceful degradation; 8 new tests (40 total). Verified at Level 3 — the CI guardian job executed the new code live on its own PR.
+
 ### In Progress
 
-- AOS-PRG-002 — scanner-informed guardian: path-based secret/.env BLOCKs, MISSING_TESTS and ecosystem WARNs, --scan-report input + stdlib-only in-repo scan fallback with graceful degradation; 8 new tests (40 total).
+- AOS-DEC-001 — decision/research artifacts (Plane AOS-10): nine create/list/read routes, evidence-required recommendations, validated research→decision links as typed evidence entries, Decisions & Research dashboard section; 6 new tests (46 total); browser drive 7/7.
 
 ### AOS-LOCAL-001 Executed
 
@@ -73,7 +77,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-AOS-PRG-002 in review on this branch; PR to be opened. Sprint 3 loop: AOS-DEC-001, AOS-LEARN-001, AOS-ALPHA-001 follow.
+AOS-DEC-001 in review on this branch; PR to be opened. Sprint 3 loop: AOS-LEARN-001, AOS-ALPHA-001 follow.
 
 ### Why It Matters
 

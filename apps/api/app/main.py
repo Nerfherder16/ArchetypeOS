@@ -10,9 +10,9 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from .config import get_settings
 from .database import engine, get_db, init_db
-from .models import ArchitectureEdge, ArchitectureNode, Artifact, Job, Project, Repository, RepositoryDNA, new_id
+from .models import ArchitectureEdge, ArchitectureNode, Artifact, Decision, Job, Project, Recommendation, Repository, RepositoryDNA, ResearchNote, new_id
 from .repository_scanner import safe_repo_path, scan_repository
-from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead
+from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, DecisionCreate, DecisionRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RecommendationCreate, RecommendationRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead, ResearchNoteCreate, ResearchNoteRead
 
 settings = get_settings()
 app = FastAPI(title="ArchetypeOS API", version="0.1.0")
@@ -360,3 +360,119 @@ def create_artifact(payload: ArtifactCreate, db: Session = Depends(get_db)) -> A
 @app.get("/projects/{project_id}/artifacts", response_model=list[ArtifactRead])
 def list_artifacts(project_id: str, db: Session = Depends(get_db)) -> list[Artifact]:
     return db.query(Artifact).filter(Artifact.project_id == project_id).order_by(Artifact.created_at.desc()).all()
+
+
+@app.post("/projects/{project_id}/decisions", response_model=DecisionRead)
+def create_decision(project_id: str, payload: DecisionCreate, db: Session = Depends(get_db)) -> Decision:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    for note_id in payload.research_note_ids:
+        note = db.get(ResearchNote, note_id)
+        if not note or note.project_id != project_id:
+            raise HTTPException(status_code=404, detail="Research note not found")
+    evidence = list(payload.evidence) + [{"type": "research_note", "id": nid} for nid in payload.research_note_ids]
+    decision = Decision(
+        project_id=project_id,
+        title=payload.title,
+        context=payload.context,
+        decision=payload.decision,
+        alternatives=payload.alternatives,
+        tradeoffs=payload.tradeoffs,
+        consequences=payload.consequences,
+        evidence=evidence,
+        confidence=payload.confidence,
+    )
+    db.add(decision)
+    db.commit()
+    db.refresh(decision)
+    return decision
+
+
+@app.get("/projects/{project_id}/decisions", response_model=list[DecisionRead])
+def list_decisions(project_id: str, db: Session = Depends(get_db)) -> list[Decision]:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return db.query(Decision).filter(Decision.project_id == project_id).order_by(Decision.created_at.desc()).all()
+
+
+@app.get("/decisions/{decision_id}", response_model=DecisionRead)
+def get_decision(decision_id: str, db: Session = Depends(get_db)) -> Decision:
+    decision = db.get(Decision, decision_id)
+    if not decision:
+        raise HTTPException(status_code=404, detail="Decision not found")
+    return decision
+
+
+@app.post("/projects/{project_id}/research-notes", response_model=ResearchNoteRead)
+def create_research_note(project_id: str, payload: ResearchNoteCreate, db: Session = Depends(get_db)) -> ResearchNote:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    note = ResearchNote(
+        project_id=project_id,
+        title=payload.title,
+        question=payload.question,
+        summary=payload.summary,
+        sources=payload.sources,
+        findings=payload.findings,
+        freshness=payload.freshness,
+        confidence=payload.confidence,
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    return note
+
+
+@app.get("/projects/{project_id}/research-notes", response_model=list[ResearchNoteRead])
+def list_research_notes(project_id: str, db: Session = Depends(get_db)) -> list[ResearchNote]:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return db.query(ResearchNote).filter(ResearchNote.project_id == project_id).order_by(ResearchNote.created_at.desc()).all()
+
+
+@app.get("/research-notes/{note_id}", response_model=ResearchNoteRead)
+def get_research_note(note_id: str, db: Session = Depends(get_db)) -> ResearchNote:
+    note = db.get(ResearchNote, note_id)
+    if not note:
+        raise HTTPException(status_code=404, detail="Research note not found")
+    return note
+
+
+@app.post("/projects/{project_id}/recommendations", response_model=RecommendationRead)
+def create_recommendation(project_id: str, payload: RecommendationCreate, db: Session = Depends(get_db)) -> Recommendation:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    recommendation = Recommendation(
+        project_id=project_id,
+        title=payload.title,
+        recommendation=payload.recommendation,
+        rationale=payload.rationale,
+        alternatives=payload.alternatives,
+        pros=payload.pros,
+        cons=payload.cons,
+        risk=payload.risk,
+        effort=payload.effort,
+        dependencies=payload.dependencies,
+        acceptance_criteria=payload.acceptance_criteria,
+        evidence=payload.evidence,
+        confidence=payload.confidence,
+    )
+    db.add(recommendation)
+    db.commit()
+    db.refresh(recommendation)
+    return recommendation
+
+
+@app.get("/projects/{project_id}/recommendations", response_model=list[RecommendationRead])
+def list_recommendations(project_id: str, db: Session = Depends(get_db)) -> list[Recommendation]:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return db.query(Recommendation).filter(Recommendation.project_id == project_id).order_by(Recommendation.created_at.desc()).all()
+
+
+@app.get("/recommendations/{recommendation_id}", response_model=RecommendationRead)
+def get_recommendation(recommendation_id: str, db: Session = Depends(get_db)) -> Recommendation:
+    recommendation = db.get(Recommendation, recommendation_id)
+    if not recommendation:
+        raise HTTPException(status_code=404, detail="Recommendation not found")
+    return recommendation

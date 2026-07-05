@@ -18,7 +18,7 @@ Runtime Agent (Opus) under Orchestrator (Fable 5)
 
 ### Task
 
-AOS-PRG-002 — PR Guardian Reads Repository Scanner Output (Plane AOS-6; Sprint 3 package 1)
+AOS-DEC-001 — Decision and Research Artifacts (Plane AOS-10; Sprint 3 package 2), folding in the AOS-PRG-002 (PR #33) reconciliation
 
 ### Branch
 
@@ -30,28 +30,29 @@ To be opened.
 
 ### Status
 
-In Review — implementation complete and locally verified, PR pending. Sprint 2 closed with PR #32; Sprint 3 cycle live in Plane (`9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b`) with AOS-6/10/11/12.
+In Review — implementation complete, Level 4 browser verification passed (7/7), PR pending. AOS-PRG-002 merged as `5f0cfdc` (PR #33, Verified via CI incl. live guardian self-test).
 
 ### Completed
 
-- Guardian gains scanner-informed checks: `--scan-report <path>` input plus an in-repo scan fallback importing the stdlib-only scanner; graceful degradation to baseline behavior on any failure.
-- Two new BLOCKs: committed secret-like filenames (`scanner-secret-path`) and committed `.env` files (`scanner-env-committed`) — path-based detection the diff-content regexes could not do.
-- Two new WARNs: `scanner-missing-tests` corroboration and `scanner-new-ecosystem` expansion awareness. Override token `PR_GUARDIAN_OVERRIDE_SCANNER`.
-- 8 new tests (40 API tests total); `docs/PR_GUARDIAN.md` documents the checks and fallback.
+- Nine routes: create/list/read for decisions, research notes, recommendations over the existing models; 404 conventions matched.
+- Scope-lock rules enforced: recommendations require non-empty evidence (422); decision research links validated (existence + same project) and stored as typed research_note evidence entries — no schema changes.
+- Dashboard "Decisions & Research" section: three lists + two create forms with research-note link select; per-section error isolation.
+- 6 new API tests (46 total); browser drive 7/7 including API confirmation of the typed evidence link.
+- PR #33 reconciled (AOS-PRG-002 → Merged; Plane AOS-6 Done).
 
 ### Files changed
 
-- `tools/pr_guardian.py`
-- `apps/api/tests/test_guardian_scanner.py`
-- `docs/PR_GUARDIAN.md`
-- `.archetype/work/AOS-PRG-002.md`
+- `apps/api/app/main.py`, `apps/api/app/schemas.py`
+- `apps/api/tests/test_decisions_api.py`
+- `apps/web/src/api.ts`, `apps/web/src/main.tsx`
+- `.archetype/work/AOS-DEC-001.md`, `.archetype/work/AOS-PRG-002.md`
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 40 passed (32 existing + 8 new)
-- `python3 -m ruff check apps/api tools` -> exit 0; compileall -> exit 0
-- Guardian self-run: "Scanner-informed checks: consulted 3 risk signals." (live in-repo scan path exercised)
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 46 passed
+- `python3 -m ruff check apps/api tools` -> exit 0; compileall -> exit 0; `npm run build` -> exit 0
+- Headless-Chromium drive: 7/7 (create research note + linked decision via forms, lists, reload persistence, typed evidence entry verified via API)
 
 ### Known Risks
 
@@ -71,15 +72,15 @@ Level 2
 
 ### Verification Method
 
-Local ruff/compileall/pytest plus guardian self-run exercising the live in-repo scan path. GitHub CI pending on the PR.
+Local ruff/compileall/pytest + strict tsc/vite build + Orchestrator-driven headless-Chromium run of the new section against live uvicorn+SQLite. GitHub CI pending on the PR.
 
 ### Evidence
 
-- 40/40 tests green; ruff/compileall exit 0; self-run consulted 3 live risk signals without crashing.
+- 46/46 tests green; builds exit 0; 7/7 browser checks; screenshot captured.
 
 ### Limitations
 
-Level 3 pending. Guardian exit semantics unchanged (verified against an empty body).
+Browser drive is a manual Level 4 pass, not CI-repeatable. Level 3 pending.
 
 ### Required Next Verifier
 
@@ -87,7 +88,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge the AOS-PRG-002 PR after CI passes. Loop continues: AOS-DEC-001 (Plane AOS-10), AOS-LEARN-001 (AOS-11), AOS-ALPHA-001 (AOS-12) close Sprint 3 and v0.1.
+Merge the AOS-DEC-001 PR after CI passes. Loop continues: AOS-LEARN-001 (Plane AOS-11), then AOS-ALPHA-001 (AOS-12) close Sprint 3 and v0.1.
 
 ## Handoff Template
 

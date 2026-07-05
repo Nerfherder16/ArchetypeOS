@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProjectCreate(BaseModel):
@@ -163,3 +163,107 @@ class ArchitectureGraphRead(BaseModel):
 
 class ArchitectureCorrectionUpdate(BaseModel):
     manual_correction: str | None = None
+
+
+class DecisionCreate(BaseModel):
+    title: str
+    context: str | None = None
+    decision: str | None = None
+    alternatives: list = Field(default_factory=list)
+    tradeoffs: list = Field(default_factory=list)
+    consequences: list = Field(default_factory=list)
+    evidence: list = Field(default_factory=list)
+    confidence: float = 0.0
+    research_note_ids: list[str] = Field(default_factory=list)
+
+
+class DecisionRead(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    context: str | None
+    decision: str | None
+    alternatives: list
+    tradeoffs: list
+    consequences: list
+    evidence: list
+    confidence: float
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ResearchNoteCreate(BaseModel):
+    title: str
+    question: str | None = None
+    summary: str | None = None
+    sources: list = Field(default_factory=list)
+    findings: list = Field(default_factory=list)
+    freshness: str | None = None
+    confidence: float = 0.0
+
+
+class ResearchNoteRead(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    question: str | None
+    summary: str | None
+    sources: list
+    findings: list
+    freshness: str | None
+    confidence: float
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class RecommendationCreate(BaseModel):
+    title: str
+    recommendation: str
+    rationale: str | None = None
+    alternatives: list = Field(default_factory=list)
+    pros: list = Field(default_factory=list)
+    cons: list = Field(default_factory=list)
+    risk: str | None = None
+    effort: str | None = None
+    dependencies: list = Field(default_factory=list)
+    acceptance_criteria: list = Field(default_factory=list)
+    evidence: list
+    confidence: float = 0.0
+
+    @field_validator("evidence")
+    @classmethod
+    def evidence_must_not_be_empty(cls, value: list) -> list:
+        if not value:
+            raise ValueError("Recommendations require evidence field")
+        return value
+
+
+class RecommendationRead(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    recommendation: str | None
+    rationale: str | None
+    alternatives: list
+    pros: list
+    cons: list
+    risk: str | None
+    effort: str | None
+    dependencies: list
+    acceptance_criteria: list
+    evidence: list
+    confidence: float
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

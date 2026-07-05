@@ -1,19 +1,27 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
+  createDecision,
   createProject,
+  createResearchNote,
   fetchArchitecture,
+  fetchDecisions,
   fetchDna,
   fetchHealth,
   fetchProjects,
+  fetchRecommendations,
   fetchRepositories,
+  fetchResearchNotes,
   registerRepository,
   scanRepository,
   type ArchitectureGraph,
+  type Decision,
   type Health,
   type Project,
+  type Recommendation,
   type Repository,
   type RepositoryDna,
+  type ResearchNote,
 } from './api';
 
 const errorMessage = (err: unknown): string =>
@@ -51,6 +59,18 @@ function App() {
 
   const [architecture, setArchitecture] = useState<ArchitectureGraph | null>(null);
   const [architectureError, setArchitectureError] = useState<string | null>(null);
+
+  const [decisions, setDecisions] = useState<Decision[]>([]);
+  const [researchNotes, setResearchNotes] = useState<ResearchNote[]>([]);
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [artifactsError, setArtifactsError] = useState<string | null>(null);
+  const [newNoteTitle, setNewNoteTitle] = useState('');
+  const [newNoteSummary, setNewNoteSummary] = useState('');
+  const [creatingNote, setCreatingNote] = useState(false);
+  const [newDecisionTitle, setNewDecisionTitle] = useState('');
+  const [newDecisionText, setNewDecisionText] = useState('');
+  const [newDecisionNoteId, setNewDecisionNoteId] = useState('');
+  const [creatingDecision, setCreatingDecision] = useState(false);
 
   const loadHealth = useCallback(async () => {
     setHealthError(null);
@@ -104,6 +124,25 @@ function App() {
     }
   }, []);
 
+  const loadArtifacts = useCallback(async (projectId: string) => {
+    setArtifactsError(null);
+    try {
+      const [nextDecisions, nextNotes, nextRecommendations] = await Promise.all([
+        fetchDecisions(projectId),
+        fetchResearchNotes(projectId),
+        fetchRecommendations(projectId),
+      ]);
+      setDecisions(nextDecisions);
+      setResearchNotes(nextNotes);
+      setRecommendations(nextRecommendations);
+    } catch (err) {
+      setDecisions([]);
+      setResearchNotes([]);
+      setRecommendations([]);
+      setArtifactsError(errorMessage(err));
+    }
+  }, []);
+
   useEffect(() => {
     void loadHealth();
     void loadProjects();
@@ -114,10 +153,16 @@ function App() {
     setRepositories([]);
     setDna(null);
     setArchitecture(null);
+    setDecisions([]);
+    setResearchNotes([]);
+    setRecommendations([]);
+    setArtifactsError(null);
+    setNewDecisionNoteId('');
     if (selectedProjectId) {
       void loadRepositories(selectedProjectId);
+      void loadArtifacts(selectedProjectId);
     }
-  }, [selectedProjectId, loadRepositories]);
+  }, [selectedProjectId, loadRepositories, loadArtifacts]);
 
   useEffect(() => {
     if (selectedProjectId && selectedRepositoryId) {
@@ -201,6 +246,63 @@ function App() {
       }
     },
     [selectedProjectId, loadDna, loadArchitecture, loadRepositories],
+  );
+
+  const handleCreateResearchNote = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!selectedProjectId) {
+        return;
+      }
+      const title = newNoteTitle.trim();
+      if (!title) {
+        return;
+      }
+      setCreatingNote(true);
+      setArtifactsError(null);
+      try {
+        await createResearchNote(selectedProjectId, { title, summary: newNoteSummary.trim() });
+        setNewNoteTitle('');
+        setNewNoteSummary('');
+        await loadArtifacts(selectedProjectId);
+      } catch (err) {
+        setArtifactsError(errorMessage(err));
+      } finally {
+        setCreatingNote(false);
+      }
+    },
+    [selectedProjectId, newNoteTitle, newNoteSummary, loadArtifacts],
+  );
+
+  const handleCreateDecision = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!selectedProjectId) {
+        return;
+      }
+      const title = newDecisionTitle.trim();
+      if (!title) {
+        return;
+      }
+      setCreatingDecision(true);
+      setArtifactsError(null);
+      try {
+        await createDecision(selectedProjectId, {
+          title,
+          decision: newDecisionText.trim(),
+          research_note_ids: newDecisionNoteId ? [newDecisionNoteId] : [],
+        });
+        setNewDecisionTitle('');
+        setNewDecisionText('');
+        setNewDecisionNoteId('');
+        await loadArtifacts(selectedProjectId);
+      } catch (err) {
+        setArtifactsError(errorMessage(err));
+      } finally {
+        setCreatingDecision(false);
+      }
+    },
+    [selectedProjectId, newDecisionTitle, newDecisionText, newDecisionNoteId, loadArtifacts],
   );
 
   const summary = dna?.scan_summary.summary;
@@ -430,6 +532,111 @@ function App() {
           ) : !architectureError ? (
             <p>Loading architecture...</p>
           ) : null}
+        </section>
+      ) : null}
+
+      {selectedProjectId ? (
+        <section style={sectionStyle}>
+          <h2>Decisions &amp; Research</h2>
+          {artifactsError ? (
+            <p role="alert" style={errorStyle}>
+              {artifactsError}
+            </p>
+          ) : null}
+
+          <h3 style={{ marginBottom: 4 }}>Decisions</h3>
+          {decisions.length === 0 ? (
+            <p>No decisions yet.</p>
+          ) : (
+            <ul>
+              {decisions.map((decision) => {
+                const linkedResearch = decision.evidence.filter(
+                  (entry) => entry.type === 'research_note',
+                ).length;
+                return (
+                  <li key={decision.id}>
+                    {decision.title} — confidence {decision.confidence} · {linkedResearch} linked research
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <h3 style={{ marginBottom: 4 }}>Research Notes</h3>
+          {researchNotes.length === 0 ? (
+            <p>No research notes yet.</p>
+          ) : (
+            <ul>
+              {researchNotes.map((note) => (
+                <li key={note.id}>
+                  {note.title} — {note.freshness ?? 'unset'}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <h3 style={{ marginBottom: 4 }}>Recommendations</h3>
+          {recommendations.length === 0 ? (
+            <p>No recommendations yet.</p>
+          ) : (
+            <ul>
+              {recommendations.map((recommendation) => (
+                <li key={recommendation.id}>
+                  {recommendation.title} — {recommendation.evidence.length} evidence items
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={handleCreateResearchNote} style={{ marginTop: 8 }}>
+            <input
+              type="text"
+              value={newNoteTitle}
+              placeholder="Research note title"
+              onChange={(event) => setNewNoteTitle(event.target.value)}
+            />
+            <input
+              type="text"
+              value={newNoteSummary}
+              placeholder="Summary"
+              onChange={(event) => setNewNoteSummary(event.target.value)}
+              style={{ marginLeft: 8 }}
+            />
+            <button type="submit" disabled={creatingNote} style={{ marginLeft: 8 }}>
+              {creatingNote ? 'Adding...' : 'Add research note'}
+            </button>
+          </form>
+
+          <form onSubmit={handleCreateDecision} style={{ marginTop: 8 }}>
+            <input
+              type="text"
+              value={newDecisionTitle}
+              placeholder="Decision title"
+              onChange={(event) => setNewDecisionTitle(event.target.value)}
+            />
+            <input
+              type="text"
+              value={newDecisionText}
+              placeholder="Decision text"
+              onChange={(event) => setNewDecisionText(event.target.value)}
+              style={{ marginLeft: 8 }}
+            />
+            <select
+              value={newDecisionNoteId}
+              onChange={(event) => setNewDecisionNoteId(event.target.value)}
+              style={{ marginLeft: 8 }}
+            >
+              <option value="">No linked research</option>
+              {researchNotes.map((note) => (
+                <option key={note.id} value={note.id}>
+                  {note.title}
+                </option>
+              ))}
+            </select>
+            <button type="submit" disabled={creatingDecision} style={{ marginLeft: 8 }}>
+              {creatingDecision ? 'Adding...' : 'Add decision'}
+            </button>
+          </form>
         </section>
       ) : null}
 

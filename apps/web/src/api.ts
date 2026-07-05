@@ -113,6 +113,22 @@ export type Recommendation = {
   evidence: EvidenceEntry[];
 };
 
+export type DigestRecommendation = {
+  title?: string;
+  reason?: string;
+  status?: string;
+  [key: string]: unknown;
+};
+
+export type NightlyDigest = {
+  id: string;
+  digest_date: string;
+  summary: string | null;
+  changes: unknown[];
+  recommendations: DigestRecommendation[];
+  repeated_tasks: unknown[];
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
@@ -212,4 +228,12 @@ export async function createResearchNote(
 
 export async function fetchRecommendations(projectId: string): Promise<Recommendation[]> {
   return request<Recommendation[]>(`/projects/${projectId}/recommendations`);
+}
+
+export async function fetchDigests(projectId: string): Promise<NightlyDigest[]> {
+  return request<NightlyDigest[]>(`/projects/${projectId}/digests`);
+}
+
+export async function runDigest(projectId: string): Promise<NightlyDigest> {
+  return request<NightlyDigest>(`/projects/${projectId}/digests`, { method: 'POST' });
 }

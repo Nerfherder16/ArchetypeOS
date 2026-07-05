@@ -71,9 +71,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 - PR #34: AOS-DEC-001 — decision/research artifacts (merge commit `fe158fd`): nine create/list/read routes, evidence-required recommendations (422), validated research→decision links as typed evidence entries, Decisions & Research dashboard section; 6 new tests (46 total). Verified at Level 4 (CI run 28742814441 + 7/7 browser drive). Phase 5 scope-lock criteria closed.
 
+### Sprint 3 Merged (micro)
+
+- PR #35: `/guardian` command (`.claude/commands/guardian.md`) — one shared guardian invocation for local, remote, and workstation sessions; dogfooded live in-session before merge (merge commit `c006d35`).
+
 ### In Progress
 
-- Micro-PR: `/guardian` command (`.claude/commands/guardian.md`) so local, remote, and workstation sessions share the same guardian invocation; `full` argument runs the complete pre-PR gate.
+- AOS-LEARN-001 — nightly digest (Plane AOS-11): POST /projects/{id}/digests with deterministic aggregation (changes, repeated tasks, draft-only recommendations from four rules), list/read endpoints, dashboard Run Digest section; 6 new tests (52 total); browser drive 7/7; "Nightly digest view" placeholder retired.
 
 ### AOS-LOCAL-001 Executed
 
@@ -81,7 +85,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-/guardian command micro-PR in review; then AOS-LEARN-001 and AOS-ALPHA-001 close Sprint 3 and v0.1.
+AOS-LEARN-001 in review on this branch; PR to be opened. Only AOS-ALPHA-001 (Alpha Review) remains for v0.1.
 
 ### Why It Matters
 

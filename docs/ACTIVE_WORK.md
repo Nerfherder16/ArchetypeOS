@@ -149,17 +149,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-LOCAL-001 — WSL Windows 11 Local Verification
 
-- Status: In Review
+- Status: Merged
 - Owner: Human operator (`teevee-1`) + Orchestrator
-- Plane: AOS-7 (In Progress; Done after this PR merges)
-- PR: to be opened (Level 4 handoff + remediations)
+- PR: #32
+- Plane: AOS-7 (Done)
 - Spec: `.archetype/work/AOS-LOCAL-001.md`
 - Verification Status: Verified
-- Verification Level: Level 4
-- Verification Method: operator-executed runbook on the Windows 11 + WSL 2 runtime target — compose up, health check, dashboard-driven register/scan, scan history API, read-only mount probe; guardian commands CI-covered (local run blocked by findings 1 and 4, both now fixed)
-- Evidence: all six services healthy; `/health` all true (first time with real Redis); two versioned scan artifacts with matching checksums; "Read-only file system" on write probe; post-reload dashboard screenshot
-- Limitations: guardian script itself not yet re-run locally post-fixes; five findings recorded in the spec, all remediated or dispositioned
-- Required Next Verifier: GitHub CI / PR Guardian on this PR, then Orchestrator
+- Notes: Level 4 — operator-executed runbook on the Windows 11 + WSL 2 target; five findings recorded and remediated (PRs #31/#32). Merge commit `d365bcd`.
+- Required Next Verifier: None.
 
 ### AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface
 
@@ -215,6 +212,22 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Verification Status: Verified
 - Notes: Level 4 evidence — CI run 28742814441 all green plus headless-Chromium drive (7/7). Merge commit `fe158fd`. Phase 5 scope-lock criteria closed.
 - Required Next Verifier: None.
+
+### AOS-LEARN-001 — Nightly Learning Digest (Manual Run)
+
+- Status: In Review
+- Owner: Runtime Agent
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-11 (In Progress), Sprint 3 cycle
+- PR: to be opened
+- Spec: `.archetype/work/AOS-LEARN-001.md`
+- Goal: Phase 7 scope-lock criterion — manual digest run aggregating scans/decisions/research into a saved NightlyDigest with draft-only recommendations and repeated-task detection; dashboard Run Digest section.
+- Verification Status: Verification pending
+- Verification Level: Level 4
+- Verification Method: local ruff/compileall/pytest (52 API tests incl. 6 new) + strict tsc/vite build + Orchestrator headless-Chromium drive (7/7: run digest, summary counts, "Add tests" draft visible, placeholder retired, reload persistence); GitHub CI pending on PR
+- Evidence: exit codes 0; 7/7 browser checks; screenshot captured
+- Limitations: deterministic aggregation only (no LLM, per scope lock); browser drive manual
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
 
 ## Blocked Work
 

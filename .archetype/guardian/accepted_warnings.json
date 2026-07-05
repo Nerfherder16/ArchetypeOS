@@ -1,0 +1,1 @@
+[{"code": "web-tests-not-enforced", "lesson": "LES-006", "rationale": "UI verified per-package by Orchestrator browser drives; web test framework is a scheduled candidate (Alpha guidance #5)", "review_by": "2026-08-01"}]

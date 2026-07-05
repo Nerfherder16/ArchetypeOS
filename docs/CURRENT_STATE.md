@@ -47,10 +47,13 @@ Every new engineering session should read this before planning or implementation
 - PR #35: /guardian Claude Code command
 - PR #36: Nightly learning digest, manual run (AOS-LEARN-001)
 - PR #37: Phase 10 Alpha Review — ArchetypeOS evaluates ArchetypeOS (AOS-ALPHA-001) — **v0.1 complete**
+- PR #38: Post-merge reconciliation — Sprint 3 / v0.1 closed
+- PR #39: /health graceful degradation (AOS-RUNTIME-004) — Alpha finding #1 closed
+- PR #40: Learning Feedback Loop Phase 1, RFC-0004 (AOS-LEARN-002)
 
 ## Current Objective
 
-Sprint 4 package 2: AOS-LEARN-002 (Learning Feedback Loop Phase 1, Plane AOS-14) in review on this branch — RFC-0004 + lessons registry seeded with the real Sprint 3–4 events, folding in the PR #39 reconciliation. AOS-RUNTIME-004 merged (PR #39, Alpha finding #1 closed). Next: AOS-PRG-003 (guardian evolution, consumes lessons by ID).
+Sprint 4 finale: AOS-PRG-003 (Guardian Evolution, Plane AOS-15) in review on this branch — the guardian consumes LES-003 and LES-006 by ID and gains RFC-0004 enforcement (guardian changes require lessons; overrides require lesson citations). Folds in the PR #40 reconciliation. Merging it completes Sprint 4.
 
 ## Active Branch
 
@@ -68,15 +71,15 @@ Sprint 4 package 2: AOS-LEARN-002 (Learning Feedback Loop Phase 1, Plane AOS-14)
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: docs-only package — full suite unchanged-green (55/55, ruff/compileall exit 0); every lesson entry cites a checkable source (PR number or captured artifact); GitHub CI pending after PR creation
-- Evidence: RFC-0004; `knowledge/wiki/lessons/` registry (7 lessons, 3 open with named loop feeds)
-- Limitations: lessons not yet machine-consumed — guardian enforcement lands in AOS-PRG-003, digest visibility deferred per RFC-0004
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Level: Level 3
+- Method: local ruff/compileall/pytest (8 existing guardian tests unchanged + new guardian-evolution tests) + the CI guardian job executing the evolved code live on its own PR; Orchestrator local self-run before push; GitHub CI pending after PR creation
+- Evidence: LES-003/LES-006 closed by ID; accepted-warnings registry seeded with expiry 2026-08-01
+- Limitations: stateless acceptance registry (no cross-run warning history); web tests remain a separate candidate
+- Required Next Verifier: GitHub CI / PR Guardian (self-test), then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 4 package 2: Learning Feedback Loop Phase 1 (AOS-LEARN-002)
+- Sprint 4 finale: Guardian Evolution (AOS-PRG-003)
 
 ## Out Of Scope Now
 

@@ -9,8 +9,8 @@ Every new engineering session should read this before planning or implementation
 ## Status
 
 - Project: ArchetypeOS
-- Phase: v0.1 foundation
-- Current sprint: Sprint 3 — v0.1 Completion (close remaining scope-lock criteria, then Phase 10 Alpha Review)
+- Phase: v0.1 COMPLETE (2026-07-05) — Phase 10 Alpha Review merged (PR #37); post-v0.1 planning next
+- Current sprint: none — Sprint 3 closed with AOS-ALPHA-001; next sprint awaits user direction
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -46,10 +46,11 @@ Every new engineering session should read this before planning or implementation
 - PR #34: Decision and Research artifacts (AOS-DEC-001)
 - PR #35: /guardian Claude Code command
 - PR #36: Nightly learning digest, manual run (AOS-LEARN-001)
+- PR #37: Phase 10 Alpha Review — ArchetypeOS evaluates ArchetypeOS (AOS-ALPHA-001) — **v0.1 complete**
 
 ## Current Objective
 
-Sprint 3 capstone: AOS-ALPHA-001 (Phase 10 Alpha Review, Plane AOS-12) in review on this branch — ArchetypeOS evaluated ArchetypeOS through its own API; review artifact at `docs/ALPHA_REVIEW_V0_1.md`. Folds in the PR #36 reconciliation. Merging it completes Sprint 3 and v0.1.
+v0.1 is complete. No active work package. Next objective is post-v0.1 planning: pick from the ranked, evidence-backed candidates in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance) — first candidate is the `/health` Redis-degradation fix (decision already recorded during the alpha run).
 
 ## Active Branch
 
@@ -66,16 +67,16 @@ Sprint 3 capstone: AOS-ALPHA-001 (Phase 10 Alpha Review, Plane AOS-12) in review
 
 ## Verification Status
 
-- Status: Verification pending
+- Status: Verified
 - Level: Level 4
-- Method: live self-evaluation run through the public API (two self-scans with versioned artifacts, DNA, architecture graph, decisions with typed research evidence, digest with draft-only assertion, worker job end-to-end via real Redis, health probed with and without Redis, guardian self-run); no code changes so the 52-test suite must remain green; GitHub CI pending after PR creation
-- Evidence: `.archetype/alpha/` captured outputs; `docs/ALPHA_REVIEW_V0_1.md` five-question answers + conformance table
-- Limitations: dashboard leg relies on the PR #36 browser drive; deterministic evaluation only per scope lock
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Method: AOS-ALPHA-001 merged under the Manual Merge Gate — GitHub CI run 28744117867 (all 5 jobs green on `bf2f4c6`) plus the live self-evaluation run as Level 4 evidence
+- Evidence: merge commit `74c2406`; `.archetype/alpha/` captured outputs; `docs/ALPHA_REVIEW_V0_1.md`
+- Limitations: none outstanding for v0.1; known open defect (/health without Redis) is recorded as a decision, not a verification gap
+- Required Next Verifier: None — next verification cycle starts with the first post-v0.1 package
 
 ## In Scope Now
 
-- Sprint 3 capstone: Phase 10 Alpha Review (AOS-ALPHA-001)
+- Post-v0.1 planning only (no active package)
 
 ## Out Of Scope Now
 
@@ -102,7 +103,7 @@ Sprint 3 capstone: AOS-ALPHA-001 (Phase 10 Alpha Review, Plane AOS-12) in review
 
 ## Next Recommended Task
 
-Merge the AOS-ALPHA-001 PR after CI passes under the Manual Merge Gate — that closes Sprint 3 and v0.1. Post-v0.1 candidates are ranked in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance): /health Redis degradation fix first.
+Plan post-v0.1 work from `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance). Recommended first package: `/health` Redis graceful degradation (smallest, highest-signal; decision recorded with research linkage). Larger candidates (architecture-graph semantics, doc-staleness detection, digest breadth) should open as scoped work packages, with RFCs where they exceed the v0.1 scope lock.
 
 ## Required Reading For New Sessions
 

@@ -226,19 +226,18 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-ALPHA-001 — Phase 10 Alpha Review: ArchetypeOS Evaluates ArchetypeOS
 
-- Status: In Review
+- Status: Merged
 - Owner: Chief Architect / Orchestrator
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-12 (In Progress), Sprint 3 cycle
-- PR: to be opened
+- PR: #37
+- Plane: AOS-12 (Done) — Sprint 3 complete
 - Spec: `.archetype/work/AOS-ALPHA-001.md`
-- Goal: Phase 10 — run the full v0.1 loop against this repository through the public API (self-scan, DNA, architecture graph, decisions from real findings, digest, end-to-end job, guardian self-run) and publish `docs/ALPHA_REVIEW_V0_1.md` answering the five Phase 10 questions. Closes Sprint 3 and v0.1. Folds in PR #36 reconciliation.
-- Verification Status: Verification pending
-- Verification Level: Level 4
-- Verification Method: the review is itself a live Level 4 run — every artifact in `.archetype/alpha/` produced by live API calls (two self-scans, digest with draft-only assertion, worker job via real Redis, health both with and without Redis); full test suite must stay green (no code changes); GitHub CI pending on PR
-- Evidence: `.archetype/alpha/` captures; `docs/ALPHA_REVIEW_V0_1.md` conformance table
-- Limitations: dashboard leg covered by the PR #36 drive rather than re-driven; deterministic-only evaluation per scope lock
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+- Verification Status: Verified
+- Notes: Level 4 evidence — CI run 28744117867 all 5 jobs green plus the live self-evaluation run itself (`.archetype/alpha/` captures, `docs/ALPHA_REVIEW_V0_1.md`). Merge commit `74c2406`. **Closes Sprint 3 and v0.1.**
+- Required Next Verifier: None.
+
+## v0.1 Status
+
+v0.1 is COMPLETE (2026-07-05). All Sprint 1–3 packages merged and verified; Phase 10 Alpha Review published. Post-v0.1 work is not yet scheduled — ranked candidates live in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance), first among them the `/health` Redis-degradation fix (decision recorded with research linkage during the alpha run). Starting any of them requires user direction and, where scope-lock applies, an RFC.
 
 ## Blocked Work
 

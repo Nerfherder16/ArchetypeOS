@@ -26,11 +26,11 @@ AOS-ALPHA-001 — Phase 10 Alpha Review: ArchetypeOS evaluates ArchetypeOS (Plan
 
 ### PR
 
-To be opened.
+#37 — MERGED (merge commit `74c2406`, Verified at Level 4 under the Manual Merge Gate: CI run 28744117867 all green + the live self-evaluation run).
 
 ### Status
 
-In Review — self-evaluation executed live, review artifact written, PR pending. AOS-LEARN-001 merged as `8b39e67` (PR #36, Verified at Level 4; Plane AOS-11 Done).
+Merged — **Sprint 3 and v0.1 are complete.** Plane AOS-1..AOS-12 all Done. This reconciliation is the final v0.1 change; no active work package remains. AOS-LEARN-001 merged earlier the same day as `8b39e67` (PR #36).
 
 ### Completed
 
@@ -61,7 +61,7 @@ In Review — self-evaluation executed live, review artifact written, PR pending
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
@@ -69,7 +69,7 @@ Level 4
 
 ### Verification Method
 
-The review is itself the Level 4 run: every artifact produced by live API calls against the running system on the declared self-target. GitHub CI (Level 3) pending on the PR; merge under the Manual Merge Gate.
+The review was itself the Level 4 run: every artifact produced by live API calls against the running system on the declared self-target. GitHub CI run 28744117867 all 5 jobs green on `bf2f4c6`; merged under the Manual Merge Gate as `74c2406`.
 
 ### Evidence
 
@@ -86,7 +86,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge the AOS-ALPHA-001 PR — that closes Sprint 3 and v0.1. Then pick post-v0.1 work from the Alpha Review's Next Development Guidance (first: /health Redis degradation fix, decision already recorded).
+Post-v0.1 planning with the user. Pick from the Alpha Review's Next Development Guidance (first: /health Redis degradation fix, decision already recorded). Do not start a package without direction; anything beyond the v0.1 scope lock needs an RFC.
 
 ## Handoff Template
 

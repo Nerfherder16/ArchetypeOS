@@ -14,11 +14,11 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Runtime Agent (Opus) under Orchestrator (Fable 5)
+Orchestrator (Fable 5)
 
 ### Task
 
-AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface (Plane AOS-8)
+AOS-PLANE-001 — Plane Board Sync Discipline (Plane AOS-9), folding in the AOS-RUNTIME-003 (PR #29) post-merge reconciliation
 
 ### Branch
 
@@ -26,43 +26,37 @@ AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface (Plane AOS-8)
 
 ### PR
 
-#27 — https://github.com/Nerfherder16/ArchetypeOS/pull/27
+To be opened.
 
 ### Status
 
-Merged (merge commit `32399e0`).
+In Review — docs complete, PR pending. AOS-RUNTIME-003 is Merged (PR #29, `7697265`, Verified at Level 3, CI run 28730851673).
 
 ### Completed
 
-- `GET /repositories/{repository_id}/dna` read endpoint (`RepositoryDnaRead` schema; 404 for unknown repo and for never-scanned repo) with 3 new tests.
-- Dashboard rebuilt as the first control tower surface: project create/select, repository register/list with last-scanned and Run Scan actions, stored scan summary panel (primary languages, package managers, has_docker/has_ci/has_tests/has_env_example, risk flags, confidence), architecture node/edge counts with labelled nodes, per-section error isolation, no new dependencies.
-- Typed API module `apps/web/src/api.ts`.
-- Orchestrator-driven headless-Chromium verification: 10/10 checks across the full flow against a live API with redis absent.
+- Sync Discipline section in `docs/PLANE_PROJECT_BLUEPRINT.md`: Plane update points (start/PR/merge), markdown update points (in-PR + reconciliation), conflict rule (markdown wins, fix Plane to match), outage handling (pending-updates list — exercised twice on 2026-07-05).
+- Board ID Registry: project, cycle, state, work-item (with work package + spec mapping), and module UUIDs recorded so future sessions update Plane idempotently without discovery calls.
+- `docs/ACTIVE_WORK.md` update rule now points at the discipline; AOS-RUNTIME-003 marked Merged; AOS-PLANE-001 entry added.
+- Plane board synced: AOS-4 Done, AOS-9 In Progress.
 
 ### Files changed
 
-- `apps/api/app/main.py`
-- `apps/api/app/schemas.py`
-- `apps/api/tests/test_dna_endpoint.py`
-- `apps/web/src/main.tsx`
-- `apps/web/src/api.ts`
-- `.archetype/work/AOS-CTRL-001.md`
+- `docs/PLANE_PROJECT_BLUEPRINT.md`
 - `docs/ACTIVE_WORK.md`
 - `docs/CURRENT_STATE.md`
 - `docs/HANDOFF.md`
 - `docs/RECENT_CHANGES.md`
+- `.archetype/work/AOS-PLANE-001.md`
+- `.archetype/work/AOS-RUNTIME-003.md`
 
 ### Tests run
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 28 passed (25 existing + 3 new)
-- `python3 -m ruff check apps/api` (ruff 0.8.6) -> exit 0; compileall -> exit 0
-- `npm run build` (strict tsc + vite) -> exit 0
-- Headless Chromium drive (uvicorn + sqlite, redis absent, vite dev): 10/10 checks passed; screenshot captured
+Docs-only: local PR Guardian on the diff; GitHub CI on the PR.
 
 ### Known Risks
 
-- No automated UI tests in v0.1; the browser run is a manual Level 4 pass, not CI-repeatable yet (candidate future work: promote the drive script to CI).
-- Vault content is seed-level; canonical validation still requires review.
+- Board UUIDs in the registry go stale if the Plane project is ever recreated — the registry must be updated in the same change.
+- Two-way sync automation remains deferred; the discipline is manual protocol.
 
 ### Blockers
 
@@ -70,33 +64,32 @@ Merged (merge commit `32399e0`).
 
 ### Verification Status
 
-Verified
+Verification pending
 
 ### Verification Level
 
-Level 4
+Level 1
 
 ### Verification Method
 
-GitHub CI workflow run on PR #27 (all 5 jobs) plus local ruff/compileall/pytest, strict tsc/vite build, and a headless-Chromium drive of the full dashboard flow against a live API with redis absent (health-failure isolation confirmed).
+Repository inspection of the Sync Discipline section and id registry against the live board (ids captured from API responses this session); local PR Guardian on the docs diff; GitHub CI pending on the PR.
 
 ### Evidence
 
-- CI run 28730415566 on head `bc7814a`: all 5 jobs success; merged as `32399e0`; head-SHA-pinned merge-gate comment posted.
-- 28 pytest passes; ruff/compileall/tsc/vite exit 0.
-- Browser: create project, register repository, "never" state, run scan, summary rendered (Python, docker, .env risk flag), architecture counts, stored DNA survives reload. 10/10 checks; screenshot artifact.
+- Id registry values match the Plane API responses recorded in this session's operating log.
+- State files reconciled to the PR #29 merge (`7697265`).
 
 ### Limitations
 
-Browser verification is manual (Orchestrator-driven), not part of CI. Local DB is SQLite.
+Docs-only change. Sync remains manual by design.
 
 ### Required Next Verifier
 
-None for AOS-CTRL-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
+GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge the post-merge state reconciliation PR after CI passes. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the new dashboard; remaining board items are AOS-4 (scan history) and AOS-9 (Plane sync discipline).
+Merge the AOS-PLANE-001 PR after CI passes — the remote Sprint 2 board is then complete. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the dashboard, recorded as a Level 4 handoff.
 
 ## Handoff Template
 

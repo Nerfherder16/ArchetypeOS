@@ -37,10 +37,12 @@ Every new engineering session should read this before planning or implementation
 - PR #25: Architecture Spine Graph API (AOS-ARCH-001)
 - PR #26: Post-merge state reconciliation for AOS-ARCH-001
 - PR #27: Engineering Control Tower first dashboard surface (AOS-CTRL-001)
+- PR #28: Post-merge state reconciliation for AOS-CTRL-001
+- PR #29: Repository scan persistence and history (AOS-RUNTIME-003)
 
 ## Current Objective
 
-AOS-RUNTIME-003 — Scan persistence and history (Plane AOS-4) is in review on this branch; PR to be opened. AOS-9 (Plane sync discipline) follows; AOS-LOCAL-001 runs on `teevee-1` tomorrow.
+AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs) is in review on this branch, folding in the PR #29 reconciliation; PR to be opened. This closes the remote Sprint 2 board; AOS-LOCAL-001 runs on `teevee-1` tomorrow.
 
 ## Active Branch
 
@@ -58,16 +60,16 @@ AOS-RUNTIME-003 — Scan persistence and history (Plane AOS-4) is in review on t
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: local ruff/compileall/pytest (32 API tests incl. 4 new scan-history tests) in the isolated remote session; GitHub CI pending after PR creation
-- Evidence: exit codes 0 for ruff, compileall, and pytest; overwrite-bug regression test included
-- Limitations: SQLite locally; retention/pruning out of scope
+- Level: Level 1
+- Method: repository inspection of the Sync Discipline section and board id registry against the live Plane project; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-RUNTIME-003 itself is Verified (Level 3, PR #29, CI run 28730851673 all green).
+- Evidence: id registry matches the API responses captured this session; state files reconciled to the PR #29 merge (`7697265`)
+- Limitations: docs-only; two-way sync automation deferred
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- scan persistence and history (AOS-RUNTIME-003)
-- state updates
+- Plane board sync discipline (AOS-PLANE-001)
+- PR #29 reconciliation
 
 ## Out Of Scope Now
 
@@ -82,7 +84,7 @@ AOS-RUNTIME-003 — Scan persistence and history (Plane AOS-4) is in review on t
 
 | Decision | Status | Notes |
 | --- | --- | --- |
-| Plane integration depth | Board adopted | Sync discipline = AOS-9. |
+| Plane integration depth | Board adopted with documented sync discipline | See `docs/PLANE_PROJECT_BLUEPRINT.md`; automation deferred. |
 | Agent dashboard implementation | First surface shipped | AOS-CTRL-001 merged (PR #27); richer views come after scan history (AOS-4). |
 | Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
@@ -94,7 +96,7 @@ AOS-RUNTIME-003 — Scan persistence and history (Plane AOS-4) is in review on t
 
 ## Next Recommended Task
 
-Merge the AOS-RUNTIME-003 PR after CI passes under the Manual Merge Gate. Then AOS-9 (Plane sync discipline, docs) closes the Sprint 2 board; AOS-LOCAL-001 runs on `teevee-1` tomorrow.
+Merge the AOS-PLANE-001 PR after CI passes under the Manual Merge Gate — that closes the remote Sprint 2 board. Tomorrow: AOS-LOCAL-001 on `teevee-1` through the dashboard.
 
 ## Required Reading For New Sessions
 

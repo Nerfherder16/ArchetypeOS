@@ -359,23 +359,38 @@ Sprint 5 — Enforcement & Foundations. Delivered packages 1–6: AOS-16 (web te
 
 ## Intelligence Thrust (open)
 
-Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligence Layer + Agent Council + Final Judge begins here, atop the completed Sprint 5 substrate.
+Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligence Layer + Agent Council + Final Judge begins here, atop the completed Sprint 5 substrate. Phase 1 (AOS-COUNCIL-001, PR #49) merged — AOS-19 Done. AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e) — is deferred one package behind a control-plane hardening interlude (Lead-Architect critique, operator-directed): AOS-APIROUTES-001 first.
 
-### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
+## Control-Plane Hardening (open)
+
+Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator chose "route split first, then AOS-COUNCIL-002." AOS-COUNCIL-002 will be reframed around the Control Tower IA (not a bolted-on panel).
+
+### AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening)
 
 - Status: In Review
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-19 (In Progress — Phase 1; the dashboard AOS-COUNCIL-002 is Phase 2)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned — see HANDOFF branch note)
+- Plane: AOS-24 (In Progress)
 - PR: to be opened
-- Spec: `.archetype/work/AOS-COUNCIL-001.md`; RFC: `docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md` (Accepted)
-- Goal: a hermetic, deterministic Agent Council — a `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), the four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` tables + migration `0003`, worker `council_review` dispatch, and council trigger/read API. Backend only; no dashboard. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget gate), four agents, dedicated tables.
+- Spec: `.archetype/work/AOS-APIROUTES-001.md`
+- Goal: pure behavior-preserving split of `apps/api/app/main.py` (487 lines / 39 routes) into per-domain `APIRouter` modules under `apps/api/app/routes/`. No endpoint/schema/behavior change. `main.py` → 49 lines; a route-inventory equivalence test freezes the (method, path) set.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api suite **92 passed** (77 prior + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly — 4 agent outputs, disagreement surfaced (security vs the rest), abstention → `Insufficient evidence` on an evidence-less project, 404 on missing project, deterministic-provider stability, `get_provider` mapping incl. ValueError; alembic no-drift after `0003` — chain applies, 24 tables incl. `council_reviews`+`council_agent_outputs`, **0 drift ops**. CI (api-tests, worker-tests, compose-smoke applying `0003` on Postgres) pending on the PR.
-- Evidence: 4 structured agent outputs + Final Judge verdict per project; disagreement explicit; abstention rule enforced; `POST/GET /projects/{id}/council-reviews` + `GET /council-reviews/{id}`; `council_review` job dispatch
-- Limitations: `ClaudeCodeProvider` runs only on an authed node (never in CI — mocked-boundary test); deterministic agents reason over the project's latest scan/DNA/decisions; advisory/draft-only (no approve/promote route yet)
+- Verification Method: Orchestrator independently (3.12 venv) **diffed the full route table `origin/main` vs working tree → byte-identical (43 (method,path) pairs, empty diff)**; api suite **94 passed** (92 prior unchanged + 2 inventory guards); FakeRedis jobs/schedules/council tests **11 passed in isolation** (the `main.redis.Redis.from_url` patch target preserved); ruff/compile clean; diff scope limited to `apps/api/app/**` + the new test (+ docs). CI (api-tests, compose-smoke boots the api image) pending on the PR.
+- Evidence: route table identical before/after; `main.py` 487→49; 10 `routes/*.py` modules; all prior tests pass unchanged
+- Limitations: none — no behavior change; `/health` stays app-level in `main.py`
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate
+
+### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
+
+- Status: Merged
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- PR: #49
+- Plane: AOS-19 (Done — RFC-0005 Phase 1; the dashboard AOS-COUNCIL-002 is Phase 2)
+- Spec: `.archetype/work/AOS-COUNCIL-001.md`; RFC: `docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md` (Accepted)
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28757387442 all 6 jobs green on head `8dd2fb7` (compose-smoke applied migration `0003` on fresh Postgres + booted all services; api-tests ran the 15 new council tests; worker-tests ran the dispatch test) plus Orchestrator's independent 3.12-venv run (api 92 / worker 7; `run_council` branch checks — 4 outputs, disagreement surfaced, abstention on evidence-less project, 404, determinism, `get_provider` mapping; alembic no-drift after `0003` → 24 tables, 0 ops). Merge commit `a56d317`. **The Intelligence Layer + Agent Council + Final Judge is live (backend); advisory/draft-only.** A real council run is validated on an authed node via `llm_provider=claude_code`.
+- Required Next Verifier: None.
 
 ## Blocked Work
 

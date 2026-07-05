@@ -6,9 +6,19 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
-## 2026-07-05 — Intelligence thrust begins (RFC-0005)
+## 2026-07-05 — Control-plane hardening (Lead-Architect critique)
 
 ### In Review
+
+- AOS-APIROUTES-001 — Split API routes by domain (Plane AOS-24). Lead-Architect critique flagged `apps/api/app/main.py` growth (487 lines / 39 routes / ~13 domains, just grew with the council routes); operator directed "route split first, then AOS-COUNCIL-002." Pure behavior-preserving refactor: `main.py` split into 10 per-domain `APIRouter` modules under `apps/api/app/routes/` (`projects`/`repositories`/`scans`/`architecture`/`jobs`/`schedules`/`artifacts`/`decisions`/`digests`/`council`); `main.py` → 49 lines (app + CORS + startup + `/health` + ordered `include_router` loop, retains `import redis` so the FakeRedis `main.redis` patch target survives). New `test_route_inventory.py` freezes the (method, path) set. No endpoint/schema/behavior change. Orchestrator-verified: route table byte-identical `origin/main` vs working tree (43 pairs, empty diff); api 94 (92 unchanged + 2 guards); FakeRedis 11 in isolation. Also this change: the env-pinned branch-name constraint documented in HANDOFF + the Orchestrator Playbook (operator Decision 2a). Spec: `.archetype/work/AOS-APIROUTES-001.md`.
+
+## 2026-07-05 — Intelligence thrust begins (RFC-0005)
+
+### Merged
+
+- PR #49 — AOS-COUNCIL-001 Agent Council seed (merge commit `a56d317`; RFC-0005 Phase 1; Plane AOS-19 Done). Verified at Level 4 (CI run 28757387442, all 6 jobs green incl. compose-smoke applying migration `0003` on Postgres; plus Orchestrator's 3.12-venv run — api 92 / worker 7, `run_council` branch checks, alembic no-drift 24 tables/0 ops). **The Intelligence Layer + Agent Council + Final Judge is live (backend); ArchetypeOS starts to reason.** Advisory/draft-only. Next: AOS-COUNCIL-002 (Agent Council Dashboard).
+
+### (package detail)
 
 - AOS-COUNCIL-001 — Agent Council seed (RFC-0005 Phase 1; Plane AOS-19). Operator-directed ("write RFC-0005 and start AOS-19"). Adds an LLM **provider abstraction** (`packages/aos_core/aos_core/llm/`: `Provider` protocol, `DeterministicProvider` CI default, `ClaudeCodeProvider` — headless `claude` via the operator's subscription, never called in CI, mocked-boundary test), a **council service** (`services/council.py`: four Phase-9 agents — Research Librarian / Architecture Cartographer / Technology Fitness Judge / Security Agent — each reading the project's scan/DNA/decisions, + a rule-based **Final Judge** emitting agreements/disagreements/unsupported-claims/verdict with an abstention floor → `Insufficient evidence`), dedicated `CouncilReview`/`CouncilAgentOutput` tables + Alembic migration `0003`, a worker `council_review` dispatch, and council trigger/read API (`POST/GET /projects/{id}/council-reviews`, `GET /council-reviews/{id}`). Operator decisions: Claude Code SDK via subscription (no metered API/budget gate), four agents, dedicated tables. Backend only — the Agent Council Dashboard is AOS-COUNCIL-002. Orchestrator-verified (3.12 venv): ruff/compile clean, api 92 / worker 7, `run_council` branch checks (4 outputs, disagreement, abstention, 404, determinism), alembic no-drift after `0003` (24 tables, 0 ops). RFC: `docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md`; provider doc: `docs/LLM_PROVIDER_ABSTRACTION.md`.
 

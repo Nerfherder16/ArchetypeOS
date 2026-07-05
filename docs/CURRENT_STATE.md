@@ -53,10 +53,11 @@ Every new engineering session should read this before planning or implementation
 - PR #41: Guardian evolution — lessons become rules, RFC-0004 Phase 2 (AOS-PRG-003) — **Sprint 4 complete**
 - PR #42: Sprint 4 close-out + Orchestrator Handoff Pack (AOS-ORCH-004) — orchestration → Opus 4.8
 - PR #43: Playwright e2e suite, enforced (AOS-WEB-001) — web tests real + guardian-enforced; LES-006 deadline closed early
+- PR #44: Adopt Alembic migrations, baseline (AOS-ALEMBIC-001) — migration path adopted, no schema change
 
 ## Current Objective
 
-Sprint 5 package 2: AOS-ALEMBIC-001 (adopt Alembic, Plane AOS-17) in review on this branch — a model-driven baseline migration for the current 20 tables (no schema change), the container entrypoint running `alembic upgrade head` before uvicorn, and a documented migration discipline. Folds in the PR #43 reconciliation. Unblocks the schema-dependent packages (council, lessons/knowledge API, portfolio).
+Sprint 5 package 3: AOS-CORE-001 (RFC-0006 Phase 1, Plane AOS-18) in review on this branch — extract an installable `aos_core` package (config/database/models/scanner + scan/digest services) the api consumes, with zero behavior change (69 tests pass, incl. 67 unchanged). Repo-root api Docker build context; alembic retargeted to `aos_core`; guardian guards the new boundary. Folds in the PR #44 reconciliation. Enables the worker (Phase 2) to run scans in-process. RFC-0006 (Accepted) governs the 3-phase plan.
 
 ## Active Branch
 
@@ -75,14 +76,14 @@ Sprint 5 package 2: AOS-ALEMBIC-001 (adopt Alembic, Plane AOS-17) in review on t
 
 - Status: Verification pending
 - Level: Level 4
-- Method: Orchestrator independently ran the Alembic sqlite round-trip — `upgrade head` (21 tables), no-drift autogenerate (0 schema ops — baseline matches models exactly), `downgrade base` (clean) — plus full pytest (67 API + 1 worker) + ruff/compileall exit 0; CI compose-smoke (real Postgres via the new entrypoint + baseline) pending after PR creation as the authoritative proof
-- Evidence: no-drift probe = 0 op operations; baseline = 20 create_table + `import app.models`; entrypoint hard-fails on migration error
-- Limitations: baseline verified on sqlite locally (model-driven DDL is portable; Postgres proven by CI); `init_db()` create_all retained as a sqlite-dev safety net
+- Method: Orchestrator independently verified on a Python 3.12 venv (the pinned interpreter): `pip install -e ./packages/aos_core`; `PYTHONPATH=apps/api pytest apps/api/tests` → 69 passed (67 original unchanged + 2 new guardian tests); ruff/compileall clean; alembic no-drift = 0 ops with `aos_core.models`; guardian runs standalone WITHOUT aos_core installed (scanner sys.path fallback — the pr-guardian CI condition). CI (api-tests + web-e2e install aos_core; compose-smoke builds the api image from the new repo-root context) pending after PR creation
+- Evidence: 69 tests pass on 3.12; no-drift 0 ops; guardian works without aos_core installed; apps/api/app reduced to main.py + schemas.py
+- Limitations: Docker restructure proven only by CI compose-smoke (no local docker); worker unchanged (Phase 2)
 - Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 5 package 2: adopt Alembic migrations, baseline (AOS-ALEMBIC-001)
+- Sprint 5 package 3: extract aos_core shared package (AOS-CORE-001, RFC-0006 Phase 1)
 
 ## Out Of Scope Now
 
@@ -109,7 +110,7 @@ Sprint 5 package 2: AOS-ALEMBIC-001 (adopt Alembic, Plane AOS-17) in review on t
 
 ## Next Recommended Task
 
-Merge the AOS-ALEMBIC-001 PR after CI passes under the Manual Merge Gate. Then Sprint 5 continues: AOS-18 (worker pipeline); AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) waits for Sprint 6 on the foundations Alembic + the worker lay.
+Merge the AOS-CORE-001 PR after CI passes under the Manual Merge Gate. Then RFC-0006 Phase 2 (AOS-WORKERRUN-001 — worker runs scan/digest jobs via aos_core) and Phase 3 (AOS-SCHED-001 — dashboard enqueue + nightly scheduler). AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) after the worker foundations land.
 
 ## Required Reading For New Sessions
 

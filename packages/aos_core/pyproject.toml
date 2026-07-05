@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aos_core"
+version = "0.1.0"
+description = "ArchetypeOS shared core domain library (models, database, config, scanner, services)."
+requires-python = ">=3.12"
+dependencies = [
+    "sqlalchemy==2.0.36",
+    "psycopg[binary]==3.2.3",
+    "pydantic-settings==2.7.1",
+    "fastapi==0.115.6",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aos_core*"]

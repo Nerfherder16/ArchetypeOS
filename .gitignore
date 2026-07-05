@@ -9,3 +9,6 @@ coverage/
 repositories/
 archetypeos_dev.db
 .DS_Store
+
+# Python build metadata
+*.egg-info/

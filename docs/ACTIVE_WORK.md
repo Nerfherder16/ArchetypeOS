@@ -300,18 +300,29 @@ Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (w
 
 ### AOS-ALEMBIC-001 — Adopt Alembic Migrations (Baseline)
 
+- Status: Merged
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- PR: #44
+- Plane: AOS-17 (Done)
+- Spec: `.archetype/work/AOS-ALEMBIC-001.md`
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28750732119 all 6 jobs green incl. compose-smoke running `alembic upgrade head` against fresh Postgres via the new entrypoint, plus Orchestrator's own sqlite round-trip (no-drift = 0 ops). Merge commit `96550b8`.
+- Required Next Verifier: None.
+
+### AOS-CORE-001 — Extract aos_core Shared Package (RFC-0006 Phase 1)
+
 - Status: In Review
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-17 (In Progress, high), Sprint 5 cycle
+- Plane: AOS-18 (In Progress, high — Phase 1 tracker), Sprint 5 cycle
 - PR: to be opened
-- Spec: `.archetype/work/AOS-ALEMBIC-001.md`
-- Goal: adopt Alembic with a model-driven baseline migration (all 20 current tables, NO schema change); container entrypoint runs `alembic upgrade head` before uvicorn (hard-fails on migration error); migration discipline documented. Unblocks council tables (AOS-19), lessons/knowledge API (AOS-23), portfolio schema.
+- Spec: `.archetype/work/AOS-CORE-001.md`; RFC: `docs/rfc/RFC-0006-Shared-Core-Domain-Library.md` (Accepted)
+- Goal: extract an installable `aos_core` package (config/database/models/scanner + new scan/digest service modules) the api consumes; repo-root api Docker build context; alembic retargeted to `aos_core.database.Base`; guardian guards the new boundary. ZERO behavior change. Enables the worker (Phase 2) to run scans in-process.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator independently ran the sqlite round-trip — `alembic upgrade head` (21 tables), no-drift autogenerate (0 schema ops), `downgrade base` (clean) — plus full pytest (67 API + 1 worker) + ruff/compileall; CI compose-smoke (real Postgres, entrypoint + baseline) pending on PR as the authoritative proof
-- Evidence: no-drift probe = 0 op operations; 20 create_table in baseline; `import app.models` present; entrypoint hard-fails on error
-- Limitations: baseline generated/verified on sqlite locally (model-driven DDL is portable; Postgres proven by CI compose-smoke); `init_db()` create_all kept as an idempotent sqlite-dev safety net
+- Verification Method: Orchestrator independently verified on a Python 3.12 venv (the pinned interpreter) — `pip install -e ./packages/aos_core`, `PYTHONPATH=apps/api pytest` → **69 passed** (67 original unchanged + 2 new guardian tests), ruff/compileall clean, alembic no-drift = 0 ops with `aos_core.models`, and the guardian running standalone WITHOUT aos_core installed (scanner `sys.path` fallback) — the pr-guardian CI condition; CI (api-tests + web-e2e install aos_core; compose-smoke builds the api image from the new context) pending on PR
+- Evidence: 69 tests pass on 3.12; no-drift 0 ops; guardian works without aos_core installed; apps/api/app reduced to main.py + schemas.py
+- Limitations: Docker restructure proven only by CI compose-smoke (no local docker); worker unchanged (Phase 2)
 - Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator
 
 ## Blocked Work

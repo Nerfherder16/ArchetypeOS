@@ -348,6 +348,8 @@ Primary artifacts:
 - apps/api/alembic/ (Alembic migrations; baseline schema)
 - apps/api/docker-entrypoint.sh (runs migrations before serving)
 - apps/worker
+- packages/aos_core (shared domain library: config/database/models/scanner + scan/digest services; RFC-0006)
+- docs/rfc/RFC-0006-Shared-Core-Domain-Library.md
 
 ## Layer 12: Orchestration and Work Management
 

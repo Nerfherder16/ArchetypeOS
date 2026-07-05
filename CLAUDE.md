@@ -40,6 +40,7 @@ Before making significant recommendations, read:
 - Do not make unsupported claims.
 - State uncertainty clearly.
 - Prefer source inspection, tests, static analysis, docs, and command output over inference.
+- Record a lesson in `knowledge/wiki/lessons/` (per RFC-0004) for every PR Guardian BLOCK, CI failure, review remediation, and self-found defect, in the same change set.
 - Do not delete, overwrite, commit, push, or run destructive commands without explicit approval.
 - Do not optimize for developer familiarity unless it is part of rollout planning.
 - Every major recommendation must include alternatives, tradeoffs, risk, effort, and acceptance criteria.

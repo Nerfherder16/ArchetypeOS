@@ -241,24 +241,30 @@ v0.1 is COMPLETE (2026-07-05). All Sprint 1–3 packages merged and verified; Ph
 
 ### AOS-RUNTIME-004 — /health Graceful Degradation (Alpha Finding #1)
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent (Opus) under Orchestrator
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-13 (In Progress, high), Sprint 4 cycle `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b`
-- PR: to be opened
+- PR: #39
+- Plane: AOS-13 (Done)
 - Spec: `.archetype/work/AOS-RUNTIME-004.md`
-- Goal: close the loop on the first live self-found defect (Alpha Review → decision → fix → verified): `/health` returns 200 `degraded` instead of 500 when a probe fails; response keys unchanged.
+- Verification Status: Verified
+- Notes: Level 4 evidence — CI run 28745707663 all 5 jobs green (the API job exercised the degraded-Redis path, the compose smoke the all-healthy path) plus Orchestrator dual-state live probes. Merge commit `2b8febf`. Alpha finding #1 closed; recorded as LES-005.
+- Required Next Verifier: None.
+
+### AOS-LEARN-002 — Learning Feedback Loop, Phase 1 (RFC-0004)
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-14 (In Progress, high), Sprint 4 cycle `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b`
+- PR: to be opened
+- Spec: `.archetype/work/AOS-LEARN-002.md`
+- Goal: institutionalize the operator's feedback principle — RFC-0004 contract, `knowledge/wiki/lessons/` registry seeded with the 7 real Sprint 3–4 learning events (3 open, feeding named loops), CLAUDE.md operating rule. Guardian enforcement is Phase 2 (AOS-PRG-003).
 - Verification Status: Verification pending
-- Verification Level: Level 4
-- Verification Method: local ruff/compileall/pytest (55 tests incl. 3 new health tests) + Orchestrator live probe of both states (uvicorn without Redis → 200 degraded, the exact alpha reproduction; with real redis-server → 200 ok all-true); GitHub CI pending on PR
-- Evidence: exit codes 0; live curl outputs captured in PR body
-- Limitations: worker Redis-loop resilience out of scope (separate concern)
+- Verification Level: Level 2
+- Verification Method: docs-only — suite unchanged-green (55/55, ruff clean); every lesson cites a checkable source; GitHub CI pending on PR
+- Evidence: RFC-0004; lessons index open/closed queue; PR body Acceptance Evidence
+- Limitations: digest/API visibility of lessons deferred per RFC-0004; enforcement is convention until AOS-PRG-003
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
-
-### AOS-LEARN-002 — Learning Feedback Loop (RFC-0004)
-
-- Status: Ready (Plane AOS-14, Sprint 4)
-- Goal: every guardian BLOCK, CI failure, and review finding becomes a durable lesson artifact the digest surfaces.
 
 ### AOS-PRG-003 — Guardian Evolution Discipline
 

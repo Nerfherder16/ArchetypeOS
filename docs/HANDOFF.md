@@ -14,15 +14,15 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Runtime Agent (Opus) under Orchestrator (Fable 5)
+Chief Architect / Orchestrator (Fable 5) — direct authorship; the lessons are this session's first-hand events
 
 ### Task
 
-AOS-RUNTIME-004 — /health graceful degradation (Plane AOS-13; Sprint 4 package 1, first package under the operator's feedback-loop principle)
+AOS-LEARN-002 — Learning Feedback Loop Phase 1, RFC-0004 (Plane AOS-14; Sprint 4 package 2), folding in the AOS-RUNTIME-004 (PR #39) reconciliation
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `cb21414`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `2b8febf`)
 
 ### PR
 
@@ -30,30 +30,30 @@ To be opened.
 
 ### Status
 
-In Review — fix + 3 tests implemented, Orchestrator live-verified both health states (degraded without Redis = the alpha reproduction now 200; all-ok with real redis-server unchanged). Sprint 3 / v0.1 closed earlier today (PRs #37, #38).
+In Review — RFC + registry + 7 lessons written, docs-only. AOS-RUNTIME-004 merged as `2b8febf` (PR #39, Verified at Level 4; Plane AOS-13 Done; Alpha finding #1 closed, recorded as LES-005).
 
 ### Completed
 
-- `health()` probes each wrapped independently: probe failure → flag False, `status` "degraded", always HTTP 200; response keys unchanged (`status`/`api`/`database`/`redis`).
-- 3 new tests in `apps/api/tests/test_health.py` (degraded-Redis, all-ok via stubbed ping, degraded-DB via patched connect); 55 total.
-- Orchestrator review remediation: conftest `REDIS_URL` pinned to a dead port (9999) — the degraded assertion must hold on machines running a real local Redis (teevee-1); hermeticity lesson from AOS-LOCAL-001 applied forward.
-- Sprint 4 opened in Plane (cycle `b0547f2d`): AOS-13 In Progress, AOS-14/AOS-15 Ready.
+- RFC-0004 Learning Feedback Loop: learning-event taxonomy, lesson page contract, loop-feed assignments, staged enforcement (convention now, guardian in AOS-PRG-003), digest integration explicitly deferred with rationale.
+- `knowledge/wiki/lessons/` seeded with the 7 real Sprint 3–4 events: LES-001/002/003 (guardian catches), LES-004 (PR #39 conftest review remediation), LES-005 (/health self-found defect, closed), LES-006 (unactioned web MISSING_TESTS warnings, open), LES-007 (machine-invisible doc staleness, open). Registry index with open/closed queue; linked from `wiki/index.md`; `wiki/log.md` entry.
+- CLAUDE.md operating rule: record a lesson for every BLOCK/CI failure/review remediation/self-found defect in the same change set.
+- Capability map Layer 8: Learning Feedback Loop capability + artifacts.
+- PR #39 reconciled (AOS-RUNTIME-004 → Merged; Plane AOS-13 Done, AOS-14 In Progress).
 
 ### Files changed
 
-- `apps/api/app/main.py` (health() only), `apps/api/tests/test_health.py`, `apps/api/tests/conftest.py` (one line + comment)
-- `.archetype/work/AOS-RUNTIME-004.md` (new spec)
+- `docs/rfc/RFC-0004-Learning-Feedback-Loop.md`, `knowledge/wiki/lessons/` (index + LES-001..007), `knowledge/wiki/index.md`, `knowledge/wiki/log.md`
+- `CLAUDE.md`, `docs/CAPABILITY_MAP.md`
+- `.archetype/work/AOS-LEARN-002.md` (new spec)
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` → 55 passed (Opus run and Orchestrator re-run)
-- `python3 -m ruff check apps/api` + compileall → exit 0
-- Live probes on uvicorn: without Redis → `{"status":"degraded",...,"redis":false}` HTTP 200 (alpha reproduction fixed); with redis-server on 6390 → `{"status":"ok",...}` HTTP 200
+- Docs-only: `PYTHONPATH=apps/api pytest apps/api/tests -q` → 55 passed unchanged; ruff/compileall exit 0.
 
 ### Known Risks
 
-- Compose healthchecks treat HTTP 200 as healthy; a degraded-Redis API now reports healthy at transport level. Acceptable: body carries the truth, and the alternative (500) hid db/api status entirely. Revisit if orchestrators need hard-fail semantics.
+- Lessons are convention-enforced until AOS-PRG-003; the open-lesson queue could rot if reconciliation PRs skip reviewing it (mitigation is the queue's visibility in the index).
 
 ### Blockers
 
@@ -65,19 +65,19 @@ Verification pending
 
 ### Verification Level
 
-Level 4
+Level 2
 
 ### Verification Method
 
-Local ruff/compileall/pytest (55) + Orchestrator live probe of both health states on running uvicorn. GitHub CI pending on the PR; merge under the Manual Merge Gate.
+Docs-only package: suite unchanged-green locally; every lesson cites a checkable source (PR / CI run / captured artifact). GitHub CI pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
-- Command exit codes 0; live curl outputs in the PR body; spec criteria mapped to named tests.
+- RFC-0004; lessons index table (7 rows, 3 open with named loop feeds); 55/55 pytest, ruff/compileall exit 0.
 
 ### Limitations
 
-Worker Redis-loop resilience out of scope (separate package if needed).
+Lessons not yet machine-consumed — guardian enforcement and rule evolution land in AOS-PRG-003.
 
 ### Required Next Verifier
 
@@ -85,7 +85,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge the AOS-RUNTIME-004 PR after CI passes. Sprint 4 continues: AOS-LEARN-002 (Learning Feedback Loop, RFC-0004), then AOS-PRG-003 (guardian evolution).
+Merge the AOS-LEARN-002 PR after CI passes. Then AOS-PRG-003 (guardian evolution) — its spec must consume LES-003 and LES-006 by ID — completes Sprint 4.
 
 ## Handoff Template
 

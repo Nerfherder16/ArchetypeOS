@@ -204,6 +204,19 @@ def get_job(job_id: str, db: Session = Depends(get_db)) -> Job:
     return job
 
 
+@app.get("/projects/{project_id}/jobs", response_model=list[JobRead])
+def list_project_jobs(project_id: str, db: Session = Depends(get_db)) -> list[Job]:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return (
+        db.query(Job)
+        .filter(Job.project_id == project_id)
+        .order_by(Job.queued_at.desc(), Job.id)
+        .limit(50)
+        .all()
+    )
+
+
 @app.post("/projects/{project_id}/schedules", response_model=ScheduleRead)
 def create_schedule(project_id: str, payload: ScheduleCreate, db: Session = Depends(get_db)) -> Schedule:
     if not db.get(Project, project_id):

@@ -4,27 +4,36 @@ import {
   createDecision,
   createProject,
   createResearchNote,
+  createSchedule,
+  deleteSchedule,
+  enqueueJob,
   fetchArchitecture,
   fetchDecisions,
   fetchDigests,
   fetchDna,
   fetchHealth,
+  fetchJobs,
   fetchProjects,
   fetchRecommendations,
   fetchRepositories,
   fetchResearchNotes,
+  fetchSchedules,
   registerRepository,
   runDigest,
+  runSchedule,
   scanRepository,
+  setScheduleEnabled,
   type ArchitectureGraph,
   type Decision,
   type Health,
+  type Job,
   type NightlyDigest,
   type Project,
   type Recommendation,
   type Repository,
   type RepositoryDna,
   type ResearchNote,
+  type Schedule,
 } from './api';
 
 const errorMessage = (err: unknown): string =>
@@ -78,6 +87,16 @@ function App() {
   const [digests, setDigests] = useState<NightlyDigest[]>([]);
   const [digestsError, setDigestsError] = useState<string | null>(null);
   const [runningDigest, setRunningDigest] = useState(false);
+
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [schedulingError, setSchedulingError] = useState<string | null>(null);
+  const [newScheduleName, setNewScheduleName] = useState('');
+  const [newScheduleJobType, setNewScheduleJobType] = useState('repository_scan');
+  const [newScheduleInterval, setNewScheduleInterval] = useState('3600');
+  const [creatingSchedule, setCreatingSchedule] = useState(false);
+  const [scanJobRepoId, setScanJobRepoId] = useState('');
+  const [schedulingBusy, setSchedulingBusy] = useState(false);
 
   const loadHealth = useCallback(async () => {
     setHealthError(null);
@@ -160,6 +179,32 @@ function App() {
     }
   }, []);
 
+  const loadScheduling = useCallback(async (projectId: string) => {
+    setSchedulingError(null);
+    try {
+      const [nextSchedules, nextJobs] = await Promise.all([
+        fetchSchedules(projectId),
+        fetchJobs(projectId),
+      ]);
+      setSchedules(nextSchedules);
+      setJobs(nextJobs);
+    } catch (err) {
+      setSchedules([]);
+      setJobs([]);
+      setSchedulingError(errorMessage(err));
+    }
+  }, []);
+
+  const loadJobs = useCallback(async (projectId: string) => {
+    setSchedulingError(null);
+    try {
+      setJobs(await fetchJobs(projectId));
+    } catch (err) {
+      setJobs([]);
+      setSchedulingError(errorMessage(err));
+    }
+  }, []);
+
   useEffect(() => {
     void loadHealth();
     void loadProjects();
@@ -177,12 +222,17 @@ function App() {
     setNewDecisionNoteId('');
     setDigests([]);
     setDigestsError(null);
+    setSchedules([]);
+    setJobs([]);
+    setSchedulingError(null);
+    setScanJobRepoId('');
     if (selectedProjectId) {
       void loadRepositories(selectedProjectId);
       void loadArtifacts(selectedProjectId);
       void loadDigests(selectedProjectId);
+      void loadScheduling(selectedProjectId);
     }
-  }, [selectedProjectId, loadRepositories, loadArtifacts, loadDigests]);
+  }, [selectedProjectId, loadRepositories, loadArtifacts, loadDigests, loadScheduling]);
 
   useEffect(() => {
     if (selectedProjectId && selectedRepositoryId) {
@@ -340,6 +390,130 @@ function App() {
       setRunningDigest(false);
     }
   }, [selectedProjectId, loadDigests]);
+
+  const handleCreateSchedule = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!selectedProjectId) {
+        return;
+      }
+      const name = newScheduleName.trim();
+      const intervalSeconds = Number.parseInt(newScheduleInterval, 10);
+      if (!name || !Number.isFinite(intervalSeconds) || intervalSeconds <= 0) {
+        return;
+      }
+      setCreatingSchedule(true);
+      setSchedulingError(null);
+      try {
+        await createSchedule(selectedProjectId, {
+          name,
+          job_type: newScheduleJobType,
+          interval_seconds: intervalSeconds,
+        });
+        setNewScheduleName('');
+        setNewScheduleInterval('3600');
+        await loadScheduling(selectedProjectId);
+      } catch (err) {
+        setSchedulingError(errorMessage(err));
+      } finally {
+        setCreatingSchedule(false);
+      }
+    },
+    [selectedProjectId, newScheduleName, newScheduleJobType, newScheduleInterval, loadScheduling],
+  );
+
+  const handleRunSchedule = useCallback(
+    async (scheduleId: string) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      setSchedulingBusy(true);
+      setSchedulingError(null);
+      try {
+        await runSchedule(scheduleId);
+        await loadScheduling(selectedProjectId);
+      } catch (err) {
+        setSchedulingError(errorMessage(err));
+      } finally {
+        setSchedulingBusy(false);
+      }
+    },
+    [selectedProjectId, loadScheduling],
+  );
+
+  const handleToggleSchedule = useCallback(
+    async (schedule: Schedule) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      setSchedulingBusy(true);
+      setSchedulingError(null);
+      try {
+        await setScheduleEnabled(schedule.id, !schedule.enabled);
+        await loadScheduling(selectedProjectId);
+      } catch (err) {
+        setSchedulingError(errorMessage(err));
+      } finally {
+        setSchedulingBusy(false);
+      }
+    },
+    [selectedProjectId, loadScheduling],
+  );
+
+  const handleDeleteSchedule = useCallback(
+    async (scheduleId: string) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      setSchedulingBusy(true);
+      setSchedulingError(null);
+      try {
+        await deleteSchedule(scheduleId);
+        await loadScheduling(selectedProjectId);
+      } catch (err) {
+        setSchedulingError(errorMessage(err));
+      } finally {
+        setSchedulingBusy(false);
+      }
+    },
+    [selectedProjectId, loadScheduling],
+  );
+
+  const handleEnqueueDigest = useCallback(async () => {
+    if (!selectedProjectId) {
+      return;
+    }
+    setSchedulingBusy(true);
+    setSchedulingError(null);
+    try {
+      await enqueueJob({ project_id: selectedProjectId, job_type: 'project_digest' });
+      await loadJobs(selectedProjectId);
+    } catch (err) {
+      setSchedulingError(errorMessage(err));
+    } finally {
+      setSchedulingBusy(false);
+    }
+  }, [selectedProjectId, loadJobs]);
+
+  const handleEnqueueScan = useCallback(async () => {
+    if (!selectedProjectId || !scanJobRepoId) {
+      return;
+    }
+    setSchedulingBusy(true);
+    setSchedulingError(null);
+    try {
+      await enqueueJob({
+        project_id: selectedProjectId,
+        repository_id: scanJobRepoId,
+        job_type: 'repository_scan',
+      });
+      await loadJobs(selectedProjectId);
+    } catch (err) {
+      setSchedulingError(errorMessage(err));
+    } finally {
+      setSchedulingBusy(false);
+    }
+  }, [selectedProjectId, scanJobRepoId, loadJobs]);
 
   const summary = dna?.scan_summary.summary;
   const primaryLanguages =
@@ -703,6 +877,135 @@ function App() {
                       ))}
                     </ul>
                   ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : null}
+
+      {selectedProjectId ? (
+        <section style={sectionStyle}>
+          <h2>Scheduling &amp; Jobs</h2>
+          {schedulingError ? (
+            <p role="alert" style={errorStyle}>
+              {schedulingError}
+            </p>
+          ) : null}
+
+          <h3 style={{ marginBottom: 4 }}>Schedules</h3>
+          {schedules.length === 0 ? (
+            <p>No schedules yet.</p>
+          ) : (
+            <ul>
+              {schedules.map((schedule) => (
+                <li key={schedule.id} style={{ marginBottom: 4 }}>
+                  {schedule.name} — {schedule.job_type} — every {schedule.interval_seconds}s —{' '}
+                  {schedule.enabled ? 'enabled' : 'disabled'} — next{' '}
+                  {new Date(schedule.next_run_at).toLocaleString()}
+                  <button
+                    type="button"
+                    disabled={schedulingBusy}
+                    onClick={() => void handleToggleSchedule(schedule)}
+                    style={{ marginLeft: 8 }}
+                  >
+                    {schedule.enabled ? 'Disable' : 'Enable'}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={schedulingBusy}
+                    onClick={() => void handleRunSchedule(schedule.id)}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Run now
+                  </button>
+                  <button
+                    type="button"
+                    disabled={schedulingBusy}
+                    onClick={() => void handleDeleteSchedule(schedule.id)}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <form onSubmit={handleCreateSchedule} style={{ marginTop: 8 }}>
+            <input
+              type="text"
+              value={newScheduleName}
+              placeholder="Schedule name"
+              onChange={(event) => setNewScheduleName(event.target.value)}
+            />
+            <select
+              value={newScheduleJobType}
+              onChange={(event) => setNewScheduleJobType(event.target.value)}
+              style={{ marginLeft: 8 }}
+            >
+              <option value="repository_scan">repository_scan</option>
+              <option value="project_digest">project_digest</option>
+            </select>
+            <input
+              type="number"
+              value={newScheduleInterval}
+              placeholder="Interval seconds"
+              onChange={(event) => setNewScheduleInterval(event.target.value)}
+              style={{ marginLeft: 8, width: 140 }}
+            />
+            <button type="submit" disabled={creatingSchedule} style={{ marginLeft: 8 }}>
+              {creatingSchedule ? 'Creating...' : 'Create schedule'}
+            </button>
+          </form>
+
+          <h3 style={{ marginTop: 12, marginBottom: 4 }}>Enqueue now</h3>
+          <div>
+            <button
+              type="button"
+              disabled={schedulingBusy}
+              onClick={() => void handleEnqueueDigest()}
+            >
+              Enqueue digest job
+            </button>
+            <select
+              value={scanJobRepoId}
+              onChange={(event) => setScanJobRepoId(event.target.value)}
+              style={{ marginLeft: 8 }}
+            >
+              <option value="">Select repository</option>
+              {repositories.map((repository) => (
+                <option key={repository.id} value={repository.id}>
+                  {repository.name}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              disabled={schedulingBusy || !scanJobRepoId}
+              onClick={() => void handleEnqueueScan()}
+              style={{ marginLeft: 8 }}
+            >
+              Enqueue scan job
+            </button>
+          </div>
+
+          <h3 style={{ marginTop: 12, marginBottom: 4 }}>Job history</h3>
+          <button
+            type="button"
+            disabled={schedulingBusy}
+            onClick={() => selectedProjectId && void loadJobs(selectedProjectId)}
+          >
+            Refresh jobs
+          </button>
+          {jobs.length === 0 ? (
+            <p>No jobs yet.</p>
+          ) : (
+            <ul>
+              {jobs.map((job) => (
+                <li key={job.id}>
+                  {job.job_type} — {job.status} — {new Date(job.queued_at).toLocaleString()} —
+                  attempts {job.attempts}
                 </li>
               ))}
             </ul>

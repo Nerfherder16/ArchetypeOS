@@ -56,10 +56,11 @@ Every new engineering session should read this before planning or implementation
 - PR #44: Adopt Alembic migrations, baseline (AOS-ALEMBIC-001) — migration path adopted, no schema change
 - PR #45: Extract aos_core shared package, RFC-0006 Phase 1 (AOS-CORE-001) — domain layer is now a shared package
 - PR #46: Worker runs scan/digest jobs, RFC-0006 Phase 2 (AOS-WORKERRUN-001) — scans/digests run as queued jobs
+- PR #47: Scheduler seed — schedules-as-data + control-plane scheduler, RFC-0007 (AOS-SCHED-001); first real Alembic migration
 
 ## Current Objective
 
-Sprint 5 package 5: AOS-SCHED-001 (RFC-0007 backend seed / RFC-0006 Phase 3a, Plane AOS-18) in review on this branch — schedules-as-data (`Schedule` model + Alembic migration `0002`, the first real migration) + a single-instance control-plane `apps/scheduler` service that turns due schedules into queued jobs via one shared `enqueue_job` path; Schedule CRUD API. Folds in the PR #46 reconciliation. The dashboard (AOS-SCHED-002) closes AOS-18.
+Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) in review on this branch — the dashboard "Scheduling & Jobs" section (schedules CRUD + enable/disable + run-now, enqueue-as-job buttons, job history) + a `GET /projects/{id}/jobs` endpoint. **Merging it closes AOS-18 and the worker pipeline.** Folds in the PR #47 reconciliation.
 
 ## Active Branch
 
@@ -78,14 +79,14 @@ Sprint 5 package 5: AOS-SCHED-001 (RFC-0007 backend seed / RFC-0006 Phase 3a, Pl
 
 - Status: Verification pending
 - Level: Level 4
-- Method: Orchestrator independently verified on a Python 3.12 venv — Alembic migration `0002` upgrade → 22 tables incl. `schedules`, no-drift autogenerate probe = 0 ops (the first real migration matches the model exactly); api suite **75 passed** (69 + 6 new: schedule CRUD, run-now, `run_due_schedules` tick enqueues due + skips not-due/disabled); worker 5 unchanged; ruff clean incl. `apps/scheduler`. CI compose-smoke (migration `0002` on fresh Postgres + the new scheduler container builds/boots — added to the build/up lists, LES-011) pending after PR creation
-- Evidence: no-drift 0 ops after `0002`; 75 api tests; scheduler service + compose block; one enqueue path (`aos_core.services.jobs`)
-- Limitations: interval cadence only (no cron); single-instance scheduler (HA deferred per RFC-0007); dashboard is AOS-SCHED-002
-- Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator review
+- Method: Orchestrator independently ran the full Playwright suite headless (`PW_LOCAL_CHROMIUM` seam) — **4/4 pass** incl. the new `scheduling.spec.ts` (create schedule → run now → job appears in history) — plus api suite **77 passed** (75 + 2 new jobs-list tests), worker 6, strict tsc/vite build exit 0, ruff clean. Hardened the web-e2e CI job to ensure `redis-server` for the e2e enqueue path (explicit per LES-011). CI (api-tests, web-e2e, compose-smoke) pending after PR creation
+- Evidence: 4/4 e2e specs headless; 77 api tests; `GET /projects/{id}/jobs`; job-history + schedule controls drive from the dashboard
+- Limitations: schedule editing is enable-disable + interval only; e2e enqueue uses an ephemeral redis (local serve-api.sh / ensured in CI)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 5 package 5: scheduler seed — schedules-as-data + control-plane scheduler (AOS-SCHED-001, RFC-0007)
+- Sprint 5 package 6: scheduler dashboard — schedules UI + enqueue + job history (AOS-SCHED-002); closes AOS-18
 
 ## Out Of Scope Now
 
@@ -112,7 +113,7 @@ Sprint 5 package 5: AOS-SCHED-001 (RFC-0007 backend seed / RFC-0006 Phase 3a, Pl
 
 ## Next Recommended Task
 
-Merge the AOS-SCHED-001 PR after CI passes under the Manual Merge Gate. Then AOS-SCHED-002 (scheduler dashboard: schedules UI + enqueue buttons + job history) closes AOS-18 and the worker pipeline. AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) after the worker/scheduler foundations land.
+Merge the AOS-SCHED-002 PR after CI passes under the Manual Merge Gate — that closes AOS-18 and the worker pipeline (RFC-0006 + RFC-0007 fully realized). Remaining Sprint 5 backlog: AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path); AOS-19 (council, RFC-0005) after. Await operator direction on the next package.
 
 ## Required Reading For New Sessions
 

@@ -18,11 +18,11 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-SCHED-002 — Scheduler dashboard: schedules UI + enqueue + job history, RFC-0007 / RFC-0006 Phase 3b (Plane AOS-18; Sprint 5 package 6 — **closes AOS-18**), folding in the AOS-SCHED-001 (PR #47) reconciliation
+AOS-COUNCIL-001 — Agent Council seed: LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (Plane AOS-19; the intelligence thrust's first package). Sprint 5 (PRs #43–#48) is fully merged; AOS-18 Done.
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `915aa34`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `350c8b0` after the PR #48 merge)
 
 ### PR
 
@@ -30,7 +30,7 @@ To be opened.
 
 ### Status
 
-In Review — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs` (Orchestrator-verified: 4/4 Playwright specs headless incl. the new scheduling spec; 77 api tests; strict web build clean). AOS-SCHED-001 merged as `915aa34` (PR #47; RFC-0007 seed). Merging this closes AOS-18 and the worker pipeline.
+In Review — `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` + migration `0003`, worker `council_review` dispatch, council trigger/read API. Orchestrator-verified (3.12 venv): ruff/compile clean; api **92**, worker **7**; `run_council` exercised (4 outputs, disagreement, abstention, 404, determinism, provider mapping); alembic no-drift after `0003` (24 tables, 0 ops). Backend only; the Agent Council Dashboard is AOS-COUNCIL-002. Operator decisions honored: Claude Code SDK via subscription (no metered API/budget), four agents, dedicated tables.
 
 ### Orchestrator Transition
 
@@ -74,7 +74,7 @@ In Review — dashboard "Scheduling & Jobs" section + `GET /projects/{id}/jobs` 
 
 ### Verification Status
 
-Verification pending
+Verification pending (AOS-COUNCIL-001 in review)
 
 ### Verification Level
 
@@ -82,7 +82,7 @@ Level 4
 
 ### Verification Method
 
-Orchestrator independently ran the full Playwright suite headless (4/4 incl. the new scheduling spec) + api suite (77) + worker (6) + strict web build + ruff/compile on a 3.12 venv. GitHub CI (api-tests, web-e2e, compose-smoke) pending on the PR; merge under the Manual Merge Gate; then AOS-18 → Done.
+Orchestrator independently (3.12 venv) ran ruff/compile clean; api **92 passed** (77 + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly (4 agent outputs; disagreement surfaced — security unfavorable vs the rest; abstention → `Insufficient evidence` on an evidence-less project; 404 on missing project; deterministic-provider stability; `get_provider` mapping incl. ValueError); alembic no-drift after `0003` — chain applies, 24 tables incl. `council_reviews`+`council_agent_outputs`, **0 drift ops**. GitHub CI (api-tests, worker-tests, compose-smoke applying `0003` on Postgres) pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
@@ -98,7 +98,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge the AOS-SCHED-002 PR after CI passes — closes AOS-18 and the worker pipeline (RFC-0006 + RFC-0007 realized end to end). Then await operator direction: remaining backlog is AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path); AOS-19 (council) after.
+Merge AOS-COUNCIL-001 after CI passes under the Manual Merge Gate (Plane AOS-19 Phase 1). Then AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review; per-agent status/output/confidence; surface disagreement; Final Judge panel; Playwright e2e) — closes the Phase-9 "disagreements are visible" acceptance end to end. A real council run on an authed node (flip `llm_provider=claude_code`) is the operator-side validation. Lighter backlog: AOS-21 (second repo), AOS-20 (doc-staleness/LES-007), AOS-22 (backups), AOS-23 (knowledge read path).
 
 ## Handoff Template
 

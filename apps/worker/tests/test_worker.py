@@ -14,7 +14,7 @@ os.environ["REDIS_URL"] = "redis://localhost:9999/0"
 import app.worker as worker  # noqa: E402
 from aos_core.config import get_settings  # noqa: E402
 from aos_core.database import Base  # noqa: E402
-from aos_core.models import Artifact, Job, NightlyDigest, Project, Repository, RepositoryDNA  # noqa: E402
+from aos_core.models import Artifact, CouncilReview, Job, NightlyDigest, Project, Repository, RepositoryDNA  # noqa: E402
 
 
 def test_worker_queue_name_is_stable():
@@ -122,6 +122,50 @@ def test_run_digest_job(worker_db):
         digest = db.query(NightlyDigest).filter(NightlyDigest.project_id == project_id).first()
         assert digest is not None
         assert job.result["digest_id"] == digest.id
+
+
+def test_council_review_dispatch(worker_db):
+    # The worker runs the council (deterministic provider) and completes the job
+    # with {review_id, verdict}, persisting the review linked to the job.
+    with worker_db() as db:
+        project = Project(name="Council", slug="council-worker")
+        db.add(project)
+        db.flush()
+        repository = Repository(project_id=project.id, name="svc", local_path="svc")
+        db.add(repository)
+        db.flush()
+        db.add(
+            RepositoryDNA(
+                repository_id=repository.id,
+                language_mix={"python": 1.0},
+                frameworks=["fastapi"],
+                risk_flags=["missing tests"],
+            )
+        )
+        job = Job(
+            job_type="council_review",
+            status="queued",
+            project_id=project.id,
+            payload={"question": "Is this ready?"},
+        )
+        db.add(job)
+        db.commit()
+        job_id = job.id
+        project_id = project.id
+
+    worker.run_job(job_id)
+
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        assert job.status == "completed"
+        review_id = job.result["review_id"]
+        assert review_id
+        assert job.result["verdict"]
+        review = db.get(CouncilReview, review_id)
+        assert review is not None
+        assert review.project_id == project_id
+        assert review.job_id == job_id
+        assert len(review.agent_outputs) == 4
 
 
 def test_test_job_backward_compat(worker_db):

@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 — Enforcement & Foundations (open, cycle `8bc59801`); Sprint 4 COMPLETE (PRs #39-#42); orchestration now Opus 4.8
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence thrust open — AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19) in review; orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -57,14 +57,15 @@ Every new engineering session should read this before planning or implementation
 - PR #45: Extract aos_core shared package, RFC-0006 Phase 1 (AOS-CORE-001) — domain layer is now a shared package
 - PR #46: Worker runs scan/digest jobs, RFC-0006 Phase 2 (AOS-WORKERRUN-001) — scans/digests run as queued jobs
 - PR #47: Scheduler seed — schedules-as-data + control-plane scheduler, RFC-0007 (AOS-SCHED-001); first real Alembic migration
+- PR #48: Scheduler dashboard — schedules UI + enqueue + job history, RFC-0007/RFC-0006 Phase 3b (AOS-SCHED-002) — **closes AOS-18 and the worker pipeline; RFC-0006 + RFC-0007 realized end to end**
 
 ## Current Objective
 
-Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) in review on this branch — the dashboard "Scheduling & Jobs" section (schedules CRUD + enable/disable + run-now, enqueue-as-job buttons, job history) + a `GET /projects/{id}/jobs` endpoint. **Merging it closes AOS-18 and the worker pipeline.** Folds in the PR #47 reconciliation.
+**Intelligence thrust underway** (operator-directed): AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19) in review on this branch — the Agent Council seed. A `Provider` abstraction (`DeterministicProvider` CI default + `ClaudeCodeProvider` subscription backend), the four Phase-9 agents + a rule-based Final Judge (agreements/disagreements/unsupported-claims/verdict + abstention), `CouncilReview`/`CouncilAgentOutput` tables + migration `0003`, worker `council_review` dispatch, and council trigger/read API. Backend only; the Agent Council Dashboard is AOS-COUNCIL-002 (Phase 2). This is where the platform starts to reason, atop the Sprint 5 substrate (AOS-18 Done: shared core + worker + scheduler).
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` for post-merge state reconciliation)
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `350c8b0` after the PR #48 merge)
 
 ## CI Status
 
@@ -77,16 +78,16 @@ Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) i
 
 ## Verification Status
 
-- Status: Verification pending
+- Status: Verification pending (AOS-COUNCIL-001 in review; PR #48 merged as `350c8b0`)
 - Level: Level 4
-- Method: Orchestrator independently ran the full Playwright suite headless (`PW_LOCAL_CHROMIUM` seam) — **4/4 pass** incl. the new `scheduling.spec.ts` (create schedule → run now → job appears in history) — plus api suite **77 passed** (75 + 2 new jobs-list tests), worker 6, strict tsc/vite build exit 0, ruff clean. Hardened the web-e2e CI job to ensure `redis-server` for the e2e enqueue path (explicit per LES-011). CI (api-tests, web-e2e, compose-smoke) pending after PR creation
-- Evidence: 4/4 e2e specs headless; 77 api tests; `GET /projects/{id}/jobs`; job-history + schedule controls drive from the dashboard
-- Limitations: schedule editing is enable-disable + interval only; e2e enqueue uses an ephemeral redis (local serve-api.sh / ensured in CI)
+- Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **92 passed** (77 + 15 new), worker **7 passed** (6 + 1); exercised `run_council` directly (4 agent outputs, disagreement surfaced, abstention on evidence-less project, 404, deterministic provider, `get_provider` mapping); alembic no-drift after `0003` — 24 tables incl. both council tables, **0 drift ops**. CI (api-tests, worker-tests, compose-smoke on Postgres) pending on the PR
+- Evidence: 4 structured agent outputs + Final Judge verdict per project; disagreement explicit; abstention enforced; council trigger/read API; `council_review` job dispatch; migration `0003` applies
+- Limitations: `ClaudeCodeProvider` runs only on an authed node (mocked in CI); advisory/draft-only
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 5 package 6: scheduler dashboard — schedules UI + enqueue + job history (AOS-SCHED-002); closes AOS-18
+- AOS-COUNCIL-001 (RFC-0005 Phase 1, Plane AOS-19): Agent Council seed — provider abstraction + 4 agents + Final Judge + tables/migration `0003` + worker dispatch + council API. Backend only.
 
 ## Out Of Scope Now
 
@@ -113,7 +114,7 @@ Sprint 5 package 6: AOS-SCHED-002 (RFC-0007 / RFC-0006 Phase 3b, Plane AOS-18) i
 
 ## Next Recommended Task
 
-Merge the AOS-SCHED-002 PR after CI passes under the Manual Merge Gate — that closes AOS-18 and the worker pipeline (RFC-0006 + RFC-0007 fully realized). Remaining Sprint 5 backlog: AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path); AOS-19 (council, RFC-0005) after. Await operator direction on the next package.
+Merge AOS-COUNCIL-001 after CI passes under the Manual Merge Gate (Plane AOS-19 Phase 1). Then AOS-COUNCIL-002 — the Agent Council Dashboard (trigger a review, per-agent status/output/confidence, surface disagreement, Final Judge panel; Playwright e2e) — closes the Phase-9 "disagreements are visible" acceptance end to end. Lighter backlog: AOS-21 (second repo), AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-23 (knowledge read path).
 
 ## Required Reading For New Sessions
 

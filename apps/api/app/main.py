@@ -8,12 +8,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from aos_core.config import get_settings
 from aos_core.database import engine, get_db, init_db
-from aos_core.models import ArchitectureEdge, ArchitectureNode, Artifact, Decision, Job, NightlyDigest, Project, Recommendation, Repository, RepositoryDNA, ResearchNote, Schedule, now_utc
+from aos_core.models import ArchitectureEdge, ArchitectureNode, Artifact, CouncilReview, Decision, Job, NightlyDigest, Project, Recommendation, Repository, RepositoryDNA, ResearchNote, Schedule, now_utc
 from aos_core.repository_scanner import safe_repo_path
 from aos_core.services.jobs import enqueue_job
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
-from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, DecisionCreate, DecisionRead, JobCreate, JobRead, NightlyDigestRead, ProjectCreate, ProjectRead, RecommendationCreate, RecommendationRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead, ResearchNoteCreate, ResearchNoteRead, ScheduleCreate, ScheduleRead, ScheduleUpdate
+from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, CouncilReviewCreate, CouncilReviewRead, DecisionCreate, DecisionRead, JobCreate, JobRead, NightlyDigestRead, ProjectCreate, ProjectRead, RecommendationCreate, RecommendationRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead, ResearchNoteCreate, ResearchNoteRead, ScheduleCreate, ScheduleRead, ScheduleUpdate
 
 settings = get_settings()
 app = FastAPI(title="ArchetypeOS API", version="0.1.0")
@@ -451,3 +451,37 @@ def get_digest(digest_id: str, db: Session = Depends(get_db)) -> NightlyDigest:
     if not digest:
         raise HTTPException(status_code=404, detail="Digest not found")
     return digest
+
+
+@app.post("/projects/{project_id}/council-reviews", response_model=JobRead)
+def create_council_review(project_id: str, payload: CouncilReviewCreate, db: Session = Depends(get_db)) -> Job:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return enqueue_job(
+        db,
+        redis.Redis.from_url(settings.redis_url),
+        job_type="council_review",
+        project_id=project_id,
+        payload={"question": payload.question},
+    )
+
+
+@app.get("/projects/{project_id}/council-reviews", response_model=list[CouncilReviewRead])
+def list_council_reviews(project_id: str, db: Session = Depends(get_db)) -> list[CouncilReview]:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return (
+        db.query(CouncilReview)
+        .filter(CouncilReview.project_id == project_id)
+        .order_by(CouncilReview.created_at.desc(), CouncilReview.id)
+        .limit(50)
+        .all()
+    )
+
+
+@app.get("/council-reviews/{review_id}", response_model=CouncilReviewRead)
+def get_council_review(review_id: str, db: Session = Depends(get_db)) -> CouncilReview:
+    review = db.get(CouncilReview, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Council review not found")
+    return review

@@ -304,6 +304,44 @@ class NightlyDigest(AuditMixin, Base):
     repeated_tasks: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
 
 
+class CouncilReview(AuditMixin, Base):
+    __tablename__ = "council_reviews"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    question: Mapped[str | None] = mapped_column(Text)
+    verdict: Mapped[str] = mapped_column(String(64), default="Insufficient evidence", nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    agreements: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    disagreements: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    unsupported_claims: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    follow_up: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    provider: Mapped[str | None] = mapped_column(String(128))
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
+
+    agent_outputs: Mapped[list["CouncilAgentOutput"]] = relationship(
+        back_populates="review", cascade="all, delete-orphan"
+    )
+
+
+class CouncilAgentOutput(AuditMixin, Base):
+    __tablename__ = "council_agent_outputs"
+
+    # Note: the agent workflow status (Waiting / Running / Needs Evidence /
+    # Blocked / Complete / Escalated / Rejected) is carried by the inherited
+    # AuditMixin.status column (String(64), indexed) — set explicitly by the
+    # council service — so there is no duplicate status column.
+    review_id: Mapped[str] = mapped_column(GUID(), ForeignKey("council_reviews.id"), nullable=False, index=True)
+    agent_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    agent_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text)
+    findings: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    concerns: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+
+    review: Mapped["CouncilReview"] = relationship(back_populates="agent_outputs")
+
+
 class AuthorityGrant(AuditMixin, Base):
     __tablename__ = "authority_grants"
 

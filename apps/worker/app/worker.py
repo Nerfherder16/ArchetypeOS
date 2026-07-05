@@ -9,6 +9,8 @@ from aos_core.models import Job
 from aos_core.services.jobs import QUEUE
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
+from aos_core.services.council import run_council
+from aos_core.llm import get_provider
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("archetypeos.worker")
@@ -60,6 +62,14 @@ def run_job(job_id: str) -> None:
             db.commit()
             db.refresh(digest)
             mark_job(job_id, "completed", result={"digest_id": digest.id, "summary": digest.summary})
+        elif job_type == "council_review":
+            question = (job.payload or {}).get("question", "")
+            provider = get_provider(settings)
+            review = run_council(db, project_id=project_id, question=question, provider=provider)
+            review.job_id = job_id
+            db.add(review)
+            db.commit()
+            mark_job(job_id, "completed", result={"review_id": review.id, "verdict": review.verdict})
         else:
             result = {
                 "message": "test job completed",

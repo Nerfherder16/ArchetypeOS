@@ -142,6 +142,9 @@ Capabilities:
 - Strategy Engine
 - Portfolio Knowledge Marketplace
 - Knowledge Transfer Engine
+- Agent Council (backend seed: four MVP agents produce structured, persisted, evidence-bearing outputs)
+- Final Judge synthesis (deterministic, rule-based verdict + abstention over agent outputs)
+- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend)
 
 Primary artifacts:
 
@@ -152,6 +155,11 @@ Primary artifacts:
 - templates/decision_card.md
 - templates/recommendation_card.md
 - templates/adr.md
+- docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md
+- docs/LLM_PROVIDER_ABSTRACTION.md
+- docs/ARBITER_FINAL_JUDGE.md (verdict set + abstention rule the Final Judge encodes)
+- packages/aos_core/aos_core/llm/ (Provider protocol + DeterministicProvider + ClaudeCodeProvider)
+- packages/aos_core/aos_core/services/council.py (run_council + synthesize_verdict; the four agent personas)
 
 ## Layer 5: Design and User Experience
 

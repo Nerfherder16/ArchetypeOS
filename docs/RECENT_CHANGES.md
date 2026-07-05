@@ -6,7 +6,19 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
-## 2026-07-05
+## 2026-07-05 — Intelligence thrust begins (RFC-0005)
+
+### In Review
+
+- AOS-COUNCIL-001 — Agent Council seed (RFC-0005 Phase 1; Plane AOS-19). Operator-directed ("write RFC-0005 and start AOS-19"). Adds an LLM **provider abstraction** (`packages/aos_core/aos_core/llm/`: `Provider` protocol, `DeterministicProvider` CI default, `ClaudeCodeProvider` — headless `claude` via the operator's subscription, never called in CI, mocked-boundary test), a **council service** (`services/council.py`: four Phase-9 agents — Research Librarian / Architecture Cartographer / Technology Fitness Judge / Security Agent — each reading the project's scan/DNA/decisions, + a rule-based **Final Judge** emitting agreements/disagreements/unsupported-claims/verdict with an abstention floor → `Insufficient evidence`), dedicated `CouncilReview`/`CouncilAgentOutput` tables + Alembic migration `0003`, a worker `council_review` dispatch, and council trigger/read API (`POST/GET /projects/{id}/council-reviews`, `GET /council-reviews/{id}`). Operator decisions: Claude Code SDK via subscription (no metered API/budget gate), four agents, dedicated tables. Backend only — the Agent Council Dashboard is AOS-COUNCIL-002. Orchestrator-verified (3.12 venv): ruff/compile clean, api 92 / worker 7, `run_council` branch checks (4 outputs, disagreement, abstention, 404, determinism), alembic no-drift after `0003` (24 tables, 0 ops). RFC: `docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md`; provider doc: `docs/LLM_PROVIDER_ABSTRACTION.md`.
+
+## 2026-07-05 — Sprint 5 close (worker pipeline complete)
+
+### Merged
+
+- PR #48: AOS-SCHED-002 — Scheduler dashboard: schedules UI + enqueue + job history (merge commit `350c8b0`; RFC-0007 / RFC-0006 Phase 3b). Adds `GET /projects/{id}/jobs` (recent jobs, cap 50, 404 on missing project) and a dashboard "Scheduling & Jobs" section: create/list schedules, per-row enable-disable + run-now + delete, enqueue scan/digest as jobs on demand, and a job-history read + refresh. New e2e `scheduling.spec.ts` (create → run-now → job-in-history → disable → reload); `serve-api.sh` starts an ephemeral redis so the enqueue path actually pushes; web-e2e CI job hardened with an "Ensure Redis available" step (LES-011 family). **Closes AOS-18 (Plane Done) and the worker pipeline — RFC-0006 (shared core) + RFC-0007 (control-plane scheduling) realized end to end: schedules → scheduler → queued jobs → workers → dashboard.** Verified at Level 4 (CI run 28756145778, all 6 jobs green, incl. compose-smoke booting api+worker+web+scheduler; plus Orchestrator's 3.12-venv run — Playwright 4/4 headless, 77 api, 6 worker, strict tsc/vite). **Sprint 5 packages 1–6 (PRs #43–#48) all delivered; the distributed-runtime substrate is complete.**
+
+## 2026-07-05 (earlier)
 
 ### Merged
 

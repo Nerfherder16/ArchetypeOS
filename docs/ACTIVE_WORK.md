@@ -114,12 +114,34 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Notes: Level 3 GitHub CI evidence in PR #14 (runs 28726472816 and 28726897393, all jobs green including compose smoke). Merge commit `856e5ff`.
 - Required Next Verifier: None.
 
+### AOS-PROC-001 — Build Process Hardening
+
+- Status: In Progress
+- Owner: CI/DevOps + Orchestrator
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-2
+- PR: to be opened
+- Spec: `.archetype/work/AOS-PROC-001.md`
+- Goal: Enforce acceptance-evidence in PR Guardian for code-path PRs, add scan-endpoint integration test coverage and a shared test fixture, and pin the local dev toolchain.
+- Acceptance Criteria (summary; full criteria with evidence pointers in the spec):
+  - PR Guardian blocks code PRs missing `## Acceptance Evidence` or missing an `evidence:` bullet under it (codes `missing-acceptance-evidence`, `empty-acceptance-evidence`); override `PR_GUARDIAN_OVERRIDE_ACCEPTANCE`.
+  - 4 new scan-endpoint integration tests pass (`test_scan_endpoint_produces_report_dna_and_artifact`, `test_scan_endpoint_is_read_only_against_scanned_repo`, `test_scan_endpoint_404_for_unknown_repository`, `test_scan_endpoint_rescan_updates_dna`).
+  - `requirements-dev.txt` (ruff==0.8.6, pytest==8.3.4) and `.python-version` (3.12) pin the toolchain.
+- Verification Status: Verification pending
+- Verification Level: Level 2
+- Verification Method: local ruff/compileall/pytest (20 API tests including the 4 new scan-endpoint integration tests) plus PR Guardian self-checks, run in an isolated remote session
+- Evidence: exit codes 0 for ruff, compileall, and pytest
+- Limitations: CI pending on PR
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+
 ### AOS-KNOW-001 — Knowledge Vault Seed
 
 - Status: Ready
 - Notes: Dependencies are now satisfied; scanner output shape is documented in `docs/REPOSITORY_SCANNER.md`.
 - Owner: Knowledge Agent
 - Branch: TBD
+- Plane: AOS-3
+- Spec: `.archetype/work/AOS-KNOW-001.md`
 - Goal: Create initial knowledge vault structure and manifest.
 - Dependencies:
   - repository registry model
@@ -133,8 +155,8 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Blocked Work
 
-- Plane sync is blocked until local Plane is available again.
-- Local WSL/Docker Level 2 verification is blocked until power and workstation access return.
+- Plane back online; the `ArchetypeOS` Plane project is the live board.
+- Local WSL/Docker Level 2 verification is still listed pending workstation confirmation.
 
 ## Deferred Work
 
@@ -151,3 +173,5 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 ## Update Rule
 
 Every active branch or PR must update this file when work status changes, including verification status and required next verifier.
+
+Work status changes update both Plane and this file; on conflict, this file (markdown) wins until AOS-9 defines full sync discipline.

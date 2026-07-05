@@ -13,7 +13,7 @@ Every new engineering session should read this before planning or implementation
 - Current sprint: Sprint 2 — Operating Loop and first runtime proof
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
-- Plane status: pinned/offline due to local power outage; markdown state files remain fallback execution board
+- Plane status: back online as of 2026-07-05; `ArchetypeOS` project seeded (AOS-1..AOS-9); markdown state files remain the durable fallback board
 
 ## Recently Merged
 
@@ -29,14 +29,15 @@ Every new engineering session should read this before planning or implementation
 - PR #12: Operating Loop planning docs recovery
 - PR #13: State reconciliation
 - PR #14: Repository Scanner MVP (AOS-RUNTIME-002)
+- PR #15: Post-merge state reconciliation for AOS-RUNTIME-002
 
 ## Current Objective
 
-Reconcile state after the PR #14 merge, then assign AOS-KNOW-001 — Knowledge Vault Seed as the next implementation task.
+AOS-PROC-001 — Build Process Hardening is in progress on this branch (PR Guardian acceptance-evidence check, scan-endpoint integration tests, toolchain pins, work-package specs). PR to be opened.
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` for post-merge state reconciliation)
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main`; now carrying AOS-PROC-001)
 
 ## CI Status
 
@@ -50,17 +51,17 @@ Reconcile state after the PR #14 merge, then assign AOS-KNOW-001 — Knowledge V
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 1
-- Method: post-merge state-file reconciliation on `claude/aos-runtime-002-scanner-1egyjw`; pending GitHub CI / PR Guardian after PR creation. AOS-RUNTIME-002 itself is Verified (Level 3, PR #14, CI runs 28726472816 and 28726897393 all green).
-- Evidence: state files reconciled to reflect the PR #14 merge (`856e5ff`)
-- Limitations: required status checks cannot be enforced as a merge gate on this repository plan, so merge gating stays manual; user workstation WSL/Docker still blocked
+- Level: Level 2
+- Method: local ruff/compileall/pytest (20 API tests including the 4 new scan-endpoint integration tests) plus PR Guardian self-checks, run in an isolated remote session bound to `claude/aos-runtime-002-scanner-1egyjw`. GitHub CI pending on the PR to be opened.
+- Evidence: exit codes 0 for ruff, compileall, and pytest
+- Limitations: CI pending on PR; required status checks cannot be enforced as a merge gate on this repository plan, so merge gating stays manual (see `docs/PR_GUARDIAN.md` Manual Merge Gate); user workstation WSL/Docker verification still pending confirmation
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- post-merge state reconciliation for PR #14
-- next-task clarity for AOS-KNOW-001 — Knowledge Vault Seed
-- preserve Plane as pinned/offline
+- build process hardening (AOS-PROC-001)
+- Plane board adoption
+- state updates
 
 ## Out Of Scope Now
 
@@ -76,7 +77,7 @@ Reconcile state after the PR #14 merge, then assign AOS-KNOW-001 — Knowledge V
 
 | Decision | Status | Notes |
 | --- | --- | --- |
-| Plane integration depth | Pinned | Resume when local Plane returns. |
+| Plane integration depth | Board adopted | Sync discipline = AOS-9. |
 | Agent dashboard implementation | Deferred | Engineering Control Tower design exists; implementation comes after scanner/runtime data. |
 | Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
@@ -84,12 +85,11 @@ Reconcile state after the PR #14 merge, then assign AOS-KNOW-001 — Knowledge V
 
 ## Blockers
 
-- Local Plane unavailable during power outage.
-- Local WSL/Docker Level 2 verification unavailable during power outage.
+- Local WSL/Docker Level 2 verification on the user's workstation: pending confirmation.
 
 ## Next Recommended Task
 
-Merge this state reconciliation PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed to the Knowledge Agent using one branch and one isolated worktree.
+Merge the AOS-PROC-001 PR after CI passes. Then assign AOS-KNOW-001 — Knowledge Vault Seed to the Knowledge Agent using one branch and one isolated worktree.
 
 ## Required Reading For New Sessions
 

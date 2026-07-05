@@ -38,6 +38,7 @@ This first version intentionally avoids LLM judgment. It blocks obvious hygiene,
 - runtime/build junk
 - high-risk file changes
 - verification metadata
+- acceptance evidence
 
 ## Deterministic Blocking Rules
 
@@ -54,6 +55,8 @@ The current implementation blocks when:
 - PR body verification status is unsupported
 - PR body verification status is `Verification unavailable` or `Verification blocked`
 - PR body verification level is unsupported
+- any changed file starts with `apps/api/app/`, `apps/worker/app/`, or `apps/web/src/` and the PR body has no `## Acceptance Evidence` heading (code `missing-acceptance-evidence`)
+- an `## Acceptance Evidence` section exists but no bullet under it contains `evidence:` (case-insensitive) (code `empty-acceptance-evidence`)
 
 ## Warning Rules
 
@@ -87,6 +90,17 @@ Mergeability rules:
 - `Verification unavailable` blocks merge.
 - `Verification blocked` blocks merge.
 
+## Acceptance Evidence Requirement
+
+When any changed file starts with `apps/api/app/`, `apps/worker/app/`, or `apps/web/src/`, the PR body must also include an `## Acceptance Evidence` heading. Under that heading, at least one bullet must contain `evidence:` (case-insensitive) mapping an acceptance criterion to a test name, command, or CI job. This mirrors the per-criterion `evidence:` pointers required in work package specs (`docs/rfc/RFC-0003-Work-Package-Specs.md`, `.archetype/work/<TASK-ID>.md`).
+
+Blocking codes:
+
+- `missing-acceptance-evidence` — no `## Acceptance Evidence` heading found.
+- `empty-acceptance-evidence` — the heading exists but no bullet under it carries an `evidence:` pointer.
+
+This check does not apply to PRs that change only docs, config, or other non-code paths. Override marker: `PR_GUARDIAN_OVERRIDE_ACCEPTANCE`.
+
 ## Override Protocol
 
 Overrides are allowed only with rationale in the PR body.
@@ -99,7 +113,10 @@ PR_GUARDIAN_OVERRIDE_WEB_TESTS
 PR_GUARDIAN_OVERRIDE_DOCS
 PR_GUARDIAN_OVERRIDE_CAPABILITY_MAP
 PR_GUARDIAN_OVERRIDE_HIGH_RISK_ACK
+PR_GUARDIAN_OVERRIDE_ACCEPTANCE
 ```
+
+`PR_GUARDIAN_OVERRIDE_ACCEPTANCE` suppresses the acceptance-evidence check (`missing-acceptance-evidence`, `empty-acceptance-evidence`). It only applies to that check; it does not suppress the verification metadata requirement below, which has no bypass marker.
 
 Overrides should be used sparingly. They are audit markers, not a way to bypass review casually.
 
@@ -154,6 +171,12 @@ scripts/post_merge_validation.sh
 ```
 
 See `docs/POST_MERGE_VALIDATION.md`.
+
+## Manual Merge Gate
+
+Required status checks are not enforceable as a merge gate on this repository's current plan. Until that changes, merging a PR requires a verification comment posted on the PR, pinned to the exact head SHA, reporting CI green: the workflow run id and the conclusion of every job (PR Guardian, API tests and lint, Worker tests and lint, Web typecheck and build, Docker Compose smoke test). The comment is posted by the babysitting agent or a human reviewer.
+
+Merging without confirming that the head SHA in the merge matches the SHA reported in that comment is a protocol violation, even if CI appeared green at some earlier point in the PR's history.
 
 ## Local First Use
 

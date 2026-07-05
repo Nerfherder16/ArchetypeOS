@@ -204,6 +204,49 @@ def check_capability_map(files: list[str], statuses: dict[str, str], body: str) 
     return findings
 
 
+def check_acceptance_evidence(files: list[str], body: str) -> list[Finding]:
+    findings: list[Finding] = []
+    if not any_path(files, CODE_PREFIXES) or has_override(body, "ACCEPTANCE"):
+        return findings
+
+    lines = body.splitlines()
+    heading_index = None
+    heading_pattern = re.compile(r"(?im)^#{2,}\s*Acceptance Evidence\s*$")
+    for index, line in enumerate(lines):
+        if heading_pattern.match(line):
+            heading_index = index
+            break
+
+    if heading_index is None:
+        findings.append(
+            Finding(
+                "block",
+                "missing-acceptance-evidence",
+                "Code changed without an '## Acceptance Evidence' section. Add one mapping each acceptance criterion to a test, command, or CI job, or include PR_GUARDIAN_OVERRIDE_ACCEPTANCE with rationale.",
+            )
+        )
+        return findings
+
+    has_evidence_bullet = False
+    for line in lines[heading_index + 1:]:
+        if line.startswith("#"):
+            break
+        stripped = line.strip()
+        if stripped.startswith(("-", "*")) and "evidence:" in stripped.lower():
+            has_evidence_bullet = True
+            break
+
+    if not has_evidence_bullet:
+        findings.append(
+            Finding(
+                "block",
+                "empty-acceptance-evidence",
+                "Acceptance Evidence section exists but no criterion line carries an 'evidence:' pointer to a test, command, or CI job.",
+            )
+        )
+    return findings
+
+
 def check_high_risk_files(files: list[str], body: str) -> list[Finding]:
     findings: list[Finding] = []
     high_risk = [
@@ -299,7 +342,6 @@ def check_verification_metadata(body: str) -> list[Finding]:
 
 def render(findings: list[Finding], files: list[str]) -> int:
     blocks = [finding for finding in findings if finding.severity == "block"]
-    warnings = [finding for finding in findings if finding.severity == "warn"]
 
     print("# PR Guardian Report")
     print()
@@ -344,6 +386,7 @@ def main() -> int:
     findings.extend(check_tests_for_code_changes(files, body))
     findings.extend(check_docs_for_code_changes(files, body))
     findings.extend(check_capability_map(files, statuses, body))
+    findings.extend(check_acceptance_evidence(files, body))
     findings.extend(check_high_risk_files(files, body))
     findings.extend(check_verification_metadata(body))
 

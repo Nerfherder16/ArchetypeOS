@@ -13,6 +13,10 @@ The Repository Scanner produces a deterministic, read-only report describing a r
 - Never follows symlinks.
 - The ignore list (`IGNORED_DIRS`) is pruned from `os.walk` before descent, so ignored directories such as `node_modules`, `.venv`, `venv`, `__pycache__`, `dist`, `build`, `.next`, and caches are never traversed into.
 
+### Runtime enforcement
+
+`docker-compose.yml` mounts `${HOST_REPOSITORY_ROOT:-./repositories}:/repositories:ro` for both the `api` and `worker` services. The read-only guarantee above is therefore enforced by the container runtime in addition to code structure and tests: even a bug in the scanner cannot write into a scanned repository when running under compose, because the mount itself rejects writes.
+
 ## Report Schema
 
 Returned by `scan_repository()` in `apps/api/app/repository_scanner.py`.

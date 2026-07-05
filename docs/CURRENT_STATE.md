@@ -40,7 +40,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Reconcile state after the PR #27 merge. Next: AOS-LOCAL-001 on `teevee-1` (tomorrow, through the new dashboard); remaining board items are AOS-4 (scan history) and AOS-9 (Plane sync discipline).
+AOS-RUNTIME-003 — Scan persistence and history (Plane AOS-4) is in review on this branch; PR to be opened. AOS-9 (Plane sync discipline) follows; AOS-LOCAL-001 runs on `teevee-1` tomorrow.
 
 ## Active Branch
 
@@ -58,16 +58,16 @@ Reconcile state after the PR #27 merge. Next: AOS-LOCAL-001 on `teevee-1` (tomor
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 1
-- Method: post-merge state-file reconciliation; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-CTRL-001 itself is Verified (Level 4 — CI run 28730415566 plus browser-driven runtime checks).
-- Evidence: state files reconciled to the PR #27 merge (`32399e0`); Plane AOS-8 marked Done
-- Limitations: docs-only change
+- Level: Level 2
+- Method: local ruff/compileall/pytest (32 API tests incl. 4 new scan-history tests) in the isolated remote session; GitHub CI pending after PR creation
+- Evidence: exit codes 0 for ruff, compileall, and pytest; overwrite-bug regression test included
+- Limitations: SQLite locally; retention/pruning out of scope
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- post-merge state reconciliation for PR #27
-- AOS-LOCAL-001 preparation (tomorrow on `teevee-1`)
+- scan persistence and history (AOS-RUNTIME-003)
+- state updates
 
 ## Out Of Scope Now
 
@@ -94,7 +94,7 @@ Reconcile state after the PR #27 merge. Next: AOS-LOCAL-001 on `teevee-1` (tomor
 
 ## Next Recommended Task
 
-Merge this state reconciliation PR after CI passes. Tomorrow: execute AOS-LOCAL-001 on `teevee-1` through the new dashboard (first Level 4 verification on the real runtime target).
+Merge the AOS-RUNTIME-003 PR after CI passes under the Manual Merge Gate. Then AOS-9 (Plane sync discipline, docs) closes the Sprint 2 board; AOS-LOCAL-001 runs on `teevee-1` tomorrow.
 
 ## Required Reading For New Sessions
 

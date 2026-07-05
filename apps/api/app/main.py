@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import hashlib
 import json
+from pathlib import Path
 import re
 import redis
 from fastapi import Depends, FastAPI, HTTPException
@@ -9,7 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 from .config import get_settings
 from .database import engine, get_db, init_db
-from .models import ArchitectureEdge, ArchitectureNode, Artifact, Job, Project, Repository, RepositoryDNA
+from .models import ArchitectureEdge, ArchitectureNode, Artifact, Job, Project, Repository, RepositoryDNA, new_id
 from .repository_scanner import safe_repo_path, scan_repository
 from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead
 
@@ -211,15 +212,18 @@ def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)
 
     artifact_body = json.dumps(scan, indent=2, sort_keys=True)
     checksum = hashlib.sha256(artifact_body.encode("utf-8")).hexdigest()
+    artifact_id = new_id()
+    artifact_name = f"repository-scan-{artifact_id}.json"
     artifact_dir = settings.artifact_root / repository.project_id / repository.id
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    artifact_path = artifact_dir / "repository-scan.json"
+    artifact_path = artifact_dir / artifact_name
     artifact_path.write_text(artifact_body, encoding="utf-8")
     artifact = Artifact(
+        id=artifact_id,
         project_id=repository.project_id,
         repository_id=repository.id,
         artifact_type="repository_scan",
-        name="repository-scan.json",
+        name=artifact_name,
         path=str(artifact_path),
         content_type="application/json",
         checksum=checksum,
@@ -243,6 +247,31 @@ def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)
         "architecture_edges": edges_out,
         "artifacts": [{"id": artifact.id, "name": artifact.name, "path": artifact.path, "checksum": artifact.checksum}],
     }
+
+
+@app.get("/repositories/{repository_id}/scans", response_model=list[ArtifactRead])
+def list_repository_scans(repository_id: str, db: Session = Depends(get_db)) -> list[Artifact]:
+    if not db.get(Repository, repository_id):
+        raise HTTPException(status_code=404, detail="Repository not found")
+    return (
+        db.query(Artifact)
+        .filter(Artifact.repository_id == repository_id, Artifact.artifact_type == "repository_scan")
+        .order_by(Artifact.created_at.desc(), Artifact.id)
+        .all()
+    )
+
+
+@app.get("/repositories/{repository_id}/scans/{artifact_id}", response_model=dict)
+def get_repository_scan(repository_id: str, artifact_id: str, db: Session = Depends(get_db)) -> dict:
+    if not db.get(Repository, repository_id):
+        raise HTTPException(status_code=404, detail="Repository not found")
+    artifact = db.get(Artifact, artifact_id)
+    if not artifact or artifact.repository_id != repository_id or artifact.artifact_type != "repository_scan":
+        raise HTTPException(status_code=404, detail="Scan artifact not found")
+    artifact_path = Path(artifact.path)
+    if not artifact_path.exists():
+        raise HTTPException(status_code=404, detail="Scan artifact file missing")
+    return json.loads(artifact_path.read_text(encoding="utf-8"))
 
 
 @app.get("/repositories/{repository_id}/dna", response_model=RepositoryDnaRead)

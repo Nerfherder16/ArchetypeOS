@@ -36,7 +36,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Current Objective
 
-Reconcile state after the PR #23 merge, then pick the next package from Plane/board: AOS-4 (scan history), AOS-5 (architecture graph API), AOS-7 (WSL local verification), AOS-8 (control tower slice), or AOS-9 (Plane sync discipline).
+AOS-ARCH-001 — Architecture Spine Graph API (Plane AOS-5) is in review on this branch: graph query/correction endpoints plus rescan upsert preserving node ids and manual corrections. PR to be opened.
 
 ## Active Branch
 
@@ -54,16 +54,16 @@ Reconcile state after the PR #23 merge, then pick the next package from Plane/bo
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 1
-- Method: post-merge state-file reconciliation; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-KNOW-001 itself is Verified (Level 3, PR #23, CI run 28728964219 all green).
-- Evidence: state files reconciled to the PR #23 merge (`87fa769`)
-- Limitations: Plane temporarily down at merge time — AOS-3 → Done update pending on the board; markdown carries state per the precedence rule
+- Level: Level 2
+- Method: local ruff 0.8.6 + compileall + pytest (25 API tests including 5 new architecture tests, existing scan tests unchanged) in the isolated remote session; GitHub CI pending after PR creation
+- Evidence: exit codes 0 for ruff, compileall, and pytest
+- Limitations: SQLite-only locally; Plane still down (AOS-3 → Done and AOS-5 → In Progress board updates pending); markdown carries state per the precedence rule
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- post-merge state reconciliation for PR #23
-- next-package selection from the board
+- architecture graph API (AOS-ARCH-001)
+- state updates
 
 ## Out Of Scope Now
 
@@ -91,7 +91,7 @@ Reconcile state after the PR #23 merge, then pick the next package from Plane/bo
 
 ## Next Recommended Task
 
-Merge this state reconciliation PR after CI passes. Then pick the next package from the board (AOS-4, AOS-5, AOS-7, AOS-8, or AOS-9); Orchestrator recommendation: AOS-5 — architecture graph API (models exist, Opus-delegable, strong CI verification, unlocks the control tower).
+Merge the AOS-ARCH-001 PR after CI passes under the Manual Merge Gate. Then AOS-8 (control tower dashboard slice, now unblocked by the graph API) or AOS-4 (scan history) are the leading candidates; AOS-7 awaits workstation confirmation.
 
 ## Required Reading For New Sessions
 

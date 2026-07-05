@@ -101,3 +101,49 @@ class RepositoryScanRead(BaseModel):
     architecture_nodes: list[dict]
     architecture_edges: list[dict]
     artifacts: list[dict]
+
+
+class ArchitectureNodeRead(BaseModel):
+    id: str
+    project_id: str
+    repository_id: str | None
+    label: str
+    type: str
+    parent_id: str | None
+    confidence: float
+    evidence: list
+    risks: list
+    manual_correction: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ArchitectureEdgeRead(BaseModel):
+    id: str
+    project_id: str
+    repository_id: str | None
+    from_node_id: str
+    to_node_id: str
+    type: str
+    confidence: float
+    evidence: list
+    manual_correction: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ArchitectureGraphRead(BaseModel):
+    nodes: list[ArchitectureNodeRead]
+    edges: list[ArchitectureEdgeRead]
+
+
+class ArchitectureCorrectionUpdate(BaseModel):
+    manual_correction: str | None = None

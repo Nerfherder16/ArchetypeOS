@@ -11,7 +11,7 @@ from .config import get_settings
 from .database import engine, get_db, init_db
 from .models import ArchitectureEdge, ArchitectureNode, Artifact, Job, Project, Repository, RepositoryDNA
 from .repository_scanner import safe_repo_path, scan_repository
-from .schemas import ArtifactCreate, ArtifactRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RepositoryCreate, RepositoryRead, RepositoryScanRead
+from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, JobCreate, JobRead, ProjectCreate, ProjectRead, RepositoryCreate, RepositoryRead, RepositoryScanRead
 
 settings = get_settings()
 app = FastAPI(title="ArchetypeOS API", version="0.1.0")
@@ -121,31 +121,55 @@ def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)
     dna.status = "draft"
     db.add(dna)
 
-    root_node = ArchitectureNode(
-        project_id=repository.project_id,
-        repository_id=repository.id,
-        label=repository.name,
-        type="repository",
-        confidence=0.9,
-        evidence=["registered repository"],
-        status="draft",
+    root_node = (
+        db.query(ArchitectureNode)
+        .filter(ArchitectureNode.repository_id == repository.id, ArchitectureNode.type == "repository")
+        .first()
     )
+    if root_node:
+        root_node.label = repository.name
+        root_node.confidence = 0.9
+        root_node.evidence = ["registered repository"]
+    else:
+        root_node = ArchitectureNode(
+            project_id=repository.project_id,
+            repository_id=repository.id,
+            label=repository.name,
+            type="repository",
+            confidence=0.9,
+            evidence=["registered repository"],
+            status="draft",
+        )
     db.add(root_node)
     db.flush()
     node_by_label = {repository.name: root_node}
     nodes_out = [{"id": root_node.id, "label": root_node.label, "type": root_node.type, "confidence": root_node.confidence}]
 
     for item in scan["architecture_nodes"][1:]:
-        node = ArchitectureNode(
-            project_id=repository.project_id,
-            repository_id=repository.id,
-            label=item["label"],
-            type=item["type"],
-            parent_id=root_node.id,
-            confidence=item["confidence"],
-            evidence=item["evidence"],
-            status="draft",
+        node = (
+            db.query(ArchitectureNode)
+            .filter(
+                ArchitectureNode.repository_id == repository.id,
+                ArchitectureNode.type == "directory",
+                ArchitectureNode.label == item["label"],
+                ArchitectureNode.parent_id == root_node.id,
+            )
+            .first()
         )
+        if node:
+            node.confidence = item["confidence"]
+            node.evidence = item["evidence"]
+        else:
+            node = ArchitectureNode(
+                project_id=repository.project_id,
+                repository_id=repository.id,
+                label=item["label"],
+                type=item["type"],
+                parent_id=root_node.id,
+                confidence=item["confidence"],
+                evidence=item["evidence"],
+                status="draft",
+            )
         db.add(node)
         db.flush()
         node_by_label[item["label"]] = node
@@ -157,16 +181,30 @@ def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)
         to_node = node_by_label.get(item["to"])
         if not from_node or not to_node:
             continue
-        edge = ArchitectureEdge(
-            project_id=repository.project_id,
-            repository_id=repository.id,
-            from_node_id=from_node.id,
-            to_node_id=to_node.id,
-            type=item["type"],
-            confidence=item["confidence"],
-            evidence=item["evidence"],
-            status="draft",
+        edge = (
+            db.query(ArchitectureEdge)
+            .filter(
+                ArchitectureEdge.repository_id == repository.id,
+                ArchitectureEdge.from_node_id == from_node.id,
+                ArchitectureEdge.to_node_id == to_node.id,
+                ArchitectureEdge.type == item["type"],
+            )
+            .first()
         )
+        if edge:
+            edge.confidence = item["confidence"]
+            edge.evidence = item["evidence"]
+        else:
+            edge = ArchitectureEdge(
+                project_id=repository.project_id,
+                repository_id=repository.id,
+                from_node_id=from_node.id,
+                to_node_id=to_node.id,
+                type=item["type"],
+                confidence=item["confidence"],
+                evidence=item["evidence"],
+                status="draft",
+            )
         db.add(edge)
         db.flush()
         edges_out.append({"id": edge.id, "from_node_id": edge.from_node_id, "to_node_id": edge.to_node_id, "type": edge.type, "confidence": edge.confidence})
@@ -205,6 +243,44 @@ def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)
         "architecture_edges": edges_out,
         "artifacts": [{"id": artifact.id, "name": artifact.name, "path": artifact.path, "checksum": artifact.checksum}],
     }
+
+
+@app.get("/projects/{project_id}/architecture", response_model=ArchitectureGraphRead)
+def get_project_architecture(project_id: str, repository_id: str | None = None, db: Session = Depends(get_db)) -> dict:
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    node_query = db.query(ArchitectureNode).filter(ArchitectureNode.project_id == project_id)
+    edge_query = db.query(ArchitectureEdge).filter(ArchitectureEdge.project_id == project_id)
+    if repository_id is not None:
+        node_query = node_query.filter(ArchitectureNode.repository_id == repository_id)
+        edge_query = edge_query.filter(ArchitectureEdge.repository_id == repository_id)
+    nodes = node_query.order_by(ArchitectureNode.label, ArchitectureNode.id).all()
+    edges = edge_query.order_by(ArchitectureEdge.type, ArchitectureEdge.id).all()
+    return {"nodes": nodes, "edges": edges}
+
+
+@app.patch("/architecture/nodes/{node_id}", response_model=ArchitectureNodeRead)
+def correct_architecture_node(node_id: str, payload: ArchitectureCorrectionUpdate, db: Session = Depends(get_db)) -> ArchitectureNode:
+    node = db.get(ArchitectureNode, node_id)
+    if not node:
+        raise HTTPException(status_code=404, detail="Architecture node not found")
+    node.manual_correction = payload.manual_correction
+    db.add(node)
+    db.commit()
+    db.refresh(node)
+    return node
+
+
+@app.patch("/architecture/edges/{edge_id}", response_model=ArchitectureEdgeRead)
+def correct_architecture_edge(edge_id: str, payload: ArchitectureCorrectionUpdate, db: Session = Depends(get_db)) -> ArchitectureEdge:
+    edge = db.get(ArchitectureEdge, edge_id)
+    if not edge:
+        raise HTTPException(status_code=404, detail="Architecture edge not found")
+    edge.manual_correction = payload.manual_correction
+    db.add(edge)
+    db.commit()
+    db.refresh(edge)
+    return edge
 
 
 @app.post("/jobs", response_model=JobRead)

@@ -332,6 +332,7 @@ Capabilities:
 - GPU node
 - WSL node
 - GitHub integration
+- database schema migrations (Alembic)
 
 Primary artifacts:
 
@@ -339,10 +340,13 @@ Primary artifacts:
 - docs/DISTRIBUTED_RUNTIME.md
 - docs/LOCAL_LLM_GPU_NODE.md
 - docs/CLAUDE_CODE_BRIDGE.md
+- docs/DATABASE_MIGRATIONS.md
 - docker-compose.yml
 - .env.example
 - apps/web
 - apps/api
+- apps/api/alembic/ (Alembic migrations; baseline schema)
+- apps/api/docker-entrypoint.sh (runs migrations before serving)
 - apps/worker
 
 ## Layer 12: Orchestration and Work Management

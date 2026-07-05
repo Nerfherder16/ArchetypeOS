@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 from pathlib import Path
-from app.repository_scanner import scan_repository
+from aos_core.repository_scanner import scan_repository
 
 
 def _snapshot(root: Path) -> set[str]:

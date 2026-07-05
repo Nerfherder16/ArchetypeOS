@@ -18,11 +18,11 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-ALEMBIC-001 — Adopt Alembic migrations, baseline (Plane AOS-17; Sprint 5 package 2), folding in the AOS-WEB-001 (PR #43) reconciliation
+AOS-CORE-001 — Extract aos_core shared package, RFC-0006 Phase 1 (Plane AOS-18; Sprint 5 package 3), folding in the AOS-ALEMBIC-001 (PR #44) reconciliation
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `821171e`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `96550b8`)
 
 ### PR
 
@@ -30,7 +30,7 @@ To be opened.
 
 ### Status
 
-In Review — Alembic baseline reproduces the 20-table schema with zero drift (Orchestrator-verified sqlite round-trip); container entrypoint runs migrations before serving. AOS-WEB-001 merged as `821171e` (PR #43; Plane AOS-16 Done).
+In Review — `aos_core` extracted, api consumes it, ZERO behavior change (Orchestrator-verified on a 3.12 venv: 69 tests pass incl. 67 unchanged, alembic no-drift = 0 ops, guardian runs without aos_core installed). AOS-ALEMBIC-001 merged as `96550b8` (PR #44; Plane AOS-17 Done). RFC-0006 Accepted.
 
 ### Orchestrator Transition
 
@@ -41,30 +41,34 @@ In Review — Alembic baseline reproduces the 20-table schema with zero drift (O
 
 ### Completed
 
-- `apps/api/alembic/`: `env.py` (reads URL from `app.config` settings; imports `app.models`; `target_metadata = Base.metadata`), `alembic.ini`, `script.py.mako`, and `versions/0001_baseline.py` — a model-driven baseline with 20 `op.create_table` calls (`down_revision = None`). The baseline includes `import app.models` (autogenerate omits it for the GUID/JSONField TypeDecorators — without it the migration NameErrors; documented as a review-checklist item).
-- `apps/api/docker-entrypoint.sh` (executable): `set -e; alembic upgrade head; exec uvicorn ...` — a failed migration exits non-zero so the container never serves (compose-smoke catches it; never masked). `apps/api/Dockerfile` copies the alembic files + entrypoint and switches to `ENTRYPOINT`.
-- `apps/api/requirements.txt`: `alembic==1.14.0`.
-- `docs/DATABASE_MIGRATIONS.md`: autogenerate + review workflow, the DDL-review rule, and the one-time `alembic stamp head` for pre-existing populated databases (teevee-1).
-- No schema/model change; `init_db()` create_all, `main.py`, models, and conftest untouched.
-- PR #43 reconciled (AOS-WEB-001 → Merged; Plane AOS-16 Done); Board ID Registry AOS-17 spec path filled.
+- `packages/aos_core/`: new installable package. `config.py`, `database.py`, `models.py`, `repository_scanner.py` moved verbatim from `apps/api/app`; new `services/scan.py` (`run_scan`, extracted from `main.py`'s scan route body) and `services/digest.py` (`build_digest`, the verbatim `_build_digest` aggregation). `pyproject.toml` (setuptools, requires-python >=3.12, deps incl. fastapi for HTTPException).
+- `apps/api/app` reduced to `main.py` (routes only, imports `aos_core.*`; scan route = `return run_scan(...)`, digest route keeps its 404 + persist, calling `build_digest`) + `schemas.py`.
+- Docker: `apps/api/Dockerfile` build context → repo root (`COPY packages/aos_core` + `pip install`, then `COPY apps/api/...`); compose api `build: {context: ., dockerfile: apps/api/Dockerfile}` (worker/web untouched).
+- CI: `api-tests` + `web-e2e` jobs install `pip install -e ./packages/aos_core`.
+- alembic `env.py` + baseline retargeted `app.` → `aos_core.`; no-drift still 0 ops.
+- Guardian: new `missing-core-tests` BLOCK for `packages/aos_core/` changes without a test change; `load_scan_report` in-repo fallback imports `aos_core.repository_scanner` via `sys.path` (works in the pr-guardian CI job, which does not install aos_core). LES-010 recorded.
+- Follow-on retargets required by the move: `apps/api/tests/{conftest,test_scanner}.py` import `aos_core.*` (no assertions changed).
+- PR #44 reconciled (AOS-ALEMBIC-001 → Merged; Plane AOS-17 Done); RFC-0006 Accepted; AOS-18 reshaped into 3 phases.
 
 ### Files changed
 
-- `apps/api/requirements.txt`, `apps/api/Dockerfile`, `apps/api/docker-entrypoint.sh` (new)
-- `apps/api/alembic.ini` (new), `apps/api/alembic/env.py` (new), `apps/api/alembic/script.py.mako` (new), `apps/api/alembic/versions/0001_baseline.py` (new)
-- `docs/DATABASE_MIGRATIONS.md` (new), `docs/CAPABILITY_MAP.md`, `docs/PLANE_PROJECT_BLUEPRINT.md`
-- `.archetype/work/AOS-ALEMBIC-001.md` (new spec)
-- `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
+- `packages/aos_core/**` (new: pyproject + 4 moved modules + services/{scan,digest}.py); `apps/api/app/{config,database,models,repository_scanner}.py` DELETED
+- `apps/api/app/main.py`, `apps/api/app/schemas.py`, `apps/api/tests/{conftest,test_scanner,test_guardian_evolution}.py`
+- `apps/api/Dockerfile`, `docker-compose.yml`, `.github/workflows/ci.yml`, `tools/pr_guardian.py`
+- `apps/api/alembic/env.py`, `apps/api/alembic/versions/0001_baseline.py`
+- `docs/rfc/RFC-0006-Shared-Core-Domain-Library.md` (Accepted), `knowledge/wiki/lessons/LES-010.md` + `index.md`, `docs/CAPABILITY_MAP.md`
+- `.archetype/work/AOS-CORE-001.md` (new spec); `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- Orchestrator sqlite round-trip: `alembic upgrade head` → 21 tables (20 model + alembic_version); `alembic revision --autogenerate` probe → **0 schema ops** (no drift); `alembic downgrade base` → clean. Probe deleted.
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` → 67 passed; `apps/worker/tests` → 1 passed; ruff + compileall exit 0.
+- On a Python 3.12 venv (the pinned interpreter; system is 3.11): `pip install -e ./packages/aos_core` → ok; `PYTHONPATH=apps/api pytest apps/api/tests -q` → **69 passed** (67 original unchanged + 2 new guardian tests); ruff/compileall clean.
+- alembic on 3.12: `upgrade head` → 21 tables; no-drift autogenerate probe → **0 schema ops** with `aos_core.models`.
+- Guardian run standalone with system python (aos_core NOT installed) → consulted 3 risk signals, no ImportError (the pr-guardian CI condition).
 
 ### Known Risks
 
-- The baseline was verified on sqlite locally (no local Postgres); model-driven DDL is portable, and CI compose-smoke exercises the entrypoint + baseline against real Postgres. If compose-smoke fails, diagnose the entrypoint/migration on Postgres first.
-- Pre-existing populated databases must be `alembic stamp head`ed once (not upgraded), or the baseline would try to re-create existing tables — documented in `docs/DATABASE_MIGRATIONS.md`.
+- The Docker/compose build-context restructure is proven only by CI compose-smoke (no local docker). If compose-smoke fails, check the api image build (aos_core install order, COPY paths) first.
+- The guardian's scanner fallback relies on `packages/aos_core` being present at the repo path in the pr-guardian CI checkout (it is — full checkout); if that job ever switches to a sparse checkout, revisit.
 
 ### Blockers
 
@@ -80,15 +84,15 @@ Level 4
 
 ### Verification Method
 
-Orchestrator independently ran the full Alembic round-trip on a fresh sqlite DB (upgrade → 21 tables; autogenerate probe → 0 schema ops proving zero drift vs models; downgrade → clean) plus full pytest (67 API + 1 worker) and ruff/compileall. GitHub CI compose-smoke (real Postgres via the new entrypoint + baseline) pending on the PR as the authoritative proof; merge under the Manual Merge Gate.
+Orchestrator independently verified on a Python 3.12 venv: editable install, 69-test suite (67 unchanged), alembic no-drift = 0 ops with `aos_core.models`, guardian running without aos_core installed. GitHub CI (api-tests + web-e2e install aos_core; compose-smoke builds the api image from the new context) pending on the PR as the Docker proof; merge under the Manual Merge Gate.
 
 ### Evidence
 
-- No-drift probe = 0 `op.create/drop/alter` operations; baseline = 20 `op.create_table` + `import app.models`; entrypoint executable and hard-fails on migration error; 67 + 1 tests green.
+- 69 tests pass on 3.12 (67 original unchanged); no-drift = 0 ops; guardian works without aos_core installed; `apps/api/app` reduced to `main.py` + `schemas.py`.
 
 ### Limitations
 
-Baseline verified on sqlite locally; Postgres path proven by CI compose-smoke. `init_db()` create_all retained as an idempotent sqlite-dev safety net (a later package can retire it once a real schema migration exercises alembic).
+Docker restructure proven only by CI compose-smoke. Worker unchanged — it runs jobs in Phase 2 (AOS-WORKERRUN-001).
 
 ### Required Next Verifier
 
@@ -96,7 +100,7 @@ GitHub CI (compose-smoke) / PR Guardian, then Orchestrator merge review under th
 
 ### Next Recommended Step
 
-Merge the AOS-ALEMBIC-001 PR after CI passes. Sprint 5 continues: AOS-18 (worker pipeline); AOS-21 (second repo) can run in parallel. No new package starts without operator direction.
+Merge the AOS-CORE-001 PR after CI passes. RFC-0006 Phase 2 (AOS-WORKERRUN-001 — worker runs scan/digest jobs via aos_core) next; Phase 3 (AOS-SCHED-001) after. AOS-21 (second repo) can run in parallel.
 
 ## Handoff Template
 

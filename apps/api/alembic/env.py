@@ -23,9 +23,9 @@ from sqlalchemy import engine_from_config, pool
 # parent is apps/api, which holds the `app` package.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from app.config import get_settings  # noqa: E402
-from app.database import Base  # noqa: E402
-import app.models  # noqa: E402,F401  (registers all tables on Base.metadata)
+from aos_core.config import get_settings  # noqa: E402
+from aos_core.database import Base  # noqa: E402
+import aos_core.models  # noqa: E402,F401  (registers all tables on Base.metadata)
 
 # Alembic Config object, providing access to values in alembic.ini.
 config = context.config

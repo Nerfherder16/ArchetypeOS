@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed (operator-directed 2026-07-05: chose "Shared domain library" for the worker pipeline over worker-triggers-API; this RFC is the required design gate before restructure)
+Accepted (operator-approved 2026-07-05). Phase 1 = AOS-CORE-001; Phase 2 = AOS-WORKERRUN-001; Phase 3 = AOS-SCHED-001.
 
 ## Problem
 

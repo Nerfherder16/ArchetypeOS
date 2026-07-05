@@ -30,7 +30,8 @@ services:
 
   api:
     build:
-      context: ./apps/api
+      context: .
+      dockerfile: apps/api/Dockerfile
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}

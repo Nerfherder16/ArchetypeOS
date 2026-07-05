@@ -1,5 +1,3 @@
-from datetime import datetime, timezone
-import hashlib
 import json
 from pathlib import Path
 import re
@@ -8,10 +6,12 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from .config import get_settings
-from .database import engine, get_db, init_db
-from .models import ArchitectureEdge, ArchitectureNode, Artifact, Decision, Job, NightlyDigest, Project, Recommendation, Repository, RepositoryDNA, ResearchNote, new_id, now_utc
-from .repository_scanner import safe_repo_path, scan_repository
+from aos_core.config import get_settings
+from aos_core.database import engine, get_db, init_db
+from aos_core.models import ArchitectureEdge, ArchitectureNode, Artifact, Decision, Job, NightlyDigest, Project, Recommendation, Repository, RepositoryDNA, ResearchNote
+from aos_core.repository_scanner import safe_repo_path
+from aos_core.services.scan import run_scan
+from aos_core.services.digest import build_digest
 from .schemas import ArchitectureCorrectionUpdate, ArchitectureEdgeRead, ArchitectureGraphRead, ArchitectureNodeRead, ArtifactCreate, ArtifactRead, DecisionCreate, DecisionRead, JobCreate, JobRead, NightlyDigestRead, ProjectCreate, ProjectRead, RecommendationCreate, RecommendationRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead, RepositoryScanRead, ResearchNoteCreate, ResearchNoteRead
 
 settings = get_settings()
@@ -106,153 +106,7 @@ def list_repositories(project_id: str, db: Session = Depends(get_db)) -> list[Re
 
 @app.post("/repositories/{repository_id}/scan", response_model=RepositoryScanRead)
 def scan_registered_repository(repository_id: str, db: Session = Depends(get_db)) -> dict:
-    repository = db.get(Repository, repository_id)
-    if not repository:
-        raise HTTPException(status_code=404, detail="Repository not found")
-    try:
-        repo_path = safe_repo_path(settings.repository_root, repository.local_path)
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    scan = scan_repository(repo_path)
-    repository.last_scanned_at = datetime.now(timezone.utc)
-
-    dna = repository.dna or RepositoryDNA(repository_id=repository.id)
-    dna.language_mix = scan["language_mix"]
-    dna.package_managers = scan["package_managers"]
-    dna.deployment_files = scan["deployment_files"]
-    dna.risk_flags = scan["risk_flags"]
-    dna.scan_summary = scan
-    dna.confidence = 0.65
-    dna.evidence = ["read-only repository scanner"]
-    dna.status = "draft"
-    db.add(dna)
-
-    root_node = (
-        db.query(ArchitectureNode)
-        .filter(ArchitectureNode.repository_id == repository.id, ArchitectureNode.type == "repository")
-        .first()
-    )
-    if root_node:
-        root_node.label = repository.name
-        root_node.confidence = 0.9
-        root_node.evidence = ["registered repository"]
-    else:
-        root_node = ArchitectureNode(
-            project_id=repository.project_id,
-            repository_id=repository.id,
-            label=repository.name,
-            type="repository",
-            confidence=0.9,
-            evidence=["registered repository"],
-            status="draft",
-        )
-    db.add(root_node)
-    db.flush()
-    node_by_label = {repository.name: root_node}
-    nodes_out = [{"id": root_node.id, "label": root_node.label, "type": root_node.type, "confidence": root_node.confidence}]
-
-    for item in scan["architecture_nodes"][1:]:
-        node = (
-            db.query(ArchitectureNode)
-            .filter(
-                ArchitectureNode.repository_id == repository.id,
-                ArchitectureNode.type == "directory",
-                ArchitectureNode.label == item["label"],
-                ArchitectureNode.parent_id == root_node.id,
-            )
-            .first()
-        )
-        if node:
-            node.confidence = item["confidence"]
-            node.evidence = item["evidence"]
-        else:
-            node = ArchitectureNode(
-                project_id=repository.project_id,
-                repository_id=repository.id,
-                label=item["label"],
-                type=item["type"],
-                parent_id=root_node.id,
-                confidence=item["confidence"],
-                evidence=item["evidence"],
-                status="draft",
-            )
-        db.add(node)
-        db.flush()
-        node_by_label[item["label"]] = node
-        nodes_out.append({"id": node.id, "label": node.label, "type": node.type, "confidence": node.confidence})
-
-    edges_out = []
-    for item in scan["architecture_edges"]:
-        from_node = node_by_label.get(repository.name)
-        to_node = node_by_label.get(item["to"])
-        if not from_node or not to_node:
-            continue
-        edge = (
-            db.query(ArchitectureEdge)
-            .filter(
-                ArchitectureEdge.repository_id == repository.id,
-                ArchitectureEdge.from_node_id == from_node.id,
-                ArchitectureEdge.to_node_id == to_node.id,
-                ArchitectureEdge.type == item["type"],
-            )
-            .first()
-        )
-        if edge:
-            edge.confidence = item["confidence"]
-            edge.evidence = item["evidence"]
-        else:
-            edge = ArchitectureEdge(
-                project_id=repository.project_id,
-                repository_id=repository.id,
-                from_node_id=from_node.id,
-                to_node_id=to_node.id,
-                type=item["type"],
-                confidence=item["confidence"],
-                evidence=item["evidence"],
-                status="draft",
-            )
-        db.add(edge)
-        db.flush()
-        edges_out.append({"id": edge.id, "from_node_id": edge.from_node_id, "to_node_id": edge.to_node_id, "type": edge.type, "confidence": edge.confidence})
-
-    artifact_body = json.dumps(scan, indent=2, sort_keys=True)
-    checksum = hashlib.sha256(artifact_body.encode("utf-8")).hexdigest()
-    artifact_id = new_id()
-    artifact_name = f"repository-scan-{artifact_id}.json"
-    artifact_dir = settings.artifact_root / repository.project_id / repository.id
-    artifact_dir.mkdir(parents=True, exist_ok=True)
-    artifact_path = artifact_dir / artifact_name
-    artifact_path.write_text(artifact_body, encoding="utf-8")
-    artifact = Artifact(
-        id=artifact_id,
-        project_id=repository.project_id,
-        repository_id=repository.id,
-        artifact_type="repository_scan",
-        name=artifact_name,
-        path=str(artifact_path),
-        content_type="application/json",
-        checksum=checksum,
-        size_bytes=len(artifact_body.encode("utf-8")),
-        summary="Read-only repository scan report",
-    )
-    db.add(artifact)
-    db.commit()
-
-    return {
-        "repository_id": repository.id,
-        "summary": scan,
-        "dna": {
-            "language_mix": dna.language_mix,
-            "package_managers": dna.package_managers,
-            "deployment_files": dna.deployment_files,
-            "risk_flags": dna.risk_flags,
-            "confidence": dna.confidence,
-        },
-        "architecture_nodes": nodes_out,
-        "architecture_edges": edges_out,
-        "artifacts": [{"id": artifact.id, "name": artifact.name, "path": artifact.path, "checksum": artifact.checksum}],
-    }
+    return run_scan(repository_id, db)
 
 
 @app.get("/repositories/{repository_id}/scans", response_model=list[ArtifactRead])
@@ -484,149 +338,11 @@ def get_recommendation(recommendation_id: str, db: Session = Depends(get_db)) ->
     return recommendation
 
 
-def _build_digest(project_id: str, db: Session) -> NightlyDigest:
-    scan_artifacts = (
-        db.query(Artifact)
-        .filter(Artifact.project_id == project_id, Artifact.artifact_type == "repository_scan")
-        .order_by(Artifact.created_at.desc(), Artifact.id)
-        .limit(20)
-        .all()
-    )
-    decisions = (
-        db.query(Decision)
-        .filter(Decision.project_id == project_id)
-        .order_by(Decision.created_at.desc(), Decision.id)
-        .limit(20)
-        .all()
-    )
-    research_notes = (
-        db.query(ResearchNote)
-        .filter(ResearchNote.project_id == project_id)
-        .order_by(ResearchNote.created_at.desc(), ResearchNote.id)
-        .limit(20)
-        .all()
-    )
-    recommendations = (
-        db.query(Recommendation)
-        .filter(Recommendation.project_id == project_id)
-        .order_by(Recommendation.created_at.desc(), Recommendation.id)
-        .limit(20)
-        .all()
-    )
-    repositories = db.query(Repository).filter(Repository.project_id == project_id).order_by(Repository.name, Repository.id).all()
-
-    changes: list[dict] = []
-    for artifact in scan_artifacts:
-        changes.append(
-            {
-                "type": "repository_scan",
-                "repository_id": artifact.repository_id,
-                "artifact": artifact.name,
-                "at": artifact.created_at.isoformat(),
-            }
-        )
-    for decision in decisions:
-        changes.append({"type": "decision", "title": decision.title, "at": decision.created_at.isoformat()})
-    for note in research_notes:
-        changes.append({"type": "research_note", "title": note.title, "at": note.created_at.isoformat()})
-    for recommendation in recommendations:
-        changes.append({"type": "recommendation", "title": recommendation.title, "at": recommendation.created_at.isoformat()})
-
-    # repeated tasks: repositories scanned more than once (all scan artifacts, not just the recent 20)
-    scan_counts: dict[str, int] = {}
-    for repository_id, in (
-        db.query(Artifact.repository_id)
-        .filter(Artifact.project_id == project_id, Artifact.artifact_type == "repository_scan")
-        .all()
-    ):
-        if repository_id is None:
-            continue
-        scan_counts[repository_id] = scan_counts.get(repository_id, 0) + 1
-    repeated_tasks = [
-        {"task": "repository_scan", "repository_id": repository_id, "count": count}
-        for repository_id, count in sorted(scan_counts.items())
-        if count > 1
-    ]
-
-    draft_recommendations: list[dict] = []
-    # rule 1: repository DNA risk_flags mention missing tests
-    for repository in repositories:
-        dna = repository.dna
-        if dna is None:
-            continue
-        matching = next(
-            (flag for flag in dna.risk_flags if isinstance(flag, str) and "test" in flag.lower()),
-            None,
-        )
-        if matching is not None:
-            draft_recommendations.append(
-                {"title": f"Add tests to {repository.name}", "reason": matching, "status": "draft"}
-            )
-    # rule 2: repository registered but never scanned
-    for repository in repositories:
-        if repository.last_scanned_at is None:
-            draft_recommendations.append(
-                {
-                    "title": f"Run a scan for {repository.name}",
-                    "reason": "repository registered but never scanned",
-                    "status": "draft",
-                }
-            )
-    # rule 3: decision with no typed research_note evidence
-    unlinked_decisions = sorted(
-        (
-            decision
-            for decision in decisions
-            if not any(
-                isinstance(entry, dict) and entry.get("type") == "research_note" for entry in decision.evidence
-            )
-        ),
-        key=lambda decision: decision.title,
-    )
-    for decision in unlinked_decisions:
-        draft_recommendations.append(
-            {
-                "title": f"Link research to decision: {decision.title}",
-                "reason": "decision has no linked research",
-                "status": "draft",
-            }
-        )
-    # rule 4: project has scans but no decisions
-    if scan_artifacts and not decisions:
-        draft_recommendations.append(
-            {
-                "title": "Record the first decision for this project",
-                "reason": "scans exist but no decisions",
-                "status": "draft",
-            }
-        )
-
-    n_repos = len(repositories)
-    n_scans = sum(scan_counts.values())
-    n_decisions = len(decisions)
-    n_notes = len(research_notes)
-    n_recs = len(recommendations)
-    n_drafts = len(draft_recommendations)
-    summary = (
-        f"{n_repos} repositories, {n_scans} scan runs, {n_decisions} decisions, "
-        f"{n_notes} research notes, {n_recs} recommendations; {n_drafts} draft suggestions"
-    )
-
-    return NightlyDigest(
-        project_id=project_id,
-        digest_date=now_utc(),
-        summary=summary,
-        changes=changes,
-        recommendations=draft_recommendations,
-        repeated_tasks=repeated_tasks,
-    )
-
-
 @app.post("/projects/{project_id}/digests", response_model=NightlyDigestRead)
 def run_digest(project_id: str, db: Session = Depends(get_db)) -> NightlyDigest:
     if not db.get(Project, project_id):
         raise HTTPException(status_code=404, detail="Project not found")
-    digest = _build_digest(project_id, db)
+    digest = build_digest(project_id, db)
     db.add(digest)
     db.commit()
     db.refresh(digest)

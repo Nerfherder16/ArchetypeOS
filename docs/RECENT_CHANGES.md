@@ -115,9 +115,17 @@ Cycle `8bc59801`. Operator-approved order: AOS-16 web tests (deadline 2026-08-01
 
 - PR #43: AOS-WEB-001 — Playwright e2e suite, enforced (merge commit `821171e`): the `scripts/web_drive/` seed corpus promoted to a real `@playwright/test` suite at `apps/web/e2e/` (3 specs), a new CI `web-e2e` job running it headless on ubuntu, and a guardian evolution (`web-tests-not-enforced` fires only on web source without an `apps/web/e2e/` change; accepted-warnings retired to `[]`). Portable browser resolution via a `PW_LOCAL_CHROMIUM` env seam. Verified at Level 4 — CI run 28750193960 all 6 jobs green + Orchestrator's own headless run (3/3). LES-006 deadline closed 26 days early; LES-009 recorded.
 
+### Sprint 5 Merged (continued)
+
+- PR #44: AOS-ALEMBIC-001 — adopt Alembic migrations, baseline (merge commit `96550b8`): model-driven baseline for the 20-table schema (no schema change; no-drift probe = 0 ops), container entrypoint runs `alembic upgrade head` before uvicorn and hard-fails on error, migration discipline documented. Verified at Level 4 — CI run 28750732119 all 6 jobs green incl. compose-smoke running the migration against fresh Postgres.
+
+### RFC-0006 Accepted — Shared Core Domain Library
+
+Operator-approved 2026-07-05: extract an installable `aos_core` package both apps import (worker runs scans in-process). Reshapes AOS-18 into 3 phases: AOS-CORE-001 (extract), AOS-WORKERRUN-001 (worker runs jobs), AOS-SCHED-001 (schedule). `docs/rfc/RFC-0006-Shared-Core-Domain-Library.md`.
+
 ### Current Work
 
-AOS-ALEMBIC-001 in review on this branch — Alembic adopted with a model-driven baseline migration (`apps/api/alembic/versions/0001_baseline.py`) reproducing the current 20-table schema exactly (no schema change; the no-drift autogenerate probe emits zero schema ops). The api container entrypoint (`docker-entrypoint.sh`) runs `alembic upgrade head` before uvicorn and hard-fails on migration error, so a broken migration is surfaced by compose-smoke rather than masked; `init_db()` create_all stays as a sqlite-dev safety net. Migration discipline (incl. the one-time `alembic stamp head` for teevee-1's populated DB) documented in `docs/DATABASE_MIGRATIONS.md`. Orchestrator independently verified the sqlite round-trip (upgrade→21 tables, no-drift, downgrade→clean); 67 API + 1 worker green. Unblocks the schema-dependent packages.
+AOS-CORE-001 (RFC-0006 Phase 1) in review on this branch — extracted `packages/aos_core/` (config/database/models/repository_scanner moved verbatim; scan-persistence + digest logic pulled from `main.py` into `aos_core/services/scan.py` + `digest.py`). The api imports `aos_core`; `apps/api/app` is down to `main.py` + `schemas.py`. Repo-root api Docker build context; alembic + the guardian's scanner fallback retargeted to `aos_core`; the guardian now BLOCKs `packages/aos_core/` changes without a test change (LES-010). **Zero behavior change** — Orchestrator verified on a Python 3.12 venv: 69 tests pass (67 original unchanged + 2 new), alembic no-drift = 0 ops, guardian runs without aos_core installed. Enables the worker (Phase 2).
 
 ### Why It Matters
 

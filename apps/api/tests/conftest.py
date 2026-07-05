@@ -20,7 +20,7 @@ os.environ["REPOSITORY_ROOT"] = "./repositories"
 
 @pytest.fixture()
 def client(tmp_path) -> Generator[TestClient, None, None]:
-    from app.database import Base, get_db
+    from aos_core.database import Base, get_db
     from app.main import app, settings
 
     repository_root = tmp_path / "repositories"

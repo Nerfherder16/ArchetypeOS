@@ -136,6 +136,21 @@ def test_web_source_with_e2e_clean() -> None:
     assert "web-tests-not-enforced" not in [f.code for f in findings]
 
 
+def test_core_change_requires_tests() -> None:
+    findings = check_tests_for_code_changes(["packages/aos_core/services/scan.py"], "")
+    codes = [f.code for f in findings]
+    assert "missing-core-tests" in codes
+    block = next(f for f in findings if f.code == "missing-core-tests")
+    assert block.severity == "block"
+
+
+def test_core_change_with_tests_clean() -> None:
+    findings = check_tests_for_code_changes(
+        ["packages/aos_core/services/scan.py", "apps/api/tests/test_repository_scan.py"], ""
+    )
+    assert "missing-core-tests" not in [f.code for f in findings]
+
+
 def test_override_requires_lesson_citation() -> None:
     blocked = check_override_lesson_citation("PR_GUARDIAN_OVERRIDE_TESTS: rationale")
     assert [f.code for f in blocked] == ["override-without-lesson-citation"]

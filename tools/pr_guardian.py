@@ -184,14 +184,18 @@ def check_tests_for_code_changes(files: list[str], body: str) -> list[Finding]:
     api_changed = any(path.startswith("apps/api/app/") for path in files)
     worker_changed = any(path.startswith("apps/worker/app/") for path in files)
     web_changed = any(path.startswith("apps/web/src/") for path in files)
+    core_changed = any(path.startswith("packages/aos_core/") for path in files)
     api_tests_changed = any(path.startswith("apps/api/tests/") for path in files)
     worker_tests_changed = any(path.startswith("apps/worker/tests/") for path in files)
     web_tests_changed = any(path.startswith("apps/web/e2e/") for path in files)
+    core_tests_changed = any(path.startswith("packages/aos_core/tests/") for path in files) or any(path.startswith("apps/api/tests/") for path in files)
 
     if api_changed and not api_tests_changed and not has_override(body, "TESTS"):
         findings.append(Finding("block", "missing-api-tests", "API code changed without API test changes. Add tests or include PR_GUARDIAN_OVERRIDE_TESTS with rationale."))
     if worker_changed and not worker_tests_changed and not has_override(body, "TESTS"):
         findings.append(Finding("block", "missing-worker-tests", "Worker code changed without worker test changes. Add tests or include PR_GUARDIAN_OVERRIDE_TESTS with rationale."))
+    if core_changed and not core_tests_changed and not has_override(body, "TESTS"):
+        findings.append(Finding("block", "missing-core-tests", "aos_core changed without test changes. Add tests or include PR_GUARDIAN_OVERRIDE_TESTS with rationale."))
     if web_changed and not web_tests_changed and not has_override(body, "WEB_TESTS"):
         findings.append(Finding("warn", "web-tests-not-enforced", "Web source changed without web e2e test changes (apps/web/e2e/). Add or update Playwright specs or include PR_GUARDIAN_OVERRIDE_WEB_TESTS with rationale."))
     return findings
@@ -370,8 +374,10 @@ def load_scan_report(path: Path | None) -> dict | None:
     """Return a scan report dict, or None if unavailable (graceful degradation).
 
     If ``path`` is given, load it as JSON. Otherwise attempt an in-repo scan by
-    importing ``app.repository_scanner`` from the sibling ``apps/api`` tree and
-    scanning the guardian's repository root. Any failure yields None so the
+    importing ``aos_core.repository_scanner`` from the ``packages/aos_core`` tree
+    and scanning the guardian's repository root. The package dir is added to
+    ``sys.path`` directly so this works without an editable install (the
+    pr-guardian CI job does not install aos_core). Any failure yields None so the
     scanner-informed checks are skipped and the guardian behaves as before.
     """
     if path is not None:
@@ -382,10 +388,10 @@ def load_scan_report(path: Path | None) -> dict | None:
 
     try:
         repo_root = Path(__file__).resolve().parent.parent
-        api_dir = repo_root / "apps" / "api"
-        if str(api_dir) not in sys.path:
-            sys.path.insert(0, str(api_dir))
-        from app.repository_scanner import scan_repository
+        core_pkg_dir = repo_root / "packages" / "aos_core"
+        if str(core_pkg_dir) not in sys.path:
+            sys.path.insert(0, str(core_pkg_dir))
+        from aos_core.repository_scanner import scan_repository
 
         return scan_repository(repo_root)
     except Exception:

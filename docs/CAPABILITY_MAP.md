@@ -226,7 +226,8 @@ Primary artifacts:
 
 - docs/ALPHA_REVIEW_V0_1.md
 - .archetype/alpha/ (captured self-evaluation evidence)
-- scripts/web_drive/ (headless-Chromium dashboard drives)
+- scripts/web_drive/ (headless-Chromium dashboard drives — seed corpus)
+- apps/web/e2e/ (enforced Playwright e2e suite; CI web-e2e job)
 - .archetype/guardian/accepted_warnings.json
 - docs/VERIFICATION_PROTOCOL.md
 - docs/PR_GUARDIAN.md

@@ -1,6 +1,14 @@
 # Web Drive Harness — Level 4 Dashboard Verification
 
-This is the browser-drive harness the Orchestrator uses to verify dashboard packages at Level 4. It is the current answer to "how do we run the web tests": there is no unit/component web test suite yet (LES-006 — the guardian's accepted-warnings entry for `web-tests-not-enforced` expires **2026-08-01**, forcing that decision). Until then, these drives click through the real running dashboard with headless Chromium and assert on rendered content.
+> **Promoted (AOS-WEB-001).** This seed corpus has been promoted to a real, enforced
+> Playwright suite at [`apps/web/e2e/`](../../apps/web/e2e/) (`control-tower.spec.ts`,
+> `decisions.spec.ts`, `digest.spec.ts`). That suite runs headless in CI as the
+> `Web e2e (Playwright)` job and is now the enforced web test path; the guardian's
+> `web-tests-not-enforced` acceptance was retired rather than renewed (LES-006 →
+> LES-009). These `.mjs` drives are kept as reference / historical seed corpus — the
+> Playwright specs are the source of truth going forward.
+
+This is the browser-drive harness the Orchestrator used to verify dashboard packages at Level 4, and the seed corpus the Playwright suite grew from. These drives click through the real running dashboard with headless Chromium and assert on rendered content.
 
 Each drive was written for the package it verified and is kept as both a regression probe and the seed corpus for the future Playwright test suite:
 

@@ -274,22 +274,34 @@ v0.1 is COMPLETE (2026-07-05). All Sprint 1–3 packages merged and verified; Ph
 
 ### AOS-ORCH-004 — Sprint 4 Close-Out + Orchestrator Handoff Pack
 
+- Status: Merged
+- Owner: Chief Architect / Orchestrator (Fable 5 — final Fable package)
+- PR: #42
+- Plane: n/a (process package)
+- Spec: n/a
+- Verification Status: Verified
+- Notes: Level 2 (docs/scripts-only) — CI run 28748558659 all 5 jobs green. Merge commit `74e9370`. Delivered the Orchestrator Playbook, committed web-drive harness, Board ID Registry backfill (Sprints 3–4), HANDOFF transition, LES-008. **Sprint 4 complete; orchestration handed to Opus 4.8.**
+- Required Next Verifier: None.
+
+## Sprint 5 — Enforcement & Foundations (open)
+
+Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (web tests, deadline 2026-08-01) → AOS-17 (Alembic) → AOS-18 (worker pipeline); AOS-21 (second repo) parallel. First package under the Opus 4.8 orchestrator.
+
+### AOS-WEB-001 — Web Test Framework: Playwright Suite, Enforced
+
 - Status: In Review
-- Owner: Chief Architect / Orchestrator (Fable 5 — final Fable package before the Opus 4.8 orchestrator switch)
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Plane: AOS-16 (In Progress, urgent, target 2026-07-28), Sprint 5 cycle
 - PR: to be opened
-- Goal: make the operating loop durable across the model handoff — `docs/ORCHESTRATOR_PLAYBOOK.md`, the committed `scripts/web_drive/` harness, Board ID Registry backfill (Sprints 3–4), HANDOFF transition section, LES-008. Folds in PR #41 reconciliation.
+- Spec: `.archetype/work/AOS-WEB-001.md`
+- Goal: promote the `scripts/web_drive/` seed corpus to a real `@playwright/test` suite in `apps/web/e2e/`, wire a CI `web-e2e` job, and evolve the guardian so `web-tests-not-enforced` fires only on web source changed without an e2e change — retiring the accepted-warnings entry rather than renewing it. Closes LES-006's deadline; records LES-009.
 - Verification Status: Verification pending
-- Verification Level: Level 2
-- Verification Method: docs/scripts-only — suite unchanged-green (65/65); registry IDs verified against Plane at write time; GitHub CI pending on PR
-- Evidence: playbook cross-checked against state docs; AOS-10 ID fetched live (LES-008)
-- Limitations: drive harness not CI-wired (web-tests package, due before 2026-08-01)
+- Verification Level: Level 4
+- Verification Method: Orchestrator ran the Playwright suite headless in-container (3/3, `PW_LOCAL_CHROMIUM` seam) + full pytest (67 API + 1 worker) + ruff/compileall; GitHub CI (incl. new web-e2e job) pending on PR
+- Evidence: 3/3 e2e specs pass; accepted_warnings.json = []; 2 new guardian tests; no hardcoded browser path in committed code
+- Limitations: E2E only (no Vitest component tests yet); web-e2e job adds ~CI time
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
-
-### AOS-PRG-003 — Guardian Evolution Discipline
-
-- Status: Ready (Plane AOS-15, Sprint 4)
-- Goal: guardian findings history + miss/false-positive log feeding evidence-cited, human-approved rule improvements.
 
 ## Blocked Work
 

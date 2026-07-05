@@ -92,6 +92,33 @@ jobs:
         run: npm run build
         working-directory: apps/web
 
+  web-e2e:
+    name: Web e2e (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+      - name: Install web dependencies
+        run: npm install
+        working-directory: apps/web
+      - name: Install API dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/api/requirements.txt
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+        working-directory: apps/web
+      - name: Run web e2e suite
+        run: npm run test:e2e
+        working-directory: apps/web
+
   compose-smoke:
     name: Docker Compose smoke test
     runs-on: ubuntu-latest

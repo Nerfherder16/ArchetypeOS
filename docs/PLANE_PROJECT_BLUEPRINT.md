@@ -109,6 +109,7 @@ Project: `765d909a-a20a-4487-967d-866b9ea60ded` (identifier `AOS`)
 Sprint 2 cycle: `8f6103fe-f2f2-457b-973b-571bde6c5795`
 Sprint 3 cycle: `9d9c2fd6-3305-419a-a5e8-0c6d4d3c058b` (v0.1 Completion — complete)
 Sprint 4 cycle: `b0547f2d-1d11-4fc4-a21b-a0169fd9d92b` (Self-Healing & Learning Loop — complete)
+Sprint 5 cycle: `8bc59801-82c5-4550-b188-9f15323a1ddc` (Enforcement & Foundations — active)
 
 States:
 
@@ -139,6 +140,14 @@ Work items:
 | AOS-13 | AOS-RUNTIME-004 | `.archetype/work/AOS-RUNTIME-004.md` | `661b98e5-4fed-4fce-b893-daac85801005` |
 | AOS-14 | AOS-LEARN-002 | `.archetype/work/AOS-LEARN-002.md` | `6f232f60-ae61-46bb-9e81-f0829017c6fd` |
 | AOS-15 | AOS-PRG-003 | `.archetype/work/AOS-PRG-003.md` | `7dcfda25-eb2b-4937-8b6d-717d09f34d80` |
+| AOS-16 | AOS-WEB-001 | `.archetype/work/AOS-WEB-001.md` | `a55bbffc-71cc-4d38-8056-804b56e77cef` |
+| AOS-17 | Alembic migrations | TBD | `af8e70b1-7e7d-496c-a417-5d06ca35e053` |
+| AOS-18 | Worker pipeline | TBD | `94fd1aa3-d627-4b19-836c-63060e6aaf99` |
+| AOS-19 | RFC-0005 provider + council | TBD (RFC first) | `005d11e8-6dec-4e16-909a-31d219c087da` |
+| AOS-20 | Doc-staleness (LES-007) | TBD | `c0e4680f-a097-4df5-b42b-3ae36c0364d2` |
+| AOS-21 | Second repository | TBD | `6e472195-6781-4dcf-8eff-ccf1ff11d7de` |
+| AOS-22 | teevee-1 backups | TBD | `50d7bc1c-4f06-4187-b8fa-7a7d8bc10810` |
+| AOS-23 | Knowledge read path | TBD | `5ebbd32a-3bda-4440-9de2-caea817ab7cc` |
 
 Modules (epics): Foundation Runtime `b317c890-f4f2-4727-9822-18cd5f9672e4`; CI/Verification/PR Guardian `70e4eb8e-9d30-4b46-82d6-e06ab35760d7`; Orchestration Engine `437f8047-4ce4-473c-be45-dc4b88fa141d`; Agent Communication Bus `9ad33657-48cd-4d79-a328-dfccd8569232`; Repository Intelligence `05555846-09af-416e-9aa6-1d0b5e8a4209`; Knowledge Vault `1a2b4283-eab9-44c1-a770-441da89892e4`; App Creation Loop `c36805ee-c8eb-48bc-b285-392c3eee86fd`; Dashboard/Operator Console `a0ca9524-38e5-43e1-bff9-e5ad3f79b04d`; Plane Integration `5eb27dc4-5922-4757-8f83-5df0e4fabab5`; Local Agent Runtime/Worktrees `3ae85f73-5f95-4a4f-bc59-e64465bfc804`.
 

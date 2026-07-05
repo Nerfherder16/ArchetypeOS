@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 4 COMPLETE (Self-Healing & Learning Loop, PRs #39-#41); orchestrator handoff pack in review; Sprint 5 awaits operator direction
+- Current sprint: Sprint 5 — Enforcement & Foundations (open, cycle `8bc59801`); Sprint 4 COMPLETE (PRs #39-#42); orchestration now Opus 4.8
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -50,10 +50,12 @@ Every new engineering session should read this before planning or implementation
 - PR #38: Post-merge reconciliation — Sprint 3 / v0.1 closed
 - PR #39: /health graceful degradation (AOS-RUNTIME-004) — Alpha finding #1 closed
 - PR #40: Learning Feedback Loop Phase 1, RFC-0004 (AOS-LEARN-002)
+- PR #41: Guardian evolution — lessons become rules, RFC-0004 Phase 2 (AOS-PRG-003) — **Sprint 4 complete**
+- PR #42: Sprint 4 close-out + Orchestrator Handoff Pack (AOS-ORCH-004) — orchestration → Opus 4.8
 
 ## Current Objective
 
-AOS-ORCH-004 (Sprint 4 close-out + Orchestrator Handoff Pack) in review on this branch — the operating loop made durable for the Fable 5 → Opus 4.8 orchestrator switch: `docs/ORCHESTRATOR_PLAYBOOK.md`, committed `scripts/web_drive/` harness, Board ID Registry backfill. Folds in the PR #41 reconciliation.
+Sprint 5 package 1: AOS-WEB-001 (web Playwright suite, enforced, Plane AOS-16) in review on this branch — promotes the drive harness to `apps/web/e2e/`, adds a CI `web-e2e` job, evolves the guardian to enforce web tests, and retires the accepted-warnings entry before its 2026-08-01 expiry. Folds in the PR #42 reconciliation and the Board ID Registry backfill (AOS-16..23).
 
 ## Active Branch
 
@@ -71,15 +73,15 @@ AOS-ORCH-004 (Sprint 4 close-out + Orchestrator Handoff Pack) in review on this 
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 2
-- Method: docs/scripts-only handoff pack — suite unchanged-green (65/65, ruff/compileall exit 0); Board ID Registry entries verified against Plane at write time; GitHub CI pending after PR creation
-- Evidence: `docs/ORCHESTRATOR_PLAYBOOK.md`; `scripts/web_drive/README.md`; LES-008
-- Limitations: drive harness not CI-wired (web-tests package, hard deadline 2026-08-01 acceptance expiry)
+- Level: Level 4
+- Method: Orchestrator ran the Playwright e2e suite headless in-container (3/3, self-booting API+web stack via `PW_LOCAL_CHROMIUM` seam) + full pytest (67 API + 1 worker) + ruff/compileall exit 0; GitHub CI (incl. new `web-e2e` job) pending after PR creation
+- Evidence: 3/3 e2e specs pass; `.archetype/guardian/accepted_warnings.json` = `[]`; 2 new guardian tests; no hardcoded browser path in committed code
+- Limitations: E2E only (no component tests yet); the web-e2e job installs a browser + boots API/web, adding CI time
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Orchestrator handoff pack (AOS-ORCH-004)
+- Sprint 5 package 1: web Playwright suite, enforced (AOS-WEB-001)
 
 ## Out Of Scope Now
 
@@ -106,7 +108,7 @@ AOS-ORCH-004 (Sprint 4 close-out + Orchestrator Handoff Pack) in review on this 
 
 ## Next Recommended Task
 
-Merge the AOS-ORCH-004 handoff-pack PR, then switch orchestrator models (Opus 4.8, per the transition section in `docs/HANDOFF.md`). Sprint 5 candidates, evidence-ranked: web tests (before the 2026-08-01 acceptance expiry), LES-007 doc-staleness detection, architecture-graph semantics, digest breadth, KnowledgePage API.
+Merge the AOS-WEB-001 PR after CI passes under the Manual Merge Gate. Then Sprint 5 continues: AOS-17 (Alembic migrations) → AOS-18 (worker pipeline); AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) waits for Sprint 6 on the foundations those lay.
 
 ## Required Reading For New Sessions
 

@@ -14,15 +14,15 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Orchestrator (Fable 5) — FINAL Fable 5 package; orchestration hands off to Opus 4.8 after this PR (operator decision, same container/session, model switch)
+Runtime Agent (Opus) under Orchestrator (Opus 4.8) — first package after the Fable 5 → Opus 4.8 orchestrator switch
 
 ### Task
 
-AOS-ORCH-004 — Sprint 4 close-out + Orchestrator Handoff Pack, folding in the AOS-PRG-003 (PR #41) reconciliation
+AOS-WEB-001 — Web Test Framework: Playwright suite, enforced (Plane AOS-16; Sprint 5 package 1), folding in the AOS-ORCH-004 (PR #42) reconciliation + Board ID Registry backfill
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `98914f7`)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `74e9370`)
 
 ### PR
 
@@ -30,7 +30,7 @@ To be opened.
 
 ### Status
 
-In Review. Sprint 4 is COMPLETE: AOS-PRG-003 merged as `98914f7` (PR #41; Plane AOS-15 Done; the CI guardian job ran the evolved code live on its own PR).
+In Review — Playwright suite runs headless (Orchestrator-verified 3/3), guardian evolved to enforce web tests, accepted-warnings retired. Sprint 4 fully closed: AOS-ORCH-004 merged as `74e9370` (PR #42); orchestration is now Opus 4.8.
 
 ### Orchestrator Transition
 
@@ -41,27 +41,30 @@ In Review. Sprint 4 is COMPLETE: AOS-PRG-003 merged as `98914f7` (PR #41; Plane 
 
 ### Completed
 
-- `docs/ORCHESTRATOR_PLAYBOOK.md`: the full package loop as practiced (spec → delegate → independent verify → in-PR state updates → guardian → PR → babysit → gate → reconcile), babysitter recipe with continuation-message pattern, merge-gate template, Level 4 recipes, and the environment quirks registry (Plane MCP 400s, stop-hook noreply false positive, compound-bash kill abort, Playwright executablePath, guardian invocation rules).
-- `scripts/web_drive/`: the Level 4 browser-drive harness committed from session scratchpad (drive.mjs / drive_dec.mjs / drive_digest.mjs + package.json + README with the exact run recipe) — the durable answer to "how do we run the web tests" until the real suite ships.
-- Board ID Registry (`docs/PLANE_PROJECT_BLUEPRINT.md`): Sprint 3/4 cycle IDs + AOS-10..15 issue IDs backfilled; AOS-10's ID fetched from Plane after a from-memory near-miss (LES-008).
-- LES-008 recorded (identifiers are verified, never reconstructed — self-caught during this package).
-- Orchestrator Transition section in this file (boot order + non-negotiables + escalation triggers).
-- PR #41 reconciled (AOS-PRG-003 → Merged; Plane AOS-15 Done; Sprint 4 COMPLETE).
+- `apps/web/e2e/`: 3 `@playwright/test` specs (control-tower, decisions, digest) promoted from the `scripts/web_drive/` seed corpus; `playwright.config.ts` with a two-server `webServer` (self-booting API + web) and a `PW_LOCAL_CHROMIUM` browser seam; `serve-api.sh` (executable) booting a scratch API; `fixtures/demo-repo/` (example.py + Dockerfile so the scanner surfaces Python + the DOCKER_WITHOUT_ENV_TEMPLATE risk flag without committing a real .env).
+- `.github/workflows/ci.yml`: new `web-e2e` job — installs its own Playwright browser and runs the suite headless on ubuntu (sixth CI job).
+- Guardian evolution: `web-tests-not-enforced` now fires only on `apps/web/src/` changed without an `apps/web/e2e/` change (mirrors api/worker; stays WARN); `.archetype/guardian/accepted_warnings.json` retired to `[]`; 2 new guardian tests.
+- LES-009 recorded + indexed (the dated warning-acceptance was a forcing function — it drove this package before the 2026-08-01 expiry).
+- Board ID Registry backfilled: Sprint 5 cycle + AOS-16..23 UUIDs (fetched from Plane, LES-008); cleaned two stale ACTIVE_WORK entries (AOS-ORCH-004 In Review→Merged, duplicate AOS-PRG-003 placeholder) — live LES-007 instances.
+- PR #42 reconciled (AOS-ORCH-004 → Merged; Sprint 4 COMPLETE; orchestration → Opus 4.8).
 
 ### Files changed
 
-- `docs/ORCHESTRATOR_PLAYBOOK.md` (new), `scripts/web_drive/` (new: 3 drives + package.json + README)
-- `docs/PLANE_PROJECT_BLUEPRINT.md` (registry), `docs/CAPABILITY_MAP.md`
-- `knowledge/wiki/lessons/LES-008.md` (new), `knowledge/wiki/lessons/index.md`
+- `apps/web/package.json`, `apps/web/playwright.config.ts` (new), `apps/web/e2e/**` (new: 3 specs + serve-api.sh + fixtures), `apps/web/.gitignore` (new), `apps/web/package-lock.json` (new)
+- `.github/workflows/ci.yml`, `tools/pr_guardian.py`, `.archetype/guardian/accepted_warnings.json`, `apps/api/tests/test_guardian_evolution.py`
+- `knowledge/wiki/lessons/LES-009.md` (new) + `index.md`, `docs/PR_GUARDIAN.md`, `scripts/web_drive/README.md`
+- `docs/PLANE_PROJECT_BLUEPRINT.md` (registry), `.archetype/work/AOS-WEB-001.md` (new spec)
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- Docs/scripts-only (no `apps/`/`tools/` change): `PYTHONPATH=apps/api pytest apps/api/tests -q` → 65 passed unchanged; ruff + compileall exit 0.
+- `PW_LOCAL_CHROMIUM=/opt/pw-browsers/chromium npm run test:e2e` (Orchestrator's own run) → 3/3 specs pass headless
+- `PYTHONPATH=apps/api pytest apps/api/tests -q` → 67 passed; `apps/worker/tests` → 1 passed; ruff + compileall exit 0
 
 ### Known Risks
 
-- The web-drive scripts are point-in-time: they assert on current placeholders/text in `apps/web/src/main.tsx` and will need updating alongside UI changes (documented in their README).
+- E2E specs assert on current `main.tsx` placeholders/text; they'll need updating alongside UI changes (the guardian now enforces that a web-src change ships with an e2e change).
+- The `web-e2e` CI job installs a browser + boots API/web per run, adding wall time; acceptable for the enforcement it buys.
 
 ### Blockers
 
@@ -73,27 +76,27 @@ Verification pending
 
 ### Verification Level
 
-Level 2
+Level 4
 
 ### Verification Method
 
-Docs/scripts-only package — suite unchanged-green locally; registry IDs verified against Plane at write time; GitHub CI pending on the PR; merge under the Manual Merge Gate.
+Orchestrator independently ran the Playwright suite headless in-container (self-booting stack via the `PW_LOCAL_CHROMIUM` seam) — 3/3 pass — plus full pytest (67 API + 1 worker) and ruff/compileall. GitHub CI (incl. the new `web-e2e` job on ubuntu with its own installed browser) pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
-- 65/65 pytest, ruff/compileall exit 0; AOS-10 ID fetched via `get_issue_using_readable_identifier`; playbook facts cross-checked against state docs.
+- 3/3 e2e specs pass; 67 API + 1 worker green; `accepted_warnings.json` = `[]`; 2 new guardian tests; no committed `/opt/pw-browsers` path (env seam only); AOS-16..23 UUIDs fetched via `get_issue_using_readable_identifier`.
 
 ### Limitations
 
-The drive harness is not CI-wired (that is the web-tests package, due before the 2026-08-01 acceptance expiry).
+E2E only — no Vitest component/unit tests yet (candidate for a later package).
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate.
+GitHub CI / PR Guardian (incl. `web-e2e`), then Orchestrator merge review under the Manual Merge Gate.
 
 ### Next Recommended Step
 
-Merge this PR, then switch orchestrator models (Opus 4.8). First Sprint 5 candidates, evidence-ranked: web tests (hard deadline 2026-08-01), LES-007 doc-staleness detection, architecture-graph semantics, digest breadth, KnowledgePage API read path. No Sprint 5 package starts without operator direction.
+Merge the AOS-WEB-001 PR after CI passes. Sprint 5 continues: AOS-17 (Alembic) → AOS-18 (worker pipeline); AOS-21 (second repo) can run in parallel. No new package starts without operator direction.
 
 ## Handoff Template
 

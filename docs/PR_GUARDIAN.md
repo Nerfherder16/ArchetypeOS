@@ -65,7 +65,7 @@ The current implementation blocks when:
 
 The current implementation warns when:
 
-- web source changes without UI tests available yet
+- web source changes (`apps/web/src/`) without matching web e2e test changes (`apps/web/e2e/`) — web tests are now enforced (code `web-tests-not-enforced`); mirrors the api/worker test-coverage checks but stays a WARN, overridable with `PR_GUARDIAN_OVERRIDE_WEB_TESTS`. The Playwright suite lives in `apps/web/e2e/` and runs as the `Web e2e (Playwright)` CI job. This replaces the earlier unconditional "UI tests not yet available" warning; the `web-tests-not-enforced` accepted-warnings entry was retired once real tests existed (LES-006, LES-009).
 - high-risk files such as workflows, compose config, environment example, auth, or secrets-related files change
 - verification status is `Verification pending`
 - verification metadata uses weak placeholders such as `TBD`, `TODO`, `none`, or `n/a`

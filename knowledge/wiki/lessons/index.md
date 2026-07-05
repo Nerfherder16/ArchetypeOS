@@ -38,6 +38,7 @@ Single registry for learning events per RFC-0004. Every guardian BLOCK, CI failu
 | [[LES-006]] | 2026-07-05 | guardian-gap | `MISSING_TESTS` warnings for `apps/web` have fired on every UI package and were never actioned | PRs #27, #34, #36 | closed | AOS-PRG-003: accepted-warnings registry (expires 2026-08-01); web tests still a package candidate |
 | [[LES-007]] | 2026-07-05 | process | Doc staleness is only caught by human review — the one Phase 10 "NO by machine" | Alpha Review Q2 | open | Doc-staleness detection package candidate (Alpha guidance #3) |
 | [[LES-008]] | 2026-07-05 | review-remediation | Opaque identifiers (UUIDs/SHAs) are copied from tool output or fetched at write time — never reconstructed from memory | PR #42 prep, self-caught | closed | Corrected registry row; registry-verification practice; guardian format-check candidate |
+| [[LES-009]] | 2026-07-05 | process | A dated warning-acceptance (`review_by`) is a forcing function — the expiry drove the web-tests package before 2026-08-01 rather than letting the gap persist; the accepted-warnings mechanism (AOS-PRG-003) worked as designed | PR #42 → AOS-WEB-001 | closed | AOS-WEB-001: acceptance retired by real Playwright tests + guardian enforcement |
 
 ## Update rule
 

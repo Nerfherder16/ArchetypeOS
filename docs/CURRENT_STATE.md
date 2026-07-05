@@ -35,10 +35,12 @@ Every new engineering session should read this before planning or implementation
 - PR #23: Knowledge Vault Seed (AOS-KNOW-001)
 - PR #24: Post-merge state reconciliation for AOS-KNOW-001
 - PR #25: Architecture Spine Graph API (AOS-ARCH-001)
+- PR #26: Post-merge state reconciliation for AOS-ARCH-001
+- PR #27: Engineering Control Tower first dashboard surface (AOS-CTRL-001)
 
 ## Current Objective
 
-AOS-CTRL-001 — Engineering Control Tower first dashboard surface (Plane AOS-8) is in review on this branch; PR to be opened. AOS-LOCAL-001 runs on `teevee-1` tomorrow.
+Reconcile state after the PR #27 merge. Next: AOS-LOCAL-001 on `teevee-1` (tomorrow, through the new dashboard); remaining board items are AOS-4 (scan history) and AOS-9 (Plane sync discipline).
 
 ## Active Branch
 
@@ -56,16 +58,16 @@ AOS-CTRL-001 — Engineering Control Tower first dashboard surface (Plane AOS-8)
 ## Verification Status
 
 - Status: Verification pending
-- Level: Level 4
-- Method: local ruff/compileall/pytest (28 API tests) + strict tsc/vite build + headless-Chromium drive of the full dashboard flow against a live API (redis absent); GitHub CI pending after PR creation
-- Evidence: 10/10 browser checks passed (create project, register repo, scan, stored summary after reload, architecture counts, health-failure isolation); screenshot captured
-- Limitations: browser run is a manual Level 4 pass, not CI-repeatable yet
+- Level: Level 1
+- Method: post-merge state-file reconciliation; local PR Guardian on the docs diff; GitHub CI pending after PR creation. AOS-CTRL-001 itself is Verified (Level 4 — CI run 28730415566 plus browser-driven runtime checks).
+- Evidence: state files reconciled to the PR #27 merge (`32399e0`); Plane AOS-8 marked Done
+- Limitations: docs-only change
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- control tower first dashboard surface (AOS-CTRL-001)
-- state updates
+- post-merge state reconciliation for PR #27
+- AOS-LOCAL-001 preparation (tomorrow on `teevee-1`)
 
 ## Out Of Scope Now
 
@@ -81,7 +83,7 @@ AOS-CTRL-001 — Engineering Control Tower first dashboard surface (Plane AOS-8)
 | Decision | Status | Notes |
 | --- | --- | --- |
 | Plane integration depth | Board adopted | Sync discipline = AOS-9. |
-| Agent dashboard implementation | In progress | First control tower surface implemented as AOS-CTRL-001 (in review). |
+| Agent dashboard implementation | First surface shipped | AOS-CTRL-001 merged (PR #27); richer views come after scan history (AOS-4). |
 | Multi-agent live communication | Deferred | Durable artifact communication first. |
 | Verification Engine implementation | Deferred | Protocol and provider abstraction first; automated provider selection later. |
 | Local Level 2 verification | Unblocked | Workstation `teevee-1` available via Tailscale; execute AOS-LOCAL-001 there. |
@@ -92,7 +94,7 @@ AOS-CTRL-001 — Engineering Control Tower first dashboard surface (Plane AOS-8)
 
 ## Next Recommended Task
 
-Merge the AOS-CTRL-001 PR after CI passes under the Manual Merge Gate. Then execute AOS-LOCAL-001 on `teevee-1` (tomorrow), exercising the loop through the new dashboard.
+Merge this state reconciliation PR after CI passes. Tomorrow: execute AOS-LOCAL-001 on `teevee-1` through the new dashboard (first Level 4 verification on the real runtime target).
 
 ## Required Reading For New Sessions
 

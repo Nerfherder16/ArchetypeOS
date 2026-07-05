@@ -163,19 +163,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-CTRL-001 — Engineering Control Tower First Dashboard Surface
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-8 (In Progress)
-- PR: to be opened
+- PR: #27
+- Plane: AOS-8 (Done)
 - Spec: `.archetype/work/AOS-CTRL-001.md`
-- Goal: First real dashboard surface — project create/select, repository register/list, scan trigger, stored scan summary via new `GET /repositories/{id}/dna`, architecture graph counts.
-- Verification Status: Verification pending
-- Verification Level: Level 4
-- Verification Method: local ruff/compileall/pytest (28 API tests incl. 3 new DNA tests) + strict tsc/vite build + Orchestrator-driven headless Chromium run of the full project → register → scan → summary → reload flow against a live API with redis absent (health degradation isolated); GitHub CI pending on PR
-- Evidence: 10/10 browser checks passed; screenshot artifact captured; all local commands exit 0
-- Limitations: no automated UI tests exist in v0.1 (browser run is a manual Level 4 pass, not CI-repeatable yet)
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+- Verification Status: Verified
+- Notes: Level 4 evidence — GitHub CI run 28730415566 all green plus Orchestrator-driven headless-Chromium verification (10/10 checks). Merge commit `32399e0`. Added `GET /repositories/{id}/dna`.
+- Required Next Verifier: None.
 
 ## Blocked Work
 

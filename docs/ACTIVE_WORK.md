@@ -127,33 +127,18 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-KNOW-001 — Knowledge Vault Seed
 
-- Status: In Review
-- Notes: Dependencies satisfied; scanner output shape is documented in `docs/REPOSITORY_SCANNER.md`. Vault built out to the full RFC-0002 / `docs/KNOWLEDGE_VAULT_STRUCTURE.md` shape; content-only change.
+- Status: Merged
 - Owner: Knowledge Agent
-- Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- PR: to be opened
-- Plane: AOS-3
+- PR: #23
+- Plane: AOS-3 (Done update pending — Plane temporarily down at merge time)
 - Spec: `.archetype/work/AOS-KNOW-001.md`
-- Goal: Create initial knowledge vault structure and manifest.
-- Dependencies:
-  - repository registry model
-  - branch isolation/worktree protocol
-  - repository scanner output shape
-- Acceptance Criteria:
-  - `knowledge/` structure exists
-  - manifest schema exists
-  - hot/index/log/overview pages exist
-  - verification metadata recorded in handoff and PR
-- Verification Status: Verification pending
-- Verification Level: Level 1
-- Verification Method: repository inspection of the vault structure against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, plus local PR Guardian run on the diff; GitHub CI pending after PR creation.
-- Evidence: vault tree matches the required structure (`raw/`, `sources/`, `wiki/` with all 10 domain directories plus `hot.md`/`index.md`/`log.md`/`overview.md`, `meta/graph.json`/`lint-report.md`/`dashboard.md`, `templates/page-template.md`, `.manifest.json`); wiki pages refreshed from current state docs; manifest updated.
-- Limitations: content-only change, no executable surface; `KnowledgePage` API read path deferred (table not yet populated by any writer).
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator.
+- Verification Status: Verified
+- Notes: Level 3 GitHub CI evidence in PR #23 (run 28728964219, all 5 jobs green). Merge commit `87fa769`. Vault built out to full RFC-0002 structure; `KnowledgePage` API read path explicitly deferred.
+- Required Next Verifier: None.
 
 ## Blocked Work
 
-- Plane back online; the `ArchetypeOS` Plane project is the live board.
+- Plane is temporarily down again (brief outage noted 2026-07-05 after PR #23 merged); the `ArchetypeOS` Plane project remains the live board when reachable, and these markdown files carry state meanwhile. Pending Plane update when it returns: AOS-3 → Done.
 - Local WSL/Docker Level 2 verification is still listed pending workstation confirmation.
 
 ## Deferred Work

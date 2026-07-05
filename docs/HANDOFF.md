@@ -26,11 +26,11 @@ AOS-KNOW-001 — Knowledge Vault Seed
 
 ### PR
 
-to be opened
+#23 — https://github.com/Nerfherder16/ArchetypeOS/pull/23
 
 ### Status
 
-In Review, pending CI.
+Merged (merge commit `87fa769`).
 
 ### Completed
 
@@ -85,32 +85,33 @@ None applicable (content-only change) beyond local PR Guardian and GitHub CI.
 
 ### Verification Status
 
-Verification pending
+Verified
 
 ### Verification Level
 
-Level 1
+Level 3
 
 ### Verification Method
 
-Repository inspection of the vault structure against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, plus local PR Guardian run on the diff. GitHub CI pending after PR creation.
+GitHub CI workflow run on PR #23 plus repository inspection of the vault tree against `docs/KNOWLEDGE_VAULT_STRUCTURE.md`, JSON validation, and local PR Guardian on the diff.
 
 ### Evidence
 
-- Vault tree matches the required structure (`raw/`, `sources/`, `wiki/` with all 10 domain directories plus `hot.md`/`index.md`/`log.md`/`overview.md`, `meta/graph.json`/`lint-report.md`/`dashboard.md`, `templates/page-template.md`, `.manifest.json`).
-- Wiki pages refreshed from current state docs; manifest updated.
+- CI run 28728964219 on head `d501931`: all 5 jobs concluded success.
+- Manual Merge Gate verification comment posted on PR #23 pinned to `d501931`; merged as `87fa769`.
+- Vault tree matches the required structure; wiki pages refreshed from current state docs; manifest and graph.json parse clean.
 
 ### Limitations
 
-Content-only change, no executable surface. `KnowledgePage` API read path deferred (table not yet populated by any writer).
+Content-only change. Vault pages remain `raw`-status knowledge until validated per the Safety rules. Plane was temporarily down at merge time — AOS-3 → Done board update pending; markdown carries state per the precedence rule. `KnowledgePage` API read path deferred.
 
 ### Required Next Verifier
 
-GitHub CI / PR Guardian, then Orchestrator.
+None for AOS-KNOW-001. The post-merge state reconciliation PR requires GitHub CI / PR Guardian, then Orchestrator review.
 
 ### Next Recommended Step
 
-Open the PR, babysit CI, merge under the Manual Merge Gate, then pick the next Plane item (AOS-4, AOS-5, AOS-7, AOS-8, or AOS-9).
+Merge the post-merge state reconciliation PR after CI passes, push the pending AOS-3 → Done update when Plane returns, then pick the next package (Orchestrator recommendation: AOS-5 — architecture graph API).
 
 ## Handoff Template
 

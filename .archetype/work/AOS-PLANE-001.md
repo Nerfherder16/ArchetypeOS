@@ -2,7 +2,7 @@
 
 ## Status
 
-In Review
+Merged (PR #30, merge commit `12dc5f7`)
 
 ## Verified Baseline
 

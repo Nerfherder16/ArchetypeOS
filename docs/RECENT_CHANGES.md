@@ -53,13 +53,18 @@ It is not a replacement for Git history. It is a human-readable coordination log
 - PR #28: Post-merge state reconciliation for AOS-CTRL-001.
 - PR #29: AOS-RUNTIME-003 — Scan persistence and history (merge commit `7697265`): versioned scan artifact files fixing the rescan overwrite bug, scan history list and stored-report retrieval endpoints; 4 new tests (32 API tests total). Verified at Level 3 (CI run 28730851673, all 5 jobs green).
 
-### In Progress
+### Also Merged (final batch)
 
-- AOS-PLANE-001 — Plane board sync discipline (Plane AOS-9, docs): Sync Discipline section + Board ID Registry in `docs/PLANE_PROJECT_BLUEPRINT.md`; folds in the PR #29 reconciliation.
+- PR #30: AOS-PLANE-001 — Plane board sync discipline (merge commit `12dc5f7`): Sync Discipline + Board ID Registry. Verified at Level 3 (CI run 28731234910, all 5 jobs green).
+- PR #31: exec-bit fix for shell scripts (AOS-LOCAL-001 finding 1).
+
+### AOS-LOCAL-001 Executed
+
+- Operator ran the Level 4 runbook on `teevee-1` (Windows 11 + WSL 2): 6/6 services healthy, `/health` all true with real Redis (first time), dashboard-driven scan loop, two versioned scan artifacts, read-only mount probe rejected with "Read-only file system". Five findings recorded (`.archetype/work/AOS-LOCAL-001.md`); remediations: PR #31 (exec bit) and this branch (hermetic tests, `.env.example` port guidance).
 
 ### Current Work
 
-AOS-PLANE-001 in review on this branch; PR to be opened — closes the remote Sprint 2 board. Tomorrow: AOS-LOCAL-001 on `teevee-1`.
+AOS-LOCAL-001 handoff + remediations in review; Sprint 2 completes when it merges.
 
 ### Why It Matters
 

@@ -1,0 +1,21 @@
+{
+    "id": "41659315-cb62-446a-b572-20d47ac4c3e9",
+    "project_id": "9adaf6c2-cfb2-4be2-aa8b-41f97de1aae1",
+    "repository_id": null,
+    "job_type": "test",
+    "status": "completed",
+    "priority": 100,
+    "payload": {
+        "purpose": "alpha review live job"
+    },
+    "result": {
+        "message": "test job completed",
+        "worker": "archetypeos-worker",
+        "completed_at": "2026-07-05T14:26:05.036597+00:00"
+    },
+    "error": null,
+    "queued_at": "2026-07-05T14:26:05.000882",
+    "started_at": "2026-07-05T14:26:05.016801",
+    "finished_at": "2026-07-05T14:26:05.036616",
+    "attempts": 1
+}

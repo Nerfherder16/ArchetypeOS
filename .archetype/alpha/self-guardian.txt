@@ -1,0 +1,22 @@
+Scanner-informed checks: consulted 3 risk signals.
+# PR Guardian Report
+
+Changed files: 14
+- .archetype/alpha/self-architecture.json
+- .archetype/alpha/self-decisions.json
+- .archetype/alpha/self-digest.json
+- .archetype/alpha/self-dna.json
+- .archetype/alpha/self-health.json
+- .archetype/alpha/self-job.json
+- .archetype/alpha/self-scan.json
+- .archetype/work/AOS-ALPHA-001.md
+- docs/ACTIVE_WORK.md
+- docs/ALPHA_REVIEW_V0_1.md
+- docs/CAPABILITY_MAP.md
+- docs/CURRENT_STATE.md
+- docs/HANDOFF.md
+- docs/RECENT_CHANGES.md
+
+Verdict: PASS_WITH_WARNINGS
+
+- [WARN] verification-pending: Verification is pending. This PR must not merge until the required next verifier records a stronger status.

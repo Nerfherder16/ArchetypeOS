@@ -14,15 +14,15 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Agent
 
-Runtime Agent (Opus) under Orchestrator (Fable 5)
+Orchestrator (Fable 5) — no builder delegation; this package is execution + interpretation, the Orchestrator's verification role
 
 ### Task
 
-AOS-DEC-001 — Decision and Research Artifacts (Plane AOS-10; Sprint 3 package 2), folding in the AOS-PRG-002 (PR #33) reconciliation
+AOS-ALPHA-001 — Phase 10 Alpha Review: ArchetypeOS evaluates ArchetypeOS (Plane AOS-12; Sprint 3 capstone), folding in the AOS-LEARN-001 (PR #36) reconciliation
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw`
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8b39e67`)
 
 ### PR
 
@@ -30,33 +30,30 @@ To be opened.
 
 ### Status
 
-In Review — implementation complete, Level 4 browser verification passed (7/7), PR pending. AOS-PRG-002 merged as `5f0cfdc` (PR #33, Verified via CI incl. live guardian self-test).
+In Review — self-evaluation executed live, review artifact written, PR pending. AOS-LEARN-001 merged as `8b39e67` (PR #36, Verified at Level 4; Plane AOS-11 Done).
 
 ### Completed
 
-- Nine routes: create/list/read for decisions, research notes, recommendations over the existing models; 404 conventions matched.
-- Scope-lock rules enforced: recommendations require non-empty evidence (422); decision research links validated (existence + same project) and stored as typed research_note evidence entries — no schema changes.
-- Dashboard "Decisions & Research" section: three lists + two create forms with research-note link select; per-section error isolation.
-- 6 new API tests (46 total); browser drive 7/7 including API confirmation of the typed evidence link.
-- PR #33 reconciled (AOS-PRG-002 → Merged; Plane AOS-6 Done).
+- Full v0.1 loop run against this repository through the public API (`REPOSITORY_ROOT=/home/user`, sqlite, real Redis): register, two self-scans (versioned artifacts), DNA, architecture graph, research note + two decisions from live findings, digest twice, end-to-end worker job, health probed with and without Redis.
+- All five Phase 10 questions answered with evidence in `docs/ALPHA_REVIEW_V0_1.md`; captures committed under `.archetype/alpha/`.
+- Live defect found and recorded as a linked decision: `GET /health` 500s when Redis is unreachable.
+- Learning loop validated: digest caught the deliberately unlinked decision as a draft-only suggestion; repeated-task detection counted 2 scans.
+- PR #36 reconciled (AOS-LEARN-001 → Merged; Plane AOS-11 Done; AOS-12 In Progress).
 
 ### Files changed
 
-- `apps/api/app/main.py`, `apps/api/app/schemas.py`
-- `apps/api/tests/test_decisions_api.py`
-- `apps/web/src/api.ts`, `apps/web/src/main.tsx`
-- `.archetype/work/AOS-DEC-001.md`, `.archetype/work/AOS-PRG-002.md`
+- `docs/ALPHA_REVIEW_V0_1.md` (new), `.archetype/alpha/` (new captures)
+- `.archetype/work/AOS-ALPHA-001.md` (new spec)
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- `PYTHONPATH=apps/api pytest apps/api/tests -q` -> 46 passed
-- `python3 -m ruff check apps/api tools` -> exit 0; compileall -> exit 0; `npm run build` -> exit 0
-- Headless-Chromium drive: 7/7 (create research note + linked decision via forms, lists, reload persistence, typed evidence entry verified via API)
+- No code changes; `PYTHONPATH=apps/api pytest apps/api/tests -q` re-run required green (52 passed) before push
+- Guardian self-run captured to `.archetype/alpha/self-guardian.txt`
 
 ### Known Risks
 
-- Manifest basename list in the guardian is intentionally self-contained and could drift from the scanner's MANIFEST_KINDS if ecosystems are added; documented in code.
+- Alpha findings are recorded as decisions, not fixed in-package (scope: read-only evaluation). The /health defect remains live until the post-v0.1 fix package.
 
 ### Blockers
 
@@ -68,19 +65,20 @@ Verification pending
 
 ### Verification Level
 
-Level 2
+Level 4
 
 ### Verification Method
 
-Local ruff/compileall/pytest + strict tsc/vite build + Orchestrator-driven headless-Chromium run of the new section against live uvicorn+SQLite. GitHub CI pending on the PR.
+The review is itself the Level 4 run: every artifact produced by live API calls against the running system on the declared self-target. GitHub CI (Level 3) pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
-- 46/46 tests green; builds exit 0; 7/7 browser checks; screenshot captured.
+- `.archetype/alpha/self-scan.json`, `self-dna.json`, `self-architecture.json`, `self-decisions.json`, `self-digest.json`, `self-job.json`, `self-health.json`, `self-guardian.txt`
+- `docs/ALPHA_REVIEW_V0_1.md` conformance table: 11/11 v0.1 acceptance criteria assessed, all Met (one "Met with defect")
 
 ### Limitations
 
-Browser drive is a manual Level 4 pass, not CI-repeatable. Level 3 pending.
+Dashboard leg covered by the PR #36 browser drive (same code, hours earlier) rather than re-driven. Deterministic evaluation only per scope lock.
 
 ### Required Next Verifier
 
@@ -88,7 +86,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge the AOS-DEC-001 PR after CI passes. Loop continues: AOS-LEARN-001 (Plane AOS-11), then AOS-ALPHA-001 (AOS-12) close Sprint 3 and v0.1.
+Merge the AOS-ALPHA-001 PR — that closes Sprint 3 and v0.1. Then pick post-v0.1 work from the Alpha Review's Next Development Guidance (first: /health Redis degradation fix, decision already recorded).
 
 ## Handoff Template
 

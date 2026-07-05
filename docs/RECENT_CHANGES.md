@@ -75,9 +75,13 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 - PR #35: `/guardian` command (`.claude/commands/guardian.md`) — one shared guardian invocation for local, remote, and workstation sessions; dogfooded live in-session before merge (merge commit `c006d35`).
 
+### Sprint 3 Merged (continued 2)
+
+- PR #36: AOS-LEARN-001 — nightly learning digest, manual run (merge commit `8b39e67`): POST /projects/{id}/digests with deterministic aggregation (changes, repeated tasks, draft-only recommendations from four rules), list/read endpoints, dashboard Run Digest section; 6 new tests (52 total). Verified at Level 4 (CI run 28743687095 + 7/7 browser drive). Phase 7 scope-lock criteria closed.
+
 ### In Progress
 
-- AOS-LEARN-001 — nightly digest (Plane AOS-11): POST /projects/{id}/digests with deterministic aggregation (changes, repeated tasks, draft-only recommendations from four rules), list/read endpoints, dashboard Run Digest section; 6 new tests (52 total); browser drive 7/7; "Nightly digest view" placeholder retired.
+- AOS-ALPHA-001 — Phase 10 Alpha Review (Plane AOS-12, Sprint 3 capstone): ArchetypeOS ran its full v0.1 loop against its own repository through the public API — two self-scans, DNA, architecture graph, decisions from live findings (incl. the /health-without-Redis 500), digest that caught a genuinely unlinked decision, end-to-end worker job via real Redis, guardian self-run. Artifact: `docs/ALPHA_REVIEW_V0_1.md` + `.archetype/alpha/` captures. Merging closes v0.1.
 
 ### AOS-LOCAL-001 Executed
 
@@ -85,7 +89,7 @@ It is not a replacement for Git history. It is a human-readable coordination log
 
 ### Current Work
 
-AOS-LEARN-001 in review on this branch; PR to be opened. Only AOS-ALPHA-001 (Alpha Review) remains for v0.1.
+AOS-ALPHA-001 (Alpha Review) in review on this branch; PR to be opened. It is the last v0.1 package — merge completes Sprint 3.
 
 ### Why It Matters
 

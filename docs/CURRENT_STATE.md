@@ -45,10 +45,11 @@ Every new engineering session should read this before planning or implementation
 - PR #33: PR Guardian reads repository scanner output (AOS-PRG-002)
 - PR #34: Decision and Research artifacts (AOS-DEC-001)
 - PR #35: /guardian Claude Code command
+- PR #36: Nightly learning digest, manual run (AOS-LEARN-001)
 
 ## Current Objective
 
-Sprint 3 package 3: AOS-LEARN-001 (nightly digest, Plane AOS-11) in review on this branch, folding in the PR #35 reconciliation. Only AOS-ALPHA-001 (Alpha Review) remains for v0.1.
+Sprint 3 capstone: AOS-ALPHA-001 (Phase 10 Alpha Review, Plane AOS-12) in review on this branch — ArchetypeOS evaluated ArchetypeOS through its own API; review artifact at `docs/ALPHA_REVIEW_V0_1.md`. Folds in the PR #36 reconciliation. Merging it completes Sprint 3 and v0.1.
 
 ## Active Branch
 
@@ -67,14 +68,14 @@ Sprint 3 package 3: AOS-LEARN-001 (nightly digest, Plane AOS-11) in review on th
 
 - Status: Verification pending
 - Level: Level 4
-- Method: local ruff/compileall/pytest (52 API tests incl. 6 new digest tests) + strict tsc/vite build + headless-Chromium drive of the Nightly Digest section (7/7 checks); GitHub CI pending after PR creation
-- Evidence: exit codes 0; browser drive confirmed run-digest, summary counts, draft recommendation rendering, placeholder retirement, reload persistence
-- Limitations: browser drive is a manual Level 4 pass; aggregation deterministic-only per scope lock
+- Method: live self-evaluation run through the public API (two self-scans with versioned artifacts, DNA, architecture graph, decisions with typed research evidence, digest with draft-only assertion, worker job end-to-end via real Redis, health probed with and without Redis, guardian self-run); no code changes so the 52-test suite must remain green; GitHub CI pending after PR creation
+- Evidence: `.archetype/alpha/` captured outputs; `docs/ALPHA_REVIEW_V0_1.md` five-question answers + conformance table
+- Limitations: dashboard leg relies on the PR #36 browser drive; deterministic evaluation only per scope lock
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 3 package 3: nightly digest (AOS-LEARN-001)
+- Sprint 3 capstone: Phase 10 Alpha Review (AOS-ALPHA-001)
 
 ## Out Of Scope Now
 
@@ -101,7 +102,7 @@ Sprint 3 package 3: AOS-LEARN-001 (nightly digest, Plane AOS-11) in review on th
 
 ## Next Recommended Task
 
-Merge the AOS-LEARN-001 PR after CI passes under the Manual Merge Gate. Then AOS-ALPHA-001 (Alpha Review) — the final v0.1 package.
+Merge the AOS-ALPHA-001 PR after CI passes under the Manual Merge Gate — that closes Sprint 3 and v0.1. Post-v0.1 candidates are ranked in `docs/ALPHA_REVIEW_V0_1.md` (Next Development Guidance): /health Redis degradation fix first.
 
 ## Required Reading For New Sessions
 

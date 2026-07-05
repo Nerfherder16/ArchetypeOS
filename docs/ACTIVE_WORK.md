@@ -289,19 +289,30 @@ Cycle `8bc59801-82c5-4550-b188-9f15323a1ddc`. Operator-approved order: AOS-16 (w
 
 ### AOS-WEB-001 — Web Test Framework: Playwright Suite, Enforced
 
+- Status: Merged
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- PR: #43
+- Plane: AOS-16 (Done)
+- Spec: `.archetype/work/AOS-WEB-001.md`
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28750193960 all 6 jobs green incl. the new `web-e2e` job running Playwright on ubuntu, plus Orchestrator's own headless run (3/3). Merge commit `821171e`. Guardian enforces web tests; accepted-warnings retired; LES-006 deadline closed early; LES-009 recorded.
+- Required Next Verifier: None.
+
+### AOS-ALEMBIC-001 — Adopt Alembic Migrations (Baseline)
+
 - Status: In Review
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 - Branch: `claude/aos-runtime-002-scanner-1egyjw`
-- Plane: AOS-16 (In Progress, urgent, target 2026-07-28), Sprint 5 cycle
+- Plane: AOS-17 (In Progress, high), Sprint 5 cycle
 - PR: to be opened
-- Spec: `.archetype/work/AOS-WEB-001.md`
-- Goal: promote the `scripts/web_drive/` seed corpus to a real `@playwright/test` suite in `apps/web/e2e/`, wire a CI `web-e2e` job, and evolve the guardian so `web-tests-not-enforced` fires only on web source changed without an e2e change — retiring the accepted-warnings entry rather than renewing it. Closes LES-006's deadline; records LES-009.
+- Spec: `.archetype/work/AOS-ALEMBIC-001.md`
+- Goal: adopt Alembic with a model-driven baseline migration (all 20 current tables, NO schema change); container entrypoint runs `alembic upgrade head` before uvicorn (hard-fails on migration error); migration discipline documented. Unblocks council tables (AOS-19), lessons/knowledge API (AOS-23), portfolio schema.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator ran the Playwright suite headless in-container (3/3, `PW_LOCAL_CHROMIUM` seam) + full pytest (67 API + 1 worker) + ruff/compileall; GitHub CI (incl. new web-e2e job) pending on PR
-- Evidence: 3/3 e2e specs pass; accepted_warnings.json = []; 2 new guardian tests; no hardcoded browser path in committed code
-- Limitations: E2E only (no Vitest component tests yet); web-e2e job adds ~CI time
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator
+- Verification Method: Orchestrator independently ran the sqlite round-trip — `alembic upgrade head` (21 tables), no-drift autogenerate (0 schema ops), `downgrade base` (clean) — plus full pytest (67 API + 1 worker) + ruff/compileall; CI compose-smoke (real Postgres, entrypoint + baseline) pending on PR as the authoritative proof
+- Evidence: no-drift probe = 0 op operations; 20 create_table in baseline; `import app.models` present; entrypoint hard-fails on error
+- Limitations: baseline generated/verified on sqlite locally (model-driven DDL is portable; Postgres proven by CI compose-smoke); `init_db()` create_all kept as an idempotent sqlite-dev safety net
+- Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator
 
 ## Blocked Work
 

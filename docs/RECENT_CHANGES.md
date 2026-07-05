@@ -109,11 +109,15 @@ Operator-approved principle: every PR, learning moment, and failure ties back in
 
 ### Sprint 5 Opened — Enforcement & Foundations
 
-Cycle `8bc59801`. Operator-approved order: AOS-16 web tests (deadline 2026-08-01) → AOS-17 Alembic → AOS-18 worker pipeline; AOS-21 second repo parallel. First package under the Opus 4.8 orchestrator; Board ID Registry backfilled with AOS-16..23 (UUIDs fetched from Plane, LES-008).
+Cycle `8bc59801`. Operator-approved order: AOS-16 web tests (deadline 2026-08-01) → AOS-17 Alembic → AOS-18 worker pipeline; AOS-21 second repo parallel. First sprint under the Opus 4.8 orchestrator; Board ID Registry backfilled with AOS-16..23 (UUIDs fetched from Plane, LES-008).
+
+### Sprint 5 Merged
+
+- PR #43: AOS-WEB-001 — Playwright e2e suite, enforced (merge commit `821171e`): the `scripts/web_drive/` seed corpus promoted to a real `@playwright/test` suite at `apps/web/e2e/` (3 specs), a new CI `web-e2e` job running it headless on ubuntu, and a guardian evolution (`web-tests-not-enforced` fires only on web source without an `apps/web/e2e/` change; accepted-warnings retired to `[]`). Portable browser resolution via a `PW_LOCAL_CHROMIUM` env seam. Verified at Level 4 — CI run 28750193960 all 6 jobs green + Orchestrator's own headless run (3/3). LES-006 deadline closed 26 days early; LES-009 recorded.
 
 ### Current Work
 
-AOS-WEB-001 in review on this branch — the `scripts/web_drive/` seed corpus promoted to a real `@playwright/test` suite at `apps/web/e2e/` (3 specs), a new CI `web-e2e` job running it headless, and a guardian evolution: `web-tests-not-enforced` now fires only on web source changed without an `apps/web/e2e/` change, and the accepted-warnings entry is retired to `[]` before its 2026-08-01 expiry. Portable browser resolution via a `PW_LOCAL_CHROMIUM` env seam (no container path committed). Orchestrator ran the suite headless independently (3/3); 67 API + 1 worker tests green. Records LES-009 (the dated-acceptance forcing function worked).
+AOS-ALEMBIC-001 in review on this branch — Alembic adopted with a model-driven baseline migration (`apps/api/alembic/versions/0001_baseline.py`) reproducing the current 20-table schema exactly (no schema change; the no-drift autogenerate probe emits zero schema ops). The api container entrypoint (`docker-entrypoint.sh`) runs `alembic upgrade head` before uvicorn and hard-fails on migration error, so a broken migration is surfaced by compose-smoke rather than masked; `init_db()` create_all stays as a sqlite-dev safety net. Migration discipline (incl. the one-time `alembic stamp head` for teevee-1's populated DB) documented in `docs/DATABASE_MIGRATIONS.md`. Orchestrator independently verified the sqlite round-trip (upgrade→21 tables, no-drift, downgrade→clean); 67 API + 1 worker green. Unblocks the schema-dependent packages.
 
 ### Why It Matters
 

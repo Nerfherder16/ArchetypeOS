@@ -52,10 +52,11 @@ Every new engineering session should read this before planning or implementation
 - PR #40: Learning Feedback Loop Phase 1, RFC-0004 (AOS-LEARN-002)
 - PR #41: Guardian evolution — lessons become rules, RFC-0004 Phase 2 (AOS-PRG-003) — **Sprint 4 complete**
 - PR #42: Sprint 4 close-out + Orchestrator Handoff Pack (AOS-ORCH-004) — orchestration → Opus 4.8
+- PR #43: Playwright e2e suite, enforced (AOS-WEB-001) — web tests real + guardian-enforced; LES-006 deadline closed early
 
 ## Current Objective
 
-Sprint 5 package 1: AOS-WEB-001 (web Playwright suite, enforced, Plane AOS-16) in review on this branch — promotes the drive harness to `apps/web/e2e/`, adds a CI `web-e2e` job, evolves the guardian to enforce web tests, and retires the accepted-warnings entry before its 2026-08-01 expiry. Folds in the PR #42 reconciliation and the Board ID Registry backfill (AOS-16..23).
+Sprint 5 package 2: AOS-ALEMBIC-001 (adopt Alembic, Plane AOS-17) in review on this branch — a model-driven baseline migration for the current 20 tables (no schema change), the container entrypoint running `alembic upgrade head` before uvicorn, and a documented migration discipline. Folds in the PR #43 reconciliation. Unblocks the schema-dependent packages (council, lessons/knowledge API, portfolio).
 
 ## Active Branch
 
@@ -74,14 +75,14 @@ Sprint 5 package 1: AOS-WEB-001 (web Playwright suite, enforced, Plane AOS-16) i
 
 - Status: Verification pending
 - Level: Level 4
-- Method: Orchestrator ran the Playwright e2e suite headless in-container (3/3, self-booting API+web stack via `PW_LOCAL_CHROMIUM` seam) + full pytest (67 API + 1 worker) + ruff/compileall exit 0; GitHub CI (incl. new `web-e2e` job) pending after PR creation
-- Evidence: 3/3 e2e specs pass; `.archetype/guardian/accepted_warnings.json` = `[]`; 2 new guardian tests; no hardcoded browser path in committed code
-- Limitations: E2E only (no component tests yet); the web-e2e job installs a browser + boots API/web, adding CI time
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Method: Orchestrator independently ran the Alembic sqlite round-trip — `upgrade head` (21 tables), no-drift autogenerate (0 schema ops — baseline matches models exactly), `downgrade base` (clean) — plus full pytest (67 API + 1 worker) + ruff/compileall exit 0; CI compose-smoke (real Postgres via the new entrypoint + baseline) pending after PR creation as the authoritative proof
+- Evidence: no-drift probe = 0 op operations; baseline = 20 create_table + `import app.models`; entrypoint hard-fails on migration error
+- Limitations: baseline verified on sqlite locally (model-driven DDL is portable; Postgres proven by CI); `init_db()` create_all retained as a sqlite-dev safety net
+- Required Next Verifier: GitHub CI (compose-smoke) / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Sprint 5 package 1: web Playwright suite, enforced (AOS-WEB-001)
+- Sprint 5 package 2: adopt Alembic migrations, baseline (AOS-ALEMBIC-001)
 
 ## Out Of Scope Now
 
@@ -108,7 +109,7 @@ Sprint 5 package 1: AOS-WEB-001 (web Playwright suite, enforced, Plane AOS-16) i
 
 ## Next Recommended Task
 
-Merge the AOS-WEB-001 PR after CI passes under the Manual Merge Gate. Then Sprint 5 continues: AOS-17 (Alembic migrations) → AOS-18 (worker pipeline); AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) waits for Sprint 6 on the foundations those lay.
+Merge the AOS-ALEMBIC-001 PR after CI passes under the Manual Merge Gate. Then Sprint 5 continues: AOS-18 (worker pipeline); AOS-21 (second repo) can run in parallel. Council (AOS-19, RFC-0005) waits for Sprint 6 on the foundations Alembic + the worker lay.
 
 ## Required Reading For New Sessions
 

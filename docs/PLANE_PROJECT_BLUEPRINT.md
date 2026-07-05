@@ -141,7 +141,7 @@ Work items:
 | AOS-14 | AOS-LEARN-002 | `.archetype/work/AOS-LEARN-002.md` | `6f232f60-ae61-46bb-9e81-f0829017c6fd` |
 | AOS-15 | AOS-PRG-003 | `.archetype/work/AOS-PRG-003.md` | `7dcfda25-eb2b-4937-8b6d-717d09f34d80` |
 | AOS-16 | AOS-WEB-001 | `.archetype/work/AOS-WEB-001.md` | `a55bbffc-71cc-4d38-8056-804b56e77cef` |
-| AOS-17 | Alembic migrations | TBD | `af8e70b1-7e7d-496c-a417-5d06ca35e053` |
+| AOS-17 | AOS-ALEMBIC-001 | `.archetype/work/AOS-ALEMBIC-001.md` | `af8e70b1-7e7d-496c-a417-5d06ca35e053` |
 | AOS-18 | Worker pipeline | TBD | `94fd1aa3-d627-4b19-836c-63060e6aaf99` |
 | AOS-19 | RFC-0005 provider + council | TBD (RFC first) | `005d11e8-6dec-4e16-909a-31d219c087da` |
 | AOS-20 | Doc-staleness (LES-007) | TBD | `c0e4680f-a097-4df5-b42b-3ae36c0364d2` |

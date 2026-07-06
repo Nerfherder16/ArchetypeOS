@@ -56,6 +56,9 @@ MANIFEST_FILES = {
     "poetry.lock": "poetry",
     "Cargo.toml": "cargo",
     "go.mod": "go",
+    "pom.xml": "maven",
+    "build.gradle": "gradle",
+    "build.gradle.kts": "gradle",
 }
 
 MANIFEST_KINDS = {
@@ -73,7 +76,16 @@ MANIFEST_KINDS = {
     "alembic.ini": "python_migration",
     ".env.example": "env_template",
     ".env.sample": "env_template",
+    "pom.xml": "jvm",
+    "build.gradle": "jvm",
+    "build.gradle.kts": "jvm",
 }
+
+# Suffix-based manifest maps for ecosystems whose filenames are not fixed
+# (e.g. "Api.csproj" for .NET). A file matches this branch only when its
+# basename is not already in MANIFEST_KINDS/MANIFEST_FILES.
+MANIFEST_SUFFIX_KINDS = {".csproj": "dotnet", ".sln": "dotnet"}
+MANIFEST_SUFFIX_FILES = {".csproj": "dotnet", ".sln": "dotnet"}
 
 DEPLOYMENT_FILES = {"Dockerfile", "docker-compose.yml", "compose.yml", "kubernetes.yml", "helmfile.yaml"}
 COMPOSE_FILES = {"docker-compose.yml", "docker-compose.yaml", "compose.yml", "compose.yaml"}
@@ -118,9 +130,10 @@ BUILD_ARTIFACT_DIRS = {"dist", "build", ".next"}
 TEST_DIR_NAMES = {"tests", "test", "__tests__"}
 SECRET_NAMES = {"id_rsa", "id_dsa", "id_ed25519", "credentials.json", "service-account.json"}
 SECRET_SUFFIXES = {".pem", ".key"}
+TEST_FIXTURE_DIRS = {"testdata", "tests", "test", "fixtures", "__tests__", "spec", "testfixtures"}
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx"}
 ENV_TEMPLATE_NAMES = {".env.example", ".env.sample"}
-ECOSYSTEM_KINDS = {"python", "node", "rust", "go"}
+ECOSYSTEM_KINDS = {"python", "node", "rust", "go", "dotnet", "jvm"}
 
 # Classifies each EXTENSIONS language into a coarse role so a config/docs-heavy
 # repo is not misreported as (say) YAML- or Markdown-primary (LES-013). Only the
@@ -346,6 +359,11 @@ def _is_ignored_dir(name: str) -> bool:
     return name in IGNORED_DIRS or name.endswith(".egg-info")
 
 
+def _is_test_fixture_path(rel: str) -> bool:
+    """Return True if any path component of *rel* names a test-fixture directory."""
+    return any(part in TEST_FIXTURE_DIRS for part in rel.split("/"))
+
+
 def _docker_kind(name: str) -> str | None:
     if name == "Dockerfile" or name.startswith("Dockerfile."):
         return "dockerfile"
@@ -421,8 +439,14 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
 
         if name in MANIFEST_FILES:
             package_managers.add(MANIFEST_FILES[name])
+        elif suffix in MANIFEST_SUFFIX_FILES:
+            package_managers.add(MANIFEST_SUFFIX_FILES[suffix])
         if name in MANIFEST_KINDS:
             kind = MANIFEST_KINDS[name]
+            manifests.append({"path": rel, "kind": kind})
+            manifest_kinds.add(kind)
+        elif suffix in MANIFEST_SUFFIX_KINDS:
+            kind = MANIFEST_SUFFIX_KINDS[suffix]
             manifests.append({"path": rel, "kind": kind})
             manifest_kinds.add(kind)
 
@@ -449,7 +473,7 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
         if name in SECRET_NAMES or suffix in SECRET_SUFFIXES:
             signals.append(
                 {
-                    "severity": "warning",
+                    "severity": "info" if _is_test_fixture_path(rel) else "warning",
                     "code": "SECRET_LIKE_FILENAME",
                     "path": rel,
                     "message": "Secret-like filename detected; ensure credentials are not committed",

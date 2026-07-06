@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-SCAN-PRECISION-001 — Scanner precision (manifest breadth + secret-signal fixture awareness)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator) — scanner claimed with operator OK (remote is on the Reuse view; `repository_scanner.py` was untouched since AOS-DISTILL-003)
+- Branch: `laptop/aos-scanner-precision` (cut from `origin/main` @ `5317dcf`)
+- Summary: Closes **LES-016** and **LES-017**. LES-016: broaden manifest/ecosystem detection beyond python/node/go — JVM basenames (`pom.xml`/`build.gradle`/`build.gradle.kts` → `jvm`/maven+gradle), .NET **suffix** manifests (`.csproj`/`.sln` → `dotnet`), and `dotnet`/`jvm` added to `ECOSYSTEM_KINDS` (rust `Cargo.toml` already covered). LES-017: `SECRET_LIKE_FILENAME` is now test-fixture-aware — downgraded to `severity="info"` (dropped from `risk_flags`/DNA) for paths under `testdata`/`tests`/`fixtures`/… so legit test certs stop false-flagging; still emitted, just non-warning. Scanner-only (`repository_scanner.py` + `test_scanner.py`); the guardian's separate overridable secret-block is intentionally unchanged (never-weaken). Guardian `SCANNER_MANIFEST_BASENAMES` mirror parity noted as follow-up. Spec: `.archetype/work/AOS-SCAN-PRECISION-001.md`.
+- Verification Status: TDD (RED→GREEN) by a python builder, Orchestrator-verified independently — 23 scanner tests pass, ruff full CI scope + compileall clean; self-scan of this repo unchanged (no .NET/JVM here, no misfire); 2 new tests pin dotnet/jvm/rust detection + fixture-aware secret downgrade.
+- Required Next Verifier: GitHub CI then Manual Merge Gate.
+
 ### AOS-COUNCIL-002 — Agent Council dashboard (Control Tower read surface)
 
 - Status: In Review

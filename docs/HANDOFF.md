@@ -26,7 +26,7 @@ AOS-DISTILL-003 — Package 1 of the distillation mature-state arc: deterministi
 
 ### PR
 
-#66 — **Merged** as `10242e4` (Package 3). Prior: #65 as `b62c6c6`; #64 as `c6f5d61`; #63 as `1d8eb0f`. Branch restarted from main at `10242e4`. **The distillation→transfer arc is mature end-to-end; paused for operator direction on the remaining RFC-0009 increments.**
+RFC-0010 (Embedding Relevance Tier) docs PR being opened. Prior merged: #67 (docs: roadmap + Plane board reconciliation, `b4dde07`), #66 (Package 3, `10242e4`), #65 (`b62c6c6`), #64 (`c6f5d61`), #63 (`1d8eb0f`). Branch restarted from main at `b4dde07`. **RFC-0009 embeddings kicked off (operator-chosen mature target: sentence-transformers/torch + pgvector); an open verification question (Postgres CI test vs live-only) is with the operator. Tandem: a laptop Orchestrator session works AOS-20 (doc-staleness) on its own branch; shared board = Plane AOS.**
 
 ### Status
 

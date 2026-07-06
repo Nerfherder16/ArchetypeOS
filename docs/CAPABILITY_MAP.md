@@ -147,9 +147,9 @@ Capabilities:
 - Strategy Engine
 - Portfolio Knowledge Marketplace
 - Knowledge Transfer Engine
-- Agent Council (backend seed: four MVP agents produce structured, persisted, evidence-bearing outputs)
+- Agent Council (backend seed: four MVP agents produce structured, persisted, evidence-bearing outputs; validated on real external code — first live run over pydantic-ai correctly abstained)
 - Final Judge synthesis (deterministic, rule-based verdict + abstention over agent outputs)
-- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend)
+- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018)
 
 Primary artifacts:
 
@@ -161,6 +161,7 @@ Primary artifacts:
 - templates/recommendation_card.md
 - templates/adr.md
 - docs/rfc/RFC-0005-Intelligence-Layer-Agent-Council-Final-Judge.md
+- docs/COUNCIL_REALRUN_PYDANTIC_AI.md (first real Council run — reality test + honest gaps)
 - docs/LLM_PROVIDER_ABSTRACTION.md
 - docs/ARBITER_FINAL_JUDGE.md (verdict set + abstention rule the Final Judge encodes)
 - packages/aos_core/aos_core/llm/ (Provider protocol + DeterministicProvider + ClaudeCodeProvider)

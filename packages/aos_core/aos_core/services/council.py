@@ -203,17 +203,63 @@ def _coerce_list(value) -> list:
     return [value]
 
 
+def _loads_tolerant(text: str):
+    """Best-effort parse of provider text into a JSON object.
+
+    Real Claude output (``claude -p --output-format json`` → ``.result``) often
+    wraps the structured answer in a Markdown code fence (```` ```json … ``` ````)
+    or prefixes it with prose, which defeats a bare ``json.loads``. Layered
+    recovery (LES-018, self-found on the first real Council run over pydantic-ai):
+
+    1. parse as-is,
+    2. strip a leading/trailing Markdown code fence and re-parse,
+    3. slice from the first ``{`` to the last ``}`` and re-parse.
+
+    Returns the decoded ``dict`` or ``None`` if no layer yields a JSON object.
+    """
+
+    def _try(candidate: str):
+        try:
+            obj = json.loads(candidate)
+        except Exception:
+            return None
+        return obj if isinstance(obj, dict) else None
+
+    stripped = text.strip()
+    for candidate in (stripped, _strip_code_fence(stripped)):
+        obj = _try(candidate)
+        if obj is not None:
+            return obj
+
+    fenceless = _strip_code_fence(stripped)
+    start, end = fenceless.find("{"), fenceless.rfind("}")
+    if start != -1 and end > start:
+        obj = _try(fenceless[start : end + 1])
+        if obj is not None:
+            return obj
+    return None
+
+
+def _strip_code_fence(text: str) -> str:
+    """Remove a single leading/trailing Markdown code fence, if present."""
+    s = text.strip()
+    if not s.startswith("```"):
+        return s
+    lines = s.splitlines()
+    lines = lines[1:]  # drop the opening ```/```json line
+    if lines and lines[-1].strip().startswith("```"):
+        lines = lines[:-1]  # drop the closing fence
+    return "\n".join(lines).strip()
+
+
 def _parse_agent_output(text: str) -> dict:
     """Tolerantly parse a provider's text into the agent-output shape.
 
     Unparseable prose → ``status="Needs Evidence"``, low confidence, raw text in
     ``summary``, empty lists. Both providers flow through this one parser.
     """
-    try:
-        obj = json.loads(text)
-        if not isinstance(obj, dict):
-            raise ValueError("not a JSON object")
-    except Exception:
+    obj = _loads_tolerant(text)
+    if obj is None:
         return {
             "summary": text.strip(),
             "findings": [],

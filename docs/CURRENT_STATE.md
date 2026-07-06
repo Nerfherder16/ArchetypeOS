@@ -92,7 +92,7 @@ Every new engineering session should read this before planning or implementation
 
 ## In Scope Now
 
-- Nothing active. **Definitive-roadmap reevaluation** is the next deliverable (advisory) — then operator picks the next build package.
+- **AOS-COUNCIL-PHASEA (PR open)** — the reality test for Intelligence Phase 1: the RFC-0005 Agent Council run over `pydantic/pydantic-ai` with the **live `claude_code` provider** (4 agents, real Claude reasoning). It returned a **constitution-faithful abstention** (`Insufficient evidence`, conf 0.0375) — refusing to manufacture an adoption verdict it couldn't support — and surfaced two honest gaps: **LES-018** (fenced-JSON parse defect, **fixed here** — live model wraps JSON in a ` ```json ` fence that a bare `json.loads` drops) and **LES-019** (evidence-class mismatch — a structural scan is the wrong evidence for an adoption question; input for the Phase C decision loop). Ships the captured review + evaluation doc + both lessons + the `_loads_tolerant` parser fix and 4 regression tests.
 
 ## Out Of Scope Now
 

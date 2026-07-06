@@ -12,9 +12,10 @@ distilled summary lives in :attr:`RepositoryDNA.purpose`, the technologies in th
 DNA (``language_mix`` keys + ``package_managers`` + ``frameworks``), and the
 repository :class:`~aos_core.models.KnowledgePage` (``page_type="repository"``)
 carries the ``title`` + the ``vault_path`` we cite as evidence. Relevance is a
-**deterministic lexical** score — normalized token overlap (Jaccard) plus a light
-technology-match boost. No model, no network — CI-runnable and reproducible
-(embeddings are the deferred enhancement behind this same scoring seam).
+**deterministic lexical** score — **need coverage**: the fraction of the target
+need's meaningful terms the candidate covers (via its text or its technologies).
+No model, no network — CI-runnable and reproducible (embeddings are the deferred
+enhancement behind this same scoring seam).
 
 Tolerant: an empty portfolio / empty need / missing DNA yields ``[]`` and never
 raises out of :func:`recommend_reuse`.
@@ -29,10 +30,6 @@ from sqlalchemy.orm import Session
 from ..models import KnowledgePage, Repository
 
 _PAGE_TYPE = "repository"
-
-# Technology matches count extra (they are strong reuse signals). The boost is
-# additive per matched technology term; the total score is capped at 1.0.
-_TECH_BOOST = 0.15
 
 # A small English stopword set — dropped from both the need and each candidate so
 # scoring rests on meaningful terms, not connective tissue.
@@ -103,23 +100,28 @@ def _candidate(db: Session, page: KnowledgePage) -> dict:
 def score_relevance(
     need_tokens: set[str], cand_tokens: set[str], tech_tokens: set[str]
 ) -> tuple[float, list[str]]:
-    """Deterministic lexical relevance: Jaccard overlap + a technology-match boost.
+    """Deterministic lexical relevance as **need coverage** — an intuitive, calibrated score.
 
-    ``|need ∩ cand| / |need ∪ cand|`` over the candidate text, plus
-    ``_TECH_BOOST * |need ∩ tech|`` (technology matches count extra), capped at 1.0.
-    Returns ``(round(score, 4), sorted(matched_terms))`` where ``matched_terms`` is
-    ``(need ∩ cand) ∪ (need ∩ tech)`` — the provenance for the recommendation's
-    reason. An empty ``need`` yields ``(0.0, [])``.
+    The score is the fraction of the target need's meaningful terms that the
+    candidate's knowledge covers, via its text **or** its technologies::
+
+        covered = (need ∩ cand) ∪ (need ∩ tech)
+        score   = |covered| / |need|
+
+    This answers "how much of what you asked for does this repo cover?" — a bounded
+    ``0..1`` value that reads honestly (2 of 3 need terms → ``0.667``), unlike a raw
+    Jaccard over the candidate's whole vocabulary (which the distillation reality
+    test showed collapses to near-zero magnitudes even for the correct #1 match). A
+    technology match counts the same as a text match here; ties are broken in favour
+    of more technology hits by :func:`recommend_reuse`. Returns
+    ``(round(score, 4), sorted(covered))`` — ``covered`` is the matched-term
+    provenance. An empty ``need`` yields ``(0.0, [])``.
     """
     if not need_tokens:
         return 0.0, []
-    text_overlap = need_tokens & cand_tokens
-    union = need_tokens | cand_tokens
-    jaccard = len(text_overlap) / len(union) if union else 0.0
-    tech_overlap = need_tokens & tech_tokens
-    score = min(jaccard + _TECH_BOOST * len(tech_overlap), 1.0)
-    matched = text_overlap | tech_overlap
-    return round(score, 4), sorted(matched)
+    covered = (need_tokens & cand_tokens) | (need_tokens & tech_tokens)
+    score = len(covered) / len(need_tokens)
+    return round(score, 4), sorted(covered)
 
 
 def recommend_reuse(
@@ -127,10 +129,12 @@ def recommend_reuse(
 ) -> list[dict]:
     """Rank the portfolio's distilled repos for a target ``need`` (advisory, compute-and-return).
 
-    Tokenizes ``need``; scores every repository :class:`KnowledgePage` against its
-    candidate text + technologies; drops zero-score matches and any repo owned by
-    ``exclude_project_id``; sorts by score desc (stable tiebreak by source repository
-    name); returns the top ``limit``. Each result carries the documented recommendation
+    Tokenizes ``need``; scores every repository :class:`KnowledgePage` by **need
+    coverage** (see :func:`score_relevance`) against its candidate text + technologies;
+    drops zero-score matches and any repo owned by ``exclude_project_id``; sorts by
+    coverage desc, then by number of technology matches desc (a strong reuse signal),
+    then by source repository name (stable); returns the top ``limit``. Each result
+    carries the documented recommendation
     format (source repository / reusable asset / reason / evidence / required changes /
     risks / confidence). Tolerant: empty portfolio / empty need / no matches → ``[]``,
     never raises.
@@ -148,10 +152,12 @@ def recommend_reuse(
         if exclude_project_id is not None and repo is not None and repo.project_id == exclude_project_id:
             continue
 
-        score, matched_terms = score_relevance(need_tokens, _tokenize(candidate["text"]), candidate["tech_terms"])
+        tech_terms = candidate["tech_terms"]
+        score, matched_terms = score_relevance(need_tokens, _tokenize(candidate["text"]), tech_terms)
         if score <= 0.0:
             continue
 
+        tech_hits = len(need_tokens & tech_terms)
         name = repo.name if repo is not None else page.title
         evidence: list[dict] = [{"type": "distillation", "ref": page.vault_path}]
         if repo is not None:
@@ -168,10 +174,15 @@ def recommend_reuse(
                 "required_changes": "Review the source distillation and adapt interfaces/config to the target.",
                 "risks": "Version/API drift and integration effort not yet quantified (MVP heuristic).",
                 "confidence": score,
+                "_tech_hits": tech_hits,
             }
         )
 
-    results.sort(key=lambda r: (-r["confidence"], str(r["source_repository"])))
+    # Coverage desc, then technology-match count desc (a strong reuse signal), then
+    # source repository name (stable). ``_tech_hits`` is a transient sort key only.
+    results.sort(key=lambda r: (-r["confidence"], -r["_tech_hits"], str(r["source_repository"])))
+    for result in results:
+        del result["_tech_hits"]
     return results[:limit]
 
 

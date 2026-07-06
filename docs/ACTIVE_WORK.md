@@ -20,14 +20,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-20 — Doc-staleness detection (deterministic drift check)
 
-- Status: In Progress
+- Status: In Review
 - Owner: laptop session (parallel Orchestrator; tandem with the remote session's RFC-0009 work)
 - Branch: `laptop/aos-20-doc-staleness` (cut from `origin/main` at `10242e4`)
+- PR: #68 (https://github.com/Nerfherder16/ArchetypeOS/pull/68)
 - Plane: AOS-26 (In Progress)
 - Summary: Closes LES-007 (the one Phase-10 Alpha "NO by machine") — doc-vs-reality drift is currently caught only by human review (the class of bug where `.archetype/roadmap.md` sat at "Foundation" long after v0.1, and CURRENT_STATE lagged a merge). Adds a stdlib-only, hermetic `tools/doc_staleness.py` that cross-checks verifiable signals: `.archetype/roadmap.md` "Current phase" vs CURRENT_STATE completion markers; and newest merged PR in `git log` vs the newest PR referenced in CURRENT_STATE + RECENT_CHANGES. Reports findings; exits non-zero only on HARD staleness (conservative thresholds — the normal 1-PR reconciliation lag stays SOFT). Surfaced as a **non-blocking WARN** in `tools/pr_guardian.py` (additive only; no existing rule weakened).
 - File scope (mine, strict): `tools/doc_staleness.py` (+ `apps/api/tests/test_doc_staleness.py`), `tools/pr_guardian.py` (additive WARN hook only), `.archetype/work/AOS-20.md`, a lesson page, `docs/CAPABILITY_MAP.md` (doc-staleness area). NOT touched: transfer/distillation/scanner/aos_core (remote session's RFC-0009 zone), the CURRENT_STATE "Current sprint" line, or HANDOFF (remote Orchestrator owns those).
-- Verification Status: pending — TDD in progress.
-- Required Next Verifier: local ruff/compileall/pytest + PR Guardian, then GitHub CI + Manual Merge Gate.
+- Verification Status: Verified with warnings (Level 2) — 12 hermetic tests; api 184 / worker 7; ruff full CI scope + compileall clean; standalone tool live-validated on `origin/main` @ `10242e4` (roadmap HARD true-positive + #66/#65 SOFT); local guardian PASS_WITH_WARNINGS (the expected doc-staleness WARN on the live roadmap drift).
+- Required Next Verifier: GitHub CI (5 jobs) on PR #68, then Manual Merge Gate.
 
 ### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
 

@@ -94,9 +94,7 @@ Every new engineering session should read this before planning or implementation
 - Limitations: uses the existing project-scoped Decisions section (a standalone Council dashboard is AOS-COUNCIL-002); ADR export remains local-first (compose `:ro` → 409)
 - Required Next Verifier: None — Phase C complete and reconciled
 
-## In Scope Now
-
-- **RFC-0008 (PR open, docs/planning)** — captures the **Knowledge Distillation Engine** (repository content extraction) from the operator's founding intent, motivated by the `free-llm-api-resources` ingestion reality test (fingerprint → abstain; the scanner never reads content). Settles the **tools-upstream-not-in-judges** decision (LES-021 is the evidence). Records **LES-021** (provider context contamination — a tactical prerequisite). **Phase B remains the next build** per operator direction ("write the rfc first and continue with the roadmap"). No code — RFC + lesson + captured evidence.
+- **Phase B — architecture semantics (starting).** RFC-0008 merged (PR #58, docs/planning): the Knowledge Distillation Engine (content extraction) is now a Proposed RFC with the n8n edge-boundary decision recorded; LES-021 (provider context contamination) is open as a tactical prerequisite; both are queued, not built. **The active build is Phase B** — dependency/compose-derived architecture edges (LES-014) + language weighting (LES-013) — which makes the scanner's structural evidence richer (complementary to RFC-0008's future content extraction).
 
 ## Out Of Scope Now
 

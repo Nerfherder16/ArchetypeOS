@@ -20,17 +20,21 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-DISTILL-003 — Distillation evidence quality: deterministic summary floor + framework detection
 
-- Status: In Review
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
-- PR: pending (branch `claude/aos-runtime-002-scanner-1egyjw`)
+- PR: #64 (merged as `c6f5d61`)
 - Summary: Package 1 of the distillation mature-state target, motivated by the **first end-to-end reality test** (transfer ranking starved by weak evidence). Hardened the deterministic summary floor (`_clean_summary`: strip badge/link/heading noise → prefer the declarative `<Name> is a…` sentence → honest fallback, never badge markup) + added **framework detection** from manifest bodies (`DNA.frameworks`, curated/capped/tolerant) so transfer's tech-boost fires. Committed a repeatable `scripts/reality_test_distillation.py` regression harness. Also records the operator "design to the mature-state target" rule (`docs/ORCHESTRATOR_PLAYBOOK.md`) + queues the reasoned-tier spec (AOS-DISTILL-004, Package 2). Deterministic/hermetic; no migration/frontend.
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — reality-test gate **flips** (kubernetes #1 on "container orchestration", gin #1 on "HTTP routing"; pydantic-ai's FastAPI-analogy purpose gone; frameworks populated express/flask, gin, pydantic); api 167, worker 7, ruff full CI scope + compileall clean; no migration/frontend.
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
 
 ### AOS-DISTILL-004 — Distillation reasoned tier: real-provider `DNA.purpose` (Package 2)
 
-- Status: Queued (fires after AOS-DISTILL-003 merges — shares `distillation.py`)
-- Summary: The reasoned quality tier — isolated `claude_code` reasons a concise `DNA.purpose` from README + bounded source (primary), deterministic floor as fallback, `validation_state` derived/reasoned. Spec: `.archetype/work/AOS-DISTILL-004.md`.
+- Status: In Review
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified incl. a live isolated-provider run)
+- PR: pending (branch `claude/aos-runtime-002-scanner-1egyjw`, restarted from main at `c6f5d61`)
+- Summary: The reasoned quality tier — `reason_purpose(readme, files, provider)` has the LES-021-isolated `claude_code` provider reason a concise one-sentence `DNA.purpose` from README + bounded source; a non-empty reasoned result becomes the page summary + `DNA.purpose` (single source of truth) with `validation_state="reasoned"`, else the Package-1 clean floor + `"derived"` (deterministic CI provider or empty/garbled → floor; fully hermetic, no fabrication). Harness gains opt-in `--provider claude_code`. Spec: `.archetype/work/AOS-DISTILL-004.md`.
+- Verification Status: Orchestrator-verified independently (builder ≠ verifier) incl. a **live isolated-provider run**: gin → "Gin is a Go HTTP web framework built on a … radix-tree-based router with middleware support…", kubernetes → "Kubernetes is an open-source container orchestration system, … core control-plane components (API server, controller manager…)" — genuinely descriptive (reads source), **contamination-free** (LES-021 holds), and ranking improves (k8s matches container+orchestration, conf 0.0606 vs floor's 0.0147). Hermetic branching unit-tested (reasoned/derived/fallback); api 171, worker 7, ruff full CI scope + compileall clean; no migration/frontend.
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
 
 ### AOS-TRANSFER-001 — RFC-0009 MVP: Knowledge Transfer Engine (portfolio reuse recommendations)
 

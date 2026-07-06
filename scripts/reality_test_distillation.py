@@ -32,10 +32,22 @@ Usage (run from the repo root so ``./repositories`` and ``./knowledge`` resolve)
 
 An optional list of repo directory names may be passed as argv (default: all
 directories under ``settings.repository_root``).
+
+By default the harness runs the **deterministic** provider (hermetic — no real
+model, the reproducible Package-1 ranking gate). An **opt-in real-provider mode**
+distills with the LES-021-isolated ``ClaudeCodeProvider`` for the live quality
+check (Orchestrator-only; it invokes the local ``claude`` CLI)::
+
+    PYTHONPATH=packages/aos_core python scripts/reality_test_distillation.py --provider claude_code
+    AOS_REALITY_PROVIDER=claude_code PYTHONPATH=packages/aos_core python scripts/reality_test_distillation.py gin
+
+The provider may be set via ``--provider <name>`` / ``--provider=<name>`` or the
+``AOS_REALITY_PROVIDER`` env var (the flag wins); default stays ``deterministic``.
 """
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -45,7 +57,7 @@ from sqlalchemy.orm import sessionmaker
 
 from aos_core.config import get_settings
 from aos_core.database import Base
-from aos_core.llm import DeterministicProvider
+from aos_core.llm import ClaudeCodeProvider, DeterministicProvider
 from aos_core.models import Project, Repository, RepositoryDNA
 from aos_core.services.distillation import _repo_slug, distill_repository
 from aos_core.services.scan import run_scan
@@ -68,7 +80,50 @@ def _repo_dirs(repository_root: Path, requested: list[str]) -> list[str]:
     return sorted(p.name for p in repository_root.iterdir() if p.is_dir() and not p.name.startswith("."))
 
 
-def _ingest(session, repository_root: Path, knowledge_root: Path, dirname: str) -> str | None:
+def _select_provider(name: str):
+    """Resolve the reality-test provider by name (default deterministic/hermetic).
+
+    ``deterministic`` (the DEFAULT — keeps the Package-1 ranking gate reproducible
+    and never invokes a real model) → :class:`DeterministicProvider`; the opt-in
+    ``claude_code`` → the LES-021-isolated :class:`ClaudeCodeProvider` for the live
+    quality check (Orchestrator-only). Anything else is a hard error.
+    """
+    if name == "deterministic":
+        return DeterministicProvider()
+    if name == "claude_code":
+        return ClaudeCodeProvider()
+    raise SystemExit(f"Unknown --provider {name!r} (expected 'deterministic' or 'claude_code')")
+
+
+def _parse_args(argv: list[str]) -> tuple[str, list[str]]:
+    """Split argv into (provider_name, repo_dirs). Opt-in real-provider mode.
+
+    The provider defaults to ``deterministic`` (hermetic) and may be overridden via
+    ``--provider <name>`` / ``--provider=<name>`` or the ``AOS_REALITY_PROVIDER``
+    environment variable; the flag wins over the env var. All remaining positional
+    args are repo directory names (unchanged default behavior).
+    """
+    provider = os.environ.get("AOS_REALITY_PROVIDER", "deterministic") or "deterministic"
+    dirs: list[str] = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--provider":
+            if i + 1 >= len(argv):
+                raise SystemExit("--provider requires a value ('deterministic' or 'claude_code')")
+            provider = argv[i + 1]
+            i += 2
+            continue
+        if arg.startswith("--provider="):
+            provider = arg.split("=", 1)[1]
+            i += 1
+            continue
+        dirs.append(arg)
+        i += 1
+    return provider, dirs
+
+
+def _ingest(session, repository_root: Path, knowledge_root: Path, dirname: str, provider) -> str | None:
     """Idempotently register + scan + distill one repo. Returns the repo id (or None on skip)."""
     slug = _repo_slug(dirname)
     existing = (
@@ -98,7 +153,7 @@ def _ingest(session, repository_root: Path, knowledge_root: Path, dirname: str) 
         session,
         repository_id=repository.id,
         knowledge_root=knowledge_root,
-        provider=DeterministicProvider(),
+        provider=provider,
     )
     return repository.id
 
@@ -107,7 +162,9 @@ def main(argv: list[str]) -> int:
     settings = get_settings()
     repository_root = Path(settings.repository_root)
     knowledge_root = Path(settings.knowledge_root or "./knowledge")
-    dirs = _repo_dirs(repository_root, argv)
+    provider_name, requested = _parse_args(argv)
+    provider = _select_provider(provider_name)
+    dirs = _repo_dirs(repository_root, requested)
     if not dirs:
         print(f"No repositories found under {repository_root}. Clone the portfolio first.")
         return 1
@@ -120,13 +177,14 @@ def main(argv: list[str]) -> int:
     session_local = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
 
     print(f"Reality test over {len(dirs)} repo(s) under {repository_root}")
+    print(f"Provider: {provider_name}")
     print(f"Scratch DB: {scratch_db}\n")
 
     with session_local() as session:
-        print("== Ingest (scan + distill, deterministic provider) ==")
+        print(f"== Ingest (scan + distill, {provider_name} provider) ==")
         for dirname in dirs:
             try:
-                _ingest(session, repository_root, knowledge_root, dirname)
+                _ingest(session, repository_root, knowledge_root, dirname, provider)
             except Exception as exc:  # noqa: BLE001 - a bad repo must not abort the harness
                 print(f"  ! {dirname}: ingest failed ({exc.__class__.__name__}: {exc})")
 

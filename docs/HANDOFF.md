@@ -26,7 +26,7 @@ AOS-DISTILL-003 — Package 1 of the distillation mature-state arc: deterministi
 
 ### PR
 
-AOS-EMBED-001 (RFC-0010 Part 1) PR being opened. Prior merged: #69 (RFC-0010 docs, `56c661c`), #67 (roadmap + board reconciliation, `b4dde07`), #66 (`10242e4`), #65/#64/#63. Branch restarted from main at `56c661c`. **RFC-0009 embeddings building: RFC-0010 merged; AOS-EMBED-001 (Part 1 — vector-store + retrieval infra, pgvector, NO torch) in review, verified independently (api 179+2 skips, no torch, deterministic path unchanged); the pgvector `<=>` path is gated by a new Postgres-service CI job (babysit it). Verification decision taken: Postgres-service CI test (not live-only). Next after merge: AOS-EMBED-002 (real sentence-transformers/torch embedder + Orchestrator live validation). Tandem: laptop session on AOS-20 (doc-staleness), own branch; shared board = Plane AOS.**
+#70 — **Merged** as `6833440` (AOS-EMBED-001, RFC-0010 Part 1). Prior merged: #69 (RFC-0010 docs, `56c661c`), #67 (`b4dde07`), #66 (`10242e4`), #65/#64/#63. Branch restarted from main at `6833440`. **RFC-0009 embeddings: RFC-0010 + Part 1 (vector-store + retrieval infra, pgvector, NO torch) merged — the new Postgres-service CI job passed on real Postgres, so the whole pgvector `<=>` path is CI-proven. Paused for operator go on Part 2 — AOS-EMBED-002 (the real sentence-transformers/torch embedder + Orchestrator live validation), the package that pulls in torch. Tandem: laptop session on AOS-20 (doc-staleness), own branch; shared board = Plane AOS.**
 
 ### Status
 

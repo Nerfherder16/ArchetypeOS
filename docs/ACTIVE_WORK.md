@@ -38,7 +38,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 #### AOS-EMBED-001 — Part 1: vector-store + semantic-retrieval infra (no torch)
 
-- Status: In Review
+- Status: Merged (PR #70, `6833440`) — the new "Vector store tests" CI job passed on real Postgres+pgvector, closing the "Verified with warnings" gap.
 - Summary: The `EmbeddingProvider` seam (deterministic default → lexical fallback) + pgvector dialect-variant column (`Vector(384).with_variant(JSON, "sqlite")`) + Alembic migration 0005 (extension + column + ivfflat cosine index, Postgres-guarded) + `pgvector/pgvector:pg16` compose image + generate-on-distill wiring + semantic `recommend_reuse` (calibrated blend `max(coverage, 0.6·sem + 0.4·coverage)`, robust lexical fallback) + hermetic sqlite tests + a Postgres-service CI test with synthetic vectors. Fully CI-gated, NO torch. Spec: `.archetype/work/AOS-EMBED-001.md`.
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — api **179** (+2 pgvector skips) / worker 7, ruff full CI scope + compileall clean; NO torch in requirements; compose config valid with the pgvector image; deterministic path byte-identical to today's lexical (reality harness: k8s #1 0.333, gin #1 0.800); model `create_all`s clean on sqlite (dialect variant); schema-init verified safe (alembic-first entrypoint, `create_all` no-op on existing tables). The real pgvector `<=>` execution path is CI-gated (new Postgres-service job) — Orchestrator babysits.
 - Required Next Verifier: GitHub CI (incl. the new Vector store job) / PR Guardian, then Manual Merge Gate.

@@ -46,6 +46,8 @@ import {
   type ResearchNote,
   type Schedule,
 } from './api';
+import { ReuseView } from './features/reuse/ReuseView';
+import './design/tokens.css';
 
 const errorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : 'Request failed';
@@ -1021,6 +1023,8 @@ function App() {
           </button>
         </form>
       </section>
+
+      {selectedProjectId ? <ReuseView projectId={selectedProjectId} /> : null}
 
       {selectedProjectId ? (
         <section style={sectionStyle}>

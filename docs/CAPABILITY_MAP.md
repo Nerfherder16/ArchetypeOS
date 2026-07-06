@@ -239,6 +239,7 @@ Capabilities:
 - branch freshness validation
 - WSL local Level 2 verification
 - post-merge validation
+- doc-staleness detection (deterministic doc-vs-reality drift check; advisory PR Guardian WARN)
 - Engineering Evaluation Standard
 - Engineering Evolution Score
 - benchmarks
@@ -263,6 +264,7 @@ Primary artifacts:
 - docs/WSL_WIN11_RUNTIME_TARGET.md
 - scripts/pre_pr_guardian.sh
 - scripts/post_merge_validation.sh
+- tools/doc_staleness.py (deterministic doc-staleness detector — AOS-20, closes LES-007)
 - .github/workflows/ci.yml
 - docs/ENGINEERING_EVOLUTION_SCORE.md
 - templates/benchmark_record.md

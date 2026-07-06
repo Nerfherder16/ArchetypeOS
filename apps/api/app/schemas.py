@@ -309,6 +309,22 @@ class RecommendationRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class TransferRequest(BaseModel):
+    need: str
+
+
+class TransferRecommendationRead(BaseModel):
+    source_repository: str
+    source_project_id: str | None
+    reusable_asset: str
+    reason: str
+    matched_terms: list
+    evidence: list
+    required_changes: str | None
+    risks: str | None
+    confidence: float
+
+
 class NightlyDigestRead(BaseModel):
     id: str
     project_id: str

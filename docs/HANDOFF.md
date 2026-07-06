@@ -18,7 +18,7 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-RFC-0008 Phase 2 — code-aware distillation (AOS-DISTILL-002). (Prior arc, all merged: AOS-DISTILL-001 PR #61 — distillation MVP/pipe; AOS-LLM-ISOLATION-001 PR #60 — LES-021 provider isolation; AOS-ARCH-SEMANTICS-001 PR #59 — Phase B compose edges + language weighting; RFC-0008 PR #58; Phase C PRs #54–#57.)
+RFC-0009 MVP — Knowledge Transfer Engine (AOS-TRANSFER-001): portfolio reuse recommendations for a target `need`. (Prior arc, all merged: AOS-DISTILL-002 PR #62 — code-aware distillation; AOS-DISTILL-001 PR #61 — distillation MVP/pipe; AOS-LLM-ISOLATION-001 PR #60 — LES-021 provider isolation; AOS-ARCH-SEMANTICS-001 PR #59 — Phase B compose edges + language weighting; RFC-0008 PR #58; Phase C PRs #54–#57.)
 
 ### Branch
 
@@ -26,11 +26,11 @@ RFC-0008 Phase 2 — code-aware distillation (AOS-DISTILL-002). (Prior arc, all 
 
 ### PR
 
-#62 — **Merged** as `8c4a400` (merge commit).
+Pending — Transfer Engine PR being opened on `claude/aos-runtime-002-scanner-1egyjw` (RFC-0009 + AOS-TRANSFER-001). Prior: #62 merged as `8c4a400`.
 
 ### Status
 
-Merged — **the Knowledge Distillation Engine now reads the codebase, not just the README** (the operator's key request). `distill_repository` selects a bounded, meaningful set of source (entry points + largest source-classified files + primary manifest, via `safe_repo_path`, capped + tolerant), then produces two code-derived layers: a **deterministic** `## Components (from source)` section (pure stdlib `ast`+regex, per-file-cited, hermetic/CI-tested) and — only for a real **LES-021-isolated** `claude_code` provider — a reasoned `## How it works / Built for` narrative citing files (the deterministic provider fabricates nothing, so CI never calls a live model). **Live-validated:** distilling real `free-llm-api-resources` selected `src/data.py` and produced a grounded, code-cited narrative naming the actual `MODEL_TO_NAME_MAPPING` mechanism the README omits, with zero ArchetypeOS contamination. No migration/frontend. This completes the founding "feed a repo → extract what's useful → Obsidian for reuse" *extraction* arc (Phase B → LES-021 → MVP → code-aware). Branch restarted from `main` at `8c4a400`. **Next: operator's direction. Recommendation: the Knowledge Transfer Engine (RFC-0008's deferred "useful *for* a target repo" half — relevance/retrieval + embeddings).**
+In Review — **the Knowledge Transfer Engine ships the other half of the founding intent**: RFC-0008 answered *"feed a repo → extract what's useful,"* this answers *"output what's useful **for** the repo you're searching against."* `recommend_reuse(db, *, need, exclude_project_id=None, limit=5)` scores the portfolio's distilled repos by **deterministic lexical relevance** (Jaccard over `KnowledgePage.title` + `RepositoryDNA.purpose` + a technology-match boost over DNA `language_mix`/`package_managers`/`frameworks`, capped ≤1.0), drops zero-score + the target's own repos, and returns ranked, provenance-tagged reuse recommendations (`source_repository`/`reusable_asset`/matched-term `reason`/`evidence`=`vault_path`+repo id/heuristic `required_changes`+`risks`/`confidence`). Advisory/compute-and-return — no new table/migration/frontend; a human promotes a pick into the `Recommendation`/`Decision` loop. `POST /projects/{project_id}/transfer`; route freeze 47→48. Embeddings + provider-reasoned adaptation plans deferred behind the `score_relevance` seam. Built by an Opus builder subagent; **Orchestrator-verified independently** (builder ≠ verifier): synthetic-portfolio ranking + tech-boost path + `source_ref`→`project_id` fallback + own-repo exclusion + empty/zero-overlap tolerances; api **160** / worker 7, ruff full CI scope + compileall clean, no migration/frontend. **Next: CI green → Manual Merge Gate → operator merge; then operator's direction (RFC-0009 next steps: embeddings/semantic relevance, isolated-provider adaptation-plan pass, repo-to-repo target query, Control Tower "Reuse" view).**
 
 ### Note — GitHub connector expired mid-session
 

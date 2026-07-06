@@ -76,6 +76,8 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/knowledge/sync"),
         ("GET", "/knowledge/pages"),
         ("GET", "/knowledge/pages/{page_id}"),
+        # knowledge transfer (AOS-TRANSFER-001 — RFC-0009 portfolio reuse)
+        ("POST", "/projects/{project_id}/transfer"),
     }
 )
 
@@ -105,6 +107,8 @@ def test_route_inventory_count() -> None:
     # /decisions/{decision_id}/approve, POST /decisions/{decision_id}/reject) = 45,
     # plus the AOS-COUNCIL-PHASEC2A ADR export route (POST
     # /decisions/{decision_id}/adr) = 46, plus the AOS-DISTILL-001 repository
-    # distillation route (POST /repositories/{repository_id}/distill) = 47.
-    assert len(EXPECTED_ROUTES) == 47
-    assert len(_actual_routes()) == 47
+    # distillation route (POST /repositories/{repository_id}/distill) = 47,
+    # plus the AOS-TRANSFER-001 knowledge-transfer route (POST
+    # /projects/{project_id}/transfer) = 48.
+    assert len(EXPECTED_ROUTES) == 48
+    assert len(_actual_routes()) == 48

@@ -18,6 +18,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### RFC-0010 / AOS-EMBED-001 — Embedding Relevance Tier for the Transfer Engine (Plane AOS-25)
+
+- Status: Proposed (RFC in review; design landed as a docs PR)
+- Owner: Chief Architect / Orchestrator (this remote session; tandem with the laptop session's AOS-20)
+- Summary: The RFC-0009 embeddings increment — a semantic relevance tier behind the `score_relevance` seam so transfer retrieves on meaning, not just shared tokens (e.g. "message queue" → example-voting-app's "Redis queue"). Operator-chosen **mature target**: `sentence-transformers` (torch) behind a two-tier `EmbeddingProvider` seam (deterministic default → lexical fallback, hermetic; real tier on a capable node) + **pgvector** storage (extension + Alembic migration + `pgvector/pgvector` image); blended into `recommend_reuse` with a calibrated coverage-like confidence (never raw cosine, LES-023).
+- Open question (operator): the pgvector path can't run in the sqlite unit suite — add a Postgres-service CI test (recommended) vs live-validation only.
+- Next: confirm the verification question → spec AOS-EMBED-001 (the vertical slice) → build.
+
 ### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
 
 - Status: Merged

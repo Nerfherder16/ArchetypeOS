@@ -6,7 +6,13 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
-## 2026-07-06 — Full reality test → transfer scorer calibration (AOS-TRANSFER-002, in review)
+## 2026-07-06 — RFC-0010 proposed: Embedding Relevance Tier (RFC-0009 embeddings kickoff)
+
+### Proposed
+
+- RFC-0010 (`docs/rfc/RFC-0010-Embedding-Relevance-Tier-Transfer-Engine.md`) — the RFC-0009 embeddings increment: a **semantic relevance tier** behind the Transfer Engine's `score_relevance` seam so retrieval works on meaning, not just shared tokens (the lexical floor misses paraphrase/synonymy — "message queue" ↔ "Redis queue"). Operator-directed kickoff ("lets kick off rfc-0009") with two locked decisions: the **mature target** — `sentence-transformers` (torch) behind a ratified two-tier `EmbeddingProvider` seam (`DeterministicEmbedder` default → lexical fallback, torch never imported in CI/hermetic; `SentenceTransformerEmbedder` real tier on a capable node) + **pgvector** storage (`CREATE EXTENSION vector` + a nullable `vector(384)` column + cosine index via Alembic; `pgvector/pgvector` Postgres image). `recommend_reuse` blends semantic similarity with the lexical layer and reports a **calibrated coverage-like confidence** (never a raw cosine, LES-023); it degrades transparently to Layer-0 lexical coverage when embeddings/pgvector are absent (sqlite/CI/offline). Chosen over a lighter fastembed + in-Python-cosine MVP per the "design to the mature-state target — why build things twice?" rule. **Consequence flagged:** the pgvector path can't run in the sqlite unit suite, so the real torch+pgvector path is verified live (Orchestrator) + (recommended) a Postgres-service CI test — an operator-open question. Docs only; the build is AOS-EMBED-001. Plane: AOS-25 (In Progress, remote session).
+
+## 2026-07-06 — Full reality test → transfer scorer calibration (AOS-TRANSFER-002 merged)
 
 ### Reality test (Orchestrator)
 

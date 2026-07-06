@@ -17,10 +17,16 @@ async function refreshUntilReviewAppears(page: Page): Promise<Locator> {
   return draftButton;
 }
 
-// Scope to the drafted decision's <li>. Its title is `Decision: <question>`, so
-// the unique question text isolates it from any other row / section.
+// Scope to the drafted decision's <li> WITHIN the "Decisions & Research" section.
+// The Agent Council dashboard (AOS-COUNCIL-002) renders the same reviews in a
+// separate section, so a page-global listitem+question locator is now ambiguous
+// (LES-027) — scope to the section that owns the decision row.
 const decisionRow = (page: Page, question: string): Locator =>
-  page.getByRole('listitem').filter({ hasText: question });
+  page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Decisions & Research' }) })
+    .getByRole('listitem')
+    .filter({ hasText: question });
 
 test('decision loop: scan → council review → draft → approve → export ADR', async ({ page }) => {
   const projectName = `Council Happy ${uid()}`;

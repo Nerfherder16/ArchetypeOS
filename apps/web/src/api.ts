@@ -96,6 +96,17 @@ export type Decision = {
   decision?: string | null;
   confidence: number;
   evidence: EvidenceEntry[];
+  status: string;
+  approved_by?: string | null;
+  approved_at?: string | null;
+};
+
+export type CouncilReview = {
+  id: string;
+  question?: string | null;
+  verdict: string;
+  confidence: number;
+  provider?: string | null;
 };
 
 export type ResearchNote = {
@@ -173,7 +184,20 @@ export type KnowledgeSyncResult = {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
-    throw new Error(`Request to ${path} failed with status ${response.status}`);
+    // Surface the API error `detail` (FastAPI HTTPException bodies are
+    // `{"detail": ...}`) so callers can show human-readable 409 messages
+    // (e.g. abstention-blocks-approval, read-only vault). Fall back to the
+    // status line when the body is missing or not JSON.
+    let detail: string | null = null;
+    try {
+      const body = (await response.json()) as { detail?: unknown };
+      if (body && body.detail !== undefined && body.detail !== null) {
+        detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+      }
+    } catch {
+      detail = null;
+    }
+    throw new Error(detail ?? `Request to ${path} failed with status ${response.status}`);
   }
   return (await response.json()) as T;
 }
@@ -250,6 +274,50 @@ export async function createDecision(
       research_note_ids: payload.research_note_ids ?? [],
     }),
   });
+}
+
+export async function fetchCouncilReviews(projectId: string): Promise<CouncilReview[]> {
+  return request<CouncilReview[]>(`/projects/${projectId}/council-reviews`);
+}
+
+export async function enqueueCouncilReview(projectId: string, question: string): Promise<Job> {
+  return request<Job>(`/projects/${projectId}/council-reviews`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+}
+
+export async function draftDecisionFromReview(reviewId: string): Promise<Decision> {
+  return request<Decision>(`/council-reviews/${reviewId}/draft-decision`, { method: 'POST' });
+}
+
+export async function approveDecision(
+  decisionId: string,
+  approver: string,
+  rationale?: string,
+): Promise<Decision> {
+  return request<Decision>(`/decisions/${decisionId}/approve`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approver, rationale: rationale ?? null }),
+  });
+}
+
+export async function rejectDecision(
+  decisionId: string,
+  approver: string,
+  rationale: string,
+): Promise<Decision> {
+  return request<Decision>(`/decisions/${decisionId}/reject`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ approver, rationale }),
+  });
+}
+
+export async function exportDecisionAdr(decisionId: string): Promise<KnowledgePage> {
+  return request<KnowledgePage>(`/decisions/${decisionId}/adr`, { method: 'POST' });
 }
 
 export async function fetchResearchNotes(projectId: string): Promise<ResearchNote[]> {

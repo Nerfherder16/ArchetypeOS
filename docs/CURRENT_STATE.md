@@ -95,7 +95,7 @@ Every new engineering session should read this before planning or implementation
 
 ## In Scope Now
 
-- Nothing active. **AOS-COUNCIL-PHASEC2A merged (PR #56)** — approved decisions now export to repo-vault ADRs + re-syncable `KnowledgePage`s. Next: **Part 2b — the Control Tower decision-approval view** (frontend: draft-from-review, approve/reject, export-ADR + e2e), which finishes Phase C by surfacing the whole loop in the UI.
+- **AOS-COUNCIL-PHASEC2B (PR open)** — Phase C Part 2**b** (frontend + e2e): **finishes Phase C** by surfacing the whole decision loop in the Control Tower — enqueue council review → draft → approve/reject (named approver) → export ADR, with the abstention/read-only-vault 409s as readable inline errors. Full worker-driven e2e (`serve-api.sh` runs the worker against a throwaway vault copy; `database.py` sqlite WAL/busy_timeout for file DBs) drives both the approve and the 409 branches deterministically. No backend/API/schema change. Orchestrator-verified: full Playwright 7/7 headless, tsc + vite build exit 0, api 123 / worker 7.
 
 ## Out Of Scope Now
 

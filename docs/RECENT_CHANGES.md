@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — The decision-approval UI + worker-driven e2e (AOS-COUNCIL-PHASEC2B, PR open)
+
+### In progress (PR open)
+
+- AOS-COUNCIL-PHASEC2B — Phase C Part 2**b** (frontend + e2e): **finishes Phase C** by surfacing the whole decision loop in the Control Tower. Extends the "Decisions & Research" section with a **Decision Loop** block — enqueue a council review, draft a decision from it, approve/reject with a named approver, and export an approved decision to an ADR — with the abstention-blocks-approval 409 and the read-only-vault 409 shown as **readable inline errors** (the `request<T>` helper now surfaces the FastAPI `detail`). `api.ts` gains `CouncilReview` + `status`/`approved_by`/`approved_at` on `Decision` + `fetchCouncilReviews`/`enqueueCouncilReview`/`draftDecisionFromReview`/`approveDecision`/`rejectDecision`/`exportDecisionAdr`. **Operator chose the full worker-driven e2e:** `serve-api.sh` now runs `python -m app.worker` alongside uvicorn (own PYTHONPATH so `app.worker` resolves, not `app.main`) draining the queue, and points `KNOWLEDGE_ROOT` at a throwaway **copy** of the vault so ADR-export writes never touch the committed tree; `database.py` enables sqlite **WAL + busy_timeout** for file DBs only (`:memory:`/Postgres untouched) so the API + worker can share one sqlite file. New `apps/web/e2e/decision-loop.spec.ts` drives both branches deterministically: **scan → review (conf 0.4, clears the floor) → draft → approve → export ADR**, and **no scan → abstained review → `needs_evidence` → approve → 409 inline** (asserting the decision stays `needs_evidence`). `scheduling.spec.ts` adjusted (a drained worker completes the digest job, so it asserts `project_digest — (queued|running|completed)` by type — the Orchestrator tightened this to exclude `failed` so a real digest failure still fails the test). **No backend/API/schema/migration change**; `test_route_inventory.py` untouched. Built by an Opus builder subagent; **Orchestrator-verified independently** (builder ≠ verifier): **full Playwright 7/7 headless** (worker drains the queue — "job completed" in the logs), strict `tsc` + `vite build` exit 0, api 123 / worker 7, ruff full CI scope + compileall clean, vault stays clean. Spec: `.archetype/work/AOS-COUNCIL-PHASEC2B.md`.
+
 ## 2026-07-06 — Decision → Knowledge: repo-vault ADR export (AOS-COUNCIL-PHASEC2A merged)
 
 ### Merged

@@ -1,13 +1,18 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
+  approveDecision,
   createDecision,
   createProject,
   createResearchNote,
   createSchedule,
   deleteSchedule,
+  draftDecisionFromReview,
+  enqueueCouncilReview,
   enqueueJob,
+  exportDecisionAdr,
   fetchArchitecture,
+  fetchCouncilReviews,
   fetchDecisions,
   fetchDigests,
   fetchDna,
@@ -20,12 +25,14 @@ import {
   fetchResearchNotes,
   fetchSchedules,
   registerRepository,
+  rejectDecision,
   runDigest,
   runSchedule,
   scanRepository,
   setScheduleEnabled,
   syncKnowledge,
   type ArchitectureGraph,
+  type CouncilReview,
   type Decision,
   type Health,
   type Job,
@@ -49,6 +56,36 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const errorStyle: React.CSSProperties = { color: '#b00020' };
+
+// Palette for the decision-loop status badge; unknown statuses fall back to grey.
+const DECISION_STATUS_COLORS: Record<string, { color: string; background: string; border: string }> = {
+  draft: { color: '#1d4ed8', background: '#dbeafe', border: '#3b82f6' },
+  needs_evidence: { color: '#b45309', background: '#fef3c7', border: '#f59e0b' },
+  approved: { color: '#166534', background: '#dcfce7', border: '#22c55e' },
+  rejected: { color: '#b91c1c', background: '#fee2e2', border: '#ef4444' },
+  active: { color: '#4b5563', background: '#f3f4f6', border: '#9ca3af' },
+};
+
+function DecisionStatusBadge({ status }: { status: string }) {
+  const palette = DECISION_STATUS_COLORS[status] ?? DECISION_STATUS_COLORS.active;
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        marginRight: 8,
+        padding: '1px 8px',
+        borderRadius: 10,
+        fontSize: 12,
+        fontWeight: 600,
+        color: palette.color,
+        background: palette.background,
+        border: `1px solid ${palette.border}`,
+      }}
+    >
+      {status}
+    </span>
+  );
+}
 
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
@@ -92,6 +129,19 @@ function App() {
   const [newDecisionText, setNewDecisionText] = useState('');
   const [newDecisionNoteId, setNewDecisionNoteId] = useState('');
   const [creatingDecision, setCreatingDecision] = useState(false);
+
+  const [councilReviews, setCouncilReviews] = useState<CouncilReview[]>([]);
+  const [councilError, setCouncilError] = useState<string | null>(null);
+  const [councilQuestion, setCouncilQuestion] = useState('');
+  const [councilBusy, setCouncilBusy] = useState(false);
+  // Which loop action is currently in flight (keyed `${action}:${id}`), so only
+  // the acting control is disabled and spinners don't fight across rows.
+  const [loopBusyKey, setLoopBusyKey] = useState<string | null>(null);
+  // Per-decision approver name inputs and inline action errors (409s render here,
+  // scoped to their decision row rather than blanking the section).
+  const [approverInputs, setApproverInputs] = useState<Record<string, string>>({});
+  const [decisionErrors, setDecisionErrors] = useState<Record<string, string>>({});
+  const [adrResults, setAdrResults] = useState<Record<string, string>>({});
 
   const [digests, setDigests] = useState<NightlyDigest[]>([]);
   const [digestsError, setDigestsError] = useState<string | null>(null);
@@ -189,6 +239,16 @@ function App() {
     }
   }, []);
 
+  const loadCouncilReviews = useCallback(async (projectId: string) => {
+    setCouncilError(null);
+    try {
+      setCouncilReviews(await fetchCouncilReviews(projectId));
+    } catch (err) {
+      setCouncilReviews([]);
+      setCouncilError(errorMessage(err));
+    }
+  }, []);
+
   const loadDigests = useCallback(async (projectId: string) => {
     setDigestsError(null);
     try {
@@ -246,6 +306,12 @@ function App() {
     setRecommendations([]);
     setArtifactsError(null);
     setNewDecisionNoteId('');
+    setCouncilReviews([]);
+    setCouncilError(null);
+    setCouncilQuestion('');
+    setApproverInputs({});
+    setDecisionErrors({});
+    setAdrResults({});
     setDigests([]);
     setDigestsError(null);
     setSchedules([]);
@@ -255,10 +321,18 @@ function App() {
     if (selectedProjectId) {
       void loadRepositories(selectedProjectId);
       void loadArtifacts(selectedProjectId);
+      void loadCouncilReviews(selectedProjectId);
       void loadDigests(selectedProjectId);
       void loadScheduling(selectedProjectId);
     }
-  }, [selectedProjectId, loadRepositories, loadArtifacts, loadDigests, loadScheduling]);
+  }, [
+    selectedProjectId,
+    loadRepositories,
+    loadArtifacts,
+    loadCouncilReviews,
+    loadDigests,
+    loadScheduling,
+  ]);
 
   useEffect(() => {
     if (selectedProjectId && selectedRepositoryId) {
@@ -413,6 +487,130 @@ function App() {
       }
     },
     [selectedProjectId, newDecisionTitle, newDecisionText, newDecisionNoteId, loadArtifacts],
+  );
+
+  const handleEnqueueCouncilReview = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!selectedProjectId) {
+        return;
+      }
+      const question = councilQuestion.trim();
+      if (!question) {
+        return;
+      }
+      setCouncilBusy(true);
+      setCouncilError(null);
+      try {
+        await enqueueCouncilReview(selectedProjectId, question);
+        setCouncilQuestion('');
+        // The worker produces the review asynchronously; the operator clicks
+        // Refresh (or it is polled in e2e) until it appears.
+        await loadCouncilReviews(selectedProjectId);
+      } catch (err) {
+        setCouncilError(errorMessage(err));
+      } finally {
+        setCouncilBusy(false);
+      }
+    },
+    [selectedProjectId, councilQuestion, loadCouncilReviews],
+  );
+
+  const handleRefreshLoop = useCallback(async () => {
+    if (!selectedProjectId) {
+      return;
+    }
+    await Promise.all([loadCouncilReviews(selectedProjectId), loadArtifacts(selectedProjectId)]);
+  }, [selectedProjectId, loadCouncilReviews, loadArtifacts]);
+
+  const handleDraftDecision = useCallback(
+    async (reviewId: string) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      setLoopBusyKey(`draft:${reviewId}`);
+      setCouncilError(null);
+      try {
+        await draftDecisionFromReview(reviewId);
+        await Promise.all([
+          loadArtifacts(selectedProjectId),
+          loadCouncilReviews(selectedProjectId),
+        ]);
+      } catch (err) {
+        setCouncilError(errorMessage(err));
+      } finally {
+        setLoopBusyKey(null);
+      }
+    },
+    [selectedProjectId, loadArtifacts, loadCouncilReviews],
+  );
+
+  const handleApproveDecision = useCallback(
+    async (decisionId: string) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      const approver = (approverInputs[decisionId] ?? '').trim();
+      if (!approver) {
+        setDecisionErrors((prev) => ({ ...prev, [decisionId]: 'Enter an approver name.' }));
+        return;
+      }
+      setLoopBusyKey(`approve:${decisionId}`);
+      setDecisionErrors((prev) => ({ ...prev, [decisionId]: '' }));
+      try {
+        await approveDecision(decisionId, approver);
+        await loadArtifacts(selectedProjectId);
+      } catch (err) {
+        setDecisionErrors((prev) => ({ ...prev, [decisionId]: errorMessage(err) }));
+      } finally {
+        setLoopBusyKey(null);
+      }
+    },
+    [selectedProjectId, approverInputs, loadArtifacts],
+  );
+
+  const handleRejectDecision = useCallback(
+    async (decisionId: string) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      const approver = (approverInputs[decisionId] ?? '').trim();
+      if (!approver) {
+        setDecisionErrors((prev) => ({ ...prev, [decisionId]: 'Enter an approver name.' }));
+        return;
+      }
+      setLoopBusyKey(`reject:${decisionId}`);
+      setDecisionErrors((prev) => ({ ...prev, [decisionId]: '' }));
+      try {
+        await rejectDecision(decisionId, approver, 'Rejected via Control Tower');
+        await loadArtifacts(selectedProjectId);
+      } catch (err) {
+        setDecisionErrors((prev) => ({ ...prev, [decisionId]: errorMessage(err) }));
+      } finally {
+        setLoopBusyKey(null);
+      }
+    },
+    [selectedProjectId, approverInputs, loadArtifacts],
+  );
+
+  const handleExportAdr = useCallback(
+    async (decisionId: string) => {
+      if (!selectedProjectId) {
+        return;
+      }
+      setLoopBusyKey(`adr:${decisionId}`);
+      setDecisionErrors((prev) => ({ ...prev, [decisionId]: '' }));
+      try {
+        const page = await exportDecisionAdr(decisionId);
+        setAdrResults((prev) => ({ ...prev, [decisionId]: `ADR exported to ${page.vault_path}` }));
+        await loadArtifacts(selectedProjectId);
+      } catch (err) {
+        setDecisionErrors((prev) => ({ ...prev, [decisionId]: errorMessage(err) }));
+      } finally {
+        setLoopBusyKey(null);
+      }
+    },
+    [selectedProjectId, loadArtifacts],
   );
 
   const handleRunDigest = useCallback(async () => {
@@ -878,6 +1076,59 @@ function App() {
             </p>
           ) : null}
 
+          <h3 style={{ marginBottom: 4 }}>Decision Loop</h3>
+          {councilError ? (
+            <p role="alert" style={errorStyle}>
+              {councilError}
+            </p>
+          ) : null}
+          <form onSubmit={handleEnqueueCouncilReview}>
+            <input
+              type="text"
+              value={councilQuestion}
+              placeholder="Council question"
+              onChange={(event) => setCouncilQuestion(event.target.value)}
+            />
+            <button type="submit" disabled={councilBusy} style={{ marginLeft: 8 }}>
+              {councilBusy ? 'Enqueuing...' : 'Enqueue council review'}
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleRefreshLoop()}
+              style={{ marginLeft: 8 }}
+            >
+              Refresh reviews
+            </button>
+          </form>
+
+          <h4 style={{ marginBottom: 4 }}>Council Reviews</h4>
+          {councilReviews.length === 0 ? (
+            <p>
+              No council reviews yet. Enqueue one — the worker produces it asynchronously, then
+              click Refresh reviews.
+            </p>
+          ) : (
+            <ul>
+              {councilReviews.map((review) => {
+                const drafting = loopBusyKey === `draft:${review.id}`;
+                return (
+                  <li key={review.id} style={{ marginBottom: 4 }}>
+                    {review.verdict} — confidence {review.confidence}
+                    {review.question ? ` · ${review.question}` : ''}
+                    <button
+                      type="button"
+                      disabled={drafting}
+                      onClick={() => void handleDraftDecision(review.id)}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {drafting ? 'Drafting...' : 'Draft decision'}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
           <h3 style={{ marginBottom: 4 }}>Decisions</h3>
           {decisions.length === 0 ? (
             <p>No decisions yet.</p>
@@ -887,9 +1138,79 @@ function App() {
                 const linkedResearch = decision.evidence.filter(
                   (entry) => entry.type === 'research_note',
                 ).length;
+                const governed =
+                  decision.status === 'draft' || decision.status === 'needs_evidence';
+                const approveBusy = loopBusyKey === `approve:${decision.id}`;
+                const rejectBusy = loopBusyKey === `reject:${decision.id}`;
+                const adrBusy = loopBusyKey === `adr:${decision.id}`;
+                const inlineError = decisionErrors[decision.id];
+                const adrResult = adrResults[decision.id];
                 return (
-                  <li key={decision.id}>
-                    {decision.title} — confidence {decision.confidence} · {linkedResearch} linked research
+                  <li key={decision.id} style={{ marginBottom: 8 }}>
+                    <DecisionStatusBadge status={decision.status} />
+                    <span>
+                      {decision.title} — confidence {decision.confidence} · {linkedResearch} linked
+                      research
+                    </span>
+                    {decision.approved_by ? (
+                      <span style={{ color: '#166534' }}> · approved by {decision.approved_by}</span>
+                    ) : null}
+                    {governed ? (
+                      <div style={{ marginTop: 4 }}>
+                        {decision.status === 'needs_evidence' ? (
+                          <p style={{ margin: '0 0 4px', color: '#777' }}>
+                            Drafted from an abstained review — gather evidence and re-draft before
+                            approval.
+                          </p>
+                        ) : null}
+                        <input
+                          type="text"
+                          value={approverInputs[decision.id] ?? ''}
+                          placeholder="Approver name"
+                          onChange={(event) =>
+                            setApproverInputs((prev) => ({
+                              ...prev,
+                              [decision.id]: event.target.value,
+                            }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          disabled={approveBusy}
+                          onClick={() => void handleApproveDecision(decision.id)}
+                          style={{ marginLeft: 8 }}
+                        >
+                          {approveBusy ? 'Approving...' : 'Approve'}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={rejectBusy}
+                          onClick={() => void handleRejectDecision(decision.id)}
+                          style={{ marginLeft: 8 }}
+                        >
+                          {rejectBusy ? 'Rejecting...' : 'Reject'}
+                        </button>
+                      </div>
+                    ) : null}
+                    {decision.status === 'approved' ? (
+                      <div style={{ marginTop: 4 }}>
+                        <button
+                          type="button"
+                          disabled={adrBusy}
+                          onClick={() => void handleExportAdr(decision.id)}
+                        >
+                          {adrBusy ? 'Exporting...' : 'Export ADR'}
+                        </button>
+                      </div>
+                    ) : null}
+                    {adrResult ? (
+                      <p style={{ margin: '4px 0 0', color: '#166534' }}>{adrResult}</p>
+                    ) : null}
+                    {inlineError ? (
+                      <p role="alert" style={{ ...errorStyle, margin: '4px 0 0' }}>
+                        {inlineError}
+                      </p>
+                    ) : null}
                   </li>
                 );
               })}

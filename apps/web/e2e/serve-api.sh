@@ -33,10 +33,16 @@ export PYTHONPATH="${API_DIR}:${REPO_ROOT}/packages/aos_core"
 export DATABASE_URL="sqlite:///${DB_PATH}"
 export ARTIFACT_ROOT="${ARTIFACT_DIR}"
 export REPOSITORY_ROOT="${FIXTURES_DIR}"
-# Absolute path to the committed vault so POST /knowledge/sync finds the real
-# lessons index even after the `cd "${SCRATCH_DIR}"` below (a relative
-# knowledge_root would otherwise resolve to the empty scratch dir).
-export KNOWLEDGE_ROOT="${REPO_ROOT}/knowledge"
+# A throwaway COPY of the committed vault (absolute path so it survives the
+# `cd "${SCRATCH_DIR}"` below). POST /knowledge/sync still finds the real lessons
+# index (copied verbatim), but the ADR-export flow (POST /decisions/{id}/adr,
+# exercised by decision-loop.spec) writes ADR markdown under
+# <knowledge_root>/wiki/decisions/ — pointing at the real repo vault would leave
+# untracked ADR files in the committed tree and break the knowledge-sync counts.
+KNOWLEDGE_DIR="${SCRATCH_DIR}/knowledge"
+mkdir -p "${KNOWLEDGE_DIR}"
+cp -a "${REPO_ROOT}/knowledge/." "${KNOWLEDGE_DIR}/"
+export KNOWLEDGE_ROOT="${KNOWLEDGE_DIR}"
 export REDIS_URL="redis://localhost:9999/0"
 
 # Ephemeral Redis for the job queue. --save '' + --appendonly no keep it purely
@@ -47,6 +53,7 @@ REDIS_PID=$!
 
 cleanup() {
   kill "${REDIS_PID}" 2>/dev/null || true
+  [ -n "${WORKER_PID:-}" ] && kill "${WORKER_PID}" 2>/dev/null || true
   [ -n "${API_PID:-}" ] && kill "${API_PID}" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
@@ -57,4 +64,14 @@ cd "${SCRATCH_DIR}"
 
 python3 -m uvicorn app.main:app --port 8000 &
 API_PID=$!
+
+# Drain the job queue so enqueued council reviews (and scans/digests) actually
+# complete in e2e. The worker shares this boot's sqlite DB + Redis via the same
+# DATABASE_URL/REDIS_URL/REPOSITORY_ROOT/ARTIFACT_ROOT/KNOWLEDGE_ROOT exported
+# above. It needs its OWN PYTHONPATH: apps/worker also ships an `app` package
+# (app.worker), so it must precede apps/api's `app` package (app.main) here —
+# hence a per-process override rather than reusing the exported API PYTHONPATH.
+PYTHONPATH="${REPO_ROOT}/apps/worker:${REPO_ROOT}/packages/aos_core" python3 -m app.worker &
+WORKER_PID=$!
+
 wait "${API_PID}"

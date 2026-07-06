@@ -13,7 +13,6 @@ cannot ALTER COLUMN in place, so the change goes through ``batch_alter_table``
 from typing import Sequence, Union
 
 from alembic import op
-import sqlalchemy as sa
 
 import aos_core.models  # provides the GUID / JSONField TypeDecorators referenced below
 

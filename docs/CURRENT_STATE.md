@@ -83,7 +83,7 @@ Every new engineering session should read this before planning or implementation
 
 - Status: Verification pending (AOS-KNOW-002 in review; PR #50 merged as `2c5cdcb`)
 - Level: Level 4
-- Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; ran `sync_knowledge` against the real `./knowledge` → **11 lesson KnowledgePage rows, LES-007 sole open, idempotent (11 updated, no dupes), global (project_id NULL), missing-vault→zeros**; `build_digest` surfaces the open lesson; alembic no-drift after `0004` (chain 0001→0004, project_id nullable, 0 ops, 24 tables). CI (api-tests, compose-smoke on Postgres) pending on the PR
+- Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; ran `sync_knowledge` against the real `./knowledge` → **all vault lessons synced (12 today; LES-007 the sole open), idempotent re-sync (no dupes), global (project_id NULL), missing-vault→zeros** (tests are count-agnostic per LES-012); `build_digest` surfaces the open lesson; alembic no-drift after `0004` (chain 0001→0004, project_id nullable, 0 ops, 24 tables). CI (api-tests, compose-smoke on Postgres) pending on the PR
 - Evidence: lessons queryable via API; open lessons visible to the digest (RFC-0004 deferral closed); repo remains authoritative
 - Limitations: only lessons ingested (other vault domains empty); compose self-contained sync needs a `./knowledge:ro` mount (follow-up); advisory/draft-only
 - Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review

@@ -20,7 +20,7 @@ async function refreshUntilReviewAppears(page: Page): Promise<Locator> {
 // Scope to the drafted decision's <li> WITHIN the "Decisions & Research" section.
 // The Agent Council dashboard (AOS-COUNCIL-002) renders the same reviews in a
 // separate section, so a page-global listitem+question locator is now ambiguous
-// (LES-027) — scope to the section that owns the decision row.
+// (LES-028) — scope to the section that owns the decision row.
 const decisionRow = (page: Page, question: string): Locator =>
   page
     .locator('section')

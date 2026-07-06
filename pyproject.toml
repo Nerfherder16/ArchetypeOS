@@ -9,4 +9,5 @@ ignore = ["E501"]
 [tool.pytest.ini_options]
 markers = [
     "pgvector: Postgres+pgvector-gated tests (RFC-0010); skipped unless AOS_TEST_DATABASE_URL points at a postgresql DB.",
+    "embedder: real-fastembed embedder tests (RFC-0010 / AOS-EMBED-002); skipped unless fastembed is importable.",
 ]

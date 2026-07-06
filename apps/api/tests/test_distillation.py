@@ -14,6 +14,7 @@ reads the real ``repositories/`` nor writes the real ``knowledge/`` vault.
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,10 +22,13 @@ from types import SimpleNamespace
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from aos_core.llm import DeterministicProvider
 from aos_core.models import KnowledgePage, RepositoryDNA
 from aos_core.services.distillation import (
     _repo_slug,
+    distill_repository,
     extract_repo_knowledge,
+    reason_purpose,
     render_repository_markdown,
     select_source_files,
     summarize_sources,
@@ -444,3 +448,172 @@ def test_distill_code_repo_renders_components_section(client, tmp_path) -> None:
     assert "source file read — source: app.py" in text
     # The deterministic provider fabricates NO narrative.
     assert "## How it works / Built for" not in text
+
+
+# --- AOS-DISTILL-004: reasoned DNA.purpose tier (hermetic — NO live model) ---
+#
+# The real-provider path is exercised with a FAKE provider stub whose ``.name`` is
+# NOT "deterministic" and whose ``.generate`` returns canned JSON. No ``claude``
+# binary is ever shelled: these tests prove the derived/reasoned branching + the
+# fabrication-free fallback purely in-process.
+
+_REASONED_PURPOSE = (
+    "Widget Toolkit is a lightweight library for composing terminal UI widgets, "
+    "useful for building small command-line dashboards."
+)
+
+
+class _FakeReasonedProvider:
+    """A fake NON-deterministic provider returning canned reasoned JSON (no live model).
+
+    ``.name != "deterministic"`` selects the reasoned tier; ``.generate`` records
+    each call so a test can assert the provider was actually invoked (the gating
+    let the real-provider path run) and returns a ``purpose`` sentence.
+    """
+
+    name = "claude_code"
+
+    def __init__(self, purpose: str = _REASONED_PURPOSE) -> None:
+        self._purpose = purpose
+        self.calls: list[dict] = []
+
+    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024):
+        self.calls.append({"system": system, "prompt": prompt})
+        return SimpleNamespace(
+            text=json.dumps({"purpose": self._purpose}),
+            provider=self.name,
+            model=None,
+            finish_reason="stop",
+        )
+
+
+class _FakeGarbledProvider:
+    """A fake real provider whose output has no usable purpose (empty / non-JSON)."""
+
+    name = "claude_code"
+
+    def __init__(self, text: str) -> None:
+        self._text = text
+        self.calls: list[dict] = []
+
+    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024):
+        self.calls.append({"system": system, "prompt": prompt})
+        return SimpleNamespace(text=self._text, provider=self.name, model=None, finish_reason="stop")
+
+
+def _seed_dna(tmp_path, repo_id: str) -> None:
+    session = _same_file_session(tmp_path)
+    try:
+        session.add(
+            RepositoryDNA(
+                repository_id=repo_id,
+                package_managers=["pip"],
+                scan_summary={"summary": {"language_classes": {"Python": "source"}}},
+            )
+        )
+        session.commit()
+    finally:
+        session.close()
+
+
+def _dna_purpose(tmp_path, repo_id: str) -> str:
+    session = _same_file_session(tmp_path)
+    try:
+        return session.query(RepositoryDNA).filter(RepositoryDNA.repository_id == repo_id).one().purpose
+    finally:
+        session.close()
+
+
+def test_reason_purpose_gating_and_parsing_is_hermetic() -> None:
+    files = [{"path": "app.py", "text": "print('hi')"}]
+
+    # Deterministic provider is gated OUT of the reasoned tier — no shell, "".
+    assert reason_purpose(_RICH_README, files, DeterministicProvider()) == ""
+
+    # A real provider returning a canned purpose yields that exact sentence.
+    good = _FakeReasonedProvider("Repo X is a tool useful for Y.")
+    assert reason_purpose(_RICH_README, files, good) == "Repo X is a tool useful for Y."
+    assert good.calls  # the real-provider path actually ran
+
+    # Empty / garbled / purpose-less real output → "" (no fabrication).
+    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider("")) == ""
+    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider("not json at all")) == ""
+    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider('{"other": "x"}')) == ""
+    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider('{"purpose": "   "}')) == ""
+
+
+def test_distill_reasoned_provider_sets_reasoned_purpose_and_state(client, tmp_path) -> None:
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_repo(
+        client, project_id, name="Widget Toolkit", local_path="widget", readme=_RICH_README
+    )
+    _seed_dna(tmp_path, repo_id)
+
+    provider = _FakeReasonedProvider()
+    session = _same_file_session(tmp_path)
+    try:
+        page = distill_repository(
+            session, repository_id=repo_id, knowledge_root=tmp_path, provider=provider
+        )
+        assert page.validation_state == "reasoned"
+    finally:
+        session.close()
+
+    # The real-provider path shelled the (fake) provider — gating let it run.
+    assert provider.calls
+    # DNA.purpose IS the reasoned line, not the deterministic floor summary.
+    purpose = _dna_purpose(tmp_path, repo_id)
+    assert purpose == _REASONED_PURPOSE
+    assert not purpose.startswith("A reusable library for building command-line widgets")
+
+    # Single source of truth: the rendered page summary reflects the reasoned line.
+    text = (tmp_path / page.vault_path).read_text(encoding="utf-8")
+    assert _REASONED_PURPOSE in text
+
+
+def test_distill_deterministic_provider_keeps_floor_and_derived(client, tmp_path) -> None:
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_repo(
+        client, project_id, name="Widget Toolkit", local_path="widget", readme=_RICH_README
+    )
+    _seed_dna(tmp_path, repo_id)
+
+    session = _same_file_session(tmp_path)
+    try:
+        page = distill_repository(
+            session, repository_id=repo_id, knowledge_root=tmp_path, provider=DeterministicProvider()
+        )
+        assert page.validation_state == "derived"
+    finally:
+        session.close()
+
+    # DNA.purpose is the deterministic floor summary (hermetic, no live model).
+    purpose = _dna_purpose(tmp_path, repo_id)
+    assert purpose.startswith("A reusable library for building command-line widgets")
+
+
+def test_distill_garbled_reasoned_output_falls_back_to_floor(client, tmp_path) -> None:
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_repo(
+        client, project_id, name="Widget Toolkit", local_path="widget", readme=_RICH_README
+    )
+    _seed_dna(tmp_path, repo_id)
+
+    # A real provider whose reasoned purpose is empty → fall back to the floor.
+    provider = _FakeGarbledProvider('{"purpose": ""}')
+    session = _same_file_session(tmp_path)
+    try:
+        page = distill_repository(
+            session, repository_id=repo_id, knowledge_root=tmp_path, provider=provider
+        )
+        assert page.validation_state == "derived"
+    finally:
+        session.close()
+
+    assert provider.calls  # the real path ran, but produced no usable purpose
+    purpose = _dna_purpose(tmp_path, repo_id)
+    # No fabrication: the deterministic floor summary is preserved.
+    assert purpose.startswith("A reusable library for building command-line widgets")

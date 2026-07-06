@@ -691,6 +691,49 @@ def reason_over_source(files: list[dict], provider) -> dict:
     return narrative
 
 
+_PURPOSE_SYSTEM_PROMPT = (
+    "You are a repository-distillation agent. You are given a repository's README and a bounded "
+    "selection of its SOURCE files, each labelled with its path. Reason ONLY from the supplied "
+    "content — do not invent purpose, APIs, or behaviour that is not present. Determine, in ONE "
+    "concise declarative sentence, WHAT the repository is and WHAT it is useful for. Do not "
+    "describe badges, installation steps, or licensing, and do not use analogies to other "
+    "projects. Respond ONLY with a JSON object of the form {\"purpose\": \"<one sentence>\"}."
+)
+
+
+def reason_purpose(readme: str, files: list[dict], provider) -> str:
+    """Reason a concise one-sentence ``DNA.purpose`` from README + bounded source (LES-021 isolated).
+
+    Builds ONE bounded prompt (the README, already capped by :func:`_read_primary_readme`, plus
+    each already-capped source file as ``### <path>\\n<text>``), runs ``provider.generate``, and
+    parses the output with the council's tolerant ``_loads_tolerant`` into a single ``purpose``
+    sentence — one declarative statement of what the repo is and what it is useful for. Only
+    produces a purpose for a **real** provider: a ``deterministic`` provider (or an empty / garbled
+    parse, or an absent ``purpose`` key) yields ``""`` — no fabrication. Never raises out of
+    distillation: any provider error → ``""``.
+    """
+    if getattr(provider, "name", "") == "deterministic":
+        return ""
+    readme_text = (readme or "").strip()
+    if not readme_text and not files:
+        return ""
+    try:
+        prompt_parts = ["Distil the following repository into a one-sentence purpose."]
+        if readme_text:
+            prompt_parts.append("## README\n" + readme_text)
+        blocks = "\n\n".join(f"### {f.get('path')}\n{f.get('text') or ''}" for f in files or [])
+        if blocks:
+            prompt_parts.append("## Source\n" + blocks)
+        prompt = "\n\n".join(prompt_parts)
+        result = provider.generate(system=_PURPOSE_SYSTEM_PROMPT, prompt=prompt)
+        obj = _loads_tolerant(result.text or "")
+    except Exception:
+        return ""
+    if not obj:
+        return ""
+    return str(obj.get("purpose") or "").strip()
+
+
 def render_repository_markdown(distillation: dict) -> str:
     """Render a distillation dict into an Obsidian-friendly markdown page (pure)."""
     title = (distillation.get("title") or _FALLBACK_TITLE).strip()
@@ -812,9 +855,16 @@ def distill_repository(
     ``<knowledge_root>/wiki/repositories/<slug>.md`` (creating dirs). A
     non-writable vault raises **409** (naming the writable-checkout requirement)
     and leaves state untouched. Upserts one ``KnowledgePage`` keyed on
-    ``vault_path`` (``page_type="repository"``, ``validation_state="derived"``,
-    sha256 checksum) and, when a ``RepositoryDNA`` row exists, stamps its
-    ``purpose`` with the distilled summary. Idempotent.
+    ``vault_path`` (``page_type="repository"``, sha256 checksum) and, when a
+    ``RepositoryDNA`` row exists, stamps its ``purpose``.
+
+    Two-tier ``DNA.purpose`` (AOS-DISTILL-004): with a **real** (non-deterministic)
+    provider that reasons a non-empty one-sentence purpose from README + bounded
+    source, that purpose becomes the page summary + ``DNA.purpose`` and the page is
+    ``validation_state="reasoned"``. Otherwise — the deterministic CI provider, or
+    empty/garbled reasoned output — the Package-1 clean deterministic floor summary
+    is kept and the page is ``validation_state="derived"`` (fully hermetic; no live
+    model, no fabrication). Idempotent.
     """
     repository = db.get(Repository, repository_id)
     if not repository:
@@ -835,11 +885,26 @@ def distill_repository(
     # the reasoned narrative is produced only for a real provider (no fabrication).
     files = select_source_files(repository, dna=dna)
     code = summarize_sources(files)
-    narrative = reason_over_source(files, provider) if getattr(provider, "name", "") != "deterministic" else {}
+    is_real_provider = getattr(provider, "name", "") != "deterministic"
+    narrative = reason_over_source(files, provider) if is_real_provider else {}
     distillation["components"] = code["components"]
     distillation["entry_points"] = code["entry_points"]
     distillation["source_files"] = [f["path"] for f in files]
     distillation["narrative"] = narrative
+
+    # Two-tier DNA.purpose (AOS-DISTILL-004): a real (non-deterministic) provider
+    # reasons a concise purpose from README + bounded source; a non-empty result is
+    # the primary quality tier and becomes the single source of truth (it replaces
+    # the floor summary in the rendered page + stamps DNA.purpose, and the page is
+    # marked "reasoned"). The deterministic CI provider — and any empty/garbled
+    # reasoned output — falls back to the Package-1 clean floor + "derived" (no
+    # fabrication, fully hermetic).
+    reasoned_purpose = reason_purpose(readme_text, files, provider) if is_real_provider else ""
+    if reasoned_purpose:
+        distillation["summary"] = reasoned_purpose
+        validation_state = "reasoned"
+    else:
+        validation_state = "derived"
 
     markdown = render_repository_markdown(distillation)
     slug = _repo_slug(repository.name)
@@ -875,7 +940,7 @@ def distill_repository(
             title=distillation["title"],
             vault_path=vault_path,
             page_type=_PAGE_TYPE,
-            validation_state="derived",
+            validation_state=validation_state,
             source_refs=source_refs,
             checksum=checksum,
         )
@@ -884,7 +949,7 @@ def distill_repository(
         page.project_id = repository.project_id
         page.title = distillation["title"]
         page.page_type = _PAGE_TYPE
-        page.validation_state = "derived"
+        page.validation_state = validation_state
         page.source_refs = source_refs
         page.checksum = checksum
 
@@ -901,6 +966,7 @@ __all__ = [
     "select_source_files",
     "summarize_sources",
     "reason_over_source",
+    "reason_purpose",
     "render_repository_markdown",
     "distill_repository",
 ]

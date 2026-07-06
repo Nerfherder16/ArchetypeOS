@@ -26,11 +26,11 @@ AOS-DISTILL-003 — Package 1 of the distillation mature-state arc: deterministi
 
 ### PR
 
-Pending — AOS-DISTILL-004 (Package 2, reasoned `DNA.purpose`) PR being opened on `claude/aos-runtime-002-scanner-1egyjw`. Prior: #64 (Package 1) merged as `c6f5d61`; #63 merged as `1d8eb0f`.
+#65 — **Merged** as `b62c6c6` (Package 2). Prior: #64 (Package 1) merged as `c6f5d61`; #63 merged as `1d8eb0f`. Branch restarted from main at `b62c6c6`. **Paused for operator direction on Package 3.**
 
 ### Status
 
-Package 2 (AOS-DISTILL-004) In Review — the reasoned quality tier: `reason_purpose` has the LES-021-isolated `claude_code` provider reason a concise `DNA.purpose` from README + bounded source (primary, single source of truth, `validation_state="reasoned"`), with the Package-1 clean deterministic floor as the permanent hermetic fallback (`"derived"`). **Orchestrator-verified independently incl. a live isolated-provider run**: gin/kubernetes reasoned purposes are genuinely descriptive (name real mechanisms — radix-tree router, control-plane components), contamination-free (LES-021 holds), and lift ranking (k8s matches container+orchestration); api 171 / worker 7, ruff full CI scope + compileall clean; hermetic branching unit-tested; no migration/frontend. **Next: CI green → Manual Merge Gate → operator merge; then Package 3 (transfer scorer normalization: score magnitudes + fold `runtime_services`/architecture into the transfer candidate text — the reality test showed magnitudes are tiny and example-voting-app's worker+redis graph is invisible to a "message queue" query).**
+Package 2 (AOS-DISTILL-004) **Merged** — the reasoned quality tier: `reason_purpose` has the LES-021-isolated `claude_code` provider reason a concise `DNA.purpose` from README + bounded source (primary, single source of truth, `validation_state="reasoned"`), with the Package-1 clean deterministic floor as the permanent hermetic fallback (`"derived"`). **Orchestrator-verified independently incl. a live isolated-provider run**: gin/kubernetes reasoned purposes are genuinely descriptive (name real mechanisms — radix-tree router, control-plane components), contamination-free (LES-021 holds), and lift ranking (k8s matches container+orchestration); api 171 / worker 7, ruff full CI scope + compileall clean; hermetic branching unit-tested; no migration/frontend. **Next: CI green → Manual Merge Gate → operator merge; then Package 3 (transfer scorer normalization: score magnitudes + fold `runtime_services`/architecture into the transfer candidate text — the reality test showed magnitudes are tiny and example-voting-app's worker+redis graph is invisible to a "message queue" query).**
 
 ### (Prior) Package 1 — merged
 

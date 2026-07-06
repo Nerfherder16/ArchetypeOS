@@ -18,19 +18,23 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-PORTFOLIO-001 (Plane AOS-21) — Portfolio: onboard + scan a second real repo (`pydantic/pydantic-ai`, operator-chosen), evaluate every engine. The first portfolio reality test + a repeatable repo-acquisition capability. (Prior: AOS-KNOW-003 merged PR #52 / `c022c6b` — AOS-23 Done; AOS-KNOW-002 PR #51; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
+Definitive-roadmap reevaluation (advisory; operator-flagged) — now that AOS-21 is Done. (Prior: AOS-PORTFOLIO-001 merged PR #53 / `b64db41` — AOS-21 Done, 5-repo reality test; AOS-KNOW-003 PR #52 / AOS-23; AOS-KNOW-002 PR #51; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `c022c6b` after the PR #52 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `b64db41` after the PR #53 merge; env-pinned — see branch note above)
 
 ### PR
 
-To be opened.
+#53 — **Merged** as `b64db41` (squash). CI run 28763747860 all 6 jobs green on head `73f73ac`.
 
 ### Status
 
-In Review — `aos_core/services/onboarding.py` (`clone_repo` — the missing acquire step) + `scripts/onboard_repo.sh` + `test_onboarding.py`; captured evidence `.archetype/portfolio/pydantic-ai/scan.json` + evaluation `docs/PORTFOLIO_PYDANTIC_AI.md`; **honest lessons LES-013 (file-count language mix misreads pydantic-ai as 28% Python) + LES-014 (architecture edges tree-only) — both open**; LES-015 (self-caught e2e count-race) closed. Also fixed two count-coupled tests (digest `open_lessons==1`; e2e open-filter) to be count-agnostic after adding 2 open lessons. Orchestrator-verified: real full pipeline on pydantic-ai (all 8 manifests, ecosystems, CI detected, no crash; DNA + 14 contains edges); `clone_repo` real `file://` clone + idempotent + path-safety; api **102**; full Playwright **5/5 headless**; ruff full CI scope + compile clean. **Merging closes AOS-21; next: the definitive-roadmap reevaluation.**
+Merged — the first portfolio reality test grew to **five** repos (pydantic-ai, claude-agent-sdk-python, gin [Go], example-voting-app [polyglot compose], kubernetes [scale, 30,560 files]) + a repeatable `clone_repo`/`onboard_repo.sh` acquisition capability. **The scanner is robust and generalizes across language / deployment style / scale** (graceful non-silent truncation at 30k files). Four honest open lessons: LES-013 (language weighting), LES-014 (dependency/compose edges), LES-016 (manifest/ecosystem coverage — .NET missed), LES-017 (secret-signal precision — acute at scale); LES-015 (e2e count-race) closed. Branch restarted from `main` at `b64db41`. **AOS-21 Done. Next: the definitive-roadmap reevaluation (depth-vs-breadth settled toward depth).**
+
+### Note — GitHub connector expired mid-session
+
+The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI were unaffected (separate proxy auth); only PR comments/reads were blocked. Operator re-authorized; the gate was posted late. If it recurs: reconnect GitHub via `/mcp` or claude.ai connector settings — git operations keep working regardless.
 
 ### Orchestrator Transition
 
@@ -75,7 +79,7 @@ In Review — `aos_core/services/onboarding.py` (`clone_repo` — the missing ac
 
 ### Verification Status
 
-Verification pending (AOS-PORTFOLIO-001 in review)
+Verified (PR #53 merged as `b64db41`; AOS-21 Done)
 
 ### Verification Level
 
@@ -83,7 +87,7 @@ Level 4
 
 ### Verification Method
 
-Orchestrator ran the real full pipeline on pydantic-ai (clone → register → `run_scan` → DNA + 15 arch nodes / 14 `contains` edges + 8 manifests → digest) and captured `.archetype/portfolio/pydantic-ai/scan.json`; independently verified `clone_repo` (real `file://` clone + idempotent + all path-safety rejections); api **102 passed** (99 + 3 onboarding); full Playwright **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after 2 new open lessons; also fixed the count-coupled digest test); ruff at full CI scope (`apps/api packages/aos_core apps/worker tools`) + compile clean. GitHub CI (api-tests, compose-smoke, web-e2e) pending on the PR; merge under the Manual Merge Gate; on merge AOS-21 → Done.
+CI run 28763747860 all 6 jobs green on head `73f73ac` plus the Orchestrator's real full pipeline on **five** repos (clone via `clone_repo` → register → `run_scan` → DNA + architecture → digest; evidence at `.archetype/portfolio/{pydantic-ai,claude-agent-sdk-python,gin,example-voting-app,kubernetes}/scan.json`); `clone_repo` verified independently (real `file://` clone + idempotent + path-safety, plus five real network clones); api **102 passed**; full Playwright **5/5 headless**; ruff full CI scope + compile clean. AOS-21 → Done; branch restarted from `main` at `b64db41`.
 
 ### Evidence
 
@@ -99,7 +103,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge AOS-PORTFOLIO-001 under the Manual Merge Gate — **closes AOS-21**. Then the **definitive-roadmap reevaluation** the operator flagged (bring a proposed phase map). The reality test spawned two scoped follow-ups: a language-mix weighting package (LES-013) and an architecture-semantics / dependency-edge package (LES-014, Fable-flagged). Other remaining: AOS-20 (doc-staleness/LES-007 — machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`), now feedable with pydantic-ai data, validates Intelligence Phase 1.
+Deliver the **definitive-roadmap reevaluation** (advisory), then let the operator pick the next build. Depth-vs-breadth is empirically settled toward **depth**: 5 diverse repos proved the scanner robust, so further ingestion is diminishing returns. Highest-value builds: (1) run the **Agent Council over a real repo** (`llm_provider=claude_code` on an authed node — validates Intelligence Phase 1 on real external code); (2) **LES-014** dependency/compose architecture edges (`example-voting-app` is a ready test); (3) **LES-013** language weighting. Scanner backlog: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
 
 ## Handoff Template
 

@@ -363,7 +363,7 @@ Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligenc
 
 ## Control-Plane Hardening (open)
 
-Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator-directed substrate sequence: "aos-23, then aos-21, then reevaluate the roadmap" (then "2 then 1" — dashboard before second repo). Delivered: AOS-APIROUTES-001 (PR #50, AOS-24 Done — API modularized); AOS-KNOW-002 (PR #51 — knowledge read path backend); AOS-KNOW-003 (PR #52 — knowledge dashboard). **AOS-23 Done — knowledge read path complete end to end.** Next: **AOS-21 (second repo)** — awaiting operator go-ahead — then a definitive-roadmap reevaluation. Remaining after: AOS-20 (doc-staleness, now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
+Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator-directed substrate sequence: "aos-23, then aos-21, then reevaluate the roadmap" (then "2 then 1" — dashboard before second repo). Delivered: AOS-APIROUTES-001 (PR #50, AOS-24 Done — API modularized); AOS-KNOW-002 (PR #51 — knowledge read path backend); AOS-KNOW-003 (PR #52 — knowledge dashboard, AOS-23 Done); **AOS-PORTFOLIO-001 (PR #53 — 5-repo portfolio reality test, AOS-21 Done).** **Next: the definitive-roadmap reevaluation** (operator-flagged) — depth-vs-breadth empirically settled toward depth. Backlog spawned by the reality test: LES-013 (language weighting), LES-014 (dependency/compose architecture edges), LES-016 (broaden manifest/ecosystem coverage), LES-017 (secret-signal precision). Also open: AOS-20 (doc-staleness, machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard), and running the Council over a real repo (depth).
 
 ### AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening)
 
@@ -400,19 +400,17 @@ Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, 
 
 ### AOS-PORTFOLIO-001 — Portfolio: onboard + scan a second real repo (pydantic-ai), evaluate every engine (Plane AOS-21)
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent (Opus, acquisition code) + Orchestrator (Opus 4.8, reality test + evaluation)
-- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
-- Plane: AOS-21 (In Progress — **merging closes it**)
-- PR: to be opened
+- PR: #53 (merge commit `b64db41`)
+- Plane: AOS-21 (**Done**)
 - Spec: `.archetype/work/AOS-PORTFOLIO-001.md`
 - Goal: the first portfolio reality test — run the pipeline on **four** diverse real repos the system did not write (pydantic-ai, claude-agent-sdk-python, gin [Go], example-voting-app [polyglot compose]; operator-chosen) + a repeatable repo-acquisition capability (`clone_repo`, dogfooded on all four real network clones). Deliverables: `clone_repo` (`aos_core/services/onboarding.py`) + `scripts/onboard_repo.sh` + tests; captured scans (`.archetype/portfolio/*/scan.json`) + evaluation (`docs/PORTFOLIO_PYDANTIC_AI.md`); **four honest open lessons — LES-013 (file-count language mix, repo-dependent), LES-014 (architecture edges tree-only), LES-016 (new: `.csproj`/.NET manifest missed; ecosystem coverage stops at python/node/go), LES-017 (`SECRET_LIKE_FILENAME` on test-cert fixtures)**. Scanner is robust + broader than assumed (Go + compose handled well). Gaps are scoped follow-ups, not fixed here. LES-015 (self-caught e2e count-race) closed.
-- Verification Status: Verification pending
+- Verification Status: Verified
 - Verification Level: Level 4
-- Verification Method: Orchestrator ran the **real full pipeline** on pydantic-ai (clone → register → run_scan → DNA + 15 architecture nodes / 14 contains edges + 8 manifests → digest) and captured evidence; independently verified `clone_repo` (real `file://` clone + idempotent + all path-safety rejections); api suite **102 passed** (99 + 3 onboarding); full Playwright suite **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after adding 2 open lessons); ruff at **full CI scope** (`apps/api packages/aos_core apps/worker tools`) + compile clean. Also fixed the count-coupled digest test (was pinned to `open_lessons==1`; now self-consistent). CI (api-tests, compose-smoke, web-e2e) pending on the PR.
-- Evidence: the scanner generalizes to a real monorepo (all sub-package manifests, ecosystems, CI detected, no crash); two honest gaps quantified + recorded as open lessons (they now surface in the digest + Knowledge dashboard)
-- Limitations: gaps recorded, not fixed (follow-up packages); the pydantic-ai run is captured evidence, not a CI test (no live clone in CI); acquisition is a script/function (no API onboard endpoint yet)
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate; on merge AOS-21 → Done
+- Verification Method: CI run 28763747860 all 6 jobs green on head `73f73ac` plus the Orchestrator's real full pipeline on **five** repos (pydantic-ai, claude-agent-sdk-python, gin, example-voting-app, kubernetes — clone via `clone_repo` → register → run_scan → DNA + architecture → digest, evidence at `.archetype/portfolio/*/scan.json`); `clone_repo` verified independently (real `file://` clone + idempotent + path-safety); api **102**; full Playwright **5/5 headless**; ruff full CI scope + compile clean. Merge commit `b64db41`.
+- Evidence: **the scanner is robust and generalizes across language / deployment style / scale** — Go + multi-service compose handled well; at 30k files (kubernetes) it degrades gracefully (truncation surfaced via `SCAN_TRUNCATED`, DNA sane). Four honest gaps recorded as open lessons (LES-013 language weighting, LES-014 dependency/compose edges, LES-016 manifest coverage, LES-017 secret-signal precision) — all now surface in the digest + Knowledge dashboard.
+- Required Next Verifier: None.
 
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 

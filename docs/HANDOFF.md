@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening). Lead-Architect critique, operator-directed "route split first, then AOS-COUNCIL-002." Pure behavior-preserving refactor of `apps/api/app/main.py` into per-domain `APIRouter` modules. (Prior: AOS-COUNCIL-001 merged as PR #49 / `a56d317`, AOS-19 Done — Agent Council backend live.)
+AOS-KNOW-002 — Knowledge read path (RFC-0002/RFC-0004; Plane AOS-23 backend). Operator-directed substrate sequence ("aos-23, then aos-21, then reevaluate the roadmap"). vault→DB sync + KnowledgePage read API + digest open-lessons rule. (Prior: AOS-APIROUTES-001 merged PR #50 / `2c5cdcb`, AOS-24 Done — API modularized; AOS-COUNCIL-001 PR #49, AOS-19 Done.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `a56d317` after the PR #49 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `2c5cdcb` after the PR #50 merge; env-pinned — see branch note above)
 
 ### PR
 
-#50 — **Merged** as `2c5cdcb` (squash). CI run 28759105408 all 6 jobs green on head `65c3286`.
+To be opened.
 
 ### Status
 
-Merged — `main.py` (487 lines / 39 routes) split into 10 `apps/api/app/routes/*.py` `APIRouter` modules; `main.py` → 49 lines (app + CORS + startup + `/health` + ordered `include_router` loop, retains `import redis` so the FakeRedis `main.redis` patch target survives). Orchestrator-verified: **route table byte-identical `origin/main` vs working tree (43 pairs, empty diff)**; api **94** (92 unchanged + 2 inventory guards); FakeRedis jobs/schedules/council **11** in isolation. No endpoint/schema/behavior change; AOS-24 Done. Branch restarted from `main` at `2c5cdcb`. Env-pinned branch constraint documented (Decision 2a). **Next: AOS-COUNCIL-002 (Agent Council Dashboard, reframed around the Control Tower IA) — awaiting operator go-ahead.**
+In Review — **repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection** (reconciles RFC-0004's rejection of DB-primary lessons). `knowledge_root` config + `KnowledgePage.project_id` nullable (migration `0004`, sqlite batch alter) + `sync_knowledge` (lessons-index parser → upsert) + read API (`POST /knowledge/sync`, `GET /knowledge/pages`(+filters), `GET /knowledge/pages/{id}`) + **digest rule 5** surfacing open lessons (closes the RFC-0004 deferral). Orchestrator-verified: api **99** / worker **7**; `sync_knowledge` on the real vault → 11 lessons, LES-007 sole open, idempotent, global, missing-vault→zeros; digest surfaces the open lesson; alembic no-drift after `0004` (project_id nullable, 0 ops, 24 tables). Backend only — dashboard is AOS-KNOW-003 (23b). No Docker/compose change (compose self-contained sync needs a `./knowledge:ro` mount — documented follow-up). **Next after merge: AOS-KNOW-003, then AOS-21.**
 
 ### Orchestrator Transition
 
@@ -75,7 +75,7 @@ Merged — `main.py` (487 lines / 39 routes) split into 10 `apps/api/app/routes/
 
 ### Verification Status
 
-Verified (PR #50 merged as `2c5cdcb`)
+Verification pending (AOS-KNOW-002 in review)
 
 ### Verification Level
 
@@ -83,7 +83,7 @@ Level 4
 
 ### Verification Method
 
-CI run 28759105408 all 6 jobs green on head `65c3286` plus Orchestrator's independent 3.12-venv run: full route table diffed via a worktree of `origin/main` vs the working tree → **byte-identical (43 (method,path) pairs, empty diff)** — the refactor guard. api **94 passed** (92 prior unchanged + 2 inventory tests); FakeRedis jobs/schedules/council **11 passed in isolation** (`main.redis.Redis.from_url` patch target preserved); ruff/compile clean; `main.py` 487→49. AOS-24 → Done; branch restarted from `main` at `2c5cdcb`.
+Orchestrator independently (3.12 venv): ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; ran `sync_knowledge` against the real `./knowledge` → 11 lesson KnowledgePage rows, LES-007 sole open, idempotent re-sync (11 updated, no dupes), global (project_id NULL), missing-vault→zeros; `build_digest` surfaces the open lesson (change + draft rec); alembic no-drift after `0004` (chain 0001→0004, `knowledge_pages.project_id` nullable, **0 ops**, 24 tables — alter, no new table). GitHub CI (api-tests, compose-smoke applies `0004` on Postgres) pending on the PR; merge under the Manual Merge Gate.
 
 ### Evidence
 
@@ -99,7 +99,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge AOS-APIROUTES-001 after CI passes under the Manual Merge Gate (Plane AOS-24). Then AOS-COUNCIL-002 — the Agent Council Dashboard, reframed around the Control Tower information hierarchy (critique #3). Then the critique's substrate priorities: AOS-23 (knowledge read path — makes stored knowledge, incl. council reviews, operational), AOS-21 (second repo — the council reasons over more than itself), AOS-20 (doc-staleness/LES-007), AOS-22 (backups). A real council run on an authed node (`llm_provider=claude_code`) is the operator-side validation of Phase 1.
+Merge AOS-KNOW-002 after CI passes under the Manual Merge Gate (Plane AOS-23 backend). Then AOS-KNOW-003 (23b — dashboard Knowledge view + Playwright e2e), then AOS-21 (second repo). Operator-set sequence: "aos-23, then aos-21, then reevaluate the definitive roadmap." Remaining: AOS-20 (doc-staleness/LES-007 — now machine-surfaced by the digest, this closes the loop), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). Compose self-contained knowledge sync (a `./knowledge:ro` mount + `POST /knowledge/sync`) is a documented follow-up. A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
 
 ## Handoff Template
 

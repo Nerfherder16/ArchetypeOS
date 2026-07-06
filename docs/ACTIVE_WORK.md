@@ -376,6 +376,22 @@ Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, 
 - Notes: Level 4 — CI run 28759105408 all 6 jobs green on head `65c3286` (incl. compose-smoke booting the api image from the split package) plus Orchestrator's independent 3.12-venv run: **route table byte-identical `origin/main` vs working tree (43 (method,path) pairs, empty diff)**, api 94 (92 unchanged + 2 inventory guards), FakeRedis jobs/schedules/council 11 in isolation (patch target preserved), ruff/compile clean, `main.py` 487→49. Merge commit `2c5cdcb`. Pure behavior-preserving refactor — API now modular (10 `routes/*.py`). Also documented the env-pinned branch constraint in HANDOFF + Playbook (Decision 2a).
 - Required Next Verifier: None.
 
+### AOS-KNOW-002 — Knowledge read path: vault→DB sync + KnowledgePage read API + digest open-lessons rule (RFC-0002/RFC-0004; Plane AOS-23 backend)
+
+- Status: In Review
+- Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
+- Plane: AOS-23 (In Progress — 23a backend; the dashboard Knowledge view is AOS-KNOW-003 / 23b)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-KNOW-002.md`
+- Goal: make stored knowledge operational. **Design: the repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection** (reconciles RFC-0004's rejection of DB-primary lessons — a DB reset loses nothing, re-sync from the repo). `knowledge_root` config + `KnowledgePage.project_id` nullable (migration `0004`) + `sync_knowledge` (lessons-index parser → upsert) + read API (`POST /knowledge/sync`, `GET /knowledge/pages`(+filters), `GET /knowledge/pages/{id}`) + **digest rule 5** surfacing open lessons. Closes the AOS-KNOW-001 + RFC-0004 deferrals. No Docker/compose change (self-contained compose sync = documented follow-up needing a `./knowledge:ro` mount).
+- Verification Status: Verification pending
+- Verification Level: Level 4
+- Verification Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; independently ran `sync_knowledge` against the real `./knowledge` → **11 lesson KnowledgePage rows, LES-007 the sole open, idempotent re-sync (11 updated, 11 rows, no dupes), global (project_id NULL), missing-vault→zeros**; `build_digest` surfaces the open lesson (change + draft rec); alembic no-drift after `0004` — chain 0001→0004, `knowledge_pages.project_id` nullable, **0 drift ops**, 24 tables (alter, no new table). CI (api-tests, compose-smoke applying `0004` on Postgres) pending on the PR.
+- Evidence: lessons queryable via the API; open lessons visible to the digest (RFC-0004 deferral closed); repo remains authoritative
+- Limitations: only lessons are ingested (other vault domains are empty scaffolding; the API is generic over KnowledgePage so no API change needed later); `POST /knowledge/sync` needs the vault reachable (works in api-tests/local; the shipped compose needs a `./knowledge:ro` mount — follow-up); advisory/draft-only
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate
+
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 
 - Status: Merged

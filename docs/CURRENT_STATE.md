@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 merged (AOS-COUNCIL-001, PR #49, AOS-19 Done). Control-plane hardening: AOS-APIROUTES-001 merged (PR #50, AOS-24 Done). Next: AOS-COUNCIL-002 (awaiting operator go-ahead). Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Substrate sequence (operator-directed): AOS-KNOW-002 (Plane AOS-23 backend) in review; then AOS-21. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -60,10 +60,11 @@ Every new engineering session should read this before planning or implementation
 - PR #48: Scheduler dashboard — schedules UI + enqueue + job history, RFC-0007/RFC-0006 Phase 3b (AOS-SCHED-002) — **closes AOS-18 and the worker pipeline; RFC-0006 + RFC-0007 realized end to end**
 - PR #49: Agent Council seed — LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (AOS-COUNCIL-001) — **the Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done**
 - PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
+- (in review) AOS-KNOW-002: knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (RFC-0002/RFC-0004; Plane AOS-23 backend)
 
 ## Current Objective
 
-**Awaiting operator go-ahead on AOS-COUNCIL-002** — the Agent Council Dashboard, reframed per the Lead-Architect critique (#3) around the **Control Tower information hierarchy** (what the operator sees first/second/third), not a bolted-on panel; it closes the Phase-9 "disagreements are visible" acceptance. The control-plane hardening interlude is done (AOS-APIROUTES-001, PR #50, AOS-24 Done — API modularized). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done) is live and advisory/draft-only. The critique's substrate priorities queue after: AOS-23 (knowledge read path), AOS-21 (second repo), AOS-20 (doc-staleness), AOS-22 (backups).
+**Substrate sequence (operator-directed: "aos-23, then aos-21, then reevaluate the roadmap").** In review: **AOS-KNOW-002** (Plane AOS-23 backend) — the knowledge read path. Repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection. `sync_knowledge` (vault lessons → KnowledgePage), read API (`POST /knowledge/sync`, `GET /knowledge/pages`), `project_id` nullable (migration `0004`), and a **digest rule surfacing open lessons** (closes the RFC-0004 deferral). Next: AOS-KNOW-003 (23b, the dashboard Knowledge view), then AOS-21 (second repo). Prior done: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24).
 
 ## Active Branch
 
@@ -80,16 +81,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verified (PR #50 merged as `2c5cdcb`)
+- Status: Verification pending (AOS-KNOW-002 in review; PR #50 merged as `2c5cdcb`)
 - Level: Level 4
-- Method: CI run 28759105408 all 6 jobs green on head `65c3286` plus Orchestrator's independent 3.12-venv run — **route table byte-identical `origin/main` vs working tree (43 (method,path) pairs, empty diff)**; api 94 (92 unchanged + 2 inventory guards); FakeRedis jobs/schedules/council 11 in isolation; ruff/compile clean; `main.py` 487→49
-- Evidence: route table identical before/after (the refactor guard); all prior tests pass unchanged; 10 `routes/*.py` modules
-- Limitations: none — pure refactor, no behavior change
-- Required Next Verifier: None — package merged and reconciled
+- Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; ran `sync_knowledge` against the real `./knowledge` → **11 lesson KnowledgePage rows, LES-007 sole open, idempotent (11 updated, no dupes), global (project_id NULL), missing-vault→zeros**; `build_digest` surfaces the open lesson; alembic no-drift after `0004` (chain 0001→0004, project_id nullable, 0 ops, 24 tables). CI (api-tests, compose-smoke on Postgres) pending on the PR
+- Evidence: lessons queryable via API; open lessons visible to the digest (RFC-0004 deferral closed); repo remains authoritative
+- Limitations: only lessons ingested (other vault domains empty); compose self-contained sync needs a `./knowledge:ro` mount (follow-up); advisory/draft-only
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
 
 ## In Scope Now
 
-- Nothing active. Next: AOS-COUNCIL-002 (Agent Council Dashboard, reframed around the Control Tower IA). Awaiting operator go-ahead.
+- AOS-KNOW-002 (Plane AOS-23 backend): knowledge read path — sync + read API + digest open-lessons rule. Backend only; dashboard is AOS-KNOW-003.
 
 ## Out Of Scope Now
 
@@ -116,7 +117,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-Merge AOS-APIROUTES-001 after CI passes under the Manual Merge Gate (Plane AOS-24). Then AOS-COUNCIL-002 — the Agent Council Dashboard, reframed around the Control Tower information hierarchy (critique #3). Following that, the Lead-Architect critique's substrate priorities are the highest-value backlog: AOS-23 (knowledge read path — makes stored knowledge operational, incl. council reviews), AOS-21 (second repo — proves the council reasons over more than itself), AOS-20 (LES-007 doc-staleness), AOS-22 (backups).
+Merge AOS-KNOW-002 after CI passes under the Manual Merge Gate (Plane AOS-23 backend). Then AOS-KNOW-003 (23b — dashboard Knowledge view + Playwright e2e), then AOS-21 (second repo — the substrate sequence the operator set: "aos-23, then aos-21, then reevaluate the roadmap"). Remaining: AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A definitive-roadmap review is planned after AOS-21.
 
 ## Required Reading For New Sessions
 

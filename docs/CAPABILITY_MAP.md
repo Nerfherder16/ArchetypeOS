@@ -73,6 +73,7 @@ Capabilities:
 - documentation lifecycle
 - repository knowledge standard
 - knowledge packs
+- Knowledge read path (AOS-KNOW-002: vault lessons synced to `KnowledgePage`, a DB read projection with a global read API; open lessons surface in the digest)
 
 Primary artifacts:
 
@@ -83,6 +84,8 @@ Primary artifacts:
 - docs/OBSIDIAN_GRAPHIFY_INTEGRATION.md
 - docs/DOCUMENTATION_LIFECYCLE_ENGINE.md
 - docs/REPOSITORY_KNOWLEDGE_STANDARD.md
+- packages/aos_core/aos_core/services/knowledge.py (parse_lessons_index + sync_knowledge; vault → KnowledgePage upsert, repo stays source of truth)
+- apps/api/app/routes/knowledge.py (POST /knowledge/sync, GET /knowledge/pages, GET /knowledge/pages/{id})
 
 ## Layer 2: Research and Evidence
 

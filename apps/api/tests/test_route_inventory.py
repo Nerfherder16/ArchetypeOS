@@ -64,6 +64,10 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/council-reviews"),
         ("GET", "/projects/{project_id}/council-reviews"),
         ("GET", "/council-reviews/{review_id}"),
+        # knowledge (AOS-KNOW-002 — global, not project-scoped)
+        ("POST", "/knowledge/sync"),
+        ("GET", "/knowledge/pages"),
+        ("GET", "/knowledge/pages/{page_id}"),
     }
 )
 
@@ -86,9 +90,8 @@ def test_route_inventory_matches_frozen_set() -> None:
 
 
 def test_route_inventory_count() -> None:
-    # 38 domain routes + GET /health = 39 (method, path) pairs. (The
-    # AOS-APIROUTES-001 spec's "39 + health = 40" is an off-by-one: its inventory
-    # enumerates 38 domain routes; the pre-refactor main.py has 39 @app.* route
-    # decorators total, /health included. This count is pinned to the real table.)
-    assert len(EXPECTED_ROUTES) == 39
-    assert len(_actual_routes()) == 39
+    # 38 domain routes + GET /health = 39 (method, path) pairs, plus the 3
+    # AOS-KNOW-002 knowledge routes (POST /knowledge/sync, GET /knowledge/pages,
+    # GET /knowledge/pages/{page_id}) = 42.
+    assert len(EXPECTED_ROUTES) == 42
+    assert len(_actual_routes()) == 42

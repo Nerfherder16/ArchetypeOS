@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     artifact_root: Path = Path("./data/artifacts")
     repository_root: Path = Path("./repositories")
+    knowledge_root: Path = Path("./knowledge")
     cors_origins: str = "http://localhost:5173"
     llm_provider: str = "deterministic"
 

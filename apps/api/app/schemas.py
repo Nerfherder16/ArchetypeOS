@@ -313,6 +313,28 @@ class NightlyDigestRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class KnowledgePageRead(BaseModel):
+    id: str
+    project_id: str | None
+    title: str
+    vault_path: str
+    page_type: str
+    validation_state: str
+    source_refs: list
+    checksum: str | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class KnowledgeSyncResult(BaseModel):
+    synced: int
+    created: int
+    updated: int
+    open_lessons: int
+
+
 class CouncilReviewCreate(BaseModel):
     question: str
 

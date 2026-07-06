@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Knowledge read path (substrate sequence)
+
+### In Review
+
+- AOS-KNOW-002 — Knowledge read path (Plane AOS-23 backend; RFC-0002/RFC-0004). Operator-directed sequence "aos-23, then aos-21, then reevaluate the roadmap." Closes two deferrals: the KnowledgePage API read path (AOS-KNOW-001) and digest visibility of open lessons (RFC-0004). **Design: the repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection** (a DB reset loses nothing — re-sync from the repo; honors RFC-0004's "lessons travel with the repo"). Adds `knowledge_root` config; makes `KnowledgePage.project_id` nullable (migration `0004`, sqlite batch alter — lessons are global); `aos_core/services/knowledge.py` (`parse_lessons_index` + idempotent `sync_knowledge` upsert keyed by vault_path); a global read API (`POST /knowledge/sync`, `GET /knowledge/pages` [+ page_type/validation_state filters], `GET /knowledge/pages/{id}`); and **digest rule 5** surfacing open lessons (LES-007 today) as a change + draft recommendation. Orchestrator-verified: api 99 / worker 7; sync on the real vault → 11 lessons, LES-007 sole open, idempotent, missing-vault→zeros; digest surfaces it; alembic no-drift after `0004` (24 tables, 0 ops, project_id nullable). Backend only — dashboard is AOS-KNOW-003. No Docker/compose change (compose self-contained sync = follow-up). Spec: `.archetype/work/AOS-KNOW-002.md`.
+
 ## 2026-07-05 — Control-plane hardening (Lead-Architect critique)
 
 ### Merged

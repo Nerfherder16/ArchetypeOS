@@ -72,6 +72,16 @@ Pinned to head SHA. Sections: `## Manual Merge Gate — VERIFIED ✅`; **Pinned 
 - **CI truth**: GitHub Actions RUNS on this private free-plan repo; what's missing is enforceable required checks — hence the gate. Typical CI wall time ~90s; the compose smoke is always last.
 - **PR body override mentions**: the literal string `PR_GUARDIAN_OVERRIDE_` anywhere in a PR body triggers the lesson-citation rule — if you mention tokens in prose, cite a `LES-<n>` too.
 
+## Tandem sessions and shared-log merges (LES-026)
+
+When two Orchestrator sessions run in parallel (e.g. a laptop session and a remote session), each works on its own branch and the human operator relays between them.
+
+- **Shared coordination logs auto-merge.** `docs/ACTIVE_WORK.md`, `docs/RECENT_CHANGES.md`, and `knowledge/wiki/lessons/index.md` carry `merge=union` in the repo-root `.gitattributes`, so concurrent *additive* edits (a new work item, changelog entry, or lesson row) auto-concatenate on merge instead of conflicting — GitHub honors the built-in union driver, so the PRs stay mergeable. This removes the "tandem treadmill" where each session's merge re-conflicted the other's open PR (LES-026).
+- **Union does NOT resolve same-line edits.** Two sides editing the *same existing line* (e.g. flipping a work item "In Review" → "Merged") still conflict. Keep those single-writer: one reconciliation owner flips status; the other session only appends its own item/entry.
+- **Rebase after every merge.** After ANY merge to `main` (yours or the other session's), `git fetch origin main && git checkout -B <branch> origin/main` before continuing. Main moves fast with two sessions.
+- **Re-derive opaque IDs from the live source, never memory** (LES-008): the next lesson ID from the live `knowledge/wiki/lessons/index.md`; Plane state/item UUIDs from `docs/PLANE_PROJECT_BLUEPRINT.md` Board ID Registry. Two sessions numbering from memory collide (LES-022/023 were nearly reused).
+- **Worktrees do not fix this.** They isolate working directories, not the merge graph; parallel branches editing shared files still conflict without the union driver.
+
 ## Current facts at handoff (2026-07-05, post-PR #41)
 
 - v0.1 COMPLETE (Alpha Review `docs/ALPHA_REVIEW_V0_1.md`); Sprint 4 (Self-Healing & Learning Loop) complete: PRs #39/#40/#41.

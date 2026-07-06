@@ -24,6 +24,8 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/repositories"),
         ("GET", "/projects/{project_id}/repositories"),
         ("GET", "/repositories/{repository_id}/dna"),
+        # repository distillation (AOS-DISTILL-001 — RFC-0008 content extraction)
+        ("POST", "/repositories/{repository_id}/distill"),
         # scans
         ("POST", "/repositories/{repository_id}/scan"),
         ("GET", "/repositories/{repository_id}/scans"),
@@ -102,6 +104,7 @@ def test_route_inventory_count() -> None:
     # -loop routes (POST /council-reviews/{review_id}/draft-decision, POST
     # /decisions/{decision_id}/approve, POST /decisions/{decision_id}/reject) = 45,
     # plus the AOS-COUNCIL-PHASEC2A ADR export route (POST
-    # /decisions/{decision_id}/adr) = 46.
-    assert len(EXPECTED_ROUTES) == 46
-    assert len(_actual_routes()) == 46
+    # /decisions/{decision_id}/adr) = 46, plus the AOS-DISTILL-001 repository
+    # distillation route (POST /repositories/{repository_id}/distill) = 47.
+    assert len(EXPECTED_ROUTES) == 47
+    assert len(_actual_routes()) == 47

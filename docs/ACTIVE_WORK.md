@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-DISTILL-001 — RFC-0008 MVP: repository content extraction (distillation)
+
+- Status: In Progress (PR open)
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
+- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- Summary: The RFC-0008 MVP (pipe + deterministic README floor). `distill_repository` reads a repo's README → provenance-tagged `wiki/repositories/<slug>.md` + re-syncable `KnowledgePage` (`page_type="repository"`) + `DNA.purpose`; council selector surfaces it; `POST /repositories/{id}/distill`. No migration/frontend. Operator flagged README-only under-captures usefulness → **code-aware distillation (Phase 2, isolated `claude_code` over bounded source) is next**, building on this.
+- Verification Status: Orchestrator-verified independently (real free-llm distill → named catalog page + DNA.purpose; idempotent; sync re-derives; api 143, worker 7, ruff full CI scope + compileall clean; no migration/frontend/stray-vault)
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
 ### AOS-LLM-ISOLATION-001 — Isolate the ClaudeCodeProvider from ambient project context (LES-021)
 
 - Status: Merged

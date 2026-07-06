@@ -3,10 +3,11 @@ from sqlalchemy.orm import Session
 
 from aos_core.config import get_settings
 from aos_core.database import get_db
-from aos_core.models import Project, Repository, RepositoryDNA
+from aos_core.models import KnowledgePage, Project, Repository, RepositoryDNA
 from aos_core.repository_scanner import safe_repo_path
+from aos_core.services.distillation import distill_repository
 
-from ..schemas import RepositoryCreate, RepositoryDnaRead, RepositoryRead
+from ..schemas import KnowledgePageRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead
 
 settings = get_settings()
 router = APIRouter()
@@ -47,3 +48,11 @@ def get_repository_dna(repository_id: str, db: Session = Depends(get_db)) -> Rep
     if repository.dna is None:
         raise HTTPException(status_code=404, detail="Repository has not been scanned")
     return repository.dna
+
+
+@router.post("/repositories/{repository_id}/distill", response_model=KnowledgePageRead)
+def distill_repository_endpoint(repository_id: str, db: Session = Depends(get_db)) -> KnowledgePage:
+    # Service 404s a missing repository and 409s a non-writable (:ro-mounted /
+    # read-only) vault — never a 500 (local-first write; the distillation is
+    # projected as a re-syncable KnowledgePage). RFC-0008.
+    return distill_repository(db, repository_id=repository_id, knowledge_root=get_settings().knowledge_root)

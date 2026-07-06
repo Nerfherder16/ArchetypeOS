@@ -26,6 +26,7 @@ from ..models import (
     CouncilAgentOutput,
     CouncilReview,
     Decision,
+    KnowledgePage,
     Project,
     RepositoryDNA,
     ResearchNote,
@@ -84,6 +85,30 @@ def _select_research(db: Session, project_id: str) -> list[dict]:
     ):
         items.append({"kind": "decision", "detail": decision.title, "ref": f"decision:{decision.id}"})
     return items
+
+
+def _select_distillation(db: Session, project_id: str) -> list[dict]:
+    """Repository distillation pages (RFC-0008) surfaced as research evidence.
+
+    Content-extraction pages (``page_type="repository"``) let a content-rich but
+    structurally-thin repo produce substance instead of a fingerprint abstention.
+    Tolerant: no distillation → no items.
+    """
+    items: list[dict] = []
+    for page in (
+        db.query(KnowledgePage)
+        .filter(KnowledgePage.project_id == project_id, KnowledgePage.page_type == "repository")
+        .order_by(KnowledgePage.updated_at.desc(), KnowledgePage.id)
+        .limit(10)
+        .all()
+    ):
+        items.append({"kind": "repo_distillation", "detail": page.title, "ref": page.vault_path})
+    return items
+
+
+def _select_research_librarian(db: Session, project_id: str) -> list[dict]:
+    """Research evidence + repository distillations for the Research Librarian."""
+    return _select_research(db, project_id) + _select_distillation(db, project_id)
 
 
 def _select_architecture(db: Session, project_id: str) -> list[dict]:
@@ -145,7 +170,7 @@ DEFAULT_AGENTS = [
             "evidence (research notes and recorded decisions). Evidence over opinion; do not "
             "invent sources. Return findings you can support and flag gaps as concerns."
         ),
-        "evidence_selector": _select_research,
+        "evidence_selector": _select_research_librarian,
     },
     {
         "name": "architecture_cartographer",

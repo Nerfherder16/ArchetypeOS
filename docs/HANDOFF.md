@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-Phase B — architecture semantics (compose-derived edges) + source-classified language weighting (AOS-ARCH-SEMANTICS-001). (Prior: RFC-0008 proposed PR #58; AOS-COUNCIL-PHASEC2B PR #57 / `78709e3` — Phase C complete; PHASEC2A #56, PHASEC #55, PHASEA #54; AOS-COUNCIL-001 #49.)
+RFC-0009 MVP — Knowledge Transfer Engine (AOS-TRANSFER-001): portfolio reuse recommendations for a target `need`. (Prior arc, all merged: AOS-DISTILL-002 PR #62 — code-aware distillation; AOS-DISTILL-001 PR #61 — distillation MVP/pipe; AOS-LLM-ISOLATION-001 PR #60 — LES-021 provider isolation; AOS-ARCH-SEMANTICS-001 PR #59 — Phase B compose edges + language weighting; RFC-0008 PR #58; Phase C PRs #54–#57.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8296cfc` after the PR #59 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8c4a400` after the PR #62 merge; env-pinned — see branch note above)
 
 ### PR
 
-#59 — **Merged** as `8296cfc` (merge commit).
+Pending — Transfer Engine PR being opened on `claude/aos-runtime-002-scanner-1egyjw` (RFC-0009 + AOS-TRANSFER-001). Prior: #62 merged as `8c4a400`.
 
 ### Status
 
-Merged — **the scanner's structural evidence is now richer.** Detected Docker Compose files are parsed (`yaml.safe_load`, tolerant) into `service` nodes + `depends_on` edges (both the list and map `depends_on` forms) and surfaced in `RepositoryDNA.runtime_services` — LES-014's compose/service half (closed; manifest/dependency + import-graph edges remain, LES-014 stays open). A `LANGUAGE_CLASS` map derives a source-classified `primary_language` so config/docs-heavy repos aren't misreported as YAML/Markdown-primary — LES-013 (closed). Required a `scan.py` edge-persistence generalization (the loop hardcoded every edge's `from` to the repo root and dedup'd by `type=="directory"`); now resolves each edge's real `from`/`to` and dedups by node type — verified rescan-idempotent. Adds PyYAML to api+worker; no migration/frontend. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `8296cfc`. **Next: operator's direction. Recommendation: LES-021 (provider isolation) → RFC-0008 (repository content extraction) — the founding "extract what's useful → Obsidian" capability.**
+In Review — **the Knowledge Transfer Engine ships the other half of the founding intent**: RFC-0008 answered *"feed a repo → extract what's useful,"* this answers *"output what's useful **for** the repo you're searching against."* `recommend_reuse(db, *, need, exclude_project_id=None, limit=5)` scores the portfolio's distilled repos by **deterministic lexical relevance** (Jaccard over `KnowledgePage.title` + `RepositoryDNA.purpose` + a technology-match boost over DNA `language_mix`/`package_managers`/`frameworks`, capped ≤1.0), drops zero-score + the target's own repos, and returns ranked, provenance-tagged reuse recommendations (`source_repository`/`reusable_asset`/matched-term `reason`/`evidence`=`vault_path`+repo id/heuristic `required_changes`+`risks`/`confidence`). Advisory/compute-and-return — no new table/migration/frontend; a human promotes a pick into the `Recommendation`/`Decision` loop. `POST /projects/{project_id}/transfer`; route freeze 47→48. Embeddings + provider-reasoned adaptation plans deferred behind the `score_relevance` seam. Built by an Opus builder subagent; **Orchestrator-verified independently** (builder ≠ verifier): synthetic-portfolio ranking + tech-boost path + `source_ref`→`project_id` fallback + own-repo exclusion + empty/zero-overlap tolerances; api **160** / worker 7, ruff full CI scope + compileall clean, no migration/frontend. **Next: CI green → Manual Merge Gate → operator merge; then operator's direction (RFC-0009 next steps: embeddings/semantic relevance, isolated-provider adaptation-plan pass, repo-to-repo target query, Control Tower "Reuse" view).**
 
 ### Note — GitHub connector expired mid-session
 

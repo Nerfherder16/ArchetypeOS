@@ -18,11 +18,20 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-TRANSFER-001 — RFC-0009 MVP: Knowledge Transfer Engine (portfolio reuse recommendations)
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
+- PR: pending (branch `claude/aos-runtime-002-scanner-1egyjw`)
+- Summary: The other half of the founding intent — *"output what's useful **for** the repo you're searching against."* `recommend_reuse(db, *, need, exclude_project_id, limit)` scores the portfolio's distilled repos by **deterministic lexical relevance** (Jaccard over `KnowledgePage.title` + `RepositoryDNA.purpose` + a technology-match boost over DNA tech) and returns ranked, provenance-tagged reuse recommendations; drops zero-score + the target's own repos. Advisory/compute-and-return — no new table/migration/frontend; a human promotes a pick into the `Recommendation`/`Decision` loop. `POST /projects/{project_id}/transfer`; route freeze 47→48. Embeddings + provider-reasoned adaptation plans deferred behind the `score_relevance` seam.
+- Verification Status: Orchestrator-verified independently — synthetic-portfolio ranking + tech-boost path + source_ref→project_id fallback + own-repo exclusion + empty/zero-overlap tolerances; api 160, worker 7, ruff full CI scope + compileall clean, no migration/frontend.
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
 ### AOS-DISTILL-002 — RFC-0008 Phase 2: code-aware distillation
 
-- Status: In Progress (PR open)
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
-- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- PR: #62 (merged as `8c4a400`)
 - Summary: The operator's key request — distillation now reads bounded, provenance-tagged **source** (entry points + largest source files + manifest), not just the README. Deterministic `## Components (from source)` (pure `ast`+regex, CI-tested) + optional isolated-`claude_code` `## How it works / Built for` narrative (real provider only; deterministic fabricates nothing). No migration/frontend.
 - Verification Status: Orchestrator-verified independently incl. a LIVE run (real free-llm `src/data.py` → grounded code-cited narrative naming `MODEL_TO_NAME_MAPPING`, zero contamination; api 147, worker 7, ruff full CI scope + compileall clean; no migration/frontend/stray-vault)
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.

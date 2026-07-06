@@ -18,11 +18,20 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-DISTILL-001 — RFC-0008 MVP: repository content extraction (distillation)
+### AOS-DISTILL-002 — RFC-0008 Phase 2: code-aware distillation
 
 - Status: In Progress (PR open)
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
 - PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- Summary: The operator's key request — distillation now reads bounded, provenance-tagged **source** (entry points + largest source files + manifest), not just the README. Deterministic `## Components (from source)` (pure `ast`+regex, CI-tested) + optional isolated-`claude_code` `## How it works / Built for` narrative (real provider only; deterministic fabricates nothing). No migration/frontend.
+- Verification Status: Orchestrator-verified independently incl. a LIVE run (real free-llm `src/data.py` → grounded code-cited narrative naming `MODEL_TO_NAME_MAPPING`, zero contamination; api 147, worker 7, ruff full CI scope + compileall clean; no migration/frontend/stray-vault)
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
+### AOS-DISTILL-001 — RFC-0008 MVP: repository content extraction (distillation)
+
+- Status: Merged
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
+- PR: #61 (merged as `b189b54`)
 - Summary: The RFC-0008 MVP (pipe + deterministic README floor). `distill_repository` reads a repo's README → provenance-tagged `wiki/repositories/<slug>.md` + re-syncable `KnowledgePage` (`page_type="repository"`) + `DNA.purpose`; council selector surfaces it; `POST /repositories/{id}/distill`. No migration/frontend. Operator flagged README-only under-captures usefulness → **code-aware distillation (Phase 2, isolated `claude_code` over bounded source) is next**, building on this.
 - Verification Status: Orchestrator-verified independently (real free-llm distill → named catalog page + DNA.purpose; idempotent; sync re-derives; api 143, worker 7, ruff full CI scope + compileall clean; no migration/frontend/stray-vault)
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.

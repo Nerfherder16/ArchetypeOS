@@ -2,8 +2,10 @@
 
 Walks a repository tree and produces a deterministic, timestamp-free report
 describing its structure. The scanner inspects paths, names, and filesystem
-metadata only: it never opens or reads file CONTENTS, never writes into the
-scanned tree, never executes anything, and never follows symlinks.
+metadata for its structural inventory. It reads file CONTENTS only for
+detected Docker Compose files (to derive service and dependency edges); it
+reads no other file bodies, never writes into the scanned tree, never
+executes anything, and never follows symlinks.
 
 Report schema (scan_repository return dict):
     root_name: str                 repository directory name
@@ -16,8 +18,8 @@ Report schema (scan_repository return dict):
     deployment_files: list[str]    deployment file paths (legacy)
     readme_files: list[str]        readme file paths (legacy)
     risk_flags: list[str]          warning-severity messages (legacy)
-    architecture_nodes: list[dict] graph nodes (legacy)
-    architecture_edges: list[dict] graph edges (legacy)
+    architecture_nodes: list[dict] graph nodes (repository, directories, compose services)
+    architecture_edges: list[dict] graph edges (contains, compose depends_on)
     manifests: list[dict]          {path, kind}
     docker_files: list[dict]       {path, kind}
     ci_files: list[dict]           {path, kind}
@@ -30,6 +32,8 @@ from __future__ import annotations
 import os
 from collections import Counter
 from pathlib import Path
+
+import yaml
 
 MANIFEST_FILES = {
     "package.json": "npm",
@@ -104,11 +108,32 @@ SECRET_NAMES = {"id_rsa", "id_dsa", "id_ed25519", "credentials.json", "service-a
 SECRET_SUFFIXES = {".pem", ".key"}
 CODE_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx"}
 ENV_TEMPLATE_NAMES = {".env.example", ".env.sample"}
-LANGUAGE_HINT_EXCLUDE = {"Markdown", "YAML"}
 ECOSYSTEM_KINDS = {"python", "node", "rust", "go"}
+
+# Classifies each EXTENSIONS language into a coarse role so a config/docs-heavy
+# repo is not misreported as (say) YAML- or Markdown-primary (LES-013). Only the
+# "source" class counts toward the derived primary language.
+LANGUAGE_CLASS = {
+    "Python": "source",
+    "TypeScript": "source",
+    "TypeScript React": "source",
+    "JavaScript": "source",
+    "JavaScript React": "source",
+    "Go": "source",
+    "Rust": "source",
+    "Java": "source",
+    "C#": "source",
+    "Shell": "source",
+    "SQL": "source",
+    "YAML": "config",
+    "Markdown": "docs",
+    "HTML": "markup",
+    "CSS": "markup",
+}
 
 MAX_FILES = 20000
 MAX_FOLDER_STRUCTURE = 500
+MAX_COMPOSE_SERVICES = 200
 
 
 def safe_repo_path(repository_root: Path, local_path: str) -> Path:
@@ -328,11 +353,27 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
         folder_structure = folder_structure[:MAX_FOLDER_STRUCTURE]
         notes.append(f"folder_structure truncated at {MAX_FOLDER_STRUCTURE} entries")
 
-    hint_items = sorted(
-        ((name, count) for name, count in language_counts.items() if name not in LANGUAGE_HINT_EXCLUDE),
+    # Rank source-classified languages first, then everything else, each by
+    # descending file count with a stable name tiebreak (LES-013). The derived
+    # primary language is the top source language, falling back to the overall
+    # top language when a repo has no source files at all.
+    source_ranked = sorted(
+        ((name, count) for name, count in language_counts.items() if LANGUAGE_CLASS.get(name) == "source"),
         key=lambda kv: (-kv[1], kv[0]),
     )
-    primary_language_hints = [name for name, _ in hint_items[:3]]
+    other_ranked = sorted(
+        ((name, count) for name, count in language_counts.items() if LANGUAGE_CLASS.get(name) != "source"),
+        key=lambda kv: (-kv[1], kv[0]),
+    )
+    ranked = source_ranked + other_ranked
+    primary_language_hints = [name for name, _ in ranked[:3]]
+    if source_ranked:
+        primary_language = source_ranked[0][0]
+    elif ranked:
+        primary_language = ranked[0][0]
+    else:
+        primary_language = None
+    language_classes = {name: LANGUAGE_CLASS[name] for name in sorted(language_counts) if name in LANGUAGE_CLASS}
 
     top_level_dirs = sorted({rel.split("/")[0] for rel in dir_rels})[:50]
     manifest_paths = sorted(rel for rel, name, _ in files if name in MANIFEST_FILES)
@@ -350,11 +391,67 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
         for node in nodes[1:]
     ]
 
+    # Derive service nodes + depends_on edges from every detected compose file
+    # (LES-014). Parsing is tolerant: a missing, malformed, or non-dict compose
+    # file records a note and yields no services rather than raising.
+    runtime_services: list[str] = []
+    seen_services: set[str] = set()
+    service_truncated = False
+    for docker in docker_files:
+        if docker["kind"] != "compose":
+            continue
+        compose_rel = docker["path"]
+        try:
+            raw = (path / compose_rel).read_text(encoding="utf-8")
+            document = yaml.safe_load(raw)
+        except Exception as exc:  # noqa: BLE001 - stay tolerant, never raise out of a scan
+            notes.append(f"compose file could not be parsed ({exc.__class__.__name__}): {compose_rel}")
+            continue
+        services = document.get("services") if isinstance(document, dict) else None
+        if not isinstance(services, dict):
+            notes.append(f"compose file has no services mapping: {compose_rel}")
+            continue
+        for raw_name, body in services.items():
+            if len(seen_services) >= MAX_COMPOSE_SERVICES:
+                service_truncated = True
+                break
+            service = str(raw_name)
+            if service not in seen_services:
+                seen_services.add(service)
+                runtime_services.append(service)
+                nodes.append(
+                    {"label": service, "type": "service", "confidence": 0.7, "evidence": [compose_rel]}
+                )
+            depends_on = body.get("depends_on") if isinstance(body, dict) else None
+            if isinstance(depends_on, dict):
+                dependencies = [str(dep) for dep in depends_on]
+            elif isinstance(depends_on, list):
+                dependencies = [str(dep) for dep in depends_on]
+            else:
+                dependencies = []
+            for dependency in dependencies:
+                edges.append(
+                    {
+                        "from": service,
+                        "to": dependency,
+                        "type": "depends_on",
+                        "confidence": 0.7,
+                        "evidence": [compose_rel],
+                    }
+                )
+        if service_truncated:
+            break
+    if service_truncated:
+        notes.append(f"compose services truncated at {MAX_COMPOSE_SERVICES}")
+
     summary = {
         "total_files_seen": len(files),
         "total_dirs_seen": len(dir_rels),
         "languages": sorted(language_counts),
+        "primary_language": primary_language,
         "primary_language_hints": primary_language_hints,
+        "language_classes": language_classes,
+        "runtime_services": runtime_services,
         "has_docker": bool(docker_files),
         "has_ci": bool(ci_files),
         "has_tests": has_tests,

@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-ARCH-SEMANTICS-001 — Phase B: architecture semantics (compose edges) + language weighting
+
+- Status: In Progress (PR open)
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
+- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- Summary: The roadmap item — enrich the scanner's structural evidence. LES-014 (compose half): parse compose files → `service` nodes + `depends_on` edges (list + map forms) + `RepositoryDNA.runtime_services`; manifest/import edges remain (LES-014 stays open). LES-013 (closed): source-classified `primary_language` so config/docs-heavy repos aren't misread. Generalized `scan.py` edge persistence (was repo-rooted + directory-only dedup). PyYAML dep + compose fixture. No migration/frontend.
+- Verification Status: Orchestrator-verified independently (compose fixture edges {web→db, web→redis, worker→db}, primary_language=Python, rescan idempotent, malformed-compose tolerant; api 132, worker 7, ruff full CI scope + compileall clean)
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
 ### AOS-COUNCIL-PHASEC2B — The Control Tower decision-approval view (frontend + worker-driven e2e)
 
 - Status: Merged

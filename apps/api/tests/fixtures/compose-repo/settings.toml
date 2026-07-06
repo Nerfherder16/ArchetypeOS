@@ -1,0 +1,3 @@
+[app]
+name = "compose-repo-fixture"
+debug = false

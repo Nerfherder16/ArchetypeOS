@@ -121,13 +121,14 @@ Owns system structure.
 Capabilities:
 
 - Architecture Studio
-- Architecture Spine Graph
+- Architecture Spine Graph (AOS-ARCH-SEMANTICS-001: beyond directory `contains` edges, the scanner now parses detected Docker Compose files into `service` nodes and `depends_on` edges — both the list form `depends_on: [db, redis]` and the map form `depends_on: {db: {condition: ...}}` — persisted through the generic node/edge path and surfaced in `RepositoryDNA.runtime_services`; parsing is tolerant, so a missing/malformed/non-mapping compose adds a note and never raises. LES-014 compose/service half; manifest/dependency + import-graph edges remain)
 - Engineering Digital Twin
 - Portfolio Architecture
 - repository maps
 - trust boundaries
 - data flow
 - Engineering OS strategy
+- Source-classified language weighting (AOS-ARCH-SEMANTICS-001: the scan summary derives a `primary_language` from the top **source**-classified language via `LANGUAGE_CLASS` (source/config/markup/data/docs) and ranks `primary_language_hints` source-first, so config/docs-heavy repos are no longer misreported as YAML/Markdown-primary; raw `language_mix` counts retained — LES-013)
 
 Primary artifacts:
 
@@ -135,7 +136,9 @@ Primary artifacts:
 - docs/ENGINEERING_DIGITAL_TWIN.md
 - docs/PORTFOLIO_ARCHITECTURE.md
 - docs/ENGINEERING_OS_STRATEGY.md
+- docs/REPOSITORY_SCANNER.md (compose-derived `service`/`depends_on` edges + source-classified language weighting — AOS-ARCH-SEMANTICS-001)
 - agents/architecture_cartographer/CLAUDE.md
+- packages/aos_core/aos_core/repository_scanner.py (compose parse → service/depends_on edges; `LANGUAGE_CLASS` → `primary_language`/`language_classes`)
 
 ## Layer 4: Decision and Recommendation
 

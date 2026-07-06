@@ -1,0 +1,3 @@
+service:
+  log_level: info
+  workers: 2

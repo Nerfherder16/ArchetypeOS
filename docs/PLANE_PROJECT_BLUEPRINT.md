@@ -121,6 +121,8 @@ States:
 | Done | `65a682b5-8eac-45b3-98ba-3684b8f6df3d` |
 | Cancelled | `2d9542aa-80c4-41a3-b06b-bbc7c40efcff` |
 
+> **Board reconciliation 2026-07-06:** the board had drifted (tracked through ~AOS-24 / PR #52; the entire Council + Distillation + Transfer intelligence arc, PRs #54–#66, was tracked only in the markdown state files). Backfilled as **Done** (board seq #27–#39): Council PhaseA/C/C2A/C2B, RFC-0008, Phase B, LLM isolation, Distill 001–004, Transfer 001–002. **Now current through PR #66.** Live items: **AOS-20** (doc-staleness, In Progress — laptop session) and **AOS-25** (RFC-0009 embeddings, In Progress — remote session). Going forward both tandem sessions maintain the board (item → In Progress on claim, → Done on merge); markdown still wins on conflict. A duplicate doc-staleness issue (seq #26) was Cancelled in favour of the canonical AOS-20 (seq #20).
+
 Work items:
 
 | Item | Work package | Spec | Issue ID |

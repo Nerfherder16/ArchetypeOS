@@ -2,8 +2,9 @@
 
 The repo vault stays the source of truth; this module parses it and upserts
 derived ``KnowledgePage`` rows so vault content gains an API/DB read surface:
-lessons from ``knowledge/wiki/lessons/index.md`` and approved-decision ADRs from
-``knowledge/wiki/decisions/*.md``. A DB reset loses nothing — re-run the sync
+lessons from ``knowledge/wiki/lessons/index.md``, approved-decision ADRs from
+``knowledge/wiki/decisions/*.md``, and repository distillations from
+``knowledge/wiki/repositories/*.md`` (RFC-0008). A DB reset loses nothing — re-run the sync
 from the repo tree. Stdlib-only, no new dependencies.
 """
 
@@ -105,6 +106,7 @@ def sync_knowledge(db: Session, knowledge_root: Path) -> dict:
     open_lessons = 0
     lesson_count = 0
     decision_count = 0
+    repository_count = 0
 
     index_path = Path(knowledge_root) / "wiki" / "lessons" / "index.md"
     if index_path.is_file():
@@ -176,9 +178,48 @@ def sync_knowledge(db: Session, knowledge_root: Path) -> dict:
                 updated += 1
             decision_count += 1
 
+    repositories_dir = Path(knowledge_root) / "wiki" / "repositories"
+    if repositories_dir.is_dir():
+        for md_path in sorted(repositories_dir.glob("*.md")):
+            if md_path.name == ".gitkeep":
+                continue
+            try:
+                text = md_path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            title = None
+            for line in text.splitlines():
+                if line.startswith("# "):
+                    title = line[2:].strip()
+                    break
+            if not title:
+                continue
+            vault_path = f"wiki/repositories/{md_path.name}"
+            checksum = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            page = db.query(KnowledgePage).filter(KnowledgePage.vault_path == vault_path).first()
+            if page is None:
+                page = KnowledgePage(
+                    project_id=None,
+                    title=title,
+                    vault_path=vault_path,
+                    page_type="repository",
+                    validation_state="derived",
+                    source_refs=[{"type": "vault_file", "ref": vault_path}],
+                    checksum=checksum,
+                )
+                db.add(page)
+                created += 1
+            else:
+                page.title = title
+                page.page_type = "repository"
+                page.validation_state = "derived"
+                page.checksum = checksum
+                updated += 1
+            repository_count += 1
+
     db.commit()
     return {
-        "synced": lesson_count + decision_count,
+        "synced": lesson_count + decision_count + repository_count,
         "created": created,
         "updated": updated,
         "open_lessons": open_lessons,

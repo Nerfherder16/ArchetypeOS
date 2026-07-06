@@ -147,6 +147,39 @@ def test_sync_knowledge_derives_decision_pages(db, tmp_path) -> None:
     assert db.query(KnowledgePage).filter(KnowledgePage.page_type == "decision").count() == 1
 
 
+def test_sync_knowledge_derives_repository_pages(db, tmp_path) -> None:
+    """Repository distillations in the vault are re-derived as `repository` pages.
+
+    Count-agnostic (LES-012): a temp vault (no lessons index) is used, so the
+    invariants asserted are about the repository page itself (RFC-0008 /
+    AOS-DISTILL-001), not any pinned total.
+    """
+    repos_dir = tmp_path / "wiki" / "repositories"
+    repos_dir.mkdir(parents=True)
+    (repos_dir / "free-llm-api-resources.md").write_text(
+        "# Free LLM API resources\n\n## Summary\n\nA curated catalog of free LLM API providers.\n",
+        encoding="utf-8",
+    )
+    # Tolerant: a heading-less / empty file and .gitkeep are skipped, never raise.
+    (repos_dir / "empty.md").write_text("", encoding="utf-8")
+    (repos_dir / ".gitkeep").write_text("", encoding="utf-8")
+
+    result = sync_knowledge(db, tmp_path)
+    assert result["synced"] >= 1
+
+    repo_pages = db.query(KnowledgePage).filter(KnowledgePage.page_type == "repository").all()
+    assert len(repo_pages) == 1
+    page = repo_pages[0]
+    assert page.vault_path == "wiki/repositories/free-llm-api-resources.md"
+    assert page.validation_state == "derived"
+    assert page.title == "Free LLM API resources"
+    assert page.checksum
+
+    # Idempotent re-sync: update in place, no duplicate repository page.
+    sync_knowledge(db, tmp_path)
+    assert db.query(KnowledgePage).filter(KnowledgePage.page_type == "repository").count() == 1
+
+
 def test_knowledge_api(client: TestClient) -> None:
     settings.knowledge_root = KNOWLEDGE_ROOT
 

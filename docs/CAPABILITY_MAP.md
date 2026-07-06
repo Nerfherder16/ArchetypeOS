@@ -67,7 +67,7 @@ Capabilities:
 
 - Engineering Memory
 - Knowledge Graph
-- Knowledge Distillation Engine (repository **content extraction** — proposed RFC-0008: read a scanned repo's actual README/source, distill provenance-tagged knowledge into `wiki/repositories/` + a re-syncable `KnowledgePage`; motivated by the `free-llm-api-resources` reality test where a structural fingerprint yielded an abstention. Queued behind Phase B; not built.)
+- Knowledge Distillation Engine (repository **content extraction** — RFC-0008 MVP **shipped** (AOS-DISTILL-001): `distill_repository` reads a scanned repo's actual README, a deterministic LLM-free extractor derives provenance-tagged `title`/`summary`/`key_points`/`technologies`/`useful_for`, writes `wiki/repositories/<slug>.md` + a re-syncable `KnowledgePage` (`page_type="repository"`, `validation_state="derived"`), and stamps `RepositoryDNA.purpose`; `sync_knowledge` re-derives the page so a DB reset loses nothing, and a council selector surfaces it as research evidence. Motivated by the `free-llm-api-resources` reality test where a structural fingerprint yielded an abstention. Non-goals still open: the Knowledge Transfer Engine (relevance-to-a-target), web tools, and the rich isolated `claude_code` extraction path.)
 - Obsidian integration
 - Graphify-style ingestion
 - documentation lifecycle
@@ -82,7 +82,8 @@ Primary artifacts:
 - docs/ENGINEERING_MEMORY.md
 - docs/KNOWLEDGE_GRAPH.md
 - docs/KNOWLEDGE_DISTILLATION_ENGINE.md
-- docs/rfc/RFC-0008-Knowledge-Distillation-Engine-Repository-Content-Extraction.md (proposed — content-extraction MVP + the "tools upstream, not in judges" decision; LES-021 prerequisite)
+- docs/rfc/RFC-0008-Knowledge-Distillation-Engine-Repository-Content-Extraction.md (MVP landed — AOS-DISTILL-001: content-extraction MVP + the "tools upstream, not in judges" decision; LES-021 prerequisite)
+- packages/aos_core/aos_core/services/distillation.py (AOS-DISTILL-001: `extract_repo_knowledge` deterministic extractor + `render_repository_markdown` + `distill_repository` local-first vault write → re-syncable `KnowledgePage`); apps/api/app/routes/repositories.py (POST /repositories/{id}/distill)
 - docs/KARPATHY_OBSIDIAN_REVIEW.md
 - docs/OBSIDIAN_GRAPHIFY_INTEGRATION.md
 - docs/DOCUMENTATION_LIFECYCLE_ENGINE.md

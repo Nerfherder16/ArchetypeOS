@@ -2,6 +2,8 @@
 
 ## Status
 
+**MVP landed (AOS-DISTILL-001).** The deterministic content-extraction MVP described below is implemented: `distill_repository` (`packages/aos_core/aos_core/services/distillation.py`) reads a scanned repo's real README, runs the LLM-free `extract_repo_knowledge` (provenance-tagged `title`/`summary`/`key_points`/`technologies`/`useful_for`), writes `knowledge/wiki/repositories/<slug>.md`, projects a re-syncable `KnowledgePage` (`page_type="repository"`), stamps `RepositoryDNA.purpose`, and is surfaced to the council via a research-evidence selector; `POST /repositories/{id}/distill` exposes it. Still deferred (see Non-goals): the Knowledge Transfer Engine, web tools, and the rich isolated `claude_code` extraction path.
+
 Proposed (operator-directed 2026-07-06: "id say 2 [the content-extraction MVP] but … write as an rfc first"). Queued behind the current roadmap (Phase B — architecture semantics) per operator direction to "continue on with what we were doing prior … to keep in line with the roadmap." This RFC captures the design so it is not lost; it is **not** authorized for implementation yet.
 
 ## Summary

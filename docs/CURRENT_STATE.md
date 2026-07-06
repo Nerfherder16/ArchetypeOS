@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23 Done). AOS-PORTFOLIO-001 merged (PR #53 — 5-repo reality test, AOS-21 Done). AOS-COUNCIL-PHASEA merged (PR #54 — first real Agent Council run over pydantic-ai; LES-018 parse fix, LES-019 recorded). AOS-COUNCIL-PHASEC merged (PR #55 — the decision loop). **AOS-COUNCIL-PHASEC2A merged (PR #56 — Decision → Knowledge: approved decisions export to repo-vault ADRs + re-syncable KnowledgePages).** Next: Phase C Part 2b (the Control Tower approval view). Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23 Done). AOS-PORTFOLIO-001 merged (PR #53 — 5-repo reality test, AOS-21 Done). AOS-COUNCIL-PHASEA merged (PR #54 — first real Agent Council run). AOS-COUNCIL-PHASEC merged (PR #55 — the decision loop). AOS-COUNCIL-PHASEC2A merged (PR #56 — Decision → Knowledge ADR export). **AOS-COUNCIL-PHASEC2B merged (PR #57 — the decision-approval UI + worker-driven e2e) — Phase C COMPLETE end to end.** Next: operator's direction (Phase B / Council dashboard / scanner precision). Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -66,14 +66,15 @@ Every new engineering session should read this before planning or implementation
 - PR #54: First real Agent Council run over external code (AOS-COUNCIL-PHASEA) — RFC-0005 Council run over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, real Claude reasoning) returned a **constitution-faithful abstention** (`Insufficient evidence`, conf 0.0375); hardened the provider parse seam (LES-018 — live-model Markdown-fenced JSON) and recorded LES-019 (evidence-class mismatch → Phase C input). **Intelligence Phase 1 validated on real external code.**
 - PR #55: The decision loop (AOS-COUNCIL-PHASEC, RFC-0005 Phase 2) — `CouncilReview` → governed draft `Decision` (idempotent, evidence-linked) → named-human approve/reject with an `ApprovalRecord` audit trail; **abstention blocks approval** (a `needs_evidence` draft → 409, LES-019 operationalized); pending drafts surface in the digest. No new tables/migration (reuses `Decision`+`ApprovalRecord`); backend only. **The Council → Decision → memory arc of `DECISION_LIFECYCLE.md` is live.**
 - PR #56: Decision → Knowledge — repo-vault ADR export (AOS-COUNCIL-PHASEC2A, Phase C Part 2a) — an approved `Decision` renders into an ADR under `knowledge/wiki/decisions/` (source of truth) + a re-syncable `KnowledgePage` (`page_type="decision"`); local-first write (compose `:ro` → graceful 409, export decoupled from approval); `sync_knowledge` re-derives decision pages so a DB reset loses nothing; approved-only + idempotent. No new tables/migration; backend only. **Decisions now land in the vault and on the Knowledge dashboard.**
+- PR #57: The Control Tower decision-approval view + worker-driven e2e (AOS-COUNCIL-PHASEC2B, Phase C Part 2b) — the Decision Loop UI (enqueue review → draft → approve/reject with a named approver → export ADR; 409s as readable inline errors). Full worker-driven Playwright e2e (`serve-api.sh` runs the worker against a throwaway vault copy; `database.py` sqlite WAL/busy_timeout for file DBs) drives both the approve and the 409 branches deterministically. Guardian BLOCK on `missing-core-tests` fixed with a real test (LES-020, closed). No backend/API/schema change. **Phase C is COMPLETE end to end.**
 
 ## Current Objective
 
-**Phase C Part 2b — the Control Tower decision-approval view (next).** AOS-COUNCIL-PHASEC2A (PR #56) merged: the **Decision → Knowledge** handoff into the source-of-truth vault is live — an approved `Decision` exports to an ADR under `knowledge/wiki/decisions/` + a re-syncable `KnowledgePage`, local-first (compose `:ro` → graceful 409), and `sync_knowledge` re-derives decision pages so a DB reset loses nothing. The whole decision loop now works end to end on the backend (Council → draft → approve/reject → ADR-in-vault). The remaining piece is the **UI**: a Control Tower decision-approval view (list council reviews + their drafted decisions with status badges, draft-from-review, approve/reject with an approver, export-ADR on approved) + Playwright e2e — Part 2b finishes Phase C. Alternatives: **Phase B** (architecture semantics — LES-014 dependency/compose edges + LES-013 language weighting), the **Council dashboard** (AOS-COUNCIL-002). Open scanner backlog persists as lessons (LES-013/014/016/017); other open: AOS-20 (doc-staleness), AOS-22 (backups).
+**Phase C is COMPLETE — awaiting operator direction on the next build.** With AOS-COUNCIL-PHASEC2B (PR #57) merged, the Intelligence decision loop runs end to end and is drivable from the Control Tower: **Council reasons (real Claude via `claude_code`, honest abstention) → drafts a governed Decision → a named human approves/rejects (with an `ApprovalRecord`; abstention blocks approval, LES-019) → an approved decision exports to an ADR in the source-of-truth vault → surfaces on the Knowledge dashboard.** The four-PR arc: #54 (Council reasons/abstains) → #55 (draft → approve/reject) → #56 (ADR-in-vault) → #57 (UI + worker-driven e2e). Open options for the next build: **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` is a ready test) + language weighting (LES-013); the standalone **Council dashboard** (AOS-COUNCIL-002); scanner precision (LES-016 manifest/ecosystem coverage, LES-017 secret-signal precision); or AOS-20 (doc-staleness), AOS-22 (backups).
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `973d532` after the PR #56 merge)
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `78709e3` after the PR #57 merge)
 
 ## CI Status
 
@@ -86,16 +87,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verified (PR #56 merged as `973d532`; AOS-COUNCIL-PHASEC2A done)
-- Level: Level 3
-- Method: built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier) — api **123** / worker **7** green (CI run 28766562398 all 6 jobs green on head `a2ce32f`); approved-only 409, read-only-vault 409 (decision unchanged), and idempotency confirmed by reading the tests + service and a live render sanity check; `sync_knowledge` re-derives decision pages; no migration, no `apps/web` change, no stray ADR in the real vault; ruff full CI scope + compileall clean; guardian PASS
-- Evidence: approved `Decision` → ADR under `wiki/decisions/` + `KnowledgePage` (`page_type="decision"`), linking the council review; export approved-only + idempotent; read-only vault → 409 not 500; DB reset loses nothing (sync re-derives)
-- Limitations: local-first write only — the `:ro` compose stack cannot export ADRs (409 by design); backend only — the approval UI is Part 2b
-- Required Next Verifier: None — AOS-COUNCIL-PHASEC2A complete and reconciled
+- Status: Verified (PR #57 merged as `78709e3`; AOS-COUNCIL-PHASEC2B done; **Phase C complete**)
+- Level: Level 4
+- Method: CI run 28788348725 all 6 jobs green on head `2406ecd` (incl. the worker-driven **web-e2e** job — the first CI run of the worker-in-harness); built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier) — **full Playwright 7/7 headless** (worker drains the queue; approve path + 409-blocked path both assert real state), strict `tsc` + `vite build` exit 0, api **126** / worker **7**, ruff full CI scope + compileall clean, vault stays clean, no backend/API/schema change; guardian PASS (after a `missing-core-tests` BLOCK was fixed with a real test — LES-020)
+- Evidence: the decision loop is drivable end to end from the UI; deterministic e2e proves both the approve and the abstention-409 branches; sqlite WAL guard excludes `:memory:`/Postgres
+- Limitations: uses the existing project-scoped Decisions section (a standalone Council dashboard is AOS-COUNCIL-002); ADR export remains local-first (compose `:ro` → 409)
+- Required Next Verifier: None — Phase C complete and reconciled
 
 ## In Scope Now
 
-- **AOS-COUNCIL-PHASEC2B (PR open)** — Phase C Part 2**b** (frontend + e2e): **finishes Phase C** by surfacing the whole decision loop in the Control Tower — enqueue council review → draft → approve/reject (named approver) → export ADR, with the abstention/read-only-vault 409s as readable inline errors. Full worker-driven e2e (`serve-api.sh` runs the worker against a throwaway vault copy; `database.py` sqlite WAL/busy_timeout for file DBs) drives both the approve and the 409 branches deterministically. No backend/API/schema change. Orchestrator-verified: full Playwright 7/7 headless, tsc + vite build exit 0, api 123 / worker 7.
+- **RFC-0008 (PR open, docs/planning)** — captures the **Knowledge Distillation Engine** (repository content extraction) from the operator's founding intent, motivated by the `free-llm-api-resources` ingestion reality test (fingerprint → abstain; the scanner never reads content). Settles the **tools-upstream-not-in-judges** decision (LES-021 is the evidence). Records **LES-021** (provider context contamination — a tactical prerequisite). **Phase B remains the next build** per operator direction ("write the rfc first and continue with the roadmap"). No code — RFC + lesson + captured evidence.
 
 ## Out Of Scope Now
 
@@ -122,7 +123,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-**Phase C Part 2b — the Control Tower decision-approval view (recommended).** The decision loop is now complete on the backend (Council → draft → approve/reject → ADR-in-vault, PRs #55/#56). Part 2b surfaces it in the UI: a Control Tower section listing council reviews + their drafted decisions with status badges, plus draft-from-review, approve/reject (with an approver), and export-ADR on approved — with Playwright e2e. That finishes Phase C. Alternatives: **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` is a ready test) + language weighting (LES-013); the **Council dashboard** (AOS-COUNCIL-002). Scanner backlog also open: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness/LES-007), AOS-22 (backups).
+**Operator's direction — Phase C is complete.** Highest-value options: (1) **Phase B — architecture semantics**: dependency/compose-derived architecture edges (LES-014; `example-voting-app`'s compose file is a ready test) + language weighting (LES-013) — makes the *scan* evidence the Council reasons over materially richer; (2) the standalone **Council dashboard** (AOS-COUNCIL-002) — a dedicated Control Tower view for reviews across projects; (3) **scanner precision** — LES-016 (broaden manifest/ecosystem coverage: .NET/JVM/Cargo) and LES-017 (test-fixture-path awareness for the secret heuristic). Other open: AOS-20 (doc-staleness/LES-007), AOS-22 (backups). Recommendation: **Phase B**, since richer scan evidence directly improves the Council's inputs (the loop it now feeds).
 
 ## Required Reading For New Sessions
 

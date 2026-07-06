@@ -363,7 +363,7 @@ Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligenc
 
 ## Control-Plane Hardening (open)
 
-Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator chose "route split first, then AOS-COUNCIL-002." AOS-APIROUTES-001 (PR #50, AOS-24 Done) merged. Next: AOS-COUNCIL-002, reframed around the Control Tower IA (not a bolted-on panel) — awaiting operator go-ahead. Critique's substrate priorities to follow: AOS-23 (knowledge read path), AOS-21 (second repo), AOS-20 (doc-staleness), AOS-22 (backups).
+Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator-directed substrate sequence: "aos-23, then aos-21, then reevaluate the roadmap." Delivered: AOS-APIROUTES-001 (PR #50, AOS-24 Done — API modularized); AOS-KNOW-002 (PR #51 — knowledge read path backend, AOS-23 backend phase). **AOS-23 stays In Progress until its dashboard phase (AOS-KNOW-003 / 23b) merges — operator to choose: dashboard now, or jump to AOS-21.** Remaining: AOS-21 (second repo), AOS-20 (doc-staleness, now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
 
 ### AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening)
 
@@ -378,19 +378,14 @@ Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, 
 
 ### AOS-KNOW-002 — Knowledge read path: vault→DB sync + KnowledgePage read API + digest open-lessons rule (RFC-0002/RFC-0004; Plane AOS-23 backend)
 
-- Status: In Review
+- Status: Merged
 - Owner: Runtime Agent (Opus) under Orchestrator (Opus 4.8)
-- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
-- Plane: AOS-23 (In Progress — 23a backend; the dashboard Knowledge view is AOS-KNOW-003 / 23b)
-- PR: to be opened
+- PR: #51
+- Plane: AOS-23 (In Progress — backend phase done via this PR; the dashboard Knowledge view AOS-KNOW-003 / 23b remains, so AOS-23 stays open until it merges)
 - Spec: `.archetype/work/AOS-KNOW-002.md`
-- Goal: make stored knowledge operational. **Design: the repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection** (reconciles RFC-0004's rejection of DB-primary lessons — a DB reset loses nothing, re-sync from the repo). `knowledge_root` config + `KnowledgePage.project_id` nullable (migration `0004`) + `sync_knowledge` (lessons-index parser → upsert) + read API (`POST /knowledge/sync`, `GET /knowledge/pages`(+filters), `GET /knowledge/pages/{id}`) + **digest rule 5** surfacing open lessons. Closes the AOS-KNOW-001 + RFC-0004 deferrals. No Docker/compose change (self-contained compose sync = documented follow-up needing a `./knowledge:ro` mount).
-- Verification Status: Verification pending
-- Verification Level: Level 4
-- Verification Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; independently ran `sync_knowledge` against the real `./knowledge` → **all vault lessons synced (12 today; LES-007 the sole open), idempotent re-sync (no dupes), global (project_id NULL), missing-vault→zeros** (tests count-agnostic per LES-012); `build_digest` surfaces the open lesson (change + draft rec); alembic no-drift after `0004` — chain 0001→0004, `knowledge_pages.project_id` nullable, **0 drift ops**, 24 tables (alter, no new table). CI (api-tests, compose-smoke applying `0004` on Postgres) pending on the PR.
-- Evidence: lessons queryable via the API; open lessons visible to the digest (RFC-0004 deferral closed); repo remains authoritative
-- Limitations: only lessons are ingested (other vault domains are empty scaffolding; the API is generic over KnowledgePage so no API change needed later); `POST /knowledge/sync` needs the vault reachable (works in api-tests/local; the shipped compose needs a `./knowledge:ro` mount — follow-up); advisory/draft-only
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28760266463 all 6 jobs green on head `88037c3` (compose-smoke applied migration `0004` on fresh Postgres) plus Orchestrator's independent 3.12-venv run at CI's exact ruff scope: api 99 / worker 7; `sync_knowledge` on the real vault → all lessons (12; LES-007 sole open), idempotent, global, missing-vault→zeros; digest surfaces the open lesson; alembic no-drift after `0004` (project_id nullable, 0 ops, 24 tables). Merge commit `a462b3a`. **First CI run failed on a ruff F401 in migration `0004` (local ruff had scoped to `apps/api/app`, narrower than CI's `apps/api`) — fixed, recorded LES-012, and made the knowledge tests count-agnostic.** Knowledge is operational (queryable + digest-visible); repo remains source of truth.
+- Required Next Verifier: None.
 
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 

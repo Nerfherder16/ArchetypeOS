@@ -18,14 +18,23 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-COUNCIL-PHASEC2A — Decision → Knowledge: repo-vault ADR export
+### AOS-COUNCIL-PHASEC2B — The Control Tower decision-approval view (frontend + worker-driven e2e)
 
 - Status: In Progress (PR open)
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
 - PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
-- Summary: Phase C Part 2a — an approved `Decision` renders into an ADR under `knowledge/wiki/decisions/` (source of truth) + a re-syncable `KnowledgePage`. Local-first write (compose `:ro` → graceful 409); export decoupled from approval; `sync_knowledge` re-derives decision pages so a DB reset loses nothing. Approved-only + idempotent. New `services/adr.py` + `test_adr_export.py`; `POST /decisions/{id}/adr`; route freeze 45→46. No new tables/migration; backend only.
-- Verification Status: Orchestrator-verified independently (api 123, worker 7, ruff full CI scope + compileall clean; read-only→409 + idempotency asserted; no migration; no web change; no stray vault ADR)
+- Summary: Phase C Part 2b — **finishes Phase C**. Control Tower "Decision Loop" UI: enqueue council review → draft → approve/reject (named approver) → export ADR, with inline 409s (abstention-blocks-approval; read-only vault). `api.ts` council/decision functions + `Decision` status fields. Full worker-driven e2e: `serve-api.sh` runs the worker (throwaway vault copy), `database.py` sqlite WAL/busy_timeout (file-only), `decision-loop.spec.ts` drives both the approve and 409 branches deterministically. No backend/API/schema change.
+- Verification Status: Orchestrator-verified independently (full Playwright 7/7 headless, tsc + vite build exit 0, api 123, worker 7, ruff full CI scope + compileall clean; vault clean; no route/schema/migration change)
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
+### AOS-COUNCIL-PHASEC2A — Decision → Knowledge: repo-vault ADR export
+
+- Status: Merged
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
+- PR: #56 (merged as `973d532`)
+- Summary: Phase C Part 2a — an approved `Decision` renders into an ADR under `knowledge/wiki/decisions/` (source of truth) + a re-syncable `KnowledgePage`. Local-first write (compose `:ro` → graceful 409); export decoupled from approval; `sync_knowledge` re-derives decision pages so a DB reset loses nothing. Approved-only + idempotent. New `services/adr.py` + `test_adr_export.py`; `POST /decisions/{id}/adr`; route freeze 45→46. No new tables/migration; backend only (the approval UI is Part 2b).
+- Verification Status: Verified (CI run 28766562398 6/6 green on `a2ce32f`; Orchestrator independent — api 123, worker 7, ruff full CI scope + compileall clean; read-only→409 + idempotency asserted; no migration; no web change; no stray vault ADR)
+- Required Next Verifier: None — merged and reconciled.
 
 ### AOS-COUNCIL-PHASEC — The decision loop (Council review → draft → human approve/reject → memory)
 

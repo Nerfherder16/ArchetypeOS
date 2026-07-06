@@ -37,18 +37,25 @@ test('scheduling & jobs: create a schedule, run it now, see the job in history',
   await expect(scheduleRow).toContainText('every 3600s');
   await expect(scheduleRow).toContainText('enabled');
 
-  // Run it now -> a project_digest job lands in the Job history.
+  // Run it now -> a project_digest job lands in the Job history. The e2e stack
+  // now runs a worker draining the queue (AOS-COUNCIL-PHASEC2B), so the job may
+  // be queued/running/completed by the time it renders — assert presence by type
+  // rather than a specific transient status.
   await scheduleRow.getByRole('button', { name: 'Run now' }).click();
-  await expect(page.getByText(/project_digest — queued/)).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText(/project_digest — (queued|running|completed)/),
+  ).toBeVisible({ timeout: 15000 });
 
   // Disable the schedule and confirm the row reflects it.
   await scheduleRow.getByRole('button', { name: 'Disable' }).click();
   await expect(scheduleRow).toContainText('disabled');
   await expect(scheduleRow.getByRole('button', { name: 'Enable' })).toBeVisible();
 
-  // Reload persistence: the schedule and the queued job survive.
+  // Reload persistence: the schedule and the job survive.
   await page.reload();
   await page.getByRole('button', { name: projectName }).first().click();
   await expect(page.getByRole('listitem').filter({ hasText: scheduleName })).toBeVisible();
-  await expect(page.getByText(/project_digest — queued/)).toBeVisible({ timeout: 15000 });
+  await expect(
+    page.getByText(/project_digest — (queued|running|completed)/),
+  ).toBeVisible({ timeout: 15000 });
 });

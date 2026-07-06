@@ -1,0 +1,69 @@
+{
+  "architecture": {
+    "edge_count": 9,
+    "edge_types": [
+      "contains"
+    ],
+    "node_count": 10
+  },
+  "ci_files_count": 4,
+  "deployment_files": [],
+  "dna": {
+    "confidence": 0.65,
+    "package_managers": [
+      "go"
+    ],
+    "status": "draft"
+  },
+  "docker_files": [],
+  "language_mix_by_file_count": {
+    "Go": 99,
+    "Markdown": 9,
+    "YAML": 11
+  },
+  "manifests": [
+    {
+      "kind": "go",
+      "path": "go.mod"
+    }
+  ],
+  "note": "AOS-21 reality test (diverse batch). Acquired via clone_repo. Derived scan output; clone gitignored.",
+  "package_managers": [
+    "go"
+  ],
+  "remote_url": "https://github.com/gin-gonic/gin",
+  "repo": "gin-gonic/gin",
+  "risk_flags": [
+    "Secret-like filename detected; ensure credentials are not committed"
+  ],
+  "risk_signals": [
+    {
+      "code": "SECRET_LIKE_FILENAME",
+      "message": "Secret-like filename detected; ensure credentials are not committed",
+      "path": "testdata/certificate/cert.pem",
+      "severity": "warning"
+    },
+    {
+      "code": "SECRET_LIKE_FILENAME",
+      "message": "Secret-like filename detected; ensure credentials are not committed",
+      "path": "testdata/certificate/key.pem",
+      "severity": "warning"
+    }
+  ],
+  "summary": {
+    "has_ci": true,
+    "has_docker": false,
+    "has_env_example": false,
+    "has_tests": false,
+    "languages": [
+      "Go",
+      "Markdown",
+      "YAML"
+    ],
+    "primary_language_hints": [
+      "Go"
+    ],
+    "total_dirs_seen": 17,
+    "total_files_seen": 130
+  }
+}

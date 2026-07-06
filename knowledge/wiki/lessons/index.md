@@ -45,6 +45,8 @@ Single registry for learning events per RFC-0004. Every guardian BLOCK, CI failu
 | [[LES-013]] | 2026-07-06 | self-found-defect | File-count `language_mix` misreads a library's primary language on config/docs-heavy repos (pydantic-ai: Python only 28% by file count) | AOS-21 reality test | open | Language-weighting follow-up (LoC/source-classified ranking) |
 | [[LES-014]] | 2026-07-06 | self-found-defect | Architecture graph is directory-tree-only (`contains` edges); dependency/manifest-derived edges are the missing signal on a real monorepo | AOS-21 reality test | open | Architecture-semantics follow-up (manifest/dependency/compose edges) |
 | [[LES-015]] | 2026-07-06 | self-found-defect | Playwright dynamic-count assertions must use retrying web-first matchers, not one-shot `await locator.count()` (races async refetch) | AOS-21 verification, self-caught | closed | knowledge.spec.ts rewritten to presence/absence assertions |
+| [[LES-016]] | 2026-07-06 | self-found-defect | Manifest/ecosystem detection stops at python/node/go; `.csproj` (.NET) missed on a polyglot repo — likely Java/Rust too | AOS-21 diverse batch | open | Broaden manifest table (dotnet/jvm/cargo/…) |
+| [[LES-017]] | 2026-07-06 | self-found-defect | `SECRET_LIKE_FILENAME` flags legitimate test-cert fixtures (gin `testdata/*.pem`); signal lacks test-fixture-path context | AOS-21 diverse batch | open | Test-fixture-path awareness for the secret heuristic |
 
 ## Update rule
 

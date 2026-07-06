@@ -4,9 +4,11 @@
 
 v0.1 proved the ArchetypeOS loop on ArchetypeOS itself. This is the first **portfolio** reality test: run the existing pipeline (Repository Registry → Scanner → DNA → Architecture graph → Digest) against **real repositories the system did not write**, and report honestly what each engine did and did not understand. Per the Fable-5 handoff, this "is the cheapest reality test of every engine and will generate the next round of honest lessons."
 
-**Targets (operator-chosen):**
-1. **`pydantic/pydantic-ai`** — an LLM agent framework with a model/provider abstraction and structured outputs, on AOS's own pydantic/FastAPI stack; the most relevant possible input to the Agent Council (AOS-COUNCIL-001). A **docs-heavy multi-package monorepo**.
-2. **`anthropics/claude-agent-sdk-python`** — the SDK AOS's own `ClaudeCodeProvider` targets. A **lean, source-heavy single-package SDK** — a deliberately different shape, to test the scanner on both extremes. Acquired by dogfooding this package's own `clone_repo` (a real network clone).
+**Targets (operator-chosen, four repos across deliberately different shapes; all acquired by dogfooding this package's `clone_repo`):**
+1. **`pydantic/pydantic-ai`** — LLM agent framework on AOS's own pydantic/FastAPI stack; the ideal first Council input. A **docs-heavy multi-package Python monorepo**.
+2. **`anthropics/claude-agent-sdk-python`** — the SDK AOS's `ClaudeCodeProvider` targets. A **lean, source-heavy single-package Python SDK**.
+3. **`gin-gonic/gin`** — a **Go** web framework. Stresses non-Python language + `go.mod` manifest detection.
+4. **`dockersamples/example-voting-app`** — a **polyglot docker-compose multi-service** app (Python/Node/C#/Redis/Postgres). Stresses deployment-file detection + service-graph architecture.
 
 ## Method
 
@@ -49,6 +51,15 @@ Acquired via this package's `clone_repo` (a real network clone — dogfood). Evi
 
 The contrast is the real payoff: **LES-013 is repo-dependent** — file-count language mix misreads the docs/config-heavy monorepo (28% Python) but reads the lean SDK **correctly** (77% Python). So the gap bites exactly on config/docs-heavy real-world repos. **LES-014 is universal** — tree-only edges on both. And a real risk signal (`DOCKER_WITHOUT_ENV_TEMPLATE`) fired correctly on the repo that warranted it.
 
+## Diverse batch — `gin` (Go) + `example-voting-app` (compose polyglot)
+
+Two more shapes, chosen to stress dimensions the first two didn't. Evidence: `.archetype/portfolio/{gin,example-voting-app}/scan.json`.
+
+- **`gin-gonic/gin` (Go, 130 files):** ✅ **Go is fully handled** — `go.mod` detected (`package_managers=['go']`), Go correctly primary (99/130 files). Corrects the hypothesis that manifest detection was Python/Node-only. 🔍 **LES-017 (open):** `SECRET_LIKE_FILENAME` fired twice — on `testdata/certificate/{key,cert}.pem`, legitimate TLS **test fixtures**. The signal is right to flag `.pem`/`.key` but lacks test-fixture-path context (echoes LES-001).
+- **`dockersamples/example-voting-app` (polyglot compose, 51 files):** ✅ **Deployment detection is strong** — `deployment_files` correctly listed `docker-compose.yml` + all 5 Dockerfiles (vote/result/worker/seed-data/tests); `docker_files` distinguished `compose` vs `dockerfile`; correct `DOCKER_WITHOUT_ENV_TEMPLATE` + `MULTIPLE_ECOSYSTEMS`. 🔍 **LES-016 (open):** the C# **`worker/Worker.csproj` was missed** — the scanner counts the C# language but not its manifest, so `package_managers=['npm','pip']` omits .NET. Manifest coverage is python/node/go but not dotnet (and likely not jvm/rust). 🔍 **LES-014 reinforced, now concretely specifiable:** this repo's `docker-compose.yml` literally declares the service graph (vote→redis→worker→db→result) and the scanner captures **none** of it — 8 `contains` edges only. Compose-derived edges are the obvious fix.
+
+**Net of the diverse batch:** the scanner is *broader* than assumed (Go + multi-service compose both work well), and it surfaced one genuinely **new** gap (LES-016, .NET manifest) plus a precision refinement (LES-017). LES-013 held on a fourth repo (the voting app is polyglot — "primary language" is itself the wrong frame there), and LES-014 is now backed by a repo whose dependency graph is sitting in a file we ignore.
+
 ## Verdict
 
 **The scanner generalizes across shapes.** It ingested both a large docs-heavy multi-package monorepo and a lean single-package SDK cleanly — correct languages, all manifests, ecosystems, CI, Docker, test presence, and an actionable risk signal where warranted — with no tuning and no failure. The read-only-scan + draft-DNA discipline held on both. A genuine structural pass on "understand a codebase the system did not write."
@@ -65,11 +76,13 @@ All 14 edges are `contains` (folder containment). There are **no dependency or m
 
 ## Follow-ups this test generates
 
-- **LES-013 → language-mix weighting package**: LoC/source-classified language ranking (fixes the "YAML repo" misread).
-- **LES-014 → architecture-semantics package**: manifest/dependency/compose-derived edges (the Fable-named next step; higher value now that a real monorepo is visible).
+- **LES-013 → language-mix weighting package**: LoC/source-classified language ranking (fixes the "YAML repo" misread; repo-dependent, worst on docs/config-heavy repos).
+- **LES-014 → architecture-semantics package**: manifest/dependency/**compose-derived** edges (the Fable-named next step; `example-voting-app`'s compose file is a ready-made test case).
+- **LES-016 → broaden manifest/ecosystem detection**: `.csproj`/`.sln`→dotnet, `pom.xml`/`build.gradle`→jvm, `Cargo.toml`→cargo, etc. (polyglot repos under-report ecosystems today).
+- **LES-017 → secret-signal precision**: test-fixture-path awareness for `SECRET_LIKE_FILENAME` (low priority).
 - **Council over these repos** (stretch, later): the captured DNA/architecture is the first real, non-self-referential input for an AOS-COUNCIL run (Research/Architecture/Fitness/Security) — and both targets' own provider-abstraction + structured-output patterns are exactly what the Council's evolution should mine.
 
 ## Evidence
 
-- `.archetype/portfolio/pydantic-ai/scan.json` and `.archetype/portfolio/claude-agent-sdk-python/scan.json` — the captured derived scans (summary, language_mix, manifests, ci, risk_signals, DNA, architecture counts/types).
-- Reproduce: `scripts/onboard_repo.sh <git-url> <name>` (acquires the clone via `clone_repo`), then register + scan via the API (the script prints the curl commands). Targets: `https://github.com/pydantic/pydantic-ai.git pydantic-ai` and `https://github.com/anthropics/claude-agent-sdk-python.git claude-agent-sdk-python`.
+- `.archetype/portfolio/{pydantic-ai,claude-agent-sdk-python,gin,example-voting-app}/scan.json` — the captured derived scans (summary, language_mix, manifests, ci, risk_signals, DNA, architecture counts/types) for all four repos.
+- Reproduce: `scripts/onboard_repo.sh <git-url> <name>` (acquires the clone via `clone_repo`), then register + scan via the API (the script prints the curl commands). Targets: `pydantic/pydantic-ai`, `anthropics/claude-agent-sdk-python`, `gin-gonic/gin`, `dockersamples/example-voting-app`.

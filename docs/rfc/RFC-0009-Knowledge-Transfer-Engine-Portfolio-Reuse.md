@@ -61,7 +61,8 @@ The pieces now exist but nothing connects them for reuse:
 
 ## Next steps (beyond the MVP)
 
-1. Embeddings/semantic relevance (local-first) behind the `score_relevance` seam.
+0. **Scorer calibration — landed (AOS-TRANSFER-002).** The full end-to-end reality test showed the lexical floor ranked correctly but reported near-zero confidence (a Jaccard over the candidate's whole vocabulary; LES-023). `score_relevance` is now **need coverage** (`|(need ∩ cand) ∪ (need ∩ tech)| / |need|`), so confidence is bounded/intuitive (kubernetes "container orchestration" 0.333, gin "HTTP routing" 0.800) with rankings intact/sharpened. The reality test also showed the reasoned distillation purposes absorb the service/architecture signal, so folding `runtime_services`/architecture into the candidate text was dropped as redundant.
+1. Embeddings/semantic relevance (local-first) behind the `score_relevance` seam — the remaining relevance increment (keep the reported confidence coverage-like/calibrated, per LES-023).
 2. An isolated-`claude_code` adaptation-plan pass (required changes / estimated savings / risks prose, cited to source files).
 3. A target *repo* as a first-class query (repo-to-repo transfer) + duplicate-implementation detection.
-4. A Control Tower "Reuse" view surfacing recommendations for the selected project.
+4. A Control Tower "Reuse" view surfacing recommendations for the selected project — now unblocked by calibrated confidence.

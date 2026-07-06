@@ -3,8 +3,9 @@
 Given a portfolio of distilled repositories (each a ``KnowledgePage``
 ``page_type="repository"`` + a ``RepositoryDNA`` carrying the distilled ``purpose``
 and technologies), ``recommend_reuse`` scores a free-text **need** by deterministic
-lexical overlap (Jaccard + a technology-match boost) and returns ranked,
-provenance-tagged reuse recommendations — excluding the target project's own repos.
+lexical **need coverage** (the fraction of the need's terms the candidate covers via
+text or technologies) and returns ranked, provenance-tagged reuse recommendations —
+excluding the target project's own repos.
 
 Hermetic: an in-memory sqlite DB is seeded directly; no model, no network, no vault
 I/O. The API test seeds the same file DB the app reads (mirroring test_distillation).
@@ -124,21 +125,30 @@ def test_score_relevance_empty_need_is_zero() -> None:
     assert score_relevance(set(), {"provider", "llm"}, {"python"}) == (0.0, [])
 
 
-def test_score_relevance_jaccard_plus_tech_boost() -> None:
+def test_score_relevance_is_need_coverage() -> None:
     need = {"llm", "provider", "routing"}
     cand = {"llm", "provider", "backends"}
     tech = {"python", "llm"}
     score, matched = score_relevance(need, cand, tech)
-    # Jaccard = |{llm, provider}| / |{llm, provider, routing, backends}| = 2/4 = 0.5,
-    # + 0.15 * |need ∩ tech = {llm}| = 0.15 → 0.65.
-    assert score == pytest.approx(0.65)
+    # Need coverage = |covered| / |need|. covered = (need ∩ cand = {llm, provider})
+    # ∪ (need ∩ tech = {llm}) = {llm, provider}; |{llm, provider}| / 3 = 0.6667.
+    assert score == pytest.approx(2 / 3, abs=1e-4)
     assert matched == ["llm", "provider"]
+
+
+def test_score_relevance_counts_a_tech_only_match() -> None:
+    # A need term the candidate text misses but a technology covers still counts.
+    need = {"fastapi", "service"}
+    score, matched = score_relevance(need, {"service"}, {"fastapi"})
+    # Both need terms are covered (service via text, fastapi via tech) → 2/2 = 1.0.
+    assert score == pytest.approx(1.0)
+    assert matched == ["fastapi", "service"]
 
 
 def test_score_relevance_caps_at_one() -> None:
     need = {"a1", "b2", "c3", "d4", "e5", "f6", "g7"}
     score, _ = score_relevance(need, need, need)
-    assert score <= 1.0
+    assert score == pytest.approx(1.0)
 
 
 # --- recommend_reuse (retrieval) --------------------------------------------

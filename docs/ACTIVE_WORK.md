@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator (implemented directly — small surgical change; verified behaviourally on the real portfolio)
+- PR: pending (branch `claude/aos-runtime-002-scanner-1egyjw`, restarted from main at `b62c6c6`)
+- Summary: The full end-to-end reality test showed transfer ranks the correct repo #1 everywhere but reported near-zero confidence (Jaccard over the candidate's whole vocabulary; LES-023). `score_relevance` is now **need coverage** — `|(need ∩ cand) ∪ (need ∩ tech)| / |need|` (bounded/intuitive; tech-only matches counted; tie-break on tech-match count then name). Lean per the "design to the mature-state target" rule: the reasoned purposes already absorb the service/architecture signal, so the originally-planned architecture-fold was dropped as redundant.
+- Verification Status: Orchestrator-verified behaviourally on the real portfolio — rankings intact/sharpened with meaningful confidence (kubernetes "container orchestration" 0.333, gin "HTTP routing" 0.800; "agent framework" now correctly ranks pydantic-ai #1 over the SDK); api 172, worker 7, ruff full CI scope + compileall clean; LES-023 recorded. No migration/frontend.
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
 ### AOS-DISTILL-003 — Distillation evidence quality: deterministic summary floor + framework detection
 
 - Status: Merged
@@ -29,9 +38,9 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-DISTILL-004 — Distillation reasoned tier: real-provider `DNA.purpose` (Package 2)
 
-- Status: In Review
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified incl. a live isolated-provider run)
-- PR: pending (branch `claude/aos-runtime-002-scanner-1egyjw`, restarted from main at `c6f5d61`)
+- PR: #65 (merged as `b62c6c6`)
 - Summary: The reasoned quality tier — `reason_purpose(readme, files, provider)` has the LES-021-isolated `claude_code` provider reason a concise one-sentence `DNA.purpose` from README + bounded source; a non-empty reasoned result becomes the page summary + `DNA.purpose` (single source of truth) with `validation_state="reasoned"`, else the Package-1 clean floor + `"derived"` (deterministic CI provider or empty/garbled → floor; fully hermetic, no fabrication). Harness gains opt-in `--provider claude_code`. Spec: `.archetype/work/AOS-DISTILL-004.md`.
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) incl. a **live isolated-provider run**: gin → "Gin is a Go HTTP web framework built on a … radix-tree-based router with middleware support…", kubernetes → "Kubernetes is an open-source container orchestration system, … core control-plane components (API server, controller manager…)" — genuinely descriptive (reads source), **contamination-free** (LES-021 holds), and ranking improves (k8s matches container+orchestration, conf 0.0606 vs floor's 0.0147). Hermetic branching unit-tested (reasoned/derived/fallback); api 171, worker 7, ruff full CI scope + compileall clean; no migration/frontend.
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.

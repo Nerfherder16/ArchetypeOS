@@ -93,7 +93,7 @@ Every new engineering session should read this before planning or implementation
 
 ## In Scope Now
 
-- Nothing active. **AOS-COUNCIL-PHASEA merged (PR #54).** Next build is the operator's call — recommended **Phase C (the decision loop)**, which LES-019 directly motivates.
+- **AOS-COUNCIL-PHASEC (PR open)** — **the decision loop** (RFC-0005 Phase 2; the Decision stage of `DECISION_LIFECYCLE.md`), the LES-019 follow-up. `CouncilReview` → governed draft `Decision` (idempotent, evidence-linked) → named-human approve/reject with an `ApprovalRecord` trail. **Abstention blocks approval** — a `needs_evidence` draft returns 409 naming the gather-evidence/re-draft path. Pending drafts surface in the digest. No new tables/migration (reuses `Decision`+`ApprovalRecord`); backend only. Orchestrator-verified: api 116 / worker 7 green, ruff full CI scope + compileall clean.
 
 ## Out Of Scope Now
 

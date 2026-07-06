@@ -1,8 +1,11 @@
 from pathlib import Path
 
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from app.main import settings
+from aos_core.models import CouncilReview
 
 UNKNOWN_ID = "00000000-0000-0000-0000-000000000000"
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -176,6 +179,57 @@ def test_digest_surfaces_open_lessons(client: TestClient) -> None:
     assert len(lesson_recs) == open_count
     assert all(rec["reason"] == "open lesson in the learning queue" for rec in lesson_recs)
     assert all(rec["status"] == "draft" for rec in lesson_recs)
+
+
+def test_digest_surfaces_pending_decisions(client: TestClient, tmp_path) -> None:
+    project = create_project(client, slug="digest-pending-decisions")
+
+    # No pending decisions yet -> no decision_pending change.
+    before = client.post(f"/projects/{project['id']}/digests")
+    assert before.status_code == 200, before.text
+    assert not any(entry["type"] == "decision_pending" for entry in before.json()["changes"])
+
+    # Seed a cleared-floor council review directly, then draft a decision (draft
+    # status) via the loop endpoint — the only way to mint a pending decision.
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'test.db'}",
+        connect_args={"check_same_thread": False, "timeout": 30},
+        pool_pre_ping=True,
+    )
+    session = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)()
+    try:
+        review = CouncilReview(
+            project_id=project["id"], question="Adopt it?", verdict="Accept", confidence=0.8
+        )
+        session.add(review)
+        session.commit()
+        review_id = review.id
+    finally:
+        session.close()
+
+    drafted = client.post(f"/council-reviews/{review_id}/draft-decision")
+    assert drafted.status_code == 200, drafted.text
+    assert drafted.json()["status"] == "draft"
+
+    # Count-agnostic: the digest surfaces however many decisions are pending
+    # (draft/needs_evidence) in live state (LES-012), not a magic number.
+    listing = client.get(f"/projects/{project['id']}/decisions").json()
+    pending = [d for d in listing if d["status"] in ("draft", "needs_evidence")]
+    assert pending  # at least the one we drafted
+
+    after = client.post(f"/projects/{project['id']}/digests")
+    assert after.status_code == 200, after.text
+    pending_changes = [entry for entry in after.json()["changes"] if entry["type"] == "decision_pending"]
+    assert len(pending_changes) == len(pending)
+    assert all("at" in entry for entry in pending_changes)
+    nudges = [
+        entry
+        for entry in after.json()["recommendations"]
+        if entry["title"].startswith("Approve or reject the drafted decision:")
+    ]
+    assert len(nudges) == len(pending)
+    assert all(entry["reason"] == "decision awaiting human approval" for entry in nudges)
+    assert all(entry["status"] == "draft" for entry in nudges)
 
 
 def test_digest_404s(client: TestClient) -> None:

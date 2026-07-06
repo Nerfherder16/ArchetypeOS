@@ -217,11 +217,23 @@ class DecisionRead(BaseModel):
     evidence: list
     confidence: float
     status: str
+    approved_by: str | None
+    approved_at: datetime | None
     version: int
     created_at: datetime
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class DecisionApprove(BaseModel):
+    approver: str
+    rationale: str | None = None
+
+
+class DecisionReject(BaseModel):
+    approver: str
+    rationale: str
 
 
 class ResearchNoteCreate(BaseModel):

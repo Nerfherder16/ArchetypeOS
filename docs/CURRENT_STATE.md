@@ -96,7 +96,7 @@ Every new engineering session should read this before planning or implementation
 
 ## In Scope Now
 
-- Nothing active. **AOS-COUNCIL-PHASEC2B merged (PR #57) — Phase C is COMPLETE end to end.** The decision loop runs Council → draft → human approve/reject → ADR-in-vault → Knowledge dashboard, all drivable from the Control Tower. Awaiting operator direction. Open options: **Phase B** (architecture semantics — LES-014 dependency/compose edges + LES-013 language weighting), the standalone **Council dashboard** (AOS-COUNCIL-002), or scanner precision (LES-016/017).
+- **RFC-0008 (PR open, docs/planning)** — captures the **Knowledge Distillation Engine** (repository content extraction) from the operator's founding intent, motivated by the `free-llm-api-resources` ingestion reality test (fingerprint → abstain; the scanner never reads content). Settles the **tools-upstream-not-in-judges** decision (LES-021 is the evidence). Records **LES-021** (provider context contamination — a tactical prerequisite). **Phase B remains the next build** per operator direction ("write the rfc first and continue with the roadmap"). No code — RFC + lesson + captured evidence.
 
 ## Out Of Scope Now
 

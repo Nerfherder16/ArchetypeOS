@@ -67,7 +67,7 @@ Capabilities:
 
 - Engineering Memory
 - Knowledge Graph
-- Knowledge Distillation Engine
+- Knowledge Distillation Engine (repository **content extraction** — proposed RFC-0008: read a scanned repo's actual README/source, distill provenance-tagged knowledge into `wiki/repositories/` + a re-syncable `KnowledgePage`; motivated by the `free-llm-api-resources` reality test where a structural fingerprint yielded an abstention. Queued behind Phase B; not built.)
 - Obsidian integration
 - Graphify-style ingestion
 - documentation lifecycle
@@ -82,6 +82,7 @@ Primary artifacts:
 - docs/ENGINEERING_MEMORY.md
 - docs/KNOWLEDGE_GRAPH.md
 - docs/KNOWLEDGE_DISTILLATION_ENGINE.md
+- docs/rfc/RFC-0008-Knowledge-Distillation-Engine-Repository-Content-Extraction.md (proposed — content-extraction MVP + the "tools upstream, not in judges" decision; LES-021 prerequisite)
 - docs/KARPATHY_OBSIDIAN_REVIEW.md
 - docs/OBSIDIAN_GRAPHIFY_INTEGRATION.md
 - docs/DOCUMENTATION_LIFECYCLE_ENGINE.md

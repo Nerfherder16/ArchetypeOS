@@ -25,6 +25,7 @@ def run_scan(repository_id: str, db: Session) -> dict:
     dna.language_mix = scan["language_mix"]
     dna.package_managers = scan["package_managers"]
     dna.deployment_files = scan["deployment_files"]
+    dna.runtime_services = scan["summary"].get("runtime_services", [])
     dna.risk_flags = scan["risk_flags"]
     dna.scan_summary = scan
     dna.confidence = 0.65
@@ -53,7 +54,10 @@ def run_scan(repository_id: str, db: Session) -> dict:
         )
     db.add(root_node)
     db.flush()
-    node_by_label = {repository.name: root_node}
+    # The scan report labels its root by the directory name (scan["root_name"]);
+    # register the DB root node under both so contains edges (from=root_name)
+    # and any repository-scoped edge resolve to it.
+    node_by_label = {repository.name: root_node, scan["root_name"]: root_node}
     nodes_out = [{"id": root_node.id, "label": root_node.label, "type": root_node.type, "confidence": root_node.confidence}]
 
     for item in scan["architecture_nodes"][1:]:
@@ -61,7 +65,7 @@ def run_scan(repository_id: str, db: Session) -> dict:
             db.query(ArchitectureNode)
             .filter(
                 ArchitectureNode.repository_id == repository.id,
-                ArchitectureNode.type == "directory",
+                ArchitectureNode.type == item["type"],
                 ArchitectureNode.label == item["label"],
                 ArchitectureNode.parent_id == root_node.id,
             )
@@ -88,7 +92,7 @@ def run_scan(repository_id: str, db: Session) -> dict:
 
     edges_out = []
     for item in scan["architecture_edges"]:
-        from_node = node_by_label.get(repository.name)
+        from_node = node_by_label.get(item["from"])
         to_node = node_by_label.get(item["to"])
         if not from_node or not to_node:
             continue

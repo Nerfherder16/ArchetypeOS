@@ -94,9 +94,7 @@ Every new engineering session should read this before planning or implementation
 - Limitations: uses the existing project-scoped Decisions section (a standalone Council dashboard is AOS-COUNCIL-002); ADR export remains local-first (compose `:ro` → 409)
 - Required Next Verifier: None — Phase C complete and reconciled
 
-## In Scope Now
-
-- **RFC-0008 (PR open, docs/planning)** — captures the **Knowledge Distillation Engine** (repository content extraction) from the operator's founding intent, motivated by the `free-llm-api-resources` ingestion reality test (fingerprint → abstain; the scanner never reads content). Settles the **tools-upstream-not-in-judges** decision (LES-021 is the evidence). Records **LES-021** (provider context contamination — a tactical prerequisite). **Phase B remains the next build** per operator direction ("write the rfc first and continue with the roadmap"). No code — RFC + lesson + captured evidence.
+- **Phase B — architecture semantics (PR open, AOS-ARCH-SEMANTICS-001).** The scanner now parses Docker Compose files into `service` nodes + `depends_on` edges (+ `RepositoryDNA.runtime_services`) — LES-014's compose half (closed; manifest/import edges remain, LES-014 stays open) — and derives a source-classified `primary_language` so config/docs-heavy repos aren't misread as YAML/Markdown-primary (LES-013, closed). No migration; PyYAML added to api+worker. Orchestrator-verified: compose fixture edges correct, rescan idempotent, api 132 / worker 7. RFC-0008 (content extraction) + LES-021 remain queued, not built.
 
 ## Out Of Scope Now
 

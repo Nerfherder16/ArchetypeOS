@@ -1,11 +1,36 @@
 from __future__ import annotations
 import json
 from pathlib import Path
+
+import yaml
+
 from aos_core.repository_scanner import scan_repository
+
+FIXTURES = Path(__file__).parent / "fixtures"
+COMPOSE_REPO = FIXTURES / "compose-repo"
 
 
 def _snapshot(root: Path) -> set[str]:
     return {str(p.relative_to(root)) for p in root.rglob("*")}
+
+
+def _compose_expectations() -> tuple[set[str], set[tuple[str, str]], list[str]]:
+    """Derive the expected service set + depends_on edge set from the fixture
+    compose file itself, so the assertions stay count-agnostic (LES-012)."""
+    document = yaml.safe_load((COMPOSE_REPO / "docker-compose.yml").read_text(encoding="utf-8"))
+    services = document["services"]
+    edges: set[tuple[str, str]] = set()
+    for name, body in services.items():
+        deps = body.get("depends_on") if isinstance(body, dict) else None
+        if isinstance(deps, dict):
+            dep_names = list(deps)
+        elif isinstance(deps, list):
+            dep_names = list(deps)
+        else:
+            dep_names = []
+        for dep in dep_names:
+            edges.add((str(name), str(dep)))
+    return set(services), edges, list(services)
 
 
 def test_scan_repository_detects_manifest_and_languages(tmp_path: Path):
@@ -163,3 +188,134 @@ def test_docker_without_env_template_and_multiple_ecosystems(tmp_path: Path):
     template_codes = {s["code"] for s in with_template["risk_signals"]}
     assert "DOCKER_WITHOUT_ENV_TEMPLATE" not in template_codes
     assert with_template["summary"]["has_env_example"] is True
+
+
+def test_compose_fixture_yields_service_nodes_and_depends_on_edges():
+    expected_services, expected_edges, expected_runtime = _compose_expectations()
+
+    result = scan_repository(COMPOSE_REPO)
+
+    service_nodes = [node for node in result["architecture_nodes"] if node["type"] == "service"]
+    service_labels = {node["label"] for node in service_nodes}
+    depends_edges = {
+        (edge["from"], edge["to"]) for edge in result["architecture_edges"] if edge["type"] == "depends_on"
+    }
+
+    assert service_labels == expected_services
+    assert depends_edges == expected_edges
+    # Both the list form (web) and the map form (worker) are covered by the fixture.
+    assert ("worker", "db") in depends_edges
+    for node in service_nodes:
+        assert node["evidence"] == ["docker-compose.yml"]
+    # runtime_services preserves the compose declaration order.
+    assert result["summary"]["runtime_services"] == expected_runtime
+    # Only Python is a source language, so it wins over YAML/Markdown by classification.
+    assert result["summary"]["primary_language"] == "Python"
+
+
+def test_run_scan_populates_runtime_services_from_compose(tmp_path, monkeypatch):
+    import shutil
+
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
+
+    from aos_core.database import Base
+    from aos_core.models import ArchitectureNode, Project, Repository, RepositoryDNA
+    from aos_core.services.scan import run_scan
+    from app.main import settings
+
+    repository_root = tmp_path / "repositories"
+    repository_root.mkdir()
+    shutil.copytree(COMPOSE_REPO, repository_root / "compose-repo")
+    monkeypatch.setattr(settings, "repository_root", repository_root)
+    monkeypatch.setattr(settings, "artifact_root", tmp_path / "artifacts")
+
+    engine = create_engine(
+        f"sqlite:///{tmp_path / 'scanner.db'}",
+        connect_args={"check_same_thread": False},
+        pool_pre_ping=True,
+    )
+    session_local = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
+    Base.metadata.create_all(bind=engine)
+
+    expected_services, _, _ = _compose_expectations()
+    try:
+        with session_local() as db:
+            project = Project(name="Compose", slug="compose-scan")
+            db.add(project)
+            db.flush()
+            repository = Repository(project_id=project.id, name="compose-repo", local_path="compose-repo")
+            db.add(repository)
+            db.flush()
+            repository_id = repository.id
+            run_scan(repository_id, db)
+
+        with session_local() as db:
+            dna = db.query(RepositoryDNA).filter(RepositoryDNA.repository_id == repository_id).first()
+            assert dna is not None
+            assert set(dna.runtime_services) == expected_services
+            assert dna.scan_summary["summary"]["primary_language"] == "Python"
+
+            nodes = (
+                db.query(ArchitectureNode)
+                .filter_by(repository_id=repository_id, type="service")
+                .all()
+            )
+            assert {node.label for node in nodes} == expected_services
+    finally:
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()
+
+
+def test_docs_heavy_repo_reports_source_primary_language(tmp_path: Path):
+    for index in range(8):
+        (tmp_path / f"doc_{index}.md").write_text("# doc\n", encoding="utf-8")
+    for index in range(6):
+        (tmp_path / f"conf_{index}.yml").write_text("key: value\n", encoding="utf-8")
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "util.py").write_text("y = 2\n", encoding="utf-8")
+
+    result = scan_repository(tmp_path)
+
+    # Markdown/YAML dominate by raw file count ...
+    assert result["language_mix"]["Markdown"] > result["language_mix"]["Python"]
+    assert result["language_mix"]["YAML"] > result["language_mix"]["Python"]
+    # ... but Python is the only source-classified language, so it is primary.
+    assert result["summary"]["primary_language"] == "Python"
+    assert result["summary"]["primary_language_hints"][0] == "Python"
+    assert result["summary"]["language_classes"]["Python"] == "source"
+    assert result["summary"]["language_classes"]["Markdown"] == "docs"
+    assert result["summary"]["language_classes"]["YAML"] == "config"
+
+
+def test_repo_without_compose_has_no_service_nodes(tmp_path: Path):
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+
+    result = scan_repository(tmp_path)
+
+    assert not [node for node in result["architecture_nodes"] if node["type"] == "service"]
+    assert not [edge for edge in result["architecture_edges"] if edge["type"] == "depends_on"]
+    assert result["summary"]["runtime_services"] == []
+
+
+def test_malformed_compose_is_tolerated(tmp_path: Path):
+    # Broken YAML (unterminated flow sequence) must not crash the scan.
+    (tmp_path / "docker-compose.yml").write_text(
+        "services:\n  web:\n    depends_on: [oops\n", encoding="utf-8"
+    )
+
+    result = scan_repository(tmp_path)
+
+    assert not [node for node in result["architecture_nodes"] if node["type"] == "service"]
+    assert result["summary"]["runtime_services"] == []
+    assert any("could not be parsed" in note for note in result["notes"])
+
+
+def test_non_mapping_compose_is_tolerated(tmp_path: Path):
+    # A compose file whose top level is not a mapping yields no services, not an error.
+    (tmp_path / "compose.yml").write_text("- just\n- a\n- list\n", encoding="utf-8")
+
+    result = scan_repository(tmp_path)
+
+    assert not [node for node in result["architecture_nodes"] if node["type"] == "service"]
+    assert any("no services mapping" in note for note in result["notes"])

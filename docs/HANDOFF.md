@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-Decision → Knowledge: render approved decisions into repo-vault ADRs (AOS-COUNCIL-PHASEC2A, Phase C Part 2a). (Prior: AOS-COUNCIL-PHASEC merged PR #55 / `1306138` — the decision loop; AOS-COUNCIL-PHASEA PR #54 — first real Council run; AOS-PORTFOLIO-001 PR #53 / AOS-21; AOS-COUNCIL-001 PR #49 / AOS-19.)
+The Control Tower decision-approval view + worker-driven e2e (AOS-COUNCIL-PHASEC2B, Phase C Part 2b) — **completes Phase C**. (Prior: AOS-COUNCIL-PHASEC2A PR #56 / `973d532` — ADR export; AOS-COUNCIL-PHASEC PR #55 — the decision loop; AOS-COUNCIL-PHASEA PR #54 — first real Council run; AOS-COUNCIL-001 PR #49 / AOS-19.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `973d532` after the PR #56 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `78709e3` after the PR #57 merge; env-pinned — see branch note above)
 
 ### PR
 
-#56 — **Merged** as `973d532` (merge commit). CI run 28766562398 all 6 jobs green on head `a2ce32f`.
+#57 — **Merged** as `78709e3` (merge commit). CI run 28788348725 all 6 jobs green on head `2406ecd` (incl. the worker-driven web-e2e).
 
 ### Status
 
-Merged — **the Decision → Knowledge handoff into the source-of-truth vault is live.** An **approved** `Decision` exports (via `POST /decisions/{id}/adr`) to an ADR markdown under `knowledge/wiki/decisions/` (shaped like `templates/adr.md`, linking the decision + its council review) and projects a re-syncable `KnowledgePage` (`page_type="decision"`) so it also surfaces on the Knowledge dashboard. **Local-first write:** the export targets `settings.knowledge_root` (writable on WSL); the compose stack mounts the vault `:ro`, so there the endpoint returns a clean **409** (never 500) and **never** mutates the approval state — export is decoupled from approve. **Invariant preserved:** `sync_knowledge` now re-derives decision pages from `wiki/decisions/*.md`, so a DB reset loses nothing. Approved-only + idempotent; no new tables/migration; backend only. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `973d532`. **Next: Phase C Part 2b — the Control Tower decision-approval view (frontend + e2e), which finishes Phase C.**
+Merged — **Phase C is COMPLETE end to end.** The Intelligence decision loop is drivable from the Control Tower: Council reasons (real Claude via `claude_code`) → drafts a governed `Decision` → a named human approves/rejects (with an `ApprovalRecord`; abstention blocks approval — LES-019) → an approved decision exports to an ADR in the source-of-truth vault (`knowledge/wiki/decisions/`) → surfaces on the Knowledge dashboard. The "Decision Loop" UI extends the existing Decisions section (enqueue review → draft → approve/reject → export, with 409s as readable inline errors). A **full worker-driven Playwright e2e** proves both branches deterministically (`serve-api.sh` runs `python -m app.worker` against a throwaway vault copy; `database.py` sqlite WAL/busy_timeout for file DBs). No backend/API/schema change. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `78709e3`. **Next: operator's direction — Phase B (architecture semantics / language weighting), the Council dashboard (AOS-COUNCIL-002), or scanner precision (LES-016/017). Recommendation: Phase B.**
 
 ### Note — GitHub connector expired mid-session
 
@@ -46,29 +46,31 @@ The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI wer
 
 ### Completed
 
-- **Decision → Knowledge: repo-vault ADR export.** New `packages/aos_core/aos_core/services/adr.py`: `render_adr_markdown(decision, review=None)` (pure, ADR-shaped) + `export_decision_adr(db, *, decision_id, knowledge_root)` — 404 missing / **409** non-approved / **409** on `OSError` (read-only vault) without mutating the decision; upserts one `KnowledgePage` (`page_type="decision"`, `validation_state="approved"`, sha256 checksum, `source_refs` decision+council_review) keyed on `vault_path`; stamps `decision.meta["adr_path"]`; idempotent.
-- `packages/aos_core/aos_core/services/knowledge.py`: `parse_adr` + `sync_knowledge` extended to scan `wiki/decisions/*.md` and re-derive decision pages (folds into `synced`/`created`/`updated`; `open_lessons` stays lessons-only) — the re-syncable invariant.
-- `apps/api/app/routes/decisions.py`: `POST /decisions/{decision_id}/adr` → `KnowledgePageRead`.
-- `apps/api/tests/test_adr_export.py` (new): 6 hermetic tests (all use `tmp_path`, never the real vault). `test_knowledge.py`: count-agnostic decision-derivation. `test_route_inventory.py`: route freeze 45→46.
-- Docs: `docs/DECISION_LIFECYCLE.md` (Decision → Knowledge ADR export; local-first; `:ro` in compose), `docs/CAPABILITY_MAP.md` (Layer 1 + Layer 4), `.archetype/work/AOS-COUNCIL-PHASEC2A.md` (spec), state files.
+- **The Control Tower decision-approval view (Phase C Part 2b — completes Phase C).** `apps/web/src/api.ts`: `CouncilReview` type; `status`/`approved_by`/`approved_at` on `Decision`; `fetchCouncilReviews`/`enqueueCouncilReview`/`draftDecisionFromReview`/`approveDecision`/`rejectDecision`/`exportDecisionAdr`; `request<T>` now surfaces the FastAPI `detail` (for inline 409s).
+- `apps/web/src/main.tsx`: a **Decision Loop** block in the Decisions section — enqueue council review + reviews list (verdict/confidence + Draft-decision) + Refresh; per-decision status badge + approver input + Approve/Reject + Export-ADR on approved; inline per-action errors; per-section error isolation.
+- `apps/web/e2e/serve-api.sh`: runs `python -m app.worker` alongside uvicorn (own PYTHONPATH so `app.worker` resolves ahead of `app.main`) draining the queue; `KNOWLEDGE_ROOT` → a throwaway **copy** of the vault (ADR writes never touch the committed tree).
+- `packages/aos_core/aos_core/database.py`: sqlite **WAL + busy_timeout** via a `connect` listener, guarded to **file-based sqlite only** (`_is_file_sqlite`) so API+worker share one file. `apps/api/tests/test_database_pragma.py` pins the guard (added after a `missing-core-tests` guardian BLOCK — LES-020).
+- `apps/web/e2e/decision-loop.spec.ts` (new): happy path (scan → cleared-floor review conf 0.4 → draft → approve → export ADR) + blocked path (no scan → abstain → `needs_evidence` → approve 409, decision unchanged). `scheduling.spec.ts` made worker-tolerant (assert `project_digest — (queued|running|completed)`; Orchestrator dropped `failed`).
+- Lesson `LES-020.md` (closed) + index row. Spec `.archetype/work/AOS-COUNCIL-PHASEC2B.md`. State files.
 
 ### Files changed
 
-- `packages/aos_core/aos_core/services/adr.py` (new), `packages/aos_core/aos_core/services/knowledge.py`
-- `apps/api/app/routes/decisions.py`
-- `apps/api/tests/test_adr_export.py` (new), `apps/api/tests/test_knowledge.py`, `apps/api/tests/test_route_inventory.py`
-- `docs/DECISION_LIFECYCLE.md`, `docs/CAPABILITY_MAP.md`, `.archetype/work/AOS-COUNCIL-PHASEC2A.md`
+- `apps/web/src/api.ts`, `apps/web/src/main.tsx`
+- `apps/web/e2e/serve-api.sh`, `apps/web/e2e/decision-loop.spec.ts` (new), `apps/web/e2e/scheduling.spec.ts`
+- `packages/aos_core/aos_core/database.py`, `apps/api/tests/test_database_pragma.py` (new)
+- `knowledge/wiki/lessons/LES-020.md` (new), `knowledge/wiki/lessons/index.md`, `.archetype/work/AOS-COUNCIL-PHASEC2B.md`
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- On a 3.12 venv: `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests -q` → **123 passed** (+6 ADR-export, +1 sync decision-derivation); `apps/worker/tests` → **7 passed**; `ruff check apps/api packages/aos_core apps/worker tools` clean; `compileall` clean.
-- Independently confirmed (builder ≠ verifier): export approved-only (**409**), read-only vault → **409** (not 500) with the decision unchanged, idempotent (one file, one page), `sync_knowledge` re-derives decision pages; a live render sanity check (tmp only) matched `templates/adr.md`; no migration, no `apps/web` change, no stray ADR in the real vault.
+- **Full Playwright suite 7/7 headless** (`PW_LOCAL_CHROMIUM`) incl. both `decision-loop.spec.ts` tests + the tightened `scheduling.spec.ts`; ran twice (once after the vault gained LES-020) — stable. Worker logs confirm it drains the queue (`job completed: …`).
+- `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests -q` → **126 passed** (+3 pragma); `apps/worker/tests` → **7 passed**; strict `tsc` + `vite build` exit 0; `ruff` full CI scope + `compileall` clean.
+- Independently confirmed (builder ≠ verifier): the approve path and the abstention-409 path both assert real state; `_is_file_sqlite` excludes `:memory:`/Postgres; `build_digest` succeeds on a repo-less project (basis for tightening the scheduling assertion); vault stays clean; no `apps/api`/schema/migration change.
 
 ### Known Risks
 
-- **Local-first write only** — the containerized (`:ro`) stack cannot export ADRs by design (returns 409); flipping the compose mount to `:rw` is a separate operator decision (not taken). Backend only — surfacing ADR export in the UI is Part 2b.
-- After a DB reset, sync re-derives decision pages with a `vault_file` source_ref (the structured decision/council-review ids are repopulated on the next export).
+- The e2e now runs a worker in-harness (sqlite WAL/busy_timeout) — a legitimate harness evolution; the deterministic provider drives reproducible reviews. If web-e2e ever flakes, check worker startup / redis 9999 / the WAL PRAGMA first.
+- ADR export remains local-first (compose `:ro` → 409, by design — 2a).
 
 ### Blockers
 
@@ -76,31 +78,31 @@ The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI wer
 
 ### Verification Status
 
-Verified (PR #56 merged as `973d532`; AOS-COUNCIL-PHASEC2A Done)
+Verified (PR #57 merged as `78709e3`; AOS-COUNCIL-PHASEC2B Done; **Phase C complete**)
 
 ### Verification Level
 
-Level 3
+Level 4
 
 ### Verification Method
 
-CI run 28766562398 all 6 jobs green on head `a2ce32f`; built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier): `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests` → **123 passed**; `apps/worker/tests` → **7 passed**; the approved-only 409, read-only-vault 409 (decision unchanged), and idempotency confirmed by reading the tests + service and a live render sanity check; `git status --porcelain apps/api/alembic apps/web knowledge` empty (no migration, no web change, no stray ADR); `ruff` full CI scope + `compileall` clean; guardian PASS. Branch restarted from `main` at `973d532`.
+CI run 28788348725 all 6 jobs green on head `2406ecd` (incl. the worker-driven **web-e2e** — first CI run of the worker-in-harness); built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier): **full Playwright 7/7 headless**; `pytest apps/api/tests` → **126 passed**; `apps/worker/tests` → **7 passed**; strict `tsc` + `vite build` exit 0; `ruff` full CI scope + `compileall` clean; `git status` confirmed no `apps/api`/schema/migration change and a clean vault; guardian PASS (after a `missing-core-tests` BLOCK fixed with a real test — LES-020). Branch restarted from `main` at `78709e3`.
 
 ### Evidence
 
-- Approved `Decision` → ADR under `wiki/decisions/` + a `KnowledgePage` (`page_type="decision"`) linking the council review; export approved-only + idempotent; read-only vault → 409 not 500; `sync_knowledge` re-derives decision pages (DB reset loses nothing); api 123 / worker 7 green; ruff full CI scope + compileall clean.
+- The decision loop is drivable end to end from the UI; deterministic e2e proves the approve path (scan → review → draft → approve → export ADR) and the abstention-409 path; api 126 / worker 7; full Playwright 7/7 headless; no backend/API/schema change.
 
 ### Limitations
 
-Local-first write only — the `:ro` compose stack cannot export ADRs (409 by design); flipping the mount to `:rw` is a separate operator decision (not taken). Backend only — the approval UI is Part 2b. After a DB reset, sync re-derives decision pages with a `vault_file` source_ref (structured ids repopulated on the next export).
+Uses the existing project-scoped Decisions section (a standalone cross-project Council dashboard is AOS-COUNCIL-002, separate). ADR export remains local-first (compose `:ro` → 409, by design). The e2e runs a worker in-harness with sqlite WAL — a deliberate, deterministic harness evolution.
 
 ### Required Next Verifier
 
-None — PR #56 merged as `973d532` and reconciled.
+None — PR #57 merged as `78709e3` and reconciled. Phase C complete.
 
 ### Next Recommended Step
 
-**Phase C Part 2b — the Control Tower decision-approval view (recommended).** The decision loop is complete on the backend (Council → draft → approve/reject → ADR-in-vault, PRs #55/#56). Part 2b surfaces it in the UI: a Control Tower section listing council reviews + their drafted decisions with status badges, plus draft-from-review, approve/reject (with an approver), and export-ADR on approved — with Playwright e2e (extends the existing `apps/web/e2e/decisions.spec.ts`). That finishes Phase C. Alternatives: **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` ready test) + language weighting (LES-013); the **Council dashboard** (AOS-COUNCIL-002). Scanner backlog also open: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness), AOS-22 (backups).
+**Operator's direction — Phase C is complete.** Recommended: **Phase B — architecture semantics** (dependency/compose-derived architecture edges, LES-014, with `example-voting-app`'s compose file as a ready test; + language weighting, LES-013), because richer scan evidence directly improves the Council's inputs (the loop it now feeds). Alternatives: the standalone **Council dashboard** (AOS-COUNCIL-002); **scanner precision** (LES-016 manifest/ecosystem coverage, LES-017 secret-signal precision); AOS-20 (doc-staleness), AOS-22 (backups).
 
 ## Handoff Template
 

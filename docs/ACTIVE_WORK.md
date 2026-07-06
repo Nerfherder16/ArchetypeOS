@@ -20,12 +20,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-COUNCIL-PHASEC2B — The Control Tower decision-approval view (frontend + worker-driven e2e)
 
-- Status: In Progress (PR open)
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
-- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
-- Summary: Phase C Part 2b — **finishes Phase C**. Control Tower "Decision Loop" UI: enqueue council review → draft → approve/reject (named approver) → export ADR, with inline 409s (abstention-blocks-approval; read-only vault). `api.ts` council/decision functions + `Decision` status fields. Full worker-driven e2e: `serve-api.sh` runs the worker (throwaway vault copy), `database.py` sqlite WAL/busy_timeout (file-only), `decision-loop.spec.ts` drives both the approve and 409 branches deterministically. No backend/API/schema change.
-- Verification Status: Orchestrator-verified independently (full Playwright 7/7 headless, tsc + vite build exit 0, api 123, worker 7, ruff full CI scope + compileall clean; vault clean; no route/schema/migration change)
-- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+- PR: #57 (merged as `78709e3`) — **Phase C COMPLETE end to end**
+- Summary: Phase C Part 2b — Control Tower "Decision Loop" UI: enqueue council review → draft → approve/reject (named approver) → export ADR, with inline 409s (abstention-blocks-approval; read-only vault). `api.ts` council/decision functions + `Decision` status fields. Full worker-driven e2e: `serve-api.sh` runs the worker (throwaway vault copy), `database.py` sqlite WAL/busy_timeout (file-only), `decision-loop.spec.ts` drives both the approve and 409 branches deterministically. Guardian BLOCK (`missing-core-tests`) fixed with a real test — LES-020. No backend/API/schema change.
+- Verification Status: Verified (CI run 28788348725 6/6 green on `2406ecd`, incl. worker-driven web-e2e; Orchestrator independent — full Playwright 7/7 headless, tsc + vite build exit 0, api 126, worker 7, ruff full CI scope + compileall clean; vault clean; no route/schema/migration change)
+- Required Next Verifier: None — merged and reconciled.
 
 ### AOS-COUNCIL-PHASEC2A — Decision → Knowledge: repo-vault ADR export
 

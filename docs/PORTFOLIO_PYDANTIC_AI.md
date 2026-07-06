@@ -9,6 +9,7 @@ v0.1 proved the ArchetypeOS loop on ArchetypeOS itself. This is the first **port
 2. **`anthropics/claude-agent-sdk-python`** — the SDK AOS's `ClaudeCodeProvider` targets. A **lean, source-heavy single-package Python SDK**.
 3. **`gin-gonic/gin`** — a **Go** web framework. Stresses non-Python language + `go.mod` manifest detection.
 4. **`dockersamples/example-voting-app`** — a **polyglot docker-compose multi-service** app (Python/Node/C#/Redis/Postgres). Stresses deployment-file detection + service-graph architecture.
+5. **`kubernetes/kubernetes`** — the **scale test** (30,560 files, well past the `MAX_FILES=20000` guard). Stresses truncation handling, performance, and DNA sanity under truncation.
 
 ## Method
 
@@ -60,6 +61,16 @@ Two more shapes, chosen to stress dimensions the first two didn't. Evidence: `.a
 
 **Net of the diverse batch:** the scanner is *broader* than assumed (Go + multi-service compose both work well), and it surfaced one genuinely **new** gap (LES-016, .NET manifest) plus a precision refinement (LES-017). LES-013 held on a fourth repo (the voting app is polyglot — "primary language" is itself the wrong frame there), and LES-014 is now backed by a repo whose dependency graph is sitting in a file we ignore.
 
+## Scale test — `kubernetes/kubernetes` (30,560 files vs the 20,000 cap)
+
+The one remaining untested failure mode: does the scanner survive a huge repo, and does the DNA stay sane when the `MAX_FILES=20000` guard trips? Evidence: `.archetype/portfolio/kubernetes/scan.json`.
+
+- ✅ **Graceful degradation — the headline.** 30,560 files scanned in **~2.0s**, no hang. Crucially, **truncation is surfaced, not silent:** a `SCAN_TRUNCATED` warning fires **and** `notes` records "file scan truncated at 20000 files" / "folder_structure truncated at 500 entries". The DNA stayed sane under truncation: **35 manifests** found (root `go.mod` + all `staging/src/k8s.io/*/go.mod`), `package_managers=['go']`, Go correctly primary. A pre-test worry — *silent* truncation with a skewed DNA — proved **unfounded**; the scanner already does the right thing.
+- 🔍 **LES-017 becomes acute at scale.** kubernetes ships **133** secret-like files (test certs / crypto fixtures); the scanner emitted **71** `SECRET_LIKE_FILENAME` warnings. Precision that was a minor annoyance on `gin` is a real **usability** problem at scale — 71 warnings bury any genuine hit. Reinforces LES-017 (no new lesson; the same gap, quantified).
+- 🔎 **Minor observations (not defects, not lessons):** (1) `NO_CI_CONFIG` fired because kubernetes uses **Prow** (CI config lives in a *different* repo) — verified no `.github/workflows`; correct-in-isolation, but the scanner can't see externalized CI. (2) `total_files_seen` caps at 20000; the true on-disk count (30,560) isn't recorded, so a consumer can't learn the real size from the summary alone (the `SCAN_TRUNCATED` signal + note compensate).
+
+**Net of the scale test:** mostly a **validation** — the scanner is more robust at scale than feared (fast, non-silent truncation, sane DNA). It found no new catastrophic gap; its main effect is to make LES-017 clearly worth fixing.
+
 ## Verdict
 
 **The scanner generalizes across shapes.** It ingested both a large docs-heavy multi-package monorepo and a lean single-package SDK cleanly — correct languages, all manifests, ecosystems, CI, Docker, test presence, and an actionable risk signal where warranted — with no tuning and no failure. The read-only-scan + draft-DNA discipline held on both. A genuine structural pass on "understand a codebase the system did not write."
@@ -84,5 +95,5 @@ All 14 edges are `contains` (folder containment). There are **no dependency or m
 
 ## Evidence
 
-- `.archetype/portfolio/{pydantic-ai,claude-agent-sdk-python,gin,example-voting-app}/scan.json` — the captured derived scans (summary, language_mix, manifests, ci, risk_signals, DNA, architecture counts/types) for all four repos.
-- Reproduce: `scripts/onboard_repo.sh <git-url> <name>` (acquires the clone via `clone_repo`), then register + scan via the API (the script prints the curl commands). Targets: `pydantic/pydantic-ai`, `anthropics/claude-agent-sdk-python`, `gin-gonic/gin`, `dockersamples/example-voting-app`.
+- `.archetype/portfolio/{pydantic-ai,claude-agent-sdk-python,gin,example-voting-app,kubernetes}/scan.json` — the captured derived scans for all five repos.
+- Reproduce: `scripts/onboard_repo.sh <git-url> <name>` (acquires the clone via `clone_repo`), then register + scan via the API (the script prints the curl commands). Targets: `pydantic/pydantic-ai`, `anthropics/claude-agent-sdk-python`, `gin-gonic/gin`, `dockersamples/example-voting-app`, `kubernetes/kubernetes`.

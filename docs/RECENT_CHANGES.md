@@ -6,9 +6,19 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
-## 2026-07-06 — Knowledge read path (substrate sequence)
+## 2026-07-06 — Knowledge dashboard (closes AOS-23)
 
 ### In Review
+
+- AOS-KNOW-003 — Knowledge dashboard (Plane AOS-23 dashboard phase; **merging closes AOS-23**). Operator sequence "2 then 1": finish the knowledge dashboard, then AOS-21. A **global** "Knowledge" Control Tower section (renders with no project selected — lessons have no project): "Sync from vault" button (shows `synced N · N open`), lesson list with amber open-lesson badges, All/Open filter, per-section error isolation; `api.ts` gains `KnowledgePage`/`KnowledgeSyncResult` + `fetchKnowledgePages`/`syncKnowledge`. Compose: the api service gains a `${HOST_KNOWLEDGE_ROOT:-./knowledge}:/knowledge:ro` mount + `KNOWLEDGE_ROOT` so `POST /knowledge/sync` works in the shipped stack. e2e `knowledge.spec.ts` (sync → LES-007 open badge → Open filter → reload persistence); `serve-api.sh` exports `KNOWLEDGE_ROOT` (the load-bearing detail). Frontend + compose only — no backend/API/schema change. Orchestrator-verified: full Playwright suite 5/5 headless incl. the new knowledge spec; strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service. Spec: `.archetype/work/AOS-KNOW-003.md`.
+
+## 2026-07-06 — Knowledge read path (substrate sequence)
+
+### Merged
+
+- PR #51 — AOS-KNOW-002 Knowledge read path (merge commit `a462b3a`; Plane AOS-23 backend phase — AOS-23 stays In Progress until the dashboard AOS-KNOW-003). Verified at Level 4 (CI run 28760266463 all 6 jobs green on head `88037c3`; plus Orchestrator's independent run at CI's exact ruff scope — api 99 / worker 7, sync on the real vault = all lessons/LES-007 sole open, digest surfaces it, no-drift after `0004`). Knowledge is operational: lessons queryable + digest-visible (RFC-0004 deferral closed); repo stays source of truth. **First CI run failed on a ruff F401 in migration `0004` — local ruff had scoped to `apps/api/app` (narrower than CI's `apps/api`); fixed, recorded LES-012, made knowledge tests count-agnostic.** LES-012 added to the lessons index (vault now 12 lessons).
+
+### (package detail)
 
 - AOS-KNOW-002 — Knowledge read path (Plane AOS-23 backend; RFC-0002/RFC-0004). Operator-directed sequence "aos-23, then aos-21, then reevaluate the roadmap." Closes two deferrals: the KnowledgePage API read path (AOS-KNOW-001) and digest visibility of open lessons (RFC-0004). **Design: the repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection** (a DB reset loses nothing — re-sync from the repo; honors RFC-0004's "lessons travel with the repo"). Adds `knowledge_root` config; makes `KnowledgePage.project_id` nullable (migration `0004`, sqlite batch alter — lessons are global); `aos_core/services/knowledge.py` (`parse_lessons_index` + idempotent `sync_knowledge` upsert keyed by vault_path); a global read API (`POST /knowledge/sync`, `GET /knowledge/pages` [+ page_type/validation_state filters], `GET /knowledge/pages/{id}`); and **digest rule 5** surfacing open lessons (LES-007 today) as a change + draft recommendation. Orchestrator-verified: api 99 / worker 7; sync on the real vault → all lessons (LES-007 the sole open), idempotent, missing-vault→zeros; digest surfaces it; alembic no-drift after `0004` (24 tables, 0 ops, project_id nullable). First CI run flagged an F401 (unused `sqlalchemy` import) in migration `0004` — the Orchestrator's local ruff had scoped to `apps/api/app` while CI scopes to `apps/api` (incl. `alembic/`); fixed the import, recorded **LES-012** (lint-scope parity), and made the knowledge tests count-agnostic (derive from the live index, since lessons are append-only). Backend only — dashboard is AOS-KNOW-003. No Docker/compose change (compose self-contained sync = follow-up). Spec: `.archetype/work/AOS-KNOW-002.md`.
 

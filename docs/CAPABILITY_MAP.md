@@ -74,6 +74,7 @@ Capabilities:
 - repository knowledge standard
 - knowledge packs
 - Knowledge read path (AOS-KNOW-002: vault lessons synced to `KnowledgePage`, a DB read projection with a global read API; open lessons surface in the digest)
+- Knowledge dashboard (AOS-KNOW-003: the global Control Tower Knowledge view — Sync-from-vault, lesson list with open-lesson emphasis, All/Open filter; compose `./knowledge:ro` vault mount so in-container sync works)
 
 Primary artifacts:
 
@@ -86,6 +87,7 @@ Primary artifacts:
 - docs/REPOSITORY_KNOWLEDGE_STANDARD.md
 - packages/aos_core/aos_core/services/knowledge.py (parse_lessons_index + sync_knowledge; vault → KnowledgePage upsert, repo stays source of truth)
 - apps/api/app/routes/knowledge.py (POST /knowledge/sync, GET /knowledge/pages, GET /knowledge/pages/{id})
+- apps/web/src/main.tsx (global "Knowledge" Control Tower section: sync + lesson list + open badge + All/Open filter) with apps/web/e2e/knowledge.spec.ts; docker-compose.yml api service `${HOST_KNOWLEDGE_ROOT:-./knowledge}:/knowledge:ro` mount + `KNOWLEDGE_ROOT`
 
 ## Layer 2: Research and Evidence
 

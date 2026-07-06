@@ -13,6 +13,7 @@ import {
   fetchDna,
   fetchHealth,
   fetchJobs,
+  fetchKnowledgePages,
   fetchProjects,
   fetchRecommendations,
   fetchRepositories,
@@ -23,10 +24,12 @@ import {
   runSchedule,
   scanRepository,
   setScheduleEnabled,
+  syncKnowledge,
   type ArchitectureGraph,
   type Decision,
   type Health,
   type Job,
+  type KnowledgePage,
   type NightlyDigest,
   type Project,
   type Recommendation,
@@ -50,6 +53,12 @@ const errorStyle: React.CSSProperties = { color: '#b00020' };
 function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
+
+  const [knowledgePages, setKnowledgePages] = useState<KnowledgePage[]>([]);
+  const [knowledgeError, setKnowledgeError] = useState<string | null>(null);
+  const [knowledgeFilter, setKnowledgeFilter] = useState<'all' | 'open'>('all');
+  const [knowledgeSyncing, setKnowledgeSyncing] = useState(false);
+  const [knowledgeSyncSummary, setKnowledgeSyncSummary] = useState<string | null>(null);
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -105,6 +114,17 @@ function App() {
     } catch (err) {
       setHealth(null);
       setHealthError(errorMessage(err));
+    }
+  }, []);
+
+  const loadKnowledge = useCallback(async (filter: 'all' | 'open') => {
+    setKnowledgeError(null);
+    try {
+      const params = filter === 'open' ? { validation_state: 'open' } : undefined;
+      setKnowledgePages(await fetchKnowledgePages(params));
+    } catch (err) {
+      setKnowledgePages([]);
+      setKnowledgeError(errorMessage(err));
     }
   }, []);
 
@@ -210,6 +230,12 @@ function App() {
     void loadProjects();
   }, [loadHealth, loadProjects]);
 
+  // Knowledge is a GLOBAL surface (lessons have no project); it loads on mount
+  // and refetches whenever the All/Open filter changes, never gated on a project.
+  useEffect(() => {
+    void loadKnowledge(knowledgeFilter);
+  }, [loadKnowledge, knowledgeFilter]);
+
   useEffect(() => {
     setSelectedRepositoryId(null);
     setRepositories([]);
@@ -243,6 +269,20 @@ function App() {
       setArchitecture(null);
     }
   }, [selectedProjectId, selectedRepositoryId, loadDna, loadArchitecture]);
+
+  const handleSyncKnowledge = useCallback(async () => {
+    setKnowledgeSyncing(true);
+    setKnowledgeError(null);
+    try {
+      const result = await syncKnowledge();
+      setKnowledgeSyncSummary(`synced ${result.synced} · ${result.open_lessons} open`);
+      await loadKnowledge(knowledgeFilter);
+    } catch (err) {
+      setKnowledgeError(errorMessage(err));
+    } finally {
+      setKnowledgeSyncing(false);
+    }
+  }, [loadKnowledge, knowledgeFilter]);
 
   const handleCreateProject = useCallback(
     async (event: React.FormEvent) => {
@@ -544,6 +584,90 @@ function App() {
           </ul>
         ) : (
           <p>Loading health...</p>
+        )}
+      </section>
+
+      <section style={sectionStyle}>
+        <h2>Knowledge</h2>
+        {knowledgeError ? (
+          <p role="alert" style={errorStyle}>
+            Knowledge unavailable: {knowledgeError}
+          </p>
+        ) : null}
+        <div>
+          <button
+            type="button"
+            disabled={knowledgeSyncing}
+            onClick={() => void handleSyncKnowledge()}
+          >
+            {knowledgeSyncing ? 'Syncing...' : 'Sync from vault'}
+          </button>
+          {knowledgeSyncSummary ? (
+            <span style={{ marginLeft: 8, color: '#555' }}>{knowledgeSyncSummary}</span>
+          ) : null}
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            onClick={() => setKnowledgeFilter('all')}
+            style={{
+              cursor: 'pointer',
+              padding: '4px 10px',
+              border: knowledgeFilter === 'all' ? '2px solid #0b57d0' : '1px solid #ccc',
+              background: knowledgeFilter === 'all' ? '#e8f0fe' : '#fff',
+              fontWeight: knowledgeFilter === 'all' ? 600 : 400,
+            }}
+          >
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => setKnowledgeFilter('open')}
+            style={{
+              cursor: 'pointer',
+              marginLeft: 8,
+              padding: '4px 10px',
+              border: knowledgeFilter === 'open' ? '2px solid #0b57d0' : '1px solid #ccc',
+              background: knowledgeFilter === 'open' ? '#e8f0fe' : '#fff',
+              fontWeight: knowledgeFilter === 'open' ? 600 : 400,
+            }}
+          >
+            Open
+          </button>
+        </div>
+        {knowledgePages.length === 0 ? (
+          <p>No knowledge pages yet. Sync from the vault to load lessons.</p>
+        ) : (
+          <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+            {knowledgePages.map((page) => {
+              const isOpen = page.validation_state === 'open';
+              return (
+                <li key={page.id} style={{ marginBottom: 6 }}>
+                  {isOpen ? (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        marginRight: 8,
+                        padding: '1px 8px',
+                        borderRadius: 10,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: '#b45309',
+                        background: '#fef3c7',
+                        border: '1px solid #f59e0b',
+                      }}
+                    >
+                      open
+                    </span>
+                  ) : null}
+                  <span style={{ fontWeight: isOpen ? 600 : 400 }}>{page.title}</span>{' '}
+                  <span style={{ color: '#777' }}>
+                    ({page.page_type} · {page.validation_state})
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
         )}
       </section>
 

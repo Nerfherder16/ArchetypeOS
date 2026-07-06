@@ -33,6 +33,10 @@ export PYTHONPATH="${API_DIR}:${REPO_ROOT}/packages/aos_core"
 export DATABASE_URL="sqlite:///${DB_PATH}"
 export ARTIFACT_ROOT="${ARTIFACT_DIR}"
 export REPOSITORY_ROOT="${FIXTURES_DIR}"
+# Absolute path to the committed vault so POST /knowledge/sync finds the real
+# lessons index even after the `cd "${SCRATCH_DIR}"` below (a relative
+# knowledge_root would otherwise resolve to the empty scratch dir).
+export KNOWLEDGE_ROOT="${REPO_ROOT}/knowledge"
 export REDIS_URL="redis://localhost:9999/0"
 
 # Ephemeral Redis for the job queue. --save '' + --appendonly no keep it purely

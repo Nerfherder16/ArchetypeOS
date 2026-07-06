@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Substrate sequence (operator-directed): AOS-KNOW-002 (Plane AOS-23 backend) in review; then AOS-21. Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Substrate sequence (operator "2 then 1"): AOS-KNOW-002 merged (PR #51, AOS-23 backend); AOS-KNOW-003 in review (AOS-23 dashboard — closes it); then AOS-21. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -60,11 +60,12 @@ Every new engineering session should read this before planning or implementation
 - PR #48: Scheduler dashboard — schedules UI + enqueue + job history, RFC-0007/RFC-0006 Phase 3b (AOS-SCHED-002) — **closes AOS-18 and the worker pipeline; RFC-0006 + RFC-0007 realized end to end**
 - PR #49: Agent Council seed — LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (AOS-COUNCIL-001) — **the Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done**
 - PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
-- (in review) AOS-KNOW-002: knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (RFC-0002/RFC-0004; Plane AOS-23 backend)
+- PR #51: Knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (AOS-KNOW-002; RFC-0002/RFC-0004; Plane AOS-23 backend phase). Knowledge is operational; repo stays source of truth. (First CI run flagged a ruff F401 in migration `0004` — fixed, LES-012 recorded, tests made count-agnostic.)
+- (in review) AOS-KNOW-003: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (Plane AOS-23 dashboard phase; **closes AOS-23**)
 
 ## Current Objective
 
-**Substrate sequence (operator-directed: "aos-23, then aos-21, then reevaluate the roadmap").** In review: **AOS-KNOW-002** (Plane AOS-23 backend) — the knowledge read path. Repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection. `sync_knowledge` (vault lessons → KnowledgePage), read API (`POST /knowledge/sync`, `GET /knowledge/pages`), `project_id` nullable (migration `0004`), and a **digest rule surfacing open lessons** (closes the RFC-0004 deferral). Next: AOS-KNOW-003 (23b, the dashboard Knowledge view), then AOS-21 (second repo). Prior done: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24).
+**Operator sequence "2 then 1": finish the knowledge dashboard, then the second repo.** In review: **AOS-KNOW-003** (Plane AOS-23 dashboard phase — **merging closes AOS-23**) — a global "Knowledge" Control Tower view (Sync from vault, lesson list with open-lesson badges, All/Open filter) + a `./knowledge:ro` compose mount so `POST /knowledge/sync` works in the shipped stack. Frontend + compose only. Orchestrator-verified: full Playwright suite 5/5 headless incl. the new knowledge spec, strict build clean, compose valid. Next: **AOS-21** (second repo), then a definitive-roadmap reevaluation. Prior done: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002 (PR #51, AOS-23 backend).
 
 ## Active Branch
 
@@ -81,16 +82,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verification pending (AOS-KNOW-002 in review; PR #50 merged as `2c5cdcb`)
+- Status: Verification pending (AOS-KNOW-003 in review; PR #51 merged as `a462b3a`)
 - Level: Level 4
-- Method: Orchestrator independently (3.12 venv) ran ruff/compile clean; api **99 passed** (94 prior + 5 new), worker **7**; ran `sync_knowledge` against the real `./knowledge` → **all vault lessons synced (12 today; LES-007 the sole open), idempotent re-sync (no dupes), global (project_id NULL), missing-vault→zeros** (tests are count-agnostic per LES-012); `build_digest` surfaces the open lesson; alembic no-drift after `0004` (chain 0001→0004, project_id nullable, 0 ops, 24 tables). CI (api-tests, compose-smoke on Postgres) pending on the PR
-- Evidence: lessons queryable via API; open lessons visible to the digest (RFC-0004 deferral closed); repo remains authoritative
-- Limitations: only lessons ingested (other vault domains empty); compose self-contained sync needs a `./knowledge:ro` mount (follow-up); advisory/draft-only
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review
+- Method: Orchestrator independently ran the **full Playwright suite headless** → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → exactly 1, reload persists); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the vault mount + `KNOWLEDGE_ROOT=/knowledge` resolved into the api service. CI (web-e2e, compose-smoke boots api with the mount) pending on the PR
+- Evidence: knowledge visible + syncable from the Control Tower; compose stack can populate KnowledgePage; repo remains authoritative
+- Limitations: only lessons render (other vault domains empty); list view (no drill-down); read-only/advisory
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review; on merge AOS-23 → Done
 
 ## In Scope Now
 
-- AOS-KNOW-002 (Plane AOS-23 backend): knowledge read path — sync + read API + digest open-lessons rule. Backend only; dashboard is AOS-KNOW-003.
+- AOS-KNOW-003 (Plane AOS-23 dashboard phase): global Knowledge view + compose vault mount. Frontend + compose only; closes AOS-23.
 
 ## Out Of Scope Now
 
@@ -117,7 +118,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-Merge AOS-KNOW-002 after CI passes under the Manual Merge Gate (Plane AOS-23 backend). Then AOS-KNOW-003 (23b — dashboard Knowledge view + Playwright e2e), then AOS-21 (second repo — the substrate sequence the operator set: "aos-23, then aos-21, then reevaluate the roadmap"). Remaining: AOS-20 (LES-007 doc-staleness), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A definitive-roadmap review is planned after AOS-21.
+Merge AOS-KNOW-003 after CI passes under the Manual Merge Gate — **closes AOS-23**. Then **AOS-21** (second repo — the highest-value proof: ArchetypeOS understanding something other than itself). Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (LES-007 doc-staleness — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
 
 ## Required Reading For New Sessions
 

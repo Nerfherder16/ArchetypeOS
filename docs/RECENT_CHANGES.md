@@ -6,6 +6,11 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Doc-staleness detection (AOS-20, laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-20 — doc-staleness detection.** New stdlib-only, hermetic `tools/doc_staleness.py` closes **LES-007** (the one Phase-10 Alpha "NO by machine"): it cross-checks two verifiable signals — (1) `.archetype/roadmap.md` "Current phase" vs `CURRENT_STATE` completion markers, and (2) newest merged PR in `git log` vs the newest PR referenced in `CURRENT_STATE` + `RECENT_CHANGES` — reporting drift as HARD/SOFT findings (exit non-zero only on HARD; the normal one-PR reconciliation lag stays SOFT). Surfaced as an **additive, non-blocking WARN** in `tools/pr_guardian.py` (no existing rule weakened; fails open). Live-validated against `origin/main` @ `10242e4`: it catches the real roadmap drift ('Foundation' vs 'v0.1 COMPLETE') as HARD and the #66-vs-#65 lag as SOFT — exactly the class of bug LES-007 named. 12 hermetic tests (`apps/api/tests/test_doc_staleness.py`); api **184** / worker **7**, ruff full CI scope + compileall clean; no migration/frontend. Records **LES-024** (closes LES-007). Spec: `.archetype/work/AOS-20.md`. Built in tandem with the remote RFC-0009 session — no file overlap; state-doc single-writer split observed (CURRENT_STATE "Current sprint" line + HANDOFF left to the remote Orchestrator).
 ## 2026-07-06 — AOS-EMBED-001: embedding tier Part 1 — vector-store + retrieval infra (in review)
 
 ### In Review

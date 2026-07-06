@@ -4,8 +4,10 @@ Counts are derived from the live lessons index, not hardcoded: lessons are
 append-only (a new lesson is recorded on every CI failure / guardian BLOCK),
 so pinning a magic count makes the suite brittle (see LES-012). The invariants
 that matter are self-consistency (synced == created on first sync, == updated
-on re-sync, row count stable) and the specific known facts (LES-007 is the open
-lesson; LES-001..011 are present and contiguous from LES-001).
+on re-sync, row count stable) and the specific known facts (LES-001..011 are
+present and contiguous from LES-001). Open lessons are derived live from the
+index (OPEN_IDS), never pinned to a specific ID — a lesson's status flips when a
+loop consumes it (e.g. AOS-20 closed LES-007), which must not break this suite.
 """
 
 from __future__ import annotations
@@ -66,8 +68,9 @@ def test_parse_lessons_index() -> None:
     assert ids == [f"LES-{n:03d}" for n in range(1, len(rows) + 1)]
     assert {f"LES-{n:03d}" for n in range(1, KNOWN_MIN + 1)} <= set(ids)
 
-    # LES-007 is (and should remain) the reference open lesson.
-    assert "LES-007" in [row["lesson_id"] for row in rows if row["status"] == "open"]
+    # Open lessons are derived live, not pinned to a specific ID (AOS-20 closed LES-007).
+    assert OPEN_IDS, "the live index should have at least one open lesson"
+    assert [row["lesson_id"] for row in rows if row["status"] == "open"] == OPEN_IDS
     assert all(row["status"] in {"open", "closed"} for row in rows)
 
     # LES-001 field spot-check
@@ -98,7 +101,7 @@ def test_sync_knowledge(db) -> None:
 
     open_pages = db.query(KnowledgePage).filter(KnowledgePage.validation_state == "open").all()
     assert len(open_pages) == N_OPEN
-    assert "wiki/lessons/LES-007.md" in [page.vault_path for page in open_pages]
+    assert {page.vault_path for page in open_pages} == {f"wiki/lessons/{lid}.md" for lid in OPEN_IDS}
 
     # Idempotent re-sync: update in place, no dupes
     rerun = sync_knowledge(db, KNOWLEDGE_ROOT)
@@ -199,9 +202,9 @@ def test_knowledge_api(client: TestClient) -> None:
     assert open_listing.status_code == 200, open_listing.text
     open_pages = open_listing.json()
     assert len(open_pages) == N_OPEN
-    assert "wiki/lessons/LES-007.md" in [page["vault_path"] for page in open_pages]
+    assert {page["vault_path"] for page in open_pages} == {f"wiki/lessons/{lid}.md" for lid in OPEN_IDS}
 
-    page_id = next(p["id"] for p in open_pages if p["vault_path"] == "wiki/lessons/LES-007.md")
+    page_id = open_pages[0]["id"]
     one = client.get(f"/knowledge/pages/{page_id}")
     assert one.status_code == 200, one.text
     assert one.json()["id"] == page_id

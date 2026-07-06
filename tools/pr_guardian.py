@@ -18,6 +18,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
+# Doc-staleness detector (AOS-20). Imported defensively so the guardian never
+# crashes if the tool is absent: as a package under pytest (`from tools... import`),
+# as a sibling when run as a script (`python3 tools/pr_guardian.py` puts tools/ on
+# sys.path[0]). A None module makes the doc-staleness check a silent no-op.
+try:
+    from tools import doc_staleness as _doc_staleness
+except ImportError:  # pragma: no cover - script-invocation fallback
+    try:
+        import doc_staleness as _doc_staleness
+    except ImportError:
+        _doc_staleness = None
+
 
 @dataclass(frozen=True)
 class Finding:
@@ -548,6 +560,28 @@ def apply_accepted_warnings(
     return result
 
 
+def check_doc_staleness(files: list[str]) -> list[Finding]:
+    """Advisory, non-blocking WARN when docs have drifted from reality (AOS-20).
+
+    Additive only: surfaces HARD doc-staleness signals (see tools/doc_staleness.py)
+    as guardian warnings. It NEVER emits a block, and it fails open — a missing or
+    erroring detector yields no findings — so it can never block a PR or weaken any
+    existing rule. SOFT drift (e.g. the normal one-PR reconciliation lag) is dropped
+    to keep the guardian quiet.
+    """
+    if _doc_staleness is None:
+        return []
+    try:
+        results = _doc_staleness.evaluate()
+    except Exception:
+        return []
+    return [
+        Finding("warn", f"doc-staleness:{result.signal}", result.message)
+        for result in results
+        if result.severity == "hard"
+    ]
+
+
 def render(findings: list[Finding], files: list[str]) -> int:
     blocks = [finding for finding in findings if finding.severity == "block"]
 
@@ -607,6 +641,7 @@ def main() -> int:
     findings.extend(check_scanner_signals(files, scan, body))
     findings.extend(check_guardian_change_lesson(files, body))
     findings.extend(check_override_lesson_citation(body))
+    findings.extend(check_doc_staleness(files))
 
     accepted = load_accepted_warnings()
     findings = apply_accepted_warnings(findings, accepted)

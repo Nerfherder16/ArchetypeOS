@@ -28,12 +28,15 @@ test('knowledge: sync from vault surfaces lessons, open lesson badged, open filt
   // Sync populates the list from the committed vault.
   await syncButton.click();
 
-  // The sole open lesson (LES-007, "Doc staleness...") appears.
+  // At least one lesson carries the "open" badge. Assert generically against the
+  // "(lesson · open)" badge rather than pinning a specific ID — a lesson's status
+  // flips when a loop consumes it (AOS-20 closed LES-007, the former open anchor).
+  const openLessonRow = knowledge.getByRole('listitem').filter({ hasText: /\(lesson · open\)/i }).first();
+  await expect(openLessonRow).toBeVisible({ timeout: 15000 });
+  // "Doc staleness" (LES-007) is present and is now a stable CLOSED anchor.
   const docStalenessRow = knowledge.getByRole('listitem').filter({ hasText: /Doc staleness/i });
-  await expect(docStalenessRow).toBeVisible({ timeout: 15000 });
-  // It carries the "open" badge / state.
-  await expect(docStalenessRow).toContainText(/open/i);
-  await expect(docStalenessRow).toContainText(/lesson/i);
+  await expect(docStalenessRow).toBeVisible();
+  await expect(docStalenessRow).toContainText(/closed/i);
 
   // At least the known lessons are listed (12+ in the seeded vault); assert a
   // healthy floor rather than an exact count to stay robust to vault growth.
@@ -46,13 +49,15 @@ test('knowledge: sync from vault surfaces lessons, open lesson badged, open filt
   // The returned counts render (e.g. "synced 12 · 1 open").
   await expect(knowledge.getByText(/synced \d+ · \d+ open/i)).toBeVisible();
 
-  // Toggle to Open: the open lesson (LES-007) stays; a known CLOSED lesson
-  // (LES-001) drops. Asserted via retrying web-first assertions (toBeVisible /
-  // toHaveCount(0)) so the async refetch settles — and count-agnostic, since the
-  // open-lesson count grows as lessons are recorded (append-only, LES-012).
+  // Toggle to Open: an open lesson stays; known CLOSED lessons (LES-001
+  // "Credential-shaped strings" and LES-007 "Doc staleness") drop. Asserted via
+  // retrying web-first assertions (toBeVisible / toHaveCount(0)) so the async
+  // refetch settles — and count-agnostic, since the open-lesson count grows as
+  // lessons are recorded (append-only, LES-012).
   await knowledge.getByRole('button', { name: 'Open', exact: true }).click();
-  await expect(docStalenessRow).toBeVisible();
+  await expect(openLessonRow).toBeVisible();
   await expect(closedLessonRow).toHaveCount(0);
+  await expect(docStalenessRow).toHaveCount(0);
 
   // Reload persistence: the synced lessons survive (DB-backed read projection).
   // After reload the filter resets to All, so all lessons render again.

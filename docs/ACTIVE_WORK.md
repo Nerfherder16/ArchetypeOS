@@ -18,6 +18,18 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-20 — Doc-staleness detection (deterministic drift check)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator; tandem with the remote session's RFC-0009 work)
+- Branch: `laptop/aos-20-doc-staleness` (cut from `origin/main` at `10242e4`)
+- PR: #68 (https://github.com/Nerfherder16/ArchetypeOS/pull/68)
+- Plane: AOS-26 (In Progress)
+- Summary: Closes LES-007 (the one Phase-10 Alpha "NO by machine") — doc-vs-reality drift is currently caught only by human review (the class of bug where `.archetype/roadmap.md` sat at "Foundation" long after v0.1, and CURRENT_STATE lagged a merge). Adds a stdlib-only, hermetic `tools/doc_staleness.py` that cross-checks verifiable signals: `.archetype/roadmap.md` "Current phase" vs CURRENT_STATE completion markers; and newest merged PR in `git log` vs the newest PR referenced in CURRENT_STATE + RECENT_CHANGES. Reports findings; exits non-zero only on HARD staleness (conservative thresholds — the normal 1-PR reconciliation lag stays SOFT). Surfaced as a **non-blocking WARN** in `tools/pr_guardian.py` (additive only; no existing rule weakened).
+- File scope (mine, strict): `tools/doc_staleness.py` (+ `apps/api/tests/test_doc_staleness.py`), `tools/pr_guardian.py` (additive WARN hook only), `.archetype/work/AOS-20.md`, lesson pages (LES-024, LES-025), `docs/CAPABILITY_MAP.md` (doc-staleness area). CI-driven addition: `apps/api/tests/test_knowledge.py` + `apps/web/e2e/knowledge.spec.ts` — direct fallout of closing LES-007 (both pinned it as the canonical OPEN lesson); de-coupled to the live open set (LES-025). NOT touched: transfer/distillation/scanner/aos_core (remote session's RFC-0009 zone), the CURRENT_STATE "Current sprint" line, or HANDOFF (remote Orchestrator owns those).
+- Verification Status: Verified with warnings (Level 2/3). PR #68 first CI run surfaced a real self-found defect: closing LES-007 broke `test_knowledge.py` + `knowledge.spec.ts` (both hardcoded LES-007 as the open-lesson anchor) — API tests + Web e2e jobs failed. Fixed by asserting against the live open set (LES-025 recorded), re-verified locally (12 doc-staleness + 6 knowledge tests green; ruff + compileall clean; standalone tool live-validated on `10242e4`; local guardian PASS_WITH_WARNINGS). Re-running CI on the new head SHA.
+- Required Next Verifier: GitHub CI (5 jobs) on PR #68, then Manual Merge Gate.
+
 ### RFC-0010 — Embedding Relevance Tier for the Transfer Engine (Plane AOS-25)
 
 - Status: RFC **merged** (PR #69); build in two parts.

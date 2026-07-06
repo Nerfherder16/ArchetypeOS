@@ -20,9 +20,9 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-DISTILL-002 — RFC-0008 Phase 2: code-aware distillation
 
-- Status: In Progress (PR open)
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
-- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- PR: #62 (merged as `8c4a400`)
 - Summary: The operator's key request — distillation now reads bounded, provenance-tagged **source** (entry points + largest source files + manifest), not just the README. Deterministic `## Components (from source)` (pure `ast`+regex, CI-tested) + optional isolated-`claude_code` `## How it works / Built for` narrative (real provider only; deterministic fabricates nothing). No migration/frontend.
 - Verification Status: Orchestrator-verified independently incl. a LIVE run (real free-llm `src/data.py` → grounded code-cited narrative naming `MODEL_TO_NAME_MAPPING`, zero contamination; api 147, worker 7, ruff full CI scope + compileall clean; no migration/frontend/stray-vault)
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.

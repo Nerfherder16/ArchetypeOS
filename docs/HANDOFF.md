@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-Phase B — architecture semantics (compose-derived edges) + source-classified language weighting (AOS-ARCH-SEMANTICS-001). (Prior: RFC-0008 proposed PR #58; AOS-COUNCIL-PHASEC2B PR #57 / `78709e3` — Phase C complete; PHASEC2A #56, PHASEC #55, PHASEA #54; AOS-COUNCIL-001 #49.)
+RFC-0008 Phase 2 — code-aware distillation (AOS-DISTILL-002). (Prior arc, all merged: AOS-DISTILL-001 PR #61 — distillation MVP/pipe; AOS-LLM-ISOLATION-001 PR #60 — LES-021 provider isolation; AOS-ARCH-SEMANTICS-001 PR #59 — Phase B compose edges + language weighting; RFC-0008 PR #58; Phase C PRs #54–#57.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8296cfc` after the PR #59 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8c4a400` after the PR #62 merge; env-pinned — see branch note above)
 
 ### PR
 
-#59 — **Merged** as `8296cfc` (merge commit).
+#62 — **Merged** as `8c4a400` (merge commit).
 
 ### Status
 
-Merged — **the scanner's structural evidence is now richer.** Detected Docker Compose files are parsed (`yaml.safe_load`, tolerant) into `service` nodes + `depends_on` edges (both the list and map `depends_on` forms) and surfaced in `RepositoryDNA.runtime_services` — LES-014's compose/service half (closed; manifest/dependency + import-graph edges remain, LES-014 stays open). A `LANGUAGE_CLASS` map derives a source-classified `primary_language` so config/docs-heavy repos aren't misreported as YAML/Markdown-primary — LES-013 (closed). Required a `scan.py` edge-persistence generalization (the loop hardcoded every edge's `from` to the repo root and dedup'd by `type=="directory"`); now resolves each edge's real `from`/`to` and dedups by node type — verified rescan-idempotent. Adds PyYAML to api+worker; no migration/frontend. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `8296cfc`. **Next: operator's direction. Recommendation: LES-021 (provider isolation) → RFC-0008 (repository content extraction) — the founding "extract what's useful → Obsidian" capability.**
+Merged — **the Knowledge Distillation Engine now reads the codebase, not just the README** (the operator's key request). `distill_repository` selects a bounded, meaningful set of source (entry points + largest source-classified files + primary manifest, via `safe_repo_path`, capped + tolerant), then produces two code-derived layers: a **deterministic** `## Components (from source)` section (pure stdlib `ast`+regex, per-file-cited, hermetic/CI-tested) and — only for a real **LES-021-isolated** `claude_code` provider — a reasoned `## How it works / Built for` narrative citing files (the deterministic provider fabricates nothing, so CI never calls a live model). **Live-validated:** distilling real `free-llm-api-resources` selected `src/data.py` and produced a grounded, code-cited narrative naming the actual `MODEL_TO_NAME_MAPPING` mechanism the README omits, with zero ArchetypeOS contamination. No migration/frontend. This completes the founding "feed a repo → extract what's useful → Obsidian for reuse" *extraction* arc (Phase B → LES-021 → MVP → code-aware). Branch restarted from `main` at `8c4a400`. **Next: operator's direction. Recommendation: the Knowledge Transfer Engine (RFC-0008's deferred "useful *for* a target repo" half — relevance/retrieval + embeddings).**
 
 ### Note — GitHub connector expired mid-session
 

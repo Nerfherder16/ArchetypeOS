@@ -42,6 +42,11 @@ Single registry for learning events per RFC-0004. Every guardian BLOCK, CI failu
 | [[LES-010]] | 2026-07-05 | process | Moving code across a package boundary must carry its test-enforcement with it — extract to `packages/aos_core/` without extending the guardian and the "code changed without tests" BLOCK goes blind to the moved code | AOS-CORE-001 | closed | AOS-CORE-001: `missing-core-tests` guardian rule + tests added in the same change set |
 | [[LES-011]] | 2026-07-05 | review-remediation | compose-smoke builds an explicit service list — a new compose service must be added to its build/up steps or it ships CI-unverified | AOS-SCHED-001 review, self-caught | closed | ci.yml fix; build-all hardening noted |
 | [[LES-012]] | 2026-07-06 | ci-failure | Local ruff must use CI's exact scope (`apps/api`, not `apps/api/app`) or alembic migration lint errors slip through | AOS-KNOW-002 (PR #51) CI | closed | Migration fix + Orchestrator lint-scope-parity practice |
+| [[LES-013]] | 2026-07-06 | self-found-defect | File-count `language_mix` misreads a library's primary language on config/docs-heavy repos (pydantic-ai: Python only 28% by file count) | AOS-21 reality test | open | Language-weighting follow-up (LoC/source-classified ranking) |
+| [[LES-014]] | 2026-07-06 | self-found-defect | Architecture graph is directory-tree-only (`contains` edges); dependency/manifest-derived edges are the missing signal on a real monorepo | AOS-21 reality test | open | Architecture-semantics follow-up (manifest/dependency/compose edges) |
+| [[LES-015]] | 2026-07-06 | self-found-defect | Playwright dynamic-count assertions must use retrying web-first matchers, not one-shot `await locator.count()` (races async refetch) | AOS-21 verification, self-caught | closed | knowledge.spec.ts rewritten to presence/absence assertions |
+| [[LES-016]] | 2026-07-06 | self-found-defect | Manifest/ecosystem detection stops at python/node/go; `.csproj` (.NET) missed on a polyglot repo — likely Java/Rust too | AOS-21 diverse batch | open | Broaden manifest table (dotnet/jvm/cargo/…) |
+| [[LES-017]] | 2026-07-06 | self-found-defect | `SECRET_LIKE_FILENAME` flags legitimate test-cert fixtures (gin `testdata/*.pem`); signal lacks test-fixture-path context | AOS-21 diverse batch | open | Test-fixture-path awareness for the secret heuristic |
 
 ## Update rule
 

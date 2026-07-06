@@ -35,19 +35,24 @@ test('knowledge: sync from vault surfaces lessons, open lesson badged, open filt
   await expect(docStalenessRow).toContainText(/open/i);
   await expect(docStalenessRow).toContainText(/lesson/i);
 
-  // At least the known lessons are listed (12 in the seeded vault); assert a
+  // At least the known lessons are listed (12+ in the seeded vault); assert a
   // healthy floor rather than an exact count to stay robust to vault growth.
   const allRows = knowledge.getByRole('listitem');
   expect(await allRows.count()).toBeGreaterThanOrEqual(12);
+  // A known closed lesson (LES-001) is present under the default All filter.
+  const closedLessonRow = knowledge.getByRole('listitem').filter({ hasText: /Credential-shaped strings/i });
+  await expect(closedLessonRow).toBeVisible();
 
   // The returned counts render (e.g. "synced 12 · 1 open").
   await expect(knowledge.getByText(/synced \d+ · \d+ open/i)).toBeVisible();
 
-  // Toggle to Open: the open lesson stays; closed lessons drop. LES-007 is the
-  // sole open lesson in the seeded vault, so the filtered list is exactly one row.
+  // Toggle to Open: the open lesson (LES-007) stays; a known CLOSED lesson
+  // (LES-001) drops. Asserted via retrying web-first assertions (toBeVisible /
+  // toHaveCount(0)) so the async refetch settles — and count-agnostic, since the
+  // open-lesson count grows as lessons are recorded (append-only, LES-012).
   await knowledge.getByRole('button', { name: 'Open', exact: true }).click();
   await expect(docStalenessRow).toBeVisible();
-  await expect(knowledge.getByRole('listitem')).toHaveCount(1);
+  await expect(closedLessonRow).toHaveCount(0);
 
   // Reload persistence: the synced lessons survive (DB-backed read projection).
   // After reload the filter resets to All, so all lessons render again.

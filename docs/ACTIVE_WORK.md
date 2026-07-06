@@ -363,7 +363,7 @@ Operator-directed 2026-07-05: "write RFC-0005 and start AOS-19." The Intelligenc
 
 ## Control-Plane Hardening (open)
 
-Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator-directed substrate sequence: "aos-23, then aos-21, then reevaluate the roadmap." Delivered: AOS-APIROUTES-001 (PR #50, AOS-24 Done — API modularized); AOS-KNOW-002 (PR #51 — knowledge read path backend, AOS-23 backend phase). **AOS-23 stays In Progress until its dashboard phase (AOS-KNOW-003 / 23b) merges — operator to choose: dashboard now, or jump to AOS-21.** Remaining: AOS-21 (second repo), AOS-20 (doc-staleness, now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
+Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, a stale env-pinned branch name (documented — Decision 2a), the need for a Control Tower information hierarchy before more panels, and the knowledge read path (AOS-23) gap. Operator-directed substrate sequence: "aos-23, then aos-21, then reevaluate the roadmap" (then "2 then 1" — dashboard before second repo). Delivered: AOS-APIROUTES-001 (PR #50, AOS-24 Done — API modularized); AOS-KNOW-002 (PR #51 — knowledge read path backend); AOS-KNOW-003 (PR #52 — knowledge dashboard). **AOS-23 Done — knowledge read path complete end to end.** Next: **AOS-21 (second repo)** — awaiting operator go-ahead — then a definitive-roadmap reevaluation. Remaining after: AOS-20 (doc-staleness, now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
 
 ### AOS-APIROUTES-001 — Split API routes by domain (control-plane hardening)
 
@@ -389,19 +389,30 @@ Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, 
 
 ### AOS-KNOW-003 — Knowledge dashboard: Control Tower Knowledge view + compose vault mount (closes AOS-23)
 
-- Status: In Review
+- Status: Merged
 - Owner: Frontend/Runtime Agent (Opus) under Orchestrator (Opus 4.8)
-- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
-- Plane: AOS-23 (In Progress — dashboard phase; **this closes AOS-23**)
-- PR: to be opened
+- PR: #52
+- Plane: AOS-23 (**Done** — this dashboard phase closed it)
 - Spec: `.archetype/work/AOS-KNOW-003.md`
-- Goal: the operator-facing Knowledge view + make `POST /knowledge/sync` work in the shipped compose. Frontend + compose only (no backend/API/schema change). A **global** "Knowledge" dashboard section (renders with no project selected — lessons have no project): "Sync from vault" button, lesson list with open-lesson badges, All/Open filter, per-section error isolation. Compose: api service gains a `./knowledge:ro` mount + `KNOWLEDGE_ROOT`. e2e `knowledge.spec.ts` (sync → LES-007 open badge → open filter → reload persistence); serve-api.sh exports `KNOWLEDGE_ROOT` (the load-bearing detail).
+- Verification Status: Verified
+- Notes: Level 4 — CI run 28761004456 all 6 jobs green on head `6a8942e` (compose-smoke booted api with the `:/knowledge:ro` mount; web-e2e ran the knowledge spec) plus Orchestrator's independent full Playwright suite headless → **5/5** incl. `knowledge.spec.ts` (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persists); strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service. Merge commit `c022c6b`. **AOS-23 is Done — the full knowledge read path (backend sync + API + digest visibility + dashboard) is complete, closing the AOS-KNOW-001 and RFC-0004 deferrals.**
+- Required Next Verifier: None.
+
+### AOS-PORTFOLIO-001 — Portfolio: onboard + scan a second real repo (pydantic-ai), evaluate every engine (Plane AOS-21)
+
+- Status: In Review
+- Owner: Runtime Agent (Opus, acquisition code) + Orchestrator (Opus 4.8, reality test + evaluation)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
+- Plane: AOS-21 (In Progress — **merging closes it**)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-PORTFOLIO-001.md`
+- Goal: the first portfolio reality test — run the pipeline on **four** diverse real repos the system did not write (pydantic-ai, claude-agent-sdk-python, gin [Go], example-voting-app [polyglot compose]; operator-chosen) + a repeatable repo-acquisition capability (`clone_repo`, dogfooded on all four real network clones). Deliverables: `clone_repo` (`aos_core/services/onboarding.py`) + `scripts/onboard_repo.sh` + tests; captured scans (`.archetype/portfolio/*/scan.json`) + evaluation (`docs/PORTFOLIO_PYDANTIC_AI.md`); **four honest open lessons — LES-013 (file-count language mix, repo-dependent), LES-014 (architecture edges tree-only), LES-016 (new: `.csproj`/.NET manifest missed; ecosystem coverage stops at python/node/go), LES-017 (`SECRET_LIKE_FILENAME` on test-cert fixtures)**. Scanner is robust + broader than assumed (Go + compose handled well). Gaps are scoped follow-ups, not fixed here. LES-015 (self-caught e2e count-race) closed.
 - Verification Status: Verification pending
 - Verification Level: Level 4
-- Verification Method: Orchestrator independently ran the **full Playwright suite headless** (`PW_LOCAL_CHROMIUM`) → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` against the committed vault → LES-007 "Doc staleness" row with open badge, ≥12 rows count-agnostic, Open filter → exactly 1, reload persists); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the mount resolved into the api service (`KNOWLEDGE_ROOT=/knowledge`). CI (web-e2e Playwright, compose-smoke boots api with the vault mount) pending on the PR.
-- Evidence: knowledge is now visible + syncable from the Control Tower; the compose stack can populate KnowledgePage; repo remains source of truth
-- Limitations: only lessons render (other vault domains empty); list view (no per-page drill-down); knowledge is advisory/read-only
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate; on merge AOS-23 → Done
+- Verification Method: Orchestrator ran the **real full pipeline** on pydantic-ai (clone → register → run_scan → DNA + 15 architecture nodes / 14 contains edges + 8 manifests → digest) and captured evidence; independently verified `clone_repo` (real `file://` clone + idempotent + all path-safety rejections); api suite **102 passed** (99 + 3 onboarding); full Playwright suite **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after adding 2 open lessons); ruff at **full CI scope** (`apps/api packages/aos_core apps/worker tools`) + compile clean. Also fixed the count-coupled digest test (was pinned to `open_lessons==1`; now self-consistent). CI (api-tests, compose-smoke, web-e2e) pending on the PR.
+- Evidence: the scanner generalizes to a real monorepo (all sub-package manifests, ecosystems, CI detected, no crash); two honest gaps quantified + recorded as open lessons (they now surface in the digest + Knowledge dashboard)
+- Limitations: gaps recorded, not fixed (follow-up packages); the pydantic-ai run is captured evidence, not a CI test (no live clone in CI); acquisition is a script/function (no API onboard endpoint yet)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate; on merge AOS-21 → Done
 
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 

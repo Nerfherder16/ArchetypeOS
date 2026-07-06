@@ -1,0 +1,61 @@
+{
+  "architecture": {
+    "edge_count": 15,
+    "edge_types": [
+      "contains"
+    ],
+    "node_count": 16
+  },
+  "language_mix_top": {
+    "Go": 11252,
+    "Markdown": 245,
+    "Python": 6,
+    "Shell": 206,
+    "YAML": 4804
+  },
+  "manifest_count": 35,
+  "note": "AOS-21 scale test. 30,560 files on disk; MAX_FILES=20000. Acquired via clone_repo. Derived output; clone gitignored.",
+  "package_managers": [
+    "go"
+  ],
+  "remote_url": "https://github.com/kubernetes/kubernetes",
+  "repo": "kubernetes/kubernetes",
+  "risk_signal_counts": {
+    "BUILD_ARTIFACT_DIR_PRESENT": 4,
+    "DOCKER_WITHOUT_ENV_TEMPLATE": 1,
+    "NO_CI_CONFIG": 1,
+    "SCAN_TRUNCATED": 1,
+    "SECRET_LIKE_FILENAME": 71
+  },
+  "root_go_mod_found": true,
+  "scale": {
+    "files_on_disk": 30560,
+    "scan_truncated_signal_present": true,
+    "scan_wall_time_s": 2.0,
+    "total_files_seen": 20000,
+    "truncated_notes": [
+      "file scan truncated at 20000 files",
+      "folder_structure truncated at 500 entries"
+    ]
+  },
+  "summary": {
+    "has_ci": false,
+    "has_docker": true,
+    "has_env_example": false,
+    "has_tests": true,
+    "languages": [
+      "Go",
+      "Markdown",
+      "Python",
+      "Shell",
+      "YAML"
+    ],
+    "primary_language_hints": [
+      "Go",
+      "Shell",
+      "Python"
+    ],
+    "total_dirs_seen": 5993,
+    "total_files_seen": 20000
+  }
+}

@@ -1,0 +1,87 @@
+{
+  "architecture": {
+    "directories": [
+      ".claude",
+      ".github",
+      "e2e-tests",
+      "examples",
+      "scripts",
+      "src",
+      "tests"
+    ],
+    "edge_count": 7,
+    "edge_types": [
+      "contains"
+    ],
+    "node_count": 8,
+    "node_types": [
+      "directory",
+      "repository"
+    ]
+  },
+  "ci_files_count": 11,
+  "dna": {
+    "confidence": 0.65,
+    "package_managers": [
+      "python"
+    ],
+    "status": "draft"
+  },
+  "docker_files": [
+    {
+      "kind": "dockerfile",
+      "path": "Dockerfile.test"
+    }
+  ],
+  "language_mix_by_file_count": {
+    "JavaScript": 1,
+    "Markdown": 11,
+    "Python": 92,
+    "Shell": 4,
+    "YAML": 12
+  },
+  "language_mix_python_share_pct": 76.7,
+  "manifests": [
+    {
+      "kind": "python",
+      "path": "pyproject.toml"
+    }
+  ],
+  "note": "Captured in-session by the Orchestrator (AOS-21 reality test, repo #2). Acquired via clone_repo (dogfood). Derived scan output; clone under repositories/ is gitignored.",
+  "package_managers": [
+    "python"
+  ],
+  "remote_url": "https://github.com/anthropics/claude-agent-sdk-python",
+  "repo": "anthropics/claude-agent-sdk-python",
+  "risk_flags": [
+    "Docker files present but no .env.example/.env.sample template found"
+  ],
+  "risk_signals": [
+    {
+      "code": "DOCKER_WITHOUT_ENV_TEMPLATE",
+      "message": "Docker files present but no .env.example/.env.sample template found",
+      "path": null,
+      "severity": "warning"
+    }
+  ],
+  "summary": {
+    "has_ci": true,
+    "has_docker": true,
+    "has_env_example": false,
+    "has_tests": true,
+    "languages": [
+      "JavaScript",
+      "Markdown",
+      "Python",
+      "Shell",
+      "YAML"
+    ],
+    "primary_language_hints": [
+      "Python",
+      "Shell",
+      "JavaScript"
+    ],
+    "total_dirs_seen": 22,
+    "total_files_seen": 130
+  }
+}

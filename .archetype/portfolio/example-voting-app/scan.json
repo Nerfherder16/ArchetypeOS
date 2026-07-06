@@ -1,0 +1,123 @@
+{
+  "architecture": {
+    "edge_count": 8,
+    "edge_types": [
+      "contains"
+    ],
+    "node_count": 9
+  },
+  "ci_files_count": 3,
+  "deployment_files": [
+    "docker-compose.yml",
+    "result/Dockerfile",
+    "result/tests/Dockerfile",
+    "seed-data/Dockerfile",
+    "vote/Dockerfile",
+    "worker/Dockerfile"
+  ],
+  "dna": {
+    "confidence": 0.65,
+    "package_managers": [
+      "npm",
+      "pip"
+    ],
+    "status": "draft"
+  },
+  "docker_files": [
+    {
+      "kind": "compose",
+      "path": "docker-compose.yml"
+    },
+    {
+      "kind": "dockerfile",
+      "path": "result/Dockerfile"
+    },
+    {
+      "kind": "dockerfile",
+      "path": "result/tests/Dockerfile"
+    },
+    {
+      "kind": "dockerfile",
+      "path": "seed-data/Dockerfile"
+    },
+    {
+      "kind": "dockerfile",
+      "path": "vote/Dockerfile"
+    },
+    {
+      "kind": "dockerfile",
+      "path": "worker/Dockerfile"
+    }
+  ],
+  "language_mix_by_file_count": {
+    "C#": 1,
+    "CSS": 2,
+    "HTML": 2,
+    "JavaScript": 5,
+    "Markdown": 1,
+    "Python": 2,
+    "Shell": 4,
+    "YAML": 17
+  },
+  "manifests": [
+    {
+      "kind": "node",
+      "path": "result/package-lock.json"
+    },
+    {
+      "kind": "node",
+      "path": "result/package.json"
+    },
+    {
+      "kind": "python",
+      "path": "vote/requirements.txt"
+    }
+  ],
+  "note": "AOS-21 reality test (diverse batch). Acquired via clone_repo. Derived scan output; clone gitignored.",
+  "package_managers": [
+    "npm",
+    "pip"
+  ],
+  "remote_url": "https://github.com/dockersamples/example-voting-app",
+  "repo": "dockersamples/example-voting-app",
+  "risk_flags": [
+    "Docker files present but no .env.example/.env.sample template found"
+  ],
+  "risk_signals": [
+    {
+      "code": "DOCKER_WITHOUT_ENV_TEMPLATE",
+      "message": "Docker files present but no .env.example/.env.sample template found",
+      "path": null,
+      "severity": "warning"
+    },
+    {
+      "code": "MULTIPLE_ECOSYSTEMS",
+      "message": "Manifests span multiple language ecosystems",
+      "path": null,
+      "severity": "info"
+    }
+  ],
+  "summary": {
+    "has_ci": true,
+    "has_docker": true,
+    "has_env_example": false,
+    "has_tests": true,
+    "languages": [
+      "C#",
+      "CSS",
+      "HTML",
+      "JavaScript",
+      "Markdown",
+      "Python",
+      "Shell",
+      "YAML"
+    ],
+    "primary_language_hints": [
+      "JavaScript",
+      "Shell",
+      "CSS"
+    ],
+    "total_dirs_seen": 15,
+    "total_files_seen": 51
+  }
+}

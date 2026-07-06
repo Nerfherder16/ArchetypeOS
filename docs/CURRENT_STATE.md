@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Substrate sequence (operator "2 then 1"): AOS-KNOW-002 merged (PR #51, AOS-23 backend); AOS-KNOW-003 in review (AOS-23 dashboard — closes it); then AOS-21. Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23). AOS-PORTFOLIO-001 (Plane AOS-21, second repo pydantic-ai) in review. Next: definitive-roadmap reevaluation. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -61,11 +61,12 @@ Every new engineering session should read this before planning or implementation
 - PR #49: Agent Council seed — LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (AOS-COUNCIL-001) — **the Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done**
 - PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
 - PR #51: Knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (AOS-KNOW-002; RFC-0002/RFC-0004; Plane AOS-23 backend phase). Knowledge is operational; repo stays source of truth. (First CI run flagged a ruff F401 in migration `0004` — fixed, LES-012 recorded, tests made count-agnostic.)
-- (in review) AOS-KNOW-003: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (Plane AOS-23 dashboard phase; **closes AOS-23**)
+- PR #52: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (AOS-KNOW-003) — **closes AOS-23; knowledge read path complete end to end**
+- (in review) AOS-PORTFOLIO-001: portfolio reality test on pydantic-ai + repo-acquisition capability (Plane AOS-21; **closes it**) — scanner generalizes; LES-013/014 gaps recorded
 
 ## Current Objective
 
-**Operator sequence "2 then 1": finish the knowledge dashboard, then the second repo.** In review: **AOS-KNOW-003** (Plane AOS-23 dashboard phase — **merging closes AOS-23**) — a global "Knowledge" Control Tower view (Sync from vault, lesson list with open-lesson badges, All/Open filter) + a `./knowledge:ro` compose mount so `POST /knowledge/sync` works in the shipped stack. Frontend + compose only. Orchestrator-verified: full Playwright suite 5/5 headless incl. the new knowledge spec, strict build clean, compose valid. Next: **AOS-21** (second repo), then a definitive-roadmap reevaluation. Prior done: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002 (PR #51, AOS-23 backend).
+**AOS-21 (five real repos incl. a scale test) in review; merging closes it, then the definitive-roadmap reevaluation.** AOS-PORTFOLIO-001: the first portfolio reality test — ran the pipeline on **pydantic-ai (Python monorepo), claude-agent-sdk-python (lean Python SDK), gin (Go), example-voting-app (polyglot docker-compose), kubernetes (scale: 30,560 files)**, all operator-chosen. **Result: the scanner is robust and broader than assumed** — Go (`go.mod`) and multi-service compose (all Dockerfiles + compose) both handled well; and at scale it **degrades gracefully** (30k files in ~2s; truncation surfaced via a `SCAN_TRUNCATED` signal + notes, not silent; DNA stayed sane — 35 manifests incl. root go.mod). **Four honest gaps as open lessons:** LES-013 (file-count language mix, repo-dependent — 28% Python on pydantic-ai vs 77% on the SDK), LES-014 (architecture edges tree-only; `example-voting-app`'s compose file has the service graph it ignores), **LES-016 (new — `.csproj`/.NET manifest missed; ecosystem coverage stops at python/node/go)**, LES-017 (`SECRET_LIKE_FILENAME` flags test-cert fixtures). Ships a repeatable repo-acquisition capability (`clone_repo` + `onboard_repo.sh`), the captured scan + evaluation, and the lessons (which now surface in the digest + Knowledge dashboard — the loop consuming its own findings). Gaps are scoped follow-ups, not fixed here. Prior done this thrust: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002/003 (PRs #51/#52, AOS-23).
 
 ## Active Branch
 
@@ -82,16 +83,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verification pending (AOS-KNOW-003 in review; PR #51 merged as `a462b3a`)
+- Status: Verification pending (AOS-PORTFOLIO-001 in review; PR #52 merged as `c022c6b`)
 - Level: Level 4
-- Method: Orchestrator independently ran the **full Playwright suite headless** → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → exactly 1, reload persists); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the vault mount + `KNOWLEDGE_ROOT=/knowledge` resolved into the api service. CI (web-e2e, compose-smoke boots api with the mount) pending on the PR
-- Evidence: knowledge visible + syncable from the Control Tower; compose stack can populate KnowledgePage; repo remains authoritative
-- Limitations: only lessons render (other vault domains empty); list view (no drill-down); read-only/advisory
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review; on merge AOS-23 → Done
+- Method: Orchestrator ran the real full pipeline on pydantic-ai (clone → register → run_scan → DNA + 15 arch nodes / 14 contains edges + 8 manifests → digest) + captured evidence; independently verified `clone_repo` (real `file://` clone + idempotent + path-safety); api **102** (99 + 3 onboarding); full Playwright **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after 2 new open lessons; also fixed the count-coupled digest test); ruff at full CI scope + compile clean. CI (api-tests, compose-smoke, web-e2e) pending on the PR
+- Evidence: scanner generalizes to a real monorepo; LES-013/014 gaps quantified + recorded (now digest/dashboard-visible)
+- Limitations: gaps recorded not fixed (follow-ups); pydantic-ai run is captured evidence, not a CI test; acquisition is a script/function (no API endpoint yet)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review; on merge AOS-21 → Done
 
 ## In Scope Now
 
-- AOS-KNOW-003 (Plane AOS-23 dashboard phase): global Knowledge view + compose vault mount. Frontend + compose only; closes AOS-23.
+- AOS-PORTFOLIO-001 (Plane AOS-21): portfolio reality test on pydantic-ai + repo-acquisition capability + honest lessons. Closes AOS-21.
 
 ## Out Of Scope Now
 
@@ -118,7 +119,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-Merge AOS-KNOW-003 after CI passes under the Manual Merge Gate — **closes AOS-23**. Then **AOS-21** (second repo — the highest-value proof: ArchetypeOS understanding something other than itself). Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (LES-007 doc-staleness — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
+Merge AOS-PORTFOLIO-001 under the Manual Merge Gate — **closes AOS-21**. Then the **definitive-roadmap reevaluation** the operator flagged (with a proposed phase map). The reality test spawned two scoped follow-ups: a language-mix weighting package (LES-013) and an architecture-semantics / dependency-edge package (LES-014, Fable-flagged). Other remaining: AOS-20 (doc-staleness/LES-007 — machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`), now feedable with pydantic-ai data, validates Intelligence Phase 1.
 
 ## Required Reading For New Sessions
 

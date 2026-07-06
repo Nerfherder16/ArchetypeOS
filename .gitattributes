@@ -1,0 +1,15 @@
+# Merge strategy for high-contention coordination logs.
+#
+# These files are append-heavy and written by multiple parallel Orchestrator
+# sessions on every package. Concurrent additive edits (a new work item, a new
+# changelog entry, a new lesson row) otherwise conflict on every merge — the
+# "tandem treadmill" (LES-026). git's built-in `union` merge driver keeps BOTH
+# sides' lines on conflict instead of emitting conflict markers, which is exactly
+# right for additive edits and makes these PRs auto-mergeable on GitHub.
+#
+# Caveat: union does NOT resolve two sides EDITING the same existing line (e.g. a
+# status flip "In Review" -> "Merged"). Those stay single-writer by protocol
+# discipline (the reconciliation owner flips status), so union covers the rest.
+docs/ACTIVE_WORK.md              merge=union
+docs/RECENT_CHANGES.md           merge=union
+knowledge/wiki/lessons/index.md  merge=union

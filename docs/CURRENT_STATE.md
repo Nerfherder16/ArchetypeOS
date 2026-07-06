@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23 Done). AOS-PORTFOLIO-001 merged (PR #53 — 5-repo reality test, AOS-21 Done). **AOS-COUNCIL-PHASEA merged (PR #54 — first real Agent Council run over pydantic-ai; constitution-faithful abstention; LES-018 parse fix, LES-019 recorded).** Next: operator picks next build (recommended Phase C decision loop). Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23 Done). AOS-PORTFOLIO-001 merged (PR #53 — 5-repo reality test, AOS-21 Done). AOS-COUNCIL-PHASEA merged (PR #54 — first real Agent Council run over pydantic-ai; LES-018 parse fix, LES-019 recorded). **AOS-COUNCIL-PHASEC merged (PR #55 — the decision loop: Council→draft→human approve/reject→memory; LES-019 operationalized).** Next: operator picks next build. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -64,14 +64,15 @@ Every new engineering session should read this before planning or implementation
 - PR #52: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (AOS-KNOW-003) — **closes AOS-23; knowledge read path complete end to end**
 - PR #53: Portfolio reality test on **five** real repos + repo-acquisition capability (AOS-PORTFOLIO-001, Plane AOS-21 Done) — scanner robust across language/deployment/scale; LES-013/014/016/017 gaps recorded
 - PR #54: First real Agent Council run over external code (AOS-COUNCIL-PHASEA) — RFC-0005 Council run over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, real Claude reasoning) returned a **constitution-faithful abstention** (`Insufficient evidence`, conf 0.0375); hardened the provider parse seam (LES-018 — live-model Markdown-fenced JSON) and recorded LES-019 (evidence-class mismatch → Phase C input). **Intelligence Phase 1 validated on real external code.**
+- PR #55: The decision loop (AOS-COUNCIL-PHASEC, RFC-0005 Phase 2) — `CouncilReview` → governed draft `Decision` (idempotent, evidence-linked) → named-human approve/reject with an `ApprovalRecord` audit trail; **abstention blocks approval** (a `needs_evidence` draft → 409, LES-019 operationalized); pending drafts surface in the digest. No new tables/migration (reuses `Decision`+`ApprovalRecord`); backend only. **The Council → Decision → memory arc of `DECISION_LIFECYCLE.md` is live.**
 
 ## Current Objective
 
-**Operator picks the next build — recommended Phase C (the decision loop).** AOS-COUNCIL-PHASEA (PR #54) merged: the **first real Agent Council run over external code** validated Intelligence Phase 1 end to end. Run over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, real Claude reasoning, 132 s), the Council returned a **constitution-faithful abstention** (`Insufficient evidence`, conf 0.0375) — refusing to manufacture an adoption verdict it could not support and naming the exact evidence it would need. The reality test surfaced two honest findings: **LES-018** (live-model JSON is Markdown-fenced; the tolerant parser now strips it — **fixed**, with tests validated against the captured raw run) and **LES-019** (a structural scan is the wrong evidence class for an *adoption* question — **recorded, open**). LES-019 is the direct motivation for **Phase C**: a decision loop that feeds the Council a research/decision corpus (Council → gather/record research → draft decision → human-approve → knowledge). Open scanner backlog persists as lessons: LES-013 (language weighting), LES-014 (dependency/compose architecture edges), LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
+**Operator picks the next build.** AOS-COUNCIL-PHASEC (PR #55) merged: **the decision loop is live** (backend). The Council → Decision → memory arc of `DECISION_LIFECYCLE.md` now runs end to end — a `CouncilReview` drafts a governed `Decision` (idempotent, evidence-linked back to the review), a named human approves/rejects it with an `ApprovalRecord` audit trail, and **LES-019 is operationalized** (a decision drafted from an abstained review is `needs_evidence` and cannot be approved — 409 — until re-drafted from a cleared-floor review). Pending drafts surface in the digest so the gate is active. Natural continuations: **Phase C Part 2** (Control Tower approval UI + render approved decisions into repo-vault ADRs — the file/git-I/O half deliberately deferred), **Phase B** (architecture semantics — LES-014 dependency/compose edges + LES-013 language weighting), or the **Council dashboard** (AOS-COUNCIL-002). Open scanner backlog persists as lessons (LES-013/014/016/017); other open: AOS-20 (doc-staleness), AOS-22 (backups).
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `894e418` after the PR #54 merge)
+- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `1306138` after the PR #55 merge)
 
 ## CI Status
 
@@ -84,16 +85,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verified (PR #54 merged as `894e418`; AOS-COUNCIL-PHASEA done)
+- Status: Verified (PR #55 merged as `1306138`; AOS-COUNCIL-PHASEC done)
 - Level: Level 3
-- Method: CI run 28764871261 all 6 jobs green on head `225f8b4`; plus the Orchestrator's independent live Council run over pydantic-ai (4 agents via `claude_code`, 132 s, captured to `.archetype/council/pydantic-ai-review.json`), the LES-018 fix validated against that captured raw output, api **106** (+4 parser tests), worker 7, ruff full CI scope + compileall clean
-- Evidence: Council returned a constitution-faithful abstention (`Insufficient evidence`, conf 0.0375); parse fix recovers 0→6 / 0→4 findings from the 3 fenced agents while the aggregate still abstains
-- Limitations: the live Council run is captured evidence, not a hermetic CI test (subscription-auth provider); LES-019 (evidence-class) recorded, not fixed
-- Required Next Verifier: None — AOS-COUNCIL-PHASEA complete and reconciled
+- Method: built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier) — api **116** / worker **7** green, the abstention-blocks-approval 409 and `ApprovalRecord` writes confirmed by reading the tests + service, no new Alembic migration, no `apps/web` change, ruff full CI scope + compileall clean; guardian PASS
+- Evidence: `CouncilReview` → idempotent draft `Decision`; named-human approve sets `approved_by`/`approved_at` + writes `ApprovalRecord`; abstained-review draft is `needs_evidence` and approval returns 409; pending drafts surface in the digest
+- Limitations: backend only — no approval UI and no repo-vault ADR rendering (Phase C Part 2); durable memory is the DB `Decision` + `ApprovalRecord`
+- Required Next Verifier: None — AOS-COUNCIL-PHASEC complete and reconciled
 
 ## In Scope Now
 
-- **AOS-COUNCIL-PHASEC (PR open)** — **the decision loop** (RFC-0005 Phase 2; the Decision stage of `DECISION_LIFECYCLE.md`), the LES-019 follow-up. `CouncilReview` → governed draft `Decision` (idempotent, evidence-linked) → named-human approve/reject with an `ApprovalRecord` trail. **Abstention blocks approval** — a `needs_evidence` draft returns 409 naming the gather-evidence/re-draft path. Pending drafts surface in the digest. No new tables/migration (reuses `Decision`+`ApprovalRecord`); backend only. Orchestrator-verified: api 116 / worker 7 green, ruff full CI scope + compileall clean.
+- Nothing active. **AOS-COUNCIL-PHASEC merged (PR #55)** — the decision loop is live (backend). Next build is the operator's call — natural continuations: **Phase C Part 2** (Control Tower approval UI + render approved decisions into repo-vault ADRs), **Phase B** (architecture semantics / language weighting), or the **Council dashboard** (AOS-COUNCIL-002).
 
 ## Out Of Scope Now
 
@@ -120,7 +121,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-**Phase C — the decision loop (recommended).** The first real Council run (PR #54) proved Intelligence Phase 1 and, via LES-019, showed the highest-signal next move: feed the Council the *right evidence class*. Phase C is Council → gather/record research → **draft decision** → human-approve → knowledge, closing the exact gap the pydantic-ai run exposed (it abstained and named the evidence it needed). Alternatives: **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` is a ready test) + language weighting (LES-013); the **Council dashboard** (AOS-COUNCIL-002). Scanner backlog also open: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness/LES-007), AOS-22 (backups). Operator's call.
+**Operator's call.** The decision loop (PR #55) is live backend; the highest-value continuations are: (1) **Phase C Part 2** — surface the loop in the UI (a Control Tower decision-approval view) and render approved decisions into repo-vault ADRs (the file/git-I/O half deferred from Part 1), closing `DECISION_LIFECYCLE.md`'s Decision→Knowledge handoff into the source-of-truth vault; (2) **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` is a ready test) + language weighting (LES-013); (3) the **Council dashboard** (AOS-COUNCIL-002). Scanner backlog also open: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness/LES-007), AOS-22 (backups).
 
 ## Required Reading For New Sessions
 

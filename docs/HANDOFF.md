@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-First real Agent Council run over external code + provider parse hardening (AOS-COUNCIL-PHASEA). (Prior: AOS-PORTFOLIO-001 merged PR #53 / `b64db41` — AOS-21 Done, 5-repo reality test; AOS-KNOW-003 PR #52 / AOS-23; AOS-KNOW-002 PR #51; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
+The decision loop — Council review → draft decision → human approve/reject → durable memory (AOS-COUNCIL-PHASEC, RFC-0005 Phase 2). (Prior: AOS-COUNCIL-PHASEA merged PR #54 / `894e418` — first real Council run; AOS-PORTFOLIO-001 PR #53 / AOS-21; AOS-KNOW-003 PR #52 / AOS-23; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `894e418` after the PR #54 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `1306138` after the PR #55 merge; env-pinned — see branch note above)
 
 ### PR
 
-#54 — **Merged** as `894e418` (merge commit). CI run 28764871261 all 6 jobs green on head `225f8b4`.
+#55 — **Merged** as `1306138` (merge commit).
 
 ### Status
 
-Merged — the **first real Agent Council run over external code** validated Intelligence Phase 1. Run over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, real Claude reasoning, 132 s), the RFC-0005 Council returned a **constitution-faithful abstention** (`Insufficient evidence`, conf 0.0375): it refused to manufacture an adoption verdict it could not support and named the exact evidence it needed. The reality test surfaced two honest findings — **LES-018** (live-model JSON is Markdown-fenced; the tolerant parser now strips it — **fixed**, validated against the captured raw run) and **LES-019** (a structural scan is the wrong evidence class for an *adoption* question — **recorded, open**; the design input for Phase C). Branch restarted from `main` at `894e418`. **Next: operator picks the next build — recommended Phase C (the decision loop), which LES-019 directly motivates.**
+Merged — **the decision loop is live** (backend). The Council → Decision → memory arc of `DECISION_LIFECYCLE.md` runs end to end: a `CouncilReview` drafts a governed `Decision` (idempotent, evidence-linked back to the review and its per-agent outputs); a **named human approves/rejects** it, writing an `ApprovalRecord` (durable memory). **LES-019 operationalized:** a decision drafted from an *abstained* review is `needs_evidence` and **cannot be approved** (approve → 409 naming the re-draft path) until re-drafted from a cleared-floor review. Pending drafts surface in the digest (rule 6). No new tables/migration (reuses `Decision`+`ApprovalRecord`); backend only. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `1306138`. **Next: operator picks the next build — Phase C Part 2 (approval UI + repo-vault ADR rendering), Phase B (architecture semantics / language weighting), or the Council dashboard (AOS-COUNCIL-002).**
 
 ### Note — GitHub connector expired mid-session
 
@@ -46,29 +46,29 @@ The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI wer
 
 ### Completed
 
-- **First real Agent Council run over external code.** `run_council(db, project_id, question, provider=ClaudeCodeProvider(timeout=180))` over `pydantic/pydantic-ai` — 4 agents, live Claude reasoning, 132 s. Constitution-faithful **abstention** (`Insufficient evidence`, conf 0.0375). Captured to `.archetype/council/pydantic-ai-review.json`; evaluated in `docs/COUNCIL_REALRUN_PYDANTIC_AI.md`.
-- `packages/aos_core/aos_core/services/council.py`: **LES-018 fix** — `_loads_tolerant` (parse as-is → strip a Markdown code fence → slice first `{` … last `}`) + `_strip_code_fence`; `_parse_agent_output` routed through it. Behavior-preserving for bare JSON and true prose; recovers findings/confidence from live-model fenced/prose-wrapped JSON.
-- `apps/api/tests/test_council.py`: 4 regression tests (bare / fenced / prose-then-object / true-prose-fallback).
-- Lessons: `LES-018.md` (closed — fix + tests same change set) + `LES-019.md` (open — evidence-class mismatch → Phase C input) + `index.md` rows (vault 17→19).
-- Docs: `docs/COUNCIL_REALRUN_PYDANTIC_AI.md` (new evaluation), `docs/CAPABILITY_MAP.md` (Council + provider-seam entries), `.archetype/work/AOS-COUNCIL-PHASEA.md` (spec), state files.
+- **The decision loop (Council → Decision → human approve/reject → memory).** New `packages/aos_core/aos_core/services/decisions.py`: `draft_decision_from_review(db, *, review_id)` (idempotent via `Decision.meta["council_review_id"]`; abstained review → `needs_evidence`), `approve_decision(db, *, decision_id, approver, rationale=None)` (draft-only; `needs_evidence` → 409 naming the re-draft path; writes `ApprovalRecord`), `reject_decision(...)` (draft/needs_evidence only; guards re-transition; writes `ApprovalRecord`). Status vocabulary rides `AuditMixin.status` — no new column.
+- `apps/api/app/routes/decisions.py`: 3 endpoints (`POST /council-reviews/{review_id}/draft-decision`, `POST /decisions/{id}/approve`, `POST /decisions/{id}/reject`). `apps/api/app/schemas.py`: `DecisionApprove`/`DecisionReject` + `approved_by`/`approved_at` on `DecisionRead`.
+- `packages/aos_core/aos_core/services/digest.py`: rule 6 — pending (`draft`/`needs_evidence`) decisions surface as `decision_pending` changes + an "approve or reject" nudge.
+- `apps/api/tests/test_decisions_loop.py` (new): 9 hermetic, count-agnostic tests. `test_digests_api.py`: pending-decision assertion. `test_route_inventory.py`: route freeze 42→45.
+- Docs: `docs/DECISION_LIFECYCLE.md` (Decision stage marked implemented + abstention-blocks-approval rule), `docs/CAPABILITY_MAP.md` (Layer 4 decision-loop entry + `services/decisions.py`), `.archetype/work/AOS-COUNCIL-PHASEC.md` (spec), state files.
 
 ### Files changed
 
-- `packages/aos_core/aos_core/services/council.py`, `apps/api/tests/test_council.py`
-- `.archetype/council/pydantic-ai-review.json` (captured evidence), `.archetype/work/AOS-COUNCIL-PHASEA.md` (spec)
-- `docs/COUNCIL_REALRUN_PYDANTIC_AI.md` (new), `docs/CAPABILITY_MAP.md`
-- `knowledge/wiki/lessons/LES-018.md` (new), `LES-019.md` (new), `index.md`
+- `packages/aos_core/aos_core/services/decisions.py` (new), `packages/aos_core/aos_core/services/digest.py`
+- `apps/api/app/routes/decisions.py`, `apps/api/app/schemas.py`
+- `apps/api/tests/test_decisions_loop.py` (new), `apps/api/tests/test_digests_api.py`, `apps/api/tests/test_route_inventory.py`
+- `docs/DECISION_LIFECYCLE.md`, `docs/CAPABILITY_MAP.md`, `.archetype/work/AOS-COUNCIL-PHASEC.md`
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- On a 3.12 venv: `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests -q` → **106 passed** (+4 new parser tests); `apps/worker/tests` → **7 passed**; `ruff check apps/api packages/aos_core apps/worker tools` clean; `compileall` clean.
-- The LES-018 fix was validated against the **captured raw run output** (not only synthetic fixtures): re-parsing the 3 fenced agents recovers architecture_cartographer `0→6` findings / `0→8` concerns, technology_fitness_judge `conf 0.05→0.35`, security_agent `0→4` findings; aggregate still abstains.
+- On a 3.12 venv: `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests -q` → **116 passed** (+9 decision-loop, +1 digest); `apps/worker/tests` → **7 passed**; `ruff check apps/api packages/aos_core apps/worker tools` clean; `compileall` clean.
+- Independently confirmed (builder ≠ verifier): the abstention-blocks-approval **409** (`test_approve_needs_evidence_is_409`), the `ApprovalRecord` writes on approve + reject, `approved_by`/`approved_at` set on approve, no new Alembic migration, no `apps/web` change.
 
 ### Known Risks
 
-- The live Council run uses the subscription-auth `claude_code` provider — it is captured evidence, not a hermetic CI test. The fix is proven in CI by the parser tests; a live re-run needs an authed node with the `claude` CLI.
-- LES-019 (evidence-class mismatch) is recorded, not fixed — adoption questions need a research/decision corpus, not a target-repo scan (Phase C).
+- Backend only — no approval UI yet (Control Tower decision-approval view is Phase C Part 2); an approved decision is durable in the DB (`Decision` + `ApprovalRecord`) but is **not yet rendered into a repo-vault ADR** (git I/O — Phase C Part 2). Until then the vault (source of truth) does not carry approved decisions.
+- Manually created decisions keep status `active` and are outside this governance gate by design.
 
 ### Blockers
 
@@ -76,7 +76,7 @@ The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI wer
 
 ### Verification Status
 
-Verified (PR #54 merged as `894e418`; AOS-COUNCIL-PHASEA Done)
+Verified (PR #55 merged as `1306138`; AOS-COUNCIL-PHASEC Done)
 
 ### Verification Level
 
@@ -84,23 +84,23 @@ Level 3
 
 ### Verification Method
 
-CI run 28764871261 all 6 jobs green on head `225f8b4`, plus the Orchestrator's independent live Council run over pydantic-ai (4 agents via `claude_code`, 132 s, captured to `.archetype/council/pydantic-ai-review.json`) with the LES-018 fix validated against that captured raw output; `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests` → **106 passed**; `apps/worker/tests` → **7 passed**; `ruff check apps/api packages/aos_core apps/worker tools` clean; `compileall` clean. Builder ≠ verifier. Branch restarted from `main` at `894e418`.
+Built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier): `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests` → **116 passed**; `apps/worker/tests` → **7 passed**; the abstention-blocks-approval 409 and the `ApprovalRecord` writes confirmed by reading the tests + service; `git status` confirmed no new Alembic migration and no `apps/web` change; `ruff check apps/api packages/aos_core apps/worker tools` clean; `compileall` clean; guardian PASS. Branch restarted from `main` at `1306138`.
 
 ### Evidence
 
-- Council abstained correctly (`Insufficient evidence`, conf 0.0375); parse fix recovers 0→6 / 0→4 findings from the 3 fenced agents while the aggregate still abstains (avg ≈ 0.16 < 0.35); api 106 / worker 7 green; ruff full CI scope + compileall clean.
+- `CouncilReview` → idempotent draft `Decision`; approve sets `approved_by`/`approved_at` + writes `ApprovalRecord`; abstained-review draft is `needs_evidence` and approval returns 409; pending drafts surface in the digest; api 116 / worker 7 green; ruff full CI scope + compileall clean.
 
 ### Limitations
 
-The live Council run is captured evidence, not a hermetic CI test (subscription-auth `claude_code` provider); the fix itself is proven in CI by the parser tests. LES-019 (evidence-class mismatch) is recorded, not fixed — the input for Phase C.
+Backend only — no approval UI, and an approved decision is durable in the DB (`Decision` + `ApprovalRecord`) but not yet rendered into a repo-vault ADR (git I/O). Both are Phase C Part 2. Manually created decisions keep status `active` and are outside this governance gate by design.
 
 ### Required Next Verifier
 
-None — PR #54 merged as `894e418` and reconciled.
+None — PR #55 merged as `1306138` and reconciled.
 
 ### Next Recommended Step
 
-**Phase C — the decision loop (recommended).** PR #54 proved Intelligence Phase 1 on real external code and, via LES-019, showed the highest-signal next move: feed the Council the *right evidence class*. Phase C is Council → gather/record research → **draft decision** → human-approve → knowledge, closing the exact gap the pydantic-ai run exposed (it abstained and named the evidence it needed). Alternatives: **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` ready test) + language weighting (LES-013); the **Council dashboard** (AOS-COUNCIL-002). Scanner backlog also open: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness), AOS-22 (backups). Operator's call.
+**Operator's call.** The decision loop is live backend. Continuations: (1) **Phase C Part 2** — a Control Tower decision-approval view + render approved decisions into repo-vault ADRs (the file/git-I/O half deferred from Part 1), closing `DECISION_LIFECYCLE.md`'s Decision→Knowledge handoff into the source-of-truth vault; (2) **Phase B** — architecture semantics (LES-014 dependency/compose edges; `example-voting-app` ready test) + language weighting (LES-013); (3) the **Council dashboard** (AOS-COUNCIL-002). Scanner backlog also open: LES-016 (manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness), AOS-22 (backups).
 
 ## Handoff Template
 

@@ -20,12 +20,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-COUNCIL-PHASEC — The decision loop (Council review → draft → human approve/reject → memory)
 
-- Status: In Progress (PR open)
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
-- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
-- Summary: RFC-0005 Phase 2 — the Decision stage of `DECISION_LIFECYCLE.md`, motivated by LES-019. `CouncilReview` → governed draft `Decision` (idempotent, links back as evidence) → named-human approve/reject with an `ApprovalRecord` audit trail. **Abstention blocks approval** (a `needs_evidence` draft → 409 naming the re-draft path). Pending drafts surface in the digest. No new tables/migration; backend only. New `services/decisions.py` + `test_decisions_loop.py`; 3 endpoints; digest rule 6.
-- Verification Status: Orchestrator-verified independently (api 116, worker 7, ruff full CI scope + compileall clean; 409 + ApprovalRecord asserted; no migration; no web change)
-- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+- PR: #55 (merged as `1306138`)
+- Summary: RFC-0005 Phase 2 — the Decision stage of `DECISION_LIFECYCLE.md`, motivated by LES-019. `CouncilReview` → governed draft `Decision` (idempotent, links back as evidence) → named-human approve/reject with an `ApprovalRecord` audit trail. **Abstention blocks approval** (a `needs_evidence` draft → 409 naming the re-draft path). Pending drafts surface in the digest. No new tables/migration; backend only (approval UI + repo-vault ADR rendering = Phase C Part 2). New `services/decisions.py` + `test_decisions_loop.py`; 3 endpoints; digest rule 6.
+- Verification Status: Verified (Orchestrator independent — api 116, worker 7, ruff full CI scope + compileall clean; 409 + ApprovalRecord asserted; no migration; no web change; guardian PASS)
+- Required Next Verifier: None — merged and reconciled.
 
 ### AOS-COUNCIL-PHASEA — First real Agent Council run (pydantic-ai) + provider parse hardening
 

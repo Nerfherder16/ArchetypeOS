@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-KNOW-003 — Knowledge dashboard (Plane AOS-23 dashboard phase; **closes AOS-23**). Operator sequence "2 then 1": finish the knowledge dashboard, then AOS-21 (second repo). Global Control Tower Knowledge view + a `./knowledge:ro` compose mount. Frontend + compose only. (Prior: AOS-KNOW-002 merged PR #51 / `a462b3a`, AOS-23 backend; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
+AOS-21 — Second repository: register + scan a real external repo through the existing pipeline (the highest-value proof that ArchetypeOS generalizes beyond itself). Operator go-ahead pending. (Prior: AOS-KNOW-003 merged PR #52 / `c022c6b` — AOS-23 Done, knowledge read path complete; AOS-KNOW-002 PR #51; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `a462b3a` after the PR #51 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `c022c6b` after the PR #52 merge; env-pinned — see branch note above)
 
 ### PR
 
-To be opened.
+#52 — **Merged** as `c022c6b` (squash). CI run 28761004456 all 6 jobs green on head `6a8942e`.
 
 ### Status
 
-In Review — a **global** "Knowledge" dashboard section (renders with no project selected; Sync-from-vault button, lesson list with open-lesson badges, All/Open filter, per-section error isolation) + `api.ts` fetch/sync fns + the api-service `./knowledge:ro` compose mount & `KNOWLEDGE_ROOT` env + `serve-api.sh` `KNOWLEDGE_ROOT` export + `knowledge.spec.ts`. No backend/API/schema change. Orchestrator-verified: **full Playwright suite 5/5 headless** incl. the new knowledge spec (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persists); strict `tsc`+`vite build` exit 0; `docker compose config` valid (mount resolved into the api service). **Merging closes AOS-23; next: AOS-21.**
+Merged — a **global** "Knowledge" dashboard section (Sync-from-vault, lesson list with open-lesson badges, All/Open filter, per-section error isolation) + `api.ts` fetch/sync fns + the api-service `./knowledge:ro` compose mount & `KNOWLEDGE_ROOT` + `serve-api.sh` `KNOWLEDGE_ROOT` export + `knowledge.spec.ts`. No backend/API/schema change. Orchestrator-verified: full Playwright suite 5/5 headless incl. the knowledge spec; strict tsc/vite build exit 0; `docker compose config` valid. Branch restarted from `main` at `c022c6b`. **AOS-23 is Done — the knowledge read path (backend sync + API + digest visibility + dashboard) is complete end to end. Next: AOS-21 (second repo) — awaiting operator go-ahead.**
 
 ### Orchestrator Transition
 
@@ -75,7 +75,7 @@ In Review — a **global** "Knowledge" dashboard section (renders with no projec
 
 ### Verification Status
 
-Verification pending (AOS-KNOW-003 in review)
+Verified (PR #52 merged as `c022c6b`; AOS-23 Done)
 
 ### Verification Level
 
@@ -83,7 +83,7 @@ Level 4
 
 ### Verification Method
 
-Orchestrator independently ran the **full Playwright suite headless** (`PW_LOCAL_CHROMIUM`) → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` vs the committed vault → LES-007 "Doc staleness" open badge, ≥12 rows count-agnostic, Open filter → exactly 1, reload persistence); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the vault mount + `KNOWLEDGE_ROOT=/knowledge` resolved into the api service. Applied LES-012: ran the FULL suite, not a subset. GitHub CI (web-e2e Playwright, compose-smoke boots api with the mount) pending on the PR; merge under the Manual Merge Gate; on merge AOS-23 → Done.
+CI run 28761004456 all 6 jobs green on head `6a8942e` (compose-smoke booted api with the vault mount; web-e2e ran the knowledge spec) plus Orchestrator's independent full Playwright suite headless → **5/5** incl. `knowledge.spec.ts` (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persistence); strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service. AOS-23 → Done; branch restarted from `main` at `c022c6b`.
 
 ### Evidence
 
@@ -99,7 +99,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Merge AOS-KNOW-003 after CI passes under the Manual Merge Gate — **closes AOS-23**. Then **AOS-21** (second repo — the highest-value proof: ArchetypeOS understanding something other than itself, which also enriches the knowledge + council surfaces). Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (doc-staleness/LES-007 — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
+**AOS-21 (second repo)** — awaiting operator go-ahead: register + scan a real external repo through the existing Repository Registry + Scanner + DNA + Architecture pipeline. The highest-value proof that ArchetypeOS generalizes beyond scanning itself; it also feeds real data to the knowledge + council surfaces. Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (doc-staleness/LES-007 — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
 
 ## Handoff Template
 

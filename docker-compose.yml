@@ -34,6 +34,11 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      # RFC-0010 / AOS-EMBED-002: fastembed is installed in the image unconditionally,
+      # but the ~90 MB model is NOT pre-downloaded by default (compose-smoke stays
+      # fast). For a real offline node, build with:
+      #   args:
+      #     PREDOWNLOAD_EMBEDDING_MODEL: "true"
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
@@ -41,6 +46,11 @@ services:
       REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
       KNOWLEDGE_ROOT: ${KNOWLEDGE_ROOT:-/knowledge}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      # Embedding tier. Default "deterministic" (lexical fallback, no model, no
+      # onnxruntime). Set EMBEDDING_PROVIDER=fastembed (on api AND worker) to
+      # activate the real fastembed/ONNX embedder — pair with the pre-download
+      # build arg above for a fully offline node.
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-deterministic}
     depends_on:
       postgres:
         condition: service_healthy
@@ -62,11 +72,16 @@ services:
     build:
       context: .
       dockerfile: apps/worker/Dockerfile
+      # See the api service: build with PREDOWNLOAD_EMBEDDING_MODEL=true for an
+      # offline node running the real fastembed tier.
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://archetypeos:archetypeos@postgres:5432/archetypeos}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ARTIFACT_ROOT: ${ARTIFACT_ROOT:-/data/artifacts}
       REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
+      # Set EMBEDDING_PROVIDER=fastembed (matching the api service) to activate the
+      # real embedder for distillation-time vectors. Default stays deterministic.
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-deterministic}
     depends_on:
       api:
         condition: service_healthy

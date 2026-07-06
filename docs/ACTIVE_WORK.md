@@ -38,14 +38,18 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 #### AOS-EMBED-001 — Part 1: vector-store + semantic-retrieval infra (no torch)
 
-- Status: In Review
+- Status: Merged (PR #70, `6833440`) — the new "Vector store tests" CI job passed on real Postgres+pgvector, closing the "Verified with warnings" gap.
 - Summary: The `EmbeddingProvider` seam (deterministic default → lexical fallback) + pgvector dialect-variant column (`Vector(384).with_variant(JSON, "sqlite")`) + Alembic migration 0005 (extension + column + ivfflat cosine index, Postgres-guarded) + `pgvector/pgvector:pg16` compose image + generate-on-distill wiring + semantic `recommend_reuse` (calibrated blend `max(coverage, 0.6·sem + 0.4·coverage)`, robust lexical fallback) + hermetic sqlite tests + a Postgres-service CI test with synthetic vectors. Fully CI-gated, NO torch. Spec: `.archetype/work/AOS-EMBED-001.md`.
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — api **179** (+2 pgvector skips) / worker 7, ruff full CI scope + compileall clean; NO torch in requirements; compose config valid with the pgvector image; deterministic path byte-identical to today's lexical (reality harness: k8s #1 0.333, gin #1 0.800); model `create_all`s clean on sqlite (dialect variant); schema-init verified safe (alembic-first entrypoint, `create_all` no-op on existing tables). The real pgvector `<=>` execution path is CI-gated (new Postgres-service job) — Orchestrator babysits.
 - Required Next Verifier: GitHub CI (incl. the new Vector store job) / PR Guardian, then Manual Merge Gate.
 
-#### AOS-EMBED-002 — Part 2: real embedder tier (torch) — Queued
+#### AOS-EMBED-002 — Part 2: real embedder tier (fastembed / ONNX) — In Review
 
-- The `SentenceTransformerEmbedder` (optional torch extras, lazy import) + generate real vectors on distill + Orchestrator live-validation (a paraphrase match the lexical floor misses). Fires after Part 1 merges.
+- Status: In Review
+- Summary: The real embedder filling the Part 1 seam. **fastembed (ONNX)** not sentence-transformers/torch (operator-approved 2026-07-06) — same `all-MiniLM-L6-v2` model + 384-dim (drop-in for the pgvector column), same quality, ~50 MB vs GBs, no torch; light enough to add a **real embedder CI test**. `FastEmbedEmbedder` behind a lazy import; `fastembed==0.5.1` in an extras requirements file (unit CI stays dependency-minimal); Dockerfiles install it (model pre-download gated off by default so compose-smoke stays fast); enabling the tier = `EMBEDDING_PROVIDER=fastembed`. Spec: `.archetype/work/AOS-EMBED-002.md`.
+- Verification Status: Orchestrator-verified independently (builder ≠ verifier), incl. **live embedder-quality validation** on the real 6-repo portfolio — fastembed semantic search surfaces paraphrase matches the lexical floor scores at zero: "build AI agents that call tools" → `claude-agent-sdk-python` (lexical coverage **0.000** → semantic **0.533**), and lifts `kubernetes` on "deploy containers across machines" (lexical 0.200 → semantic 0.529). api **196** (+3 skips) / worker 7, ruff full CI scope + compileall clean; **no fastembed/onnxruntime/torch imported on `import aos_core.embeddings`** (proven even with fastembed installed); deterministic reality gate unchanged; `docker compose config` valid. Rebased onto `origin/main` (`88aff19`) — the laptop's #68/#71 integrated cleanly (union driver auto-merged the coordination logs).
+- Limitation (honest): the semantic tier's quality tracks the **distilled-text tier** — the "message queue" → example-voting-app example needs the *reasoned* `DNA.purpose` (AOS-DISTILL-004, which names its "Redis queue"); the deterministic floor purpose omits it, so that paraphrase didn't land on the deterministic corpus.
+- Required Next Verifier: GitHub CI (incl. the new "Embedder tests" job) / PR Guardian, then Manual Merge Gate.
 
 ### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
 

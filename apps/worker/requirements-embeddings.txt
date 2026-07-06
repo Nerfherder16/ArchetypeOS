@@ -1,0 +1,5 @@
+# RFC-0010 / AOS-EMBED-002 — real embedding tier extras (NOT in requirements.txt).
+# fastembed runs all-MiniLM-L6-v2 (384-dim) via onnxruntime — ~50 MB, no torch.
+# The unit CI jobs and the deterministic default stay dependency-minimal; install
+# this only on a node set to EMBEDDING_PROVIDER=fastembed.
+fastembed==0.5.1

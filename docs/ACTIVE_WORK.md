@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-COUNCIL-002 — Agent Council dashboard (Control Tower read surface)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-council-002-dashboard` (cut from `origin/main` @ `0624bf0`)
+- Summary: Surface the full Agent Council reasoning the API already returns but the UI discarded (today only `{verdict} — confidence {n} — {question}` shows). New project-scoped "Agent Council" Control Tower section: verdict badge (abstention "Insufficient evidence" distinct), confidence, question, provider; expand a review → Final Judge panel (agreements/disagreements/unsupported claims/follow-up) + per-agent cards (summary/findings/evidence/concerns/status/confidence). Read-focused (enqueue stays in the Decision Loop). Frontend-only: `api.ts` council types enriched + `fetchCouncilReview(id)`; no backend/schema/migration change. Spec: `.archetype/work/AOS-COUNCIL-002.md`.
+- Verification Status: Built by a TS builder subagent, Orchestrator-verified independently — `npm run build` (tsc+vite) clean; diff is web+docs only (Decision Loop untouched, no backend; package-lock churn reverted); new `apps/web/e2e/council-dashboard.spec.ts` (worker-driven, retrying assertions per LES-015) runs authoritatively in CI.
+- Required Next Verifier: GitHub CI (Web typecheck/build + Web e2e) then Manual Merge Gate.
+
 ### AOS-20 — Doc-staleness detection (deterministic drift check)
 
 - Status: In Review

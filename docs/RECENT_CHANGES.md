@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Agent Council dashboard (AOS-COUNCIL-002, laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-COUNCIL-002 — Agent Council dashboard.** The council's full reasoning was already computed and returned by the API but discarded by the UI (only `{verdict} — confidence {n} — {question}` rendered). New project-scoped **"Agent Council" Control Tower section** surfaces it: verdict badge (the "Insufficient evidence" abstention rendered distinctly), confidence, question, provider; expand a review → a **Final Judge panel** (agreements / disagreements / unsupported claims / follow-up) + **per-agent cards** (summary / findings / evidence / concerns / status / confidence). Read-focused (enqueue stays in the Decision Loop, untouched). Frontend-only: `api.ts` council types enriched + `fetchCouncilReview(id)`; **no backend / schema / migration change**. Built by a TS builder subagent, Orchestrator-verified independently (`npm run build` tsc+vite clean; diff web+docs only; package-lock churn reverted); new worker-driven `apps/web/e2e/council-dashboard.spec.ts` (retrying assertions per LES-015) gates it in CI. Spec: `.archetype/work/AOS-COUNCIL-002.md`. First frontend package on the union-merge-protected coordination logs (LES-026).
+
 ## 2026-07-06 — Doc-staleness detection (AOS-20, laptop session — in review)
 
 ### In Review (tandem laptop session)

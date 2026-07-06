@@ -101,12 +101,31 @@ export type Decision = {
   approved_at?: string | null;
 };
 
+export type CouncilAgentOutput = {
+  id: string;
+  review_id: string;
+  agent_name: string;
+  agent_type: string;
+  status: string;
+  summary?: string | null;
+  findings: unknown[];
+  evidence: unknown[];
+  concerns: unknown[];
+  confidence: number;
+};
+
 export type CouncilReview = {
   id: string;
   question?: string | null;
   verdict: string;
   confidence: number;
   provider?: string | null;
+  status?: string;
+  agreements?: unknown[];
+  disagreements?: unknown[];
+  unsupported_claims?: unknown[];
+  follow_up?: unknown[];
+  agent_outputs?: CouncilAgentOutput[];
 };
 
 export type ResearchNote = {
@@ -278,6 +297,10 @@ export async function createDecision(
 
 export async function fetchCouncilReviews(projectId: string): Promise<CouncilReview[]> {
   return request<CouncilReview[]>(`/projects/${projectId}/council-reviews`);
+}
+
+export async function fetchCouncilReview(reviewId: string): Promise<CouncilReview> {
+  return request<CouncilReview>(`/council-reviews/${reviewId}`);
 }
 
 export async function enqueueCouncilReview(projectId: string, question: string): Promise<Job> {

@@ -20,12 +20,12 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-COUNCIL-PHASEA — First real Agent Council run (pydantic-ai) + provider parse hardening
 
-- Status: In Progress (PR open)
+- Status: Merged
 - Owner: Chief Architect / Orchestrator
-- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
-- Summary: Reality test for Intelligence Phase 1 — ran the RFC-0005 Council over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, 132 s). Constitution-faithful **abstention** (`Insufficient evidence`, conf 0.0375). Surfaced + fixed LES-018 (fenced-JSON parse defect — `_loads_tolerant`) and recorded LES-019 (evidence-class mismatch → Phase C input). Ships captured review, evaluation doc, both lessons, parser fix + 4 tests.
-- Verification Status: Orchestrator-verified (api 106, worker 7, ruff full CI scope + compileall clean; fix validated against captured raw run output)
-- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+- PR: #54 (merged as `894e418`)
+- Summary: Reality test for Intelligence Phase 1 — ran the RFC-0005 Council over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, 132 s). Constitution-faithful **abstention** (`Insufficient evidence`, conf 0.0375). Surfaced + fixed LES-018 (fenced-JSON parse defect — `_loads_tolerant`) and recorded LES-019 (evidence-class mismatch → Phase C input). Shipped captured review, evaluation doc, both lessons, parser fix + 4 tests.
+- Verification Status: Verified (CI run 28764871261 6/6 green on `225f8b4`; Orchestrator independent live run + api 106 / worker 7 / ruff full scope + compileall clean)
+- Required Next Verifier: None — merged and reconciled.
 
 ### AOS-CI-001 — Verification Protocol
 

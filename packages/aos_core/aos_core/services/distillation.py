@@ -65,6 +65,205 @@ _FENCE_RE = re.compile(r"^(?:```+|~~~+)\s*([A-Za-z0-9_+#.-]+)?\s*$")
 # A numbered-list item (``1.`` / ``2)``) is not prose.
 _NUMBERED_RE = re.compile(r"^\d+[.)]\s")
 
+# --- Deterministic summary floor (AOS-DISTILL-003) ---------------------------
+# The summary floor drops noise-only lines (badges/image-links, bare links, HTML
+# comments, headings) and then prefers the first *declarative description
+# sentence* — "<Name> ... is/are/provides/... a ..." where <Name> matches the
+# distilled title or repo name — else the first clean prose paragraph. It never
+# emits badge/link-only markup: with no clean prose it yields the honest
+# fallback. Pure and LLM-free (operates on the passed README lines).
+_SUMMARY_FALLBACK = "README present but no prose summary could be extracted."
+# Once a declarative sentence anchors the summary we append following prose
+# blocks until the running length reaches this budget (so a description whose
+# defining tokens live a paragraph below the lead sentence is still captured);
+# the whole summary is then capped at _SUMMARY_MAX.
+_SUMMARY_BUDGET = 500
+_SUMMARY_MAX = 1200
+# Copulas/verbs that mark "<Name> <copula> ..." as a declarative description.
+_COPULAS = frozenset(
+    {
+        "is", "are", "provides", "provide", "lets", "let", "helps", "help",
+        "aims", "aim", "makes", "make", "enables", "enable", "offers", "offer",
+        "allows", "allow", "supports", "support", "powers", "power",
+    }
+)
+_ATX_HEADING_RE = re.compile(r"^#{1,6}\s")
+_HTML_HEADING_RE = re.compile(r"^<h[1-6][\s>]", re.IGNORECASE)
+_WORD_RE = re.compile(r"[A-Za-z0-9]+")
+_SENTENCE_SPLIT_RE = re.compile(r"(?<=[.!?])\s+")
+
+
+def _normalize_name(text: str | None) -> str:
+    """Collapse a title/repo name to its bare alphanumeric identity (lowercased)."""
+    return re.sub(r"[^a-z0-9]", "", (text or "").lower())
+
+
+def _strip_markup(line: str) -> str:
+    """Reduce one markdown/HTML line to plain text (images/badges/tags/markers removed)."""
+    text = re.sub(r"<!--.*?-->", " ", line)
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", text)          # images
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)       # inline links -> text
+    text = re.sub(r"</?[a-zA-Z][^>]*>", " ", text)             # html tags
+    text = re.sub(r"[`*#~>|]", " ", text)                      # emphasis / markers
+    text = re.sub(r"[\[\]]", " ", text)                        # stray brackets (ref links)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _line_kind(stripped: str) -> str:
+    """Classify a non-empty, non-fence, non-comment line: heading / skip / prose."""
+    if _ATX_HEADING_RE.match(stripped) or _HTML_HEADING_RE.match(stripped):
+        return "heading"
+    if stripped[0] in "-*+>|=":
+        return "skip"
+    if _NUMBERED_RE.match(stripped):
+        return "skip"
+    return "prose"
+
+
+def _classify_readme(lines: list[str]) -> list[tuple[str, str]]:
+    """Ordered ``(kind, text)`` entries — ``heading`` lines and joined ``prose`` blocks.
+
+    Fenced code, HTML comments, badge/link-only lines, bullets, blockquotes,
+    tables and numbered lists are dropped. Consecutive prose lines are joined into
+    one block (so a wrapped sentence is not split); a blank line, heading, or
+    noise-only line ends the current block.
+    """
+    entries: list[tuple[str, str]] = []
+    prose_buf: list[str] = []
+    in_comment = False
+    in_fence = False
+
+    def flush() -> None:
+        if prose_buf:
+            text = _strip_markup(" ".join(prose_buf)).strip()
+            if text:
+                entries.append(("prose", text))
+            prose_buf.clear()
+
+    for raw in lines:
+        s = raw.strip()
+        if in_comment:
+            if "-->" in s:
+                in_comment = False
+            continue
+        if _FENCE_RE.match(s):
+            flush()
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        if s.startswith("<!--"):
+            flush()
+            if "-->" not in s:
+                in_comment = True
+            continue
+        if not s:
+            flush()
+            continue
+        kind = _line_kind(s)
+        if kind == "heading":
+            flush()
+            text = _strip_markup(s).strip()
+            if text:
+                entries.append(("heading", text))
+            continue
+        if kind == "skip":
+            flush()
+            continue
+        # Prose candidate: a line that is only badges/links strips to empty and is
+        # treated as noise (block separator), never emitted as a summary.
+        if not _strip_markup(s).strip():
+            flush()
+            continue
+        prose_buf.append(s)
+    flush()
+    return entries
+
+
+def _split_sentences(text: str) -> list[str]:
+    return [part for part in _SENTENCE_SPLIT_RE.split(text.strip()) if part]
+
+
+def _declares(sentence: str, names_norm: set[str]) -> bool:
+    """Whether ``sentence`` reads as ``<Name> ... <copula> ...`` for a known name.
+
+    The subject (words before the first copula/verb) must begin with a known name
+    at a word boundary — so "Gin is …", "Kubernetes, also known as K8s, is …", and
+    "Pydantic AI is …" match, but "Gindalf is …" (for repo "gin") does not.
+    """
+    words = [w.lower() for w in _WORD_RE.findall(sentence)]
+    for index, word in enumerate(words):
+        if word not in _COPULAS:
+            continue
+        if index == 0:
+            return False
+        acc = ""
+        for pre in words[:index]:
+            acc += re.sub(r"[^a-z0-9]", "", pre)
+            if acc in names_norm:
+                return True
+            if all(len(acc) > len(name) for name in names_norm):
+                break
+        return False
+    return False
+
+
+def _cap_summary(text: str) -> str:
+    text = text.strip()
+    if len(text) <= _SUMMARY_MAX:
+        return text
+    clipped = text[:_SUMMARY_MAX].rsplit(" ", 1)[0].rstrip()
+    return f"{clipped}…"
+
+
+def _clean_summary(lines: list[str], *, names) -> str | None:
+    """The deterministic summary for a README, or ``None`` when no clean prose exists.
+
+    Prefers the first declarative description sentence (subject = title/repo name +
+    copula); a heading-sourced declarative sentence contributes only itself, while a
+    prose-sourced one is extended with following prose blocks up to ``_SUMMARY_BUDGET``
+    (so tokens a paragraph below the lead sentence are still captured). Falls back to
+    the first clean prose paragraph. Never returns badge/link-only markup.
+    """
+    names_norm = {n for n in (_normalize_name(x) for x in names) if n}
+    entries = _classify_readme(lines)
+    if not entries:
+        return None
+
+    if names_norm:
+        # Prose declaratives beat heading declaratives: a section heading like
+        # "Gin 1.12.0 is now available!" structurally matches "<Name> ... is ..."
+        # but a real description sentence ("Gin is a high-performance … framework")
+        # lives in prose. Only when no prose sentence declares (e.g. PydanticAI,
+        # whose description sits in an ``<h3>``) do we accept a heading.
+        for want_kind in ("prose", "heading"):
+            for entry_index, (kind, text) in enumerate(entries):
+                if kind != want_kind:
+                    continue
+                sentences = _split_sentences(text)
+                for sentence_index, sentence in enumerate(sentences):
+                    if not _declares(sentence, names_norm):
+                        continue
+                    lead = " ".join(sentences[sentence_index:])
+                    if kind == "heading":
+                        return _cap_summary(lead)
+                    parts = [lead]
+                    total = len(lead)
+                    following = entry_index + 1
+                    while following < len(entries) and total < _SUMMARY_BUDGET:
+                        next_kind, next_text = entries[following]
+                        if next_kind == "heading":
+                            break
+                        parts.append(next_text)
+                        total += len(next_text) + 1
+                        following += 1
+                    return _cap_summary(" ".join(parts))
+
+    for kind, text in entries:
+        if kind == "prose":
+            return _cap_summary(text)
+    return None
+
 # useful_for heuristics: an ordered (keyword-set → phrase) mapping so a
 # content-rich repo advertises what it is for. Order fixes determinism; each hit
 # cites the keyword that triggered it as provenance.
@@ -88,50 +287,6 @@ def _first_heading(lines: list[str]) -> str | None:
         if stripped.startswith("# "):
             return stripped[2:].strip()
     return None
-
-
-def _is_prose(line: str) -> bool:
-    """A line that reads as running prose (not a heading / bullet / markup)."""
-    s = line.strip()
-    if not s:
-        return False
-    if s.startswith(("#", "-", "*", "+", ">", "|", "<!--", "<", "```", "~~~", "=")):
-        return False
-    if _NUMBERED_RE.match(s):
-        return False
-    return True
-
-
-def _first_paragraph(lines: list[str]) -> str | None:
-    """The first block of consecutive prose lines, joined into one line.
-
-    Skips headings, bullets, blockquotes, tables, fenced code, and multi-line
-    HTML comments (``<!-- … -->``). Returns ``None`` when no prose is present.
-    """
-    in_comment = False
-    in_fence = False
-    collected: list[str] = []
-    for line in lines:
-        s = line.strip()
-        if in_comment:
-            if "-->" in s:
-                in_comment = False
-            continue
-        if s.startswith("<!--") and "-->" not in s:
-            in_comment = True
-            continue
-        if _FENCE_RE.match(s):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        if _is_prose(line):
-            collected.append(s)
-        elif collected:
-            break
-    if not collected:
-        return None
-    return " ".join(collected)
 
 
 def _section_headings(lines: list[str]) -> list[tuple[str, str | None]]:
@@ -213,11 +368,15 @@ def _dedupe_preserving(items: list[tuple[str, str]]) -> list[tuple[str, str]]:
     return out
 
 
-def extract_repo_knowledge(readme_text: str, *, dna: RepositoryDNA | None = None, sources=None) -> dict:
+def extract_repo_knowledge(
+    readme_text: str, *, dna: RepositoryDNA | None = None, sources=None, name: str | None = None
+) -> dict:
     """Distil provenance-tagged knowledge from a repo's README (pure, no I/O).
 
     Deterministic and LLM-free: derives ``title`` (first ``# `` heading, else a
-    fallback), ``summary`` (first prose paragraph), ``key_points`` (``##``/``###``
+    fallback), ``summary`` (the deterministic summary floor — the first declarative
+    description sentence for the distilled title / ``name``, else the first clean
+    prose paragraph, never badge/link-only markup), ``key_points`` (``##``/``###``
     section headings with their first content line), ``technologies`` (DNA package
     managers + source languages ∪ README fenced-code languages), ``useful_for``
     (keyword heuristics), and ``provenance`` (every item cites its source). Each
@@ -237,8 +396,9 @@ def extract_repo_knowledge(readme_text: str, *, dna: RepositoryDNA | None = None
         provenance.append({"item": f"title: {title}", "source": "README.md (# heading)"})
 
     if has_content:
-        summary = _first_paragraph(lines) or "README present but no prose summary could be extracted."
-        summary_source = "README.md (first paragraph)"
+        summary_names = [title if title != _FALLBACK_TITLE else None, name]
+        summary = _clean_summary(lines, names=summary_names) or _SUMMARY_FALLBACK
+        summary_source = "README.md (cleaned summary)"
     else:
         summary = "No README content was available to distill for this repository."
         summary_source = "(no README found)"
@@ -665,7 +825,7 @@ def distill_repository(
 
     readme_text = _read_primary_readme(repository)
     dna = repository.dna
-    distillation = extract_repo_knowledge(readme_text, dna=dna)
+    distillation = extract_repo_knowledge(readme_text, dna=dna, name=repository.name)
     if not readme_text.strip():
         # No README to name the repo — fall back to the registered repo name.
         distillation["title"] = repository.name

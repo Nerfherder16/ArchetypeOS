@@ -157,6 +157,68 @@ def test_extract_free_llm_style_catalog_names_the_catalog() -> None:
     assert "abuse" not in result["summary"]
 
 
+_BADGE_FIRST_README = """\
+# Gin
+
+[![Build](https://img.example/build.svg)](https://ci.example/build) [![Coverage](https://img.example/cov.svg)](https://cov.example)
+![logo](https://img.example/logo.png)
+
+Gin is a high-performance HTTP web framework written in Go, focused on speed and productivity.
+
+## Installation
+
+```bash
+go get github.com/gin-gonic/gin
+```
+"""
+
+_ANALOGY_FIRST_README = """\
+# PydanticAI
+
+[![CI](https://img.example/ci.svg)](https://ci.example)
+
+FastAPI revolutionized web development with an ergonomic design and type hints. PydanticAI is a Python agent framework with tool calling and structured outputs.
+"""
+
+_ALL_BADGE_README = """\
+# Shiny
+
+[![Build](https://img.example/build.svg)](https://ci.example/build)
+![logo](https://img.example/logo.png)
+[![Coverage](https://img.example/cov.svg)](https://cov.example)
+"""
+
+
+def test_summary_floor_skips_badges_for_the_real_description() -> None:
+    result = extract_repo_knowledge(_BADGE_FIRST_README, name="gin")
+
+    # The declarative description sentence is chosen, not the badge/image markup.
+    assert result["summary"].startswith("Gin is a high-performance HTTP web framework")
+    # No badge / image / link markup ever leaks into the summary.
+    assert "![" not in result["summary"]
+    assert "](" not in result["summary"]
+    assert "https://" not in result["summary"]
+
+
+def test_summary_floor_prefers_declarative_sentence_over_analogy() -> None:
+    # The lead sentence is an analogy about *FastAPI*; the description is the
+    # following "<Name> is a …" sentence. The floor must pick the latter.
+    result = extract_repo_knowledge(_ANALOGY_FIRST_README, name="PydanticAI")
+
+    assert result["summary"].startswith("PydanticAI is a Python agent framework")
+    assert "FastAPI" not in result["summary"]
+    assert "revolutionized" not in result["summary"]
+
+
+def test_summary_floor_never_emits_badge_only_markup() -> None:
+    # An all-badge / no-prose README yields the honest fallback, never markup.
+    result = extract_repo_knowledge(_ALL_BADGE_README, name="shiny")
+
+    assert result["summary"] == "README present but no prose summary could be extracted."
+    assert "![" not in result["summary"]
+    assert "[!" not in result["summary"]
+
+
 def test_extract_empty_readme_is_minimal_and_never_raises() -> None:
     result = extract_repo_knowledge("   \n\n")
     assert result["title"] == "Untitled repository"

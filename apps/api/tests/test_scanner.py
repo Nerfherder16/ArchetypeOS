@@ -385,3 +385,63 @@ def test_frameworks_key_present_and_empty_without_manifests(tmp_path: Path):
     result = scan_repository(tmp_path)
 
     assert result["frameworks"] == []
+
+
+# --- LES-016 / LES-017 (AOS-SCAN-PRECISION-001) ------------------------------
+
+
+def test_scan_detects_dotnet_jvm_rust_ecosystems(tmp_path: Path):
+    (tmp_path / "api").mkdir()
+    (tmp_path / "api" / "Api.csproj").write_text("<Project />", encoding="utf-8")
+    (tmp_path / "backend").mkdir()
+    (tmp_path / "backend" / "pom.xml").write_text("<project />", encoding="utf-8")
+    (tmp_path / "gradle_svc").mkdir()
+    (tmp_path / "gradle_svc" / "build.gradle.kts").write_text("plugins {}", encoding="utf-8")
+    (tmp_path / "Cargo.toml").write_text('[package]\nname = "svc"\n', encoding="utf-8")
+
+    result = scan_repository(tmp_path)
+
+    manifest_kind_values = {m["kind"] for m in result["manifests"]}
+    assert "dotnet" in manifest_kind_values
+    assert "jvm" in manifest_kind_values
+    assert "rust" in manifest_kind_values
+    pm_set = set(result["package_managers"])
+    assert pm_set & {"maven", "gradle"}
+    assert "dotnet" in pm_set
+    assert any(s["code"] == "MULTIPLE_ECOSYSTEMS" for s in result["risk_signals"])
+
+
+def test_secret_like_filename_fixture_aware(tmp_path: Path):
+    # First sub-scan: only the testdata cert; message must NOT appear in risk_flags.
+    (tmp_path / "testdata").mkdir()
+    (tmp_path / "testdata" / "cert.pem").write_text("-----BEGIN CERTIFICATE-----", encoding="utf-8")
+
+    result_fixture_only = scan_repository(tmp_path)
+    fixture_signal = next(
+        (
+            s
+            for s in result_fixture_only["risk_signals"]
+            if s["code"] == "SECRET_LIKE_FILENAME" and s["path"] == "testdata/cert.pem"
+        ),
+        None,
+    )
+    assert fixture_signal is not None, "SECRET_LIKE_FILENAME signal must still be emitted for testdata/cert.pem"
+    assert fixture_signal["severity"] == "info"
+    assert fixture_signal["message"] not in result_fixture_only["risk_flags"]
+
+    # Second sub-scan: add a real cert outside any fixture dir; it must stay warning.
+    (tmp_path / "config").mkdir()
+    (tmp_path / "config" / "real.pem").write_text("-----BEGIN CERTIFICATE-----", encoding="utf-8")
+
+    result_both = scan_repository(tmp_path)
+    real_signal = next(
+        (
+            s
+            for s in result_both["risk_signals"]
+            if s["code"] == "SECRET_LIKE_FILENAME" and s["path"] == "config/real.pem"
+        ),
+        None,
+    )
+    assert real_signal is not None, "SECRET_LIKE_FILENAME signal must be emitted for config/real.pem"
+    assert real_signal["severity"] == "warning"
+    assert real_signal["message"] in result_both["risk_flags"]

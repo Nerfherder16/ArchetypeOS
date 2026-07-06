@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Scanner precision (AOS-SCAN-PRECISION-001, laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SCAN-PRECISION-001 — scanner precision.** Closes **LES-016** + **LES-017** (scanner-only). LES-016: manifest/ecosystem detection now covers JVM (`pom.xml`/`build.gradle`/`build.gradle.kts` → `jvm`, maven/gradle) and .NET via **suffix** manifests (`.csproj`/`.sln` → `dotnet`), with `dotnet`/`jvm` added to `ECOSYSTEM_KINDS` so `MULTIPLE_ECOSYSTEMS` recognizes them (rust `Cargo.toml` was already covered). LES-017: `SECRET_LIKE_FILENAME` is test-fixture-aware — downgraded to `severity="info"` and dropped from `risk_flags`/DNA for paths under `testdata`/`tests`/`test`/`fixtures`/`__tests__`/`spec`/`testfixtures`, so legit test certs (e.g. gin `testdata/*.pem`) stop false-flagging; still emitted, just non-warning. The guardian's separate, overridable secret-block is **intentionally unchanged** (never-weaken the guardian); the guardian's `SCANNER_MANIFEST_BASENAMES` mirror parity is a noted follow-up. TDD (RED→GREEN) by a python builder, Orchestrator-verified independently: 23 scanner tests pass, ruff full CI scope + compileall clean, self-scan of this repo unchanged (no .NET/JVM here). Coordinated: the scanner was free (remote is on the Reuse view). Spec: `.archetype/work/AOS-SCAN-PRECISION-001.md`.
+
 ## 2026-07-06 — Agent Council dashboard (AOS-COUNCIL-002, laptop session — in review)
 
 ### In Review (tandem laptop session)

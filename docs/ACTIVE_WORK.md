@@ -43,9 +43,10 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — api **179** (+2 pgvector skips) / worker 7, ruff full CI scope + compileall clean; NO torch in requirements; compose config valid with the pgvector image; deterministic path byte-identical to today's lexical (reality harness: k8s #1 0.333, gin #1 0.800); model `create_all`s clean on sqlite (dialect variant); schema-init verified safe (alembic-first entrypoint, `create_all` no-op on existing tables). The real pgvector `<=>` execution path is CI-gated (new Postgres-service job) — Orchestrator babysits.
 - Required Next Verifier: GitHub CI (incl. the new Vector store job) / PR Guardian, then Manual Merge Gate.
 
-#### AOS-EMBED-002 — Part 2: real embedder tier (torch) — Queued
+#### AOS-EMBED-002 — Part 2: real embedder tier (fastembed / ONNX) — In Progress
 
-- The `SentenceTransformerEmbedder` (optional torch extras, lazy import) + generate real vectors on distill + Orchestrator live-validation (a paraphrase match the lexical floor misses). Fires after Part 1 merges.
+- Status: In Progress (building)
+- Summary: The real embedder filling the Part 1 seam. **fastembed (ONNX)** not sentence-transformers/torch (operator-approved 2026-07-06) — same `all-MiniLM-L6-v2` model + 384-dim (drop-in for the pgvector column), same quality, ~50 MB vs GBs, no torch; light enough to add a **real embedder CI test**. `FastEmbedEmbedder` behind a lazy import; fastembed in an extras requirements file (unit CI stays dependency-minimal); Dockerfiles install it (model pre-download gated off by default so compose-smoke stays fast); enabling the tier = `EMBEDDING_PROVIDER=fastembed`. Orchestrator live-validates a paraphrase match the lexical floor misses. Spec: `.archetype/work/AOS-EMBED-002.md`.
 
 ### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
 

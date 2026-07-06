@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-LLM-ISOLATION-001 — Isolate the ClaudeCodeProvider from ambient project context (LES-021)
+
+- Status: In Progress (PR open)
+- Owner: Chief Architect / Orchestrator (implemented + verified directly — small tactical fix)
+- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- Summary: Closes LES-021. `ClaudeCodeProvider.generate` runs `claude -p` in a fresh empty temp cwd; `_build_argv` adds `--disallowedTools` + `--strict-mcp-config` — output is a pure function of system+prompt. Live-validated (free-llm fitness judge no longer describes ArchetypeOS) + hermetic regression test. Prerequisite for RFC-0008.
+- Verification Status: Orchestrator-verified (live contamination-free re-run + hermetic argv/cwd test; api 132, worker 7, ruff full CI scope + compileall clean; no deps/migration/frontend)
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
 ### AOS-ARCH-SEMANTICS-001 — Phase B: architecture semantics (compose edges) + language weighting
 
 - Status: Merged

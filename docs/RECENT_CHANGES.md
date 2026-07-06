@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — ClaudeCodeProvider context isolation (AOS-LLM-ISOLATION-001, PR open)
+
+### In progress (PR open)
+
+- AOS-LLM-ISOLATION-001 — closes **LES-021**, the provider-contamination defect the `free-llm` reality test surfaced (the real `claude_code` fitness judge described ArchetypeOS instead of the target repo, because `claude -p` ran in the repo cwd and inherited `CLAUDE.md` + filesystem). Fix: `ClaudeCodeProvider.generate` now runs the subprocess in a **fresh empty `tempfile.TemporaryDirectory`** (`cwd=`), and `_build_argv` appends `--disallowedTools` (Bash/Read/Edit/Write/Glob/Grep/WebFetch/WebSearch/Task/…) + `--strict-mcp-config` — so the output is a pure function of `system` + `prompt`. **Live-validated** (re-ran the free-llm fitness-judge prompt → reasons only from the evidence, "a lightweight Python project … using pip", zero ArchetypeOS leakage) and pinned hermetically (`test_claude_code_provider_mocked` asserts the isolated cwd + tool-deny + strict-MCP argv). This is the tactical prerequisite for **RFC-0008** (repository content extraction), which is next. No new deps/migration/frontend; `DeterministicProvider` (CI default) unaffected; api 132 / worker 7 green. Spec: `.archetype/work/AOS-LLM-ISOLATION-001.md`.
+
 ## 2026-07-06 — Phase B: architecture semantics + language weighting (AOS-ARCH-SEMANTICS-001 merged)
 
 ### Merged

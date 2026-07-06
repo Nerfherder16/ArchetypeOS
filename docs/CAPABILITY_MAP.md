@@ -156,7 +156,7 @@ Capabilities:
 - Final Judge synthesis (deterministic, rule-based verdict + abstention over agent outputs)
 - Decision loop (AOS-COUNCIL-PHASEC: a `CouncilReview` drafts a governed `Decision` linked back to the review as evidence; a named human approves/rejects it with an `ApprovalRecord` audit trail; an abstained-review draft is `needs_evidence` and cannot be approved until re-drafted — LES-019 operationalized; pending drafts surface in the digest)
 - Decision → Knowledge ADR export (AOS-COUNCIL-PHASEC2A: an approved `Decision` renders into a repo-vault ADR under `knowledge/wiki/decisions/` and projects as a re-syncable `KnowledgePage`; a separate explicit approved-only step — local-first write, `409` (not `500`) on a `:ro` vault, never mutating approval state; `POST /decisions/{decision_id}/adr`)
-- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018)
+- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018; **`ClaudeCodeProvider` context-isolated — LES-021**: `claude -p` runs in a fresh empty cwd with `--disallowedTools` + `--strict-mcp-config`, so an agent reasons only from the supplied evidence, not the host repo's `CLAUDE.md`/files)
 
 Primary artifacts:
 

@@ -184,7 +184,7 @@ class Artifact(AuditMixin, Base):
 class KnowledgePage(AuditMixin, Base):
     __tablename__ = "knowledge_pages"
 
-    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("projects.id"), index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     vault_path: Mapped[str] = mapped_column(Text, nullable=False)
     page_type: Mapped[str] = mapped_column(String(128), nullable=False)

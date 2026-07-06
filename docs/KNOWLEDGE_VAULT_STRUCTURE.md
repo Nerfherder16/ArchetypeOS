@@ -151,3 +151,24 @@ hot.md -> index.md -> domain index -> specific pages -> graph search -> embeddin
 Raw notes and extracted notes are not canonical.
 
 Canonical knowledge requires evidence, review, or explicit validation.
+
+## DB Read Projection (AOS-KNOW-002)
+
+The repo vault stays the source of truth; the DB (`KnowledgePage`) is a derived
+read projection (RFC-0002 read surface, RFC-0004 lesson read path). A **sync**
+parses `wiki/lessons/index.md` and upserts one `KnowledgePage` per lesson
+(keyed by `vault_path = wiki/lessons/<LES-id>.md`, `project_id` NULL — lessons
+are global). A DB reset loses nothing: re-run the sync from the repo tree.
+
+- Setting: `knowledge_root` (default `./knowledge`) — where the sync reads the vault.
+- Service: `aos_core.services.knowledge` — `parse_lessons_index(text)` (tolerant,
+  stdlib-only) + `sync_knowledge(db, knowledge_root)` (idempotent upsert; missing
+  dir/file → zero counts).
+- API (global, not project-scoped): `POST /knowledge/sync`, `GET /knowledge/pages`
+  (optional `page_type` / `validation_state` filters), `GET /knowledge/pages/{id}`.
+- Digest: `build_digest` surfaces `open` lessons as `open_lesson` changes plus a
+  draft "Consume open lesson: …" recommendation (the RFC-0004 improvement queue).
+
+The shipped api/worker images do not ship `knowledge/`; running the sync in the
+compose stack needs a `./knowledge:ro` vault mount — a documented follow-up
+(kept out of AOS-KNOW-002 to avoid a Docker/compose change).

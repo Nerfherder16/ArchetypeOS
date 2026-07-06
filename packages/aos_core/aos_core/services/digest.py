@@ -1,5 +1,14 @@
 from sqlalchemy.orm import Session
-from aos_core.models import Artifact, Decision, NightlyDigest, Recommendation, Repository, ResearchNote, now_utc
+from aos_core.models import (
+    Artifact,
+    Decision,
+    KnowledgePage,
+    NightlyDigest,
+    Recommendation,
+    Repository,
+    ResearchNote,
+    now_utc,
+)
 
 
 def build_digest(project_id: str, db: Session) -> NightlyDigest:
@@ -115,6 +124,24 @@ def build_digest(project_id: str, db: Session) -> NightlyDigest:
             {
                 "title": "Record the first decision for this project",
                 "reason": "scans exist but no decisions",
+                "status": "draft",
+            }
+        )
+    # rule 5: open lessons are the improvement queue (RFC-0004). Lessons are
+    # global (project_id NULL), so the query is not project-filtered — every
+    # project's digest surfaces the open-lesson queue.
+    open_lessons = (
+        db.query(KnowledgePage)
+        .filter(KnowledgePage.page_type == "lesson", KnowledgePage.validation_state == "open")
+        .order_by(KnowledgePage.updated_at.desc(), KnowledgePage.id)
+        .all()
+    )
+    for page in open_lessons:
+        changes.append({"type": "open_lesson", "title": page.title, "at": page.updated_at.isoformat()})
+        draft_recommendations.append(
+            {
+                "title": f"Consume open lesson: {page.title}",
+                "reason": "open lesson in the learning queue",
                 "status": "draft",
             }
         )

@@ -6,7 +6,7 @@ from sqlalchemy import text
 from aos_core.config import get_settings
 from aos_core.database import engine, init_db
 
-from .routes import architecture, artifacts, council, decisions, digests, jobs, projects, repositories, scans, schedules
+from .routes import architecture, artifacts, council, decisions, digests, jobs, knowledge, projects, repositories, scans, schedules
 
 settings = get_settings()
 app = FastAPI(title="ArchetypeOS API", version="0.1.0")
@@ -45,5 +45,5 @@ def health() -> dict:
 
 # Include order mirrors the previous top-to-bottom @app definition order so
 # route registration (and any overlapping-path resolution) is byte-identical.
-for _module in (projects, repositories, scans, architecture, jobs, schedules, artifacts, decisions, digests, council):
+for _module in (projects, repositories, scans, architecture, jobs, schedules, artifacts, decisions, digests, council, knowledge):
     app.include_router(_module.router)

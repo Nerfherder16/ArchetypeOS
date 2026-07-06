@@ -5,6 +5,8 @@ from fastapi.testclient import TestClient
 from app.main import settings
 
 UNKNOWN_ID = "00000000-0000-0000-0000-000000000000"
+REPO_ROOT = Path(__file__).resolve().parents[3]
+KNOWLEDGE_ROOT = REPO_ROOT / "knowledge"
 
 
 def create_project(client: TestClient, slug: str = "digests") -> dict:
@@ -141,6 +143,36 @@ def test_digest_empty_project(client: TestClient) -> None:
     assert body["repeated_tasks"] == []
     assert isinstance(body["summary"], str) and body["summary"]
     assert "0 repositories" in body["summary"]
+
+
+def test_digest_surfaces_open_lessons(client: TestClient) -> None:
+    project = create_project(client, slug="digest-lessons")
+
+    # With no lessons synced, no open-lesson change/recommendation appears.
+    before = client.post(f"/projects/{project['id']}/digests")
+    assert before.status_code == 200, before.text
+    assert not any(entry["type"] == "open_lesson" for entry in before.json()["changes"])
+    assert not any(
+        entry["title"].startswith("Consume open lesson:") for entry in before.json()["recommendations"]
+    )
+
+    # Sync the repo vault (LES-007 is the only open lesson), then re-run.
+    settings.knowledge_root = KNOWLEDGE_ROOT
+    synced = client.post("/knowledge/sync")
+    assert synced.status_code == 200, synced.text
+    assert synced.json()["open_lessons"] == 1
+
+    after = client.post(f"/projects/{project['id']}/digests")
+    assert after.status_code == 200, after.text
+    open_changes = [entry for entry in after.json()["changes"] if entry["type"] == "open_lesson"]
+    assert len(open_changes) == 1
+    assert "at" in open_changes[0]
+    lesson_recs = [
+        entry for entry in after.json()["recommendations"] if entry["title"].startswith("Consume open lesson:")
+    ]
+    assert len(lesson_recs) == 1
+    assert lesson_recs[0]["reason"] == "open lesson in the learning queue"
+    assert lesson_recs[0]["status"] == "draft"
 
 
 def test_digest_404s(client: TestClient) -> None:

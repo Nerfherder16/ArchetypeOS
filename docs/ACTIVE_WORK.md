@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-COUNCIL-PHASEC2A — Decision → Knowledge: repo-vault ADR export
+
+- Status: In Progress (PR open)
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
+- PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
+- Summary: Phase C Part 2a — an approved `Decision` renders into an ADR under `knowledge/wiki/decisions/` (source of truth) + a re-syncable `KnowledgePage`. Local-first write (compose `:ro` → graceful 409); export decoupled from approval; `sync_knowledge` re-derives decision pages so a DB reset loses nothing. Approved-only + idempotent. New `services/adr.py` + `test_adr_export.py`; `POST /decisions/{id}/adr`; route freeze 45→46. No new tables/migration; backend only.
+- Verification Status: Orchestrator-verified independently (api 123, worker 7, ruff full CI scope + compileall clean; read-only→409 + idempotency asserted; no migration; no web change; no stray vault ADR)
+- Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
 ### AOS-COUNCIL-PHASEC — The decision loop (Council review → draft → human approve/reject → memory)
 
 - Status: Merged

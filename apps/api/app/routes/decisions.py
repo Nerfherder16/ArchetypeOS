@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from aos_core.config import get_settings
 from aos_core.database import get_db
-from aos_core.models import Decision, Project, Recommendation, ResearchNote
+from aos_core.models import Decision, KnowledgePage, Project, Recommendation, ResearchNote
+from aos_core.services.adr import export_decision_adr
 from aos_core.services.decisions import (
     approve_decision,
     draft_decision_from_review,
@@ -14,6 +16,7 @@ from ..schemas import (
     DecisionCreate,
     DecisionRead,
     DecisionReject,
+    KnowledgePageRead,
     RecommendationCreate,
     RecommendationRead,
     ResearchNoteCreate,
@@ -85,6 +88,14 @@ def reject_decision_endpoint(
 ) -> Decision:
     # Service 404s a missing decision and 409s an already-transitioned decision.
     return reject_decision(db, decision_id=decision_id, approver=payload.approver, rationale=payload.rationale)
+
+
+@router.post("/decisions/{decision_id}/adr", response_model=KnowledgePageRead)
+def export_decision_adr_endpoint(decision_id: str, db: Session = Depends(get_db)) -> KnowledgePage:
+    # Service 404s a missing decision, 409s a non-approved decision or a
+    # non-writable (:ro-mounted / read-only) vault — never a 500 (local-first
+    # write; the ADR is projected as a re-syncable KnowledgePage).
+    return export_decision_adr(db, decision_id=decision_id, knowledge_root=get_settings().knowledge_root)
 
 
 @router.post("/projects/{project_id}/research-notes", response_model=ResearchNoteRead)

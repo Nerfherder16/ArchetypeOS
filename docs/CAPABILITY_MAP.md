@@ -75,6 +75,7 @@ Capabilities:
 - knowledge packs
 - Knowledge read path (AOS-KNOW-002: vault lessons synced to `KnowledgePage`, a DB read projection with a global read API; open lessons surface in the digest)
 - Knowledge dashboard (AOS-KNOW-003: the global Control Tower Knowledge view — Sync-from-vault, lesson list with open-lesson emphasis, All/Open filter; compose `./knowledge:ro` vault mount so in-container sync works)
+- Decision ADR projection (AOS-COUNCIL-PHASEC2A: approved decisions export to an ADR under `knowledge/wiki/decisions/` and project as re-syncable `KnowledgePage` `page_type="decision"`; `sync_knowledge` re-derives decision pages from the vault so a DB reset loses nothing)
 
 Primary artifacts:
 
@@ -150,6 +151,7 @@ Capabilities:
 - Agent Council (backend seed: four MVP agents produce structured, persisted, evidence-bearing outputs; validated on real external code — first live run over pydantic-ai correctly abstained)
 - Final Judge synthesis (deterministic, rule-based verdict + abstention over agent outputs)
 - Decision loop (AOS-COUNCIL-PHASEC: a `CouncilReview` drafts a governed `Decision` linked back to the review as evidence; a named human approves/rejects it with an `ApprovalRecord` audit trail; an abstained-review draft is `needs_evidence` and cannot be approved until re-drafted — LES-019 operationalized; pending drafts surface in the digest)
+- Decision → Knowledge ADR export (AOS-COUNCIL-PHASEC2A: an approved `Decision` renders into a repo-vault ADR under `knowledge/wiki/decisions/` and projects as a re-syncable `KnowledgePage`; a separate explicit approved-only step — local-first write, `409` (not `500`) on a `:ro` vault, never mutating approval state; `POST /decisions/{decision_id}/adr`)
 - LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018)
 
 Primary artifacts:
@@ -168,7 +170,8 @@ Primary artifacts:
 - packages/aos_core/aos_core/llm/ (Provider protocol + DeterministicProvider + ClaudeCodeProvider)
 - packages/aos_core/aos_core/services/council.py (run_council + synthesize_verdict; the four agent personas)
 - packages/aos_core/aos_core/services/decisions.py (Council → Decision loop: draft_decision_from_review + approve_decision + reject_decision; abstention blocks approval — LES-019)
-- docs/DECISION_LIFECYCLE.md (Decision stage — implemented: draft → approve/reject with ApprovalRecord memory)
+- packages/aos_core/aos_core/services/adr.py (render_adr_markdown + export_decision_adr; approved decision → repo-vault ADR + re-syncable KnowledgePage — AOS-COUNCIL-PHASEC2A)
+- docs/DECISION_LIFECYCLE.md (Decision stage — implemented: draft → approve/reject with ApprovalRecord memory; approved → repo-vault ADR export)
 
 ## Layer 5: Design and User Experience
 

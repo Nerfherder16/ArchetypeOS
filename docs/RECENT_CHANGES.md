@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Decision → Knowledge: repo-vault ADR export (AOS-COUNCIL-PHASEC2A, PR open)
+
+### In progress (PR open)
+
+- AOS-COUNCIL-PHASEC2A — Phase C Part 2**a** (backend): closes the **Decision → Knowledge** handoff into the source-of-truth vault. An **approved** `Decision` renders into an ADR markdown under `knowledge/wiki/decisions/` (shaped like `templates/adr.md`, linking back to the decision + its council review) and projects a re-syncable `KnowledgePage` (`page_type="decision"`) so it also surfaces on the Knowledge dashboard. **Local-first write:** the export targets `settings.knowledge_root` (writable on the WSL target); the compose stack mounts the vault `:ro`, so there the endpoint returns a clean **409** (never 500) and **never** mutates the approval state — export is a separate explicit step from approve (`POST /decisions/{id}/approve` stays a pure DB act). **Invariant preserved:** `sync_knowledge` now also scans `wiki/decisions/*.md` and re-derives decision pages, so a DB reset loses nothing (repo = source of truth, `KnowledgePage` = derived). Approved-only (draft/needs_evidence/rejected → 409); idempotent (re-export overwrites the file + updates one page). New `packages/aos_core/aos_core/services/adr.py` (`render_adr_markdown` + `export_decision_adr`) + `apps/api/tests/test_adr_export.py` (6 tests incl. read-only→409 + idempotency); `sync_knowledge` extended (`parse_adr`); `POST /decisions/{decision_id}/adr`; route freeze 45→46; `docs/DECISION_LIFECYCLE.md` + `docs/CAPABILITY_MAP.md`. No new tables/migration; no `apps/web` change. Built by an Opus builder subagent; **Orchestrator-verified independently** (builder ≠ verifier): api **123** / worker **7** green, read-only→409 and idempotency asserted, no stray ADR in the real vault, ruff full CI scope + compileall clean. Part 2**b** (the Control Tower approval view) follows. Spec: `.archetype/work/AOS-COUNCIL-PHASEC2A.md`.
+
 ## 2026-07-06 — The decision loop (AOS-COUNCIL-PHASEC merged)
 
 ### Merged

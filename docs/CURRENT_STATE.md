@@ -94,7 +94,7 @@ Every new engineering session should read this before planning or implementation
 
 ## In Scope Now
 
-- Nothing active. **AOS-COUNCIL-PHASEC merged (PR #55)** — the decision loop is live (backend). Next build is the operator's call — natural continuations: **Phase C Part 2** (Control Tower approval UI + render approved decisions into repo-vault ADRs), **Phase B** (architecture semantics / language weighting), or the **Council dashboard** (AOS-COUNCIL-002).
+- **AOS-COUNCIL-PHASEC2A (PR open)** — Phase C Part 2**a** (backend): closes **Decision → Knowledge** into the source-of-truth vault. An approved `Decision` renders into an ADR under `knowledge/wiki/decisions/` + a re-syncable `KnowledgePage`. Local-first write (compose `:ro` → graceful 409, export decoupled from approval); `sync_knowledge` re-derives decision pages so a DB reset loses nothing. Approved-only + idempotent. No new tables/migration; backend only. Orchestrator-verified: api 123 / worker 7 green. Part 2**b** (the Control Tower approval view) follows.
 
 ## Out Of Scope Now
 

@@ -29,12 +29,19 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - File scope (mine, strict): `tools/doc_staleness.py` (+ `apps/api/tests/test_doc_staleness.py`), `tools/pr_guardian.py` (additive WARN hook only), `.archetype/work/AOS-20.md`, lesson pages (LES-024, LES-025), `docs/CAPABILITY_MAP.md` (doc-staleness area). CI-driven addition: `apps/api/tests/test_knowledge.py` + `apps/web/e2e/knowledge.spec.ts` — direct fallout of closing LES-007 (both pinned it as the canonical OPEN lesson); de-coupled to the live open set (LES-025). NOT touched: transfer/distillation/scanner/aos_core (remote session's RFC-0009 zone), the CURRENT_STATE "Current sprint" line, or HANDOFF (remote Orchestrator owns those).
 - Verification Status: Verified with warnings (Level 2/3). PR #68 first CI run surfaced a real self-found defect: closing LES-007 broke `test_knowledge.py` + `knowledge.spec.ts` (both hardcoded LES-007 as the open-lesson anchor) — API tests + Web e2e jobs failed. Fixed by asserting against the live open set (LES-025 recorded), re-verified locally (12 doc-staleness + 6 knowledge tests green; ruff + compileall clean; standalone tool live-validated on `10242e4`; local guardian PASS_WITH_WARNINGS). Re-running CI on the new head SHA.
 - Required Next Verifier: GitHub CI (5 jobs) on PR #68, then Manual Merge Gate.
+### RFC-0010 / AOS-EMBED-001 — Embedding Relevance Tier for the Transfer Engine (Plane AOS-25)
+
+- Status: Proposed (RFC in review; design landed as a docs PR)
+- Owner: Chief Architect / Orchestrator (this remote session; tandem with the laptop session's AOS-20)
+- Summary: The RFC-0009 embeddings increment — a semantic relevance tier behind the `score_relevance` seam so transfer retrieves on meaning, not just shared tokens (e.g. "message queue" → example-voting-app's "Redis queue"). Operator-chosen **mature target**: `sentence-transformers` (torch) behind a two-tier `EmbeddingProvider` seam (deterministic default → lexical fallback, hermetic; real tier on a capable node) + **pgvector** storage (extension + Alembic migration + `pgvector/pgvector` image); blended into `recommend_reuse` with a calibrated coverage-like confidence (never raw cosine, LES-023).
+- Open question (operator): the pgvector path can't run in the sqlite unit suite — add a Postgres-service CI test (recommended) vs live-validation only.
+- Next: confirm the verification question → spec AOS-EMBED-001 (the vertical slice) → build.
 
 ### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
 
-- Status: In Review
+- Status: Merged
 - Owner: Chief Architect / Orchestrator (implemented directly — small surgical change; verified behaviourally on the real portfolio)
-- PR: pending (branch `claude/aos-runtime-002-scanner-1egyjw`, restarted from main at `b62c6c6`)
+- PR: #66 (merged as `10242e4`)
 - Summary: The full end-to-end reality test showed transfer ranks the correct repo #1 everywhere but reported near-zero confidence (Jaccard over the candidate's whole vocabulary; LES-023). `score_relevance` is now **need coverage** — `|(need ∩ cand) ∪ (need ∩ tech)| / |need|` (bounded/intuitive; tech-only matches counted; tie-break on tech-match count then name). Lean per the "design to the mature-state target" rule: the reasoned purposes already absorb the service/architecture signal, so the originally-planned architecture-fold was dropped as redundant.
 - Verification Status: Orchestrator-verified behaviourally on the real portfolio — rankings intact/sharpened with meaningful confidence (kubernetes "container orchestration" 0.333, gin "HTTP routing" 0.800; "agent framework" now correctly ranks pydantic-ai #1 over the SDK); api 172, worker 7, ruff full CI scope + compileall clean; LES-023 recorded. No migration/frontend.
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.

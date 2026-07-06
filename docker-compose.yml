@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    # RFC-0010: pgvector-enabled Postgres 16 (ships the `vector` extension the
+    # 0005 migration enables). Drop-in for postgres:16-alpine (same PGDATA/env).
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-archetypeos}
       POSTGRES_USER: ${POSTGRES_USER:-archetypeos}

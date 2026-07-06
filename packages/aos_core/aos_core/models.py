@@ -4,7 +4,17 @@ from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Te
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, TypeDecorator
+from pgvector.sqlalchemy import Vector
+from .config import EMBEDDING_DIM
 from .database import Base
+
+# RFC-0010: a dialect-variant embedding column type. On postgresql it is a real
+# pgvector ``VECTOR(384)`` (indexable with cosine ops); on sqlite it degrades to a
+# benign JSON column so ``Base.metadata.create_all`` — which every hermetic
+# CI/unit test runs on sqlite — emits no ``VECTOR`` DDL (sqlite would reject it).
+# The sqlite variant is always NULL and never queried; the semantic path is gated
+# on ``dialect == "postgresql"``.
+EmbeddingColumn = Vector(EMBEDDING_DIM).with_variant(JSON(), "sqlite")
 
 
 class GUID(TypeDecorator):
@@ -191,6 +201,10 @@ class KnowledgePage(AuditMixin, Base):
     validation_state: Mapped[str] = mapped_column(String(128), default="raw", nullable=False)
     source_refs: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     checksum: Mapped[str | None] = mapped_column(String(128))
+    # RFC-0010 semantic index: nullable pgvector embedding (NULL on sqlite / the
+    # deterministic tier → lexical fallback). Populated by ``distill_repository``
+    # only when a real embedder returns a vector (AOS-EMBED-002).
+    embedding: Mapped[list[float] | None] = mapped_column(EmbeddingColumn, nullable=True)
 
 
 class Job(AuditMixin, Base):

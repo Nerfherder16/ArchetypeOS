@@ -29,13 +29,23 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - File scope (mine, strict): `tools/doc_staleness.py` (+ `apps/api/tests/test_doc_staleness.py`), `tools/pr_guardian.py` (additive WARN hook only), `.archetype/work/AOS-20.md`, lesson pages (LES-024, LES-025), `docs/CAPABILITY_MAP.md` (doc-staleness area). CI-driven addition: `apps/api/tests/test_knowledge.py` + `apps/web/e2e/knowledge.spec.ts` — direct fallout of closing LES-007 (both pinned it as the canonical OPEN lesson); de-coupled to the live open set (LES-025). NOT touched: transfer/distillation/scanner/aos_core (remote session's RFC-0009 zone), the CURRENT_STATE "Current sprint" line, or HANDOFF (remote Orchestrator owns those).
 - Verification Status: Verified with warnings (Level 2/3). PR #68 first CI run surfaced a real self-found defect: closing LES-007 broke `test_knowledge.py` + `knowledge.spec.ts` (both hardcoded LES-007 as the open-lesson anchor) — API tests + Web e2e jobs failed. Fixed by asserting against the live open set (LES-025 recorded), re-verified locally (12 doc-staleness + 6 knowledge tests green; ruff + compileall clean; standalone tool live-validated on `10242e4`; local guardian PASS_WITH_WARNINGS). Re-running CI on the new head SHA.
 - Required Next Verifier: GitHub CI (5 jobs) on PR #68, then Manual Merge Gate.
-### RFC-0010 / AOS-EMBED-001 — Embedding Relevance Tier for the Transfer Engine (Plane AOS-25)
 
-- Status: Proposed (RFC in review; design landed as a docs PR)
+### RFC-0010 — Embedding Relevance Tier for the Transfer Engine (Plane AOS-25)
+
+- Status: RFC **merged** (PR #69); build in two parts.
 - Owner: Chief Architect / Orchestrator (this remote session; tandem with the laptop session's AOS-20)
-- Summary: The RFC-0009 embeddings increment — a semantic relevance tier behind the `score_relevance` seam so transfer retrieves on meaning, not just shared tokens (e.g. "message queue" → example-voting-app's "Redis queue"). Operator-chosen **mature target**: `sentence-transformers` (torch) behind a two-tier `EmbeddingProvider` seam (deterministic default → lexical fallback, hermetic; real tier on a capable node) + **pgvector** storage (extension + Alembic migration + `pgvector/pgvector` image); blended into `recommend_reuse` with a calibrated coverage-like confidence (never raw cosine, LES-023).
-- Open question (operator): the pgvector path can't run in the sqlite unit suite — add a Postgres-service CI test (recommended) vs live-validation only.
-- Next: confirm the verification question → spec AOS-EMBED-001 (the vertical slice) → build.
+- Summary: The RFC-0009 embeddings increment — a semantic relevance tier behind the `score_relevance` seam so transfer retrieves on meaning, not just shared tokens (e.g. "message queue" → example-voting-app's "Redis queue"). Operator-chosen **mature target**: `sentence-transformers` (torch) + **pgvector**. Verification decision (operator-recommended path taken): a **Postgres-service CI test** gates the vector path (no live-only critical path); torch stays entirely off the CI path via the deterministic seam.
+
+#### AOS-EMBED-001 — Part 1: vector-store + semantic-retrieval infra (no torch)
+
+- Status: In Review
+- Summary: The `EmbeddingProvider` seam (deterministic default → lexical fallback) + pgvector dialect-variant column (`Vector(384).with_variant(JSON, "sqlite")`) + Alembic migration 0005 (extension + column + ivfflat cosine index, Postgres-guarded) + `pgvector/pgvector:pg16` compose image + generate-on-distill wiring + semantic `recommend_reuse` (calibrated blend `max(coverage, 0.6·sem + 0.4·coverage)`, robust lexical fallback) + hermetic sqlite tests + a Postgres-service CI test with synthetic vectors. Fully CI-gated, NO torch. Spec: `.archetype/work/AOS-EMBED-001.md`.
+- Verification Status: Orchestrator-verified independently (builder ≠ verifier) — api **179** (+2 pgvector skips) / worker 7, ruff full CI scope + compileall clean; NO torch in requirements; compose config valid with the pgvector image; deterministic path byte-identical to today's lexical (reality harness: k8s #1 0.333, gin #1 0.800); model `create_all`s clean on sqlite (dialect variant); schema-init verified safe (alembic-first entrypoint, `create_all` no-op on existing tables). The real pgvector `<=>` execution path is CI-gated (new Postgres-service job) — Orchestrator babysits.
+- Required Next Verifier: GitHub CI (incl. the new Vector store job) / PR Guardian, then Manual Merge Gate.
+
+#### AOS-EMBED-002 — Part 2: real embedder tier (torch) — Queued
+
+- The `SentenceTransformerEmbedder` (optional torch extras, lazy import) + generate real vectors on distill + Orchestrator live-validation (a paraphrase match the lexical floor misses). Fires after Part 1 merges.
 
 ### AOS-TRANSFER-002 — Transfer scorer calibration: need-coverage confidence (Package 3)
 

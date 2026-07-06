@@ -26,7 +26,7 @@ AOS-DISTILL-003 — Package 1 of the distillation mature-state arc: deterministi
 
 ### PR
 
-RFC-0010 (Embedding Relevance Tier) docs PR being opened. Prior merged: #67 (docs: roadmap + Plane board reconciliation, `b4dde07`), #66 (Package 3, `10242e4`), #65 (`b62c6c6`), #64 (`c6f5d61`), #63 (`1d8eb0f`). Branch restarted from main at `b4dde07`. **RFC-0009 embeddings kicked off (operator-chosen mature target: sentence-transformers/torch + pgvector); an open verification question (Postgres CI test vs live-only) is with the operator. Tandem: a laptop Orchestrator session works AOS-20 (doc-staleness) on its own branch; shared board = Plane AOS.**
+AOS-EMBED-001 (RFC-0010 Part 1) PR being opened. Prior merged: #69 (RFC-0010 docs, `56c661c`), #67 (roadmap + board reconciliation, `b4dde07`), #66 (`10242e4`), #65/#64/#63. Branch restarted from main at `56c661c`. **RFC-0009 embeddings building: RFC-0010 merged; AOS-EMBED-001 (Part 1 — vector-store + retrieval infra, pgvector, NO torch) in review, verified independently (api 179+2 skips, no torch, deterministic path unchanged); the pgvector `<=>` path is gated by a new Postgres-service CI job (babysit it). Verification decision taken: Postgres-service CI test (not live-only). Next after merge: AOS-EMBED-002 (real sentence-transformers/torch embedder + Orchestrator live validation). Tandem: laptop session on AOS-20 (doc-staleness), own branch; shared board = Plane AOS.**
 
 ### Status
 

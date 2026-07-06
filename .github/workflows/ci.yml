@@ -140,7 +140,8 @@ jobs:
           pip install -r apps/api/requirements-embeddings.txt
           pip install -e ./packages/aos_core
       - name: Assert no torch pulled in by the embedding tier
-        run: python -c "import importlib.util, sys; sys.exit('torch must NOT be installed for the embedder tier') if importlib.util.find_spec('torch') else print('ok: no torch')"
+        run: |
+          python -c "import importlib.util, sys; sys.exit('torch must NOT be installed for the embedder tier') if importlib.util.find_spec('torch') else print('ok - no torch')"
       - name: Run real embedder tests
         run: PYTHONPATH=apps/api pytest apps/api/tests -m embedder
 

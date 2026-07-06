@@ -150,6 +150,26 @@ export type Job = {
   repository_id: string | null;
 };
 
+export type KnowledgePage = {
+  id: string;
+  project_id: string | null;
+  title: string;
+  vault_path: string;
+  page_type: string;
+  validation_state: string;
+  source_refs: EvidenceEntry[];
+  checksum: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type KnowledgeSyncResult = {
+  synced: number;
+  created: number;
+  updated: number;
+  open_lessons: number;
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
@@ -311,4 +331,23 @@ export async function enqueueJob(body: {
 
 export async function fetchJobs(projectId: string): Promise<Job[]> {
   return request<Job[]>(`/projects/${projectId}/jobs`);
+}
+
+export async function fetchKnowledgePages(params?: {
+  page_type?: string;
+  validation_state?: string;
+}): Promise<KnowledgePage[]> {
+  const query = new URLSearchParams();
+  if (params?.page_type) {
+    query.set('page_type', params.page_type);
+  }
+  if (params?.validation_state) {
+    query.set('validation_state', params.validation_state);
+  }
+  const suffix = query.toString() ? `?${query.toString()}` : '';
+  return request<KnowledgePage[]>(`/knowledge/pages${suffix}`);
+}
+
+export async function syncKnowledge(): Promise<KnowledgeSyncResult> {
+  return request<KnowledgeSyncResult>('/knowledge/sync', { method: 'POST' });
 }

@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-KNOW-002 — Knowledge read path (RFC-0002/RFC-0004; Plane AOS-23 backend). Operator-directed substrate sequence ("aos-23, then aos-21, then reevaluate the roadmap"). vault→DB sync + KnowledgePage read API + digest open-lessons rule. (Prior: AOS-APIROUTES-001 merged PR #50 / `2c5cdcb`, AOS-24 Done — API modularized; AOS-COUNCIL-001 PR #49, AOS-19 Done.)
+AOS-KNOW-003 — Knowledge dashboard (Plane AOS-23 dashboard phase; **closes AOS-23**). Operator sequence "2 then 1": finish the knowledge dashboard, then AOS-21 (second repo). Global Control Tower Knowledge view + a `./knowledge:ro` compose mount. Frontend + compose only. (Prior: AOS-KNOW-002 merged PR #51 / `a462b3a`, AOS-23 backend; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `2c5cdcb` after the PR #50 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `a462b3a` after the PR #51 merge; env-pinned — see branch note above)
 
 ### PR
 
-#51 — **Merged** as `a462b3a` (squash). CI run 28760266463 all 6 jobs green on head `88037c3` (after a first-run ruff-F401 fix).
+To be opened.
 
 ### Status
 
-Merged — **repo vault stays source of truth; `KnowledgePage` is a re-syncable derived read projection** (reconciles RFC-0004's rejection of DB-primary lessons). `knowledge_root` config + `KnowledgePage.project_id` nullable (migration `0004`, sqlite batch alter) + `sync_knowledge` + read API (`POST /knowledge/sync`, `GET /knowledge/pages`(+filters), `GET /knowledge/pages/{id}`) + **digest rule 5** surfacing open lessons (RFC-0004 deferral closed). Knowledge is operational. First CI run failed on a ruff F401 in migration `0004` (local ruff had scoped to `apps/api/app`, narrower than CI's `apps/api`) — fixed, **LES-012** recorded, knowledge tests made count-agnostic. Branch restarted from `main` at `a462b3a`. **AOS-23 stays In Progress** (backend done; dashboard AOS-KNOW-003 / 23b pending an operator sequencing call: dashboard now vs jump to AOS-21).
+In Review — a **global** "Knowledge" dashboard section (renders with no project selected; Sync-from-vault button, lesson list with open-lesson badges, All/Open filter, per-section error isolation) + `api.ts` fetch/sync fns + the api-service `./knowledge:ro` compose mount & `KNOWLEDGE_ROOT` env + `serve-api.sh` `KNOWLEDGE_ROOT` export + `knowledge.spec.ts`. No backend/API/schema change. Orchestrator-verified: **full Playwright suite 5/5 headless** incl. the new knowledge spec (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persists); strict `tsc`+`vite build` exit 0; `docker compose config` valid (mount resolved into the api service). **Merging closes AOS-23; next: AOS-21.**
 
 ### Orchestrator Transition
 
@@ -75,7 +75,7 @@ Merged — **repo vault stays source of truth; `KnowledgePage` is a re-syncable 
 
 ### Verification Status
 
-Verified (PR #51 merged as `a462b3a`)
+Verification pending (AOS-KNOW-003 in review)
 
 ### Verification Level
 
@@ -83,7 +83,7 @@ Level 4
 
 ### Verification Method
 
-CI run 28760266463 all 6 jobs green on head `88037c3` (compose-smoke applied `0004` on Postgres) plus Orchestrator's independent 3.12-venv run at CI's exact ruff scope (`apps/api packages/aos_core apps/worker tools`): api **99** / worker **7**; `sync_knowledge` on the real vault → all lessons (LES-007 the sole open), idempotent, global, missing-vault→zeros; digest surfaces the open lesson; alembic no-drift after `0004` (`knowledge_pages.project_id` nullable, **0 ops**, 24 tables). First CI run failed on a ruff F401 in migration `0004` (local ruff had scoped narrower than CI) — fixed, LES-012 recorded, knowledge tests made count-agnostic. AOS-23 stays In Progress (dashboard 23b pending); branch restarted from `main` at `a462b3a`.
+Orchestrator independently ran the **full Playwright suite headless** (`PW_LOCAL_CHROMIUM`) → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` vs the committed vault → LES-007 "Doc staleness" open badge, ≥12 rows count-agnostic, Open filter → exactly 1, reload persistence); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the vault mount + `KNOWLEDGE_ROOT=/knowledge` resolved into the api service. Applied LES-012: ran the FULL suite, not a subset. GitHub CI (web-e2e Playwright, compose-smoke boots api with the mount) pending on the PR; merge under the Manual Merge Gate; on merge AOS-23 → Done.
 
 ### Evidence
 
@@ -99,7 +99,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-Operator sequencing call: AOS-KNOW-003 (23b — dashboard Knowledge view + Playwright e2e, folding in the `./knowledge:ro` compose mount so `POST /knowledge/sync` works in compose) now, or jump to AOS-21 (second repo) and treat the dashboard as later polish. Operator-set sequence: "aos-23, then aos-21, then reevaluate the definitive roadmap" — a roadmap review follows AOS-21. Remaining: AOS-20 (doc-staleness/LES-007 — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
+Merge AOS-KNOW-003 after CI passes under the Manual Merge Gate — **closes AOS-23**. Then **AOS-21** (second repo — the highest-value proof: ArchetypeOS understanding something other than itself, which also enriches the knowledge + council surfaces). Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (doc-staleness/LES-007 — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
 
 ## Handoff Template
 

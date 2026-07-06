@@ -37,6 +37,7 @@ services:
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ARTIFACT_ROOT: ${ARTIFACT_ROOT:-/data/artifacts}
       REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
+      KNOWLEDGE_ROOT: ${KNOWLEDGE_ROOT:-/knowledge}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     depends_on:
       postgres:
@@ -51,6 +52,7 @@ services:
     volumes:
       - archetype_data:/data
       - ${HOST_REPOSITORY_ROOT:-./repositories}:/repositories:ro
+      - ${HOST_KNOWLEDGE_ROOT:-./knowledge}:/knowledge:ro
     ports:
       - "${API_PORT:-8000}:8000"
 

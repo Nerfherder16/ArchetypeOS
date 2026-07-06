@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Knowledge dashboard (closes AOS-23)
+
+### In Review
+
+- AOS-KNOW-003 — Knowledge dashboard (Plane AOS-23 dashboard phase; **merging closes AOS-23**). Operator sequence "2 then 1": finish the knowledge dashboard, then AOS-21. A **global** "Knowledge" Control Tower section (renders with no project selected — lessons have no project): "Sync from vault" button (shows `synced N · N open`), lesson list with amber open-lesson badges, All/Open filter, per-section error isolation; `api.ts` gains `KnowledgePage`/`KnowledgeSyncResult` + `fetchKnowledgePages`/`syncKnowledge`. Compose: the api service gains a `${HOST_KNOWLEDGE_ROOT:-./knowledge}:/knowledge:ro` mount + `KNOWLEDGE_ROOT` so `POST /knowledge/sync` works in the shipped stack. e2e `knowledge.spec.ts` (sync → LES-007 open badge → Open filter → reload persistence); `serve-api.sh` exports `KNOWLEDGE_ROOT` (the load-bearing detail). Frontend + compose only — no backend/API/schema change. Orchestrator-verified: full Playwright suite 5/5 headless incl. the new knowledge spec; strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service. Spec: `.archetype/work/AOS-KNOW-003.md`.
+
 ## 2026-07-06 — Knowledge read path (substrate sequence)
 
 ### Merged

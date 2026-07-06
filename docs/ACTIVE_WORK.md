@@ -387,6 +387,22 @@ Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, 
 - Notes: Level 4 — CI run 28760266463 all 6 jobs green on head `88037c3` (compose-smoke applied migration `0004` on fresh Postgres) plus Orchestrator's independent 3.12-venv run at CI's exact ruff scope: api 99 / worker 7; `sync_knowledge` on the real vault → all lessons (12; LES-007 sole open), idempotent, global, missing-vault→zeros; digest surfaces the open lesson; alembic no-drift after `0004` (project_id nullable, 0 ops, 24 tables). Merge commit `a462b3a`. **First CI run failed on a ruff F401 in migration `0004` (local ruff had scoped to `apps/api/app`, narrower than CI's `apps/api`) — fixed, recorded LES-012, and made the knowledge tests count-agnostic.** Knowledge is operational (queryable + digest-visible); repo remains source of truth.
 - Required Next Verifier: None.
 
+### AOS-KNOW-003 — Knowledge dashboard: Control Tower Knowledge view + compose vault mount (closes AOS-23)
+
+- Status: In Review
+- Owner: Frontend/Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
+- Plane: AOS-23 (In Progress — dashboard phase; **this closes AOS-23**)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-KNOW-003.md`
+- Goal: the operator-facing Knowledge view + make `POST /knowledge/sync` work in the shipped compose. Frontend + compose only (no backend/API/schema change). A **global** "Knowledge" dashboard section (renders with no project selected — lessons have no project): "Sync from vault" button, lesson list with open-lesson badges, All/Open filter, per-section error isolation. Compose: api service gains a `./knowledge:ro` mount + `KNOWLEDGE_ROOT`. e2e `knowledge.spec.ts` (sync → LES-007 open badge → open filter → reload persistence); serve-api.sh exports `KNOWLEDGE_ROOT` (the load-bearing detail).
+- Verification Status: Verification pending
+- Verification Level: Level 4
+- Verification Method: Orchestrator independently ran the **full Playwright suite headless** (`PW_LOCAL_CHROMIUM`) → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` against the committed vault → LES-007 "Doc staleness" row with open badge, ≥12 rows count-agnostic, Open filter → exactly 1, reload persists); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the mount resolved into the api service (`KNOWLEDGE_ROOT=/knowledge`). CI (web-e2e Playwright, compose-smoke boots api with the vault mount) pending on the PR.
+- Evidence: knowledge is now visible + syncable from the Control Tower; the compose stack can populate KnowledgePage; repo remains source of truth
+- Limitations: only lessons render (other vault domains empty); list view (no per-page drill-down); knowledge is advisory/read-only
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate; on merge AOS-23 → Done
+
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 
 - Status: Merged

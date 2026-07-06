@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Substrate sequence (operator-directed "aos-23, then aos-21, then reevaluate"): AOS-KNOW-002 merged (PR #51 — AOS-23 backend phase; AOS-23 stays In Progress until the dashboard AOS-KNOW-003). Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Substrate sequence (operator "2 then 1"): AOS-KNOW-002 merged (PR #51, AOS-23 backend); AOS-KNOW-003 in review (AOS-23 dashboard — closes it); then AOS-21. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -61,10 +61,11 @@ Every new engineering session should read this before planning or implementation
 - PR #49: Agent Council seed — LLM provider abstraction + Council MVP + Final Judge, RFC-0005 Phase 1 (AOS-COUNCIL-001) — **the Intelligence Layer + Agent Council + Final Judge is live (backend); AOS-19 Done**
 - PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
 - PR #51: Knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (AOS-KNOW-002; RFC-0002/RFC-0004; Plane AOS-23 backend phase). Knowledge is operational; repo stays source of truth. (First CI run flagged a ruff F401 in migration `0004` — fixed, LES-012 recorded, tests made count-agnostic.)
+- (in review) AOS-KNOW-003: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (Plane AOS-23 dashboard phase; **closes AOS-23**)
 
 ## Current Objective
 
-**Awaiting operator sequencing call.** AOS-KNOW-002 (Plane AOS-23 backend) merged (PR #51) — knowledge read path live: `sync_knowledge` (vault lessons → KnowledgePage), read API, `project_id` nullable (migration `0004`), digest surfaces open lessons (RFC-0004 deferral closed). **AOS-23 remains In Progress** — its dashboard phase (AOS-KNOW-003 / 23b) is pending. Operator to choose: build the dashboard now (KNOW-003, folding in the `./knowledge:ro` compose mount), or jump straight to AOS-21 (second repo) per the "aos-23, then aos-21, then reevaluate" sequence and treat the dashboard as later polish. Prior done: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24).
+**Operator sequence "2 then 1": finish the knowledge dashboard, then the second repo.** In review: **AOS-KNOW-003** (Plane AOS-23 dashboard phase — **merging closes AOS-23**) — a global "Knowledge" Control Tower view (Sync from vault, lesson list with open-lesson badges, All/Open filter) + a `./knowledge:ro` compose mount so `POST /knowledge/sync` works in the shipped stack. Frontend + compose only. Orchestrator-verified: full Playwright suite 5/5 headless incl. the new knowledge spec, strict build clean, compose valid. Next: **AOS-21** (second repo), then a definitive-roadmap reevaluation. Prior done: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002 (PR #51, AOS-23 backend).
 
 ## Active Branch
 
@@ -81,16 +82,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verified (PR #51 merged as `a462b3a`)
+- Status: Verification pending (AOS-KNOW-003 in review; PR #51 merged as `a462b3a`)
 - Level: Level 4
-- Method: CI run 28760266463 all 6 jobs green on head `88037c3` (compose-smoke applied `0004` on Postgres) plus Orchestrator's independent 3.12-venv run at CI's exact ruff scope: api **99** / worker **7**; `sync_knowledge` on the real vault → all lessons (LES-007 sole open), idempotent, global, missing-vault→zeros; digest surfaces the open lesson; alembic no-drift after `0004` (project_id nullable, 0 ops, 24 tables). First CI run flagged a ruff F401 in migration `0004` (local ruff had scoped narrower than CI) — fixed, LES-012 recorded, tests made count-agnostic
-- Evidence: lessons queryable via API; open lessons visible to the digest (RFC-0004 deferral closed); repo remains authoritative
-- Limitations: only lessons ingested (other vault domains empty); compose self-contained sync needs a `./knowledge:ro` mount (folds into AOS-KNOW-003); advisory/draft-only
-- Required Next Verifier: None — package merged and reconciled
+- Method: Orchestrator independently ran the **full Playwright suite headless** → **5/5 pass** incl. the new `knowledge.spec.ts` (real `POST /knowledge/sync` vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → exactly 1, reload persists); strict `tsc` + `vite build` exit 0; `docker compose config` valid with the vault mount + `KNOWLEDGE_ROOT=/knowledge` resolved into the api service. CI (web-e2e, compose-smoke boots api with the mount) pending on the PR
+- Evidence: knowledge visible + syncable from the Control Tower; compose stack can populate KnowledgePage; repo remains authoritative
+- Limitations: only lessons render (other vault domains empty); list view (no drill-down); read-only/advisory
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review; on merge AOS-23 → Done
 
 ## In Scope Now
 
-- Nothing active. AOS-23 dashboard phase (AOS-KNOW-003) pending an operator sequencing call (dashboard now vs jump to AOS-21).
+- AOS-KNOW-003 (Plane AOS-23 dashboard phase): global Knowledge view + compose vault mount. Frontend + compose only; closes AOS-23.
 
 ## Out Of Scope Now
 
@@ -117,7 +118,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-Operator sequencing call: AOS-KNOW-003 (23b — dashboard Knowledge view + Playwright e2e, folding in the `./knowledge:ro` compose mount) now, or jump to AOS-21 (second repo) and treat the dashboard as later polish. Per the operator's "aos-23, then aos-21, then reevaluate the roadmap," a definitive-roadmap review follows AOS-21. Remaining: AOS-20 (LES-007 doc-staleness — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
+Merge AOS-KNOW-003 after CI passes under the Manual Merge Gate — **closes AOS-23**. Then **AOS-21** (second repo — the highest-value proof: ArchetypeOS understanding something other than itself). Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (LES-007 doc-staleness — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
 
 ## Required Reading For New Sessions
 

@@ -12,3 +12,6 @@ archetypeos_dev.db
 
 # Python build metadata
 *.egg-info/
+
+# Runtime scan artifacts (generated under artifact_root)
+data/artifacts/

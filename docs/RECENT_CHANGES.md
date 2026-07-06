@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Portfolio reality test: pydantic-ai (AOS-21)
+
+### In Review
+
+- AOS-PORTFOLIO-001 — Portfolio: onboard + scan a second real repo (`pydantic/pydantic-ai`, operator-chosen), evaluate every engine (Plane AOS-21; **merging closes it**). The first portfolio reality test. **Result: the scanner generalizes** — it ingested a real multi-package monorepo cleanly (all 8 sub-package manifests, npm+python ecosystems, 23 CI workflows, correct no-Docker; DNA + 15 architecture nodes / 14 `contains` edges persisted; digest ran over the external project) with no crash/truncation. **Two honest gaps recorded as open lessons: LES-013** (file-count `language_mix` reads pydantic-ai as only 28% Python — misleads a fitness/DNA read) and **LES-014** (architecture edges are directory-tree-only; dependency/manifest-derived edges are the missing signal — the Fable-flagged follow-up). Ships a repeatable repo-acquisition capability (`aos_core/services/onboarding.py` `clone_repo` — the missing clone step — + `scripts/onboard_repo.sh` + `test_onboarding.py`), the captured scan (`.archetype/portfolio/pydantic-ai/scan.json`), and the evaluation (`docs/PORTFOLIO_PYDANTIC_AI.md`). The two gaps are scoped follow-ups, not fixed here (per the Plane issue). Adding LES-013/014 as open (vault 12→15 lessons, 1→3 open) required making two count-coupled tests count-agnostic (the KNOW-002 digest test, the KNOW-003 e2e open-filter); a self-caught e2e count-race in that fix is recorded as LES-015 (closed). Orchestrator-verified: api 102 / full Playwright 5/5 headless / `clone_repo` real clone + path-safety / ruff full CI scope. Spec: `.archetype/work/AOS-PORTFOLIO-001.md`.
+
 ## 2026-07-06 — Knowledge dashboard (closes AOS-23)
 
 ### Merged

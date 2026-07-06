@@ -18,7 +18,7 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-AOS-21 — Second repository: register + scan a real external repo through the existing pipeline (the highest-value proof that ArchetypeOS generalizes beyond itself). Operator go-ahead pending. (Prior: AOS-KNOW-003 merged PR #52 / `c022c6b` — AOS-23 Done, knowledge read path complete; AOS-KNOW-002 PR #51; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
+AOS-PORTFOLIO-001 (Plane AOS-21) — Portfolio: onboard + scan a second real repo (`pydantic/pydantic-ai`, operator-chosen), evaluate every engine. The first portfolio reality test + a repeatable repo-acquisition capability. (Prior: AOS-KNOW-003 merged PR #52 / `c022c6b` — AOS-23 Done; AOS-KNOW-002 PR #51; AOS-APIROUTES-001 PR #50 / AOS-24; AOS-COUNCIL-001 PR #49 / AOS-19.)
 
 ### Branch
 
@@ -26,11 +26,11 @@ AOS-21 — Second repository: register + scan a real external repo through the e
 
 ### PR
 
-#52 — **Merged** as `c022c6b` (squash). CI run 28761004456 all 6 jobs green on head `6a8942e`.
+To be opened.
 
 ### Status
 
-Merged — a **global** "Knowledge" dashboard section (Sync-from-vault, lesson list with open-lesson badges, All/Open filter, per-section error isolation) + `api.ts` fetch/sync fns + the api-service `./knowledge:ro` compose mount & `KNOWLEDGE_ROOT` + `serve-api.sh` `KNOWLEDGE_ROOT` export + `knowledge.spec.ts`. No backend/API/schema change. Orchestrator-verified: full Playwright suite 5/5 headless incl. the knowledge spec; strict tsc/vite build exit 0; `docker compose config` valid. Branch restarted from `main` at `c022c6b`. **AOS-23 is Done — the knowledge read path (backend sync + API + digest visibility + dashboard) is complete end to end. Next: AOS-21 (second repo) — awaiting operator go-ahead.**
+In Review — `aos_core/services/onboarding.py` (`clone_repo` — the missing acquire step) + `scripts/onboard_repo.sh` + `test_onboarding.py`; captured evidence `.archetype/portfolio/pydantic-ai/scan.json` + evaluation `docs/PORTFOLIO_PYDANTIC_AI.md`; **honest lessons LES-013 (file-count language mix misreads pydantic-ai as 28% Python) + LES-014 (architecture edges tree-only) — both open**; LES-015 (self-caught e2e count-race) closed. Also fixed two count-coupled tests (digest `open_lessons==1`; e2e open-filter) to be count-agnostic after adding 2 open lessons. Orchestrator-verified: real full pipeline on pydantic-ai (all 8 manifests, ecosystems, CI detected, no crash; DNA + 14 contains edges); `clone_repo` real `file://` clone + idempotent + path-safety; api **102**; full Playwright **5/5 headless**; ruff full CI scope + compile clean. **Merging closes AOS-21; next: the definitive-roadmap reevaluation.**
 
 ### Orchestrator Transition
 
@@ -75,7 +75,7 @@ Merged — a **global** "Knowledge" dashboard section (Sync-from-vault, lesson l
 
 ### Verification Status
 
-Verified (PR #52 merged as `c022c6b`; AOS-23 Done)
+Verification pending (AOS-PORTFOLIO-001 in review)
 
 ### Verification Level
 
@@ -83,7 +83,7 @@ Level 4
 
 ### Verification Method
 
-CI run 28761004456 all 6 jobs green on head `6a8942e` (compose-smoke booted api with the vault mount; web-e2e ran the knowledge spec) plus Orchestrator's independent full Playwright suite headless → **5/5** incl. `knowledge.spec.ts` (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persistence); strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service. AOS-23 → Done; branch restarted from `main` at `c022c6b`.
+Orchestrator ran the real full pipeline on pydantic-ai (clone → register → `run_scan` → DNA + 15 arch nodes / 14 `contains` edges + 8 manifests → digest) and captured `.archetype/portfolio/pydantic-ai/scan.json`; independently verified `clone_repo` (real `file://` clone + idempotent + all path-safety rejections); api **102 passed** (99 + 3 onboarding); full Playwright **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after 2 new open lessons; also fixed the count-coupled digest test); ruff at full CI scope (`apps/api packages/aos_core apps/worker tools`) + compile clean. GitHub CI (api-tests, compose-smoke, web-e2e) pending on the PR; merge under the Manual Merge Gate; on merge AOS-21 → Done.
 
 ### Evidence
 
@@ -99,7 +99,7 @@ GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge G
 
 ### Next Recommended Step
 
-**AOS-21 (second repo)** — awaiting operator go-ahead: register + scan a real external repo through the existing Repository Registry + Scanner + DNA + Architecture pipeline. The highest-value proof that ArchetypeOS generalizes beyond scanning itself; it also feeds real data to the knowledge + council surfaces. Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (doc-staleness/LES-007 — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
+Merge AOS-PORTFOLIO-001 under the Manual Merge Gate — **closes AOS-21**. Then the **definitive-roadmap reevaluation** the operator flagged (bring a proposed phase map). The reality test spawned two scoped follow-ups: a language-mix weighting package (LES-013) and an architecture-semantics / dependency-edge package (LES-014, Fable-flagged). Other remaining: AOS-20 (doc-staleness/LES-007 — machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`), now feedable with pydantic-ai data, validates Intelligence Phase 1.
 
 ## Handoff Template
 

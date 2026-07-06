@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19 Done). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24 Done). Knowledge read path complete: AOS-KNOW-002 (PR #51) + AOS-KNOW-003 (PR #52) — **AOS-23 Done**. Next: AOS-21 (second repo), then a definitive-roadmap reevaluation. Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23). AOS-PORTFOLIO-001 (Plane AOS-21, second repo pydantic-ai) in review. Next: definitive-roadmap reevaluation. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -62,10 +62,11 @@ Every new engineering session should read this before planning or implementation
 - PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
 - PR #51: Knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (AOS-KNOW-002; RFC-0002/RFC-0004; Plane AOS-23 backend phase). Knowledge is operational; repo stays source of truth. (First CI run flagged a ruff F401 in migration `0004` — fixed, LES-012 recorded, tests made count-agnostic.)
 - PR #52: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (AOS-KNOW-003) — **closes AOS-23; knowledge read path complete end to end**
+- (in review) AOS-PORTFOLIO-001: portfolio reality test on pydantic-ai + repo-acquisition capability (Plane AOS-21; **closes it**) — scanner generalizes; LES-013/014 gaps recorded
 
 ## Current Objective
 
-**Awaiting operator go-ahead on AOS-21 (second repo).** The knowledge read path is complete (AOS-23 Done: AOS-KNOW-002 backend PR #51 + AOS-KNOW-003 dashboard PR #52) — lessons are queryable, syncable, digest-visible, and browsable from the Control Tower. Per the operator's "aos-23, then aos-21, then reevaluate," **AOS-21** is next: register + scan a real external repo — the highest-value proof that ArchetypeOS understands something other than itself (it also enriches the knowledge + council surfaces). A definitive-roadmap reevaluation follows AOS-21. Prior done this thrust: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002/003 (PRs #51/#52, AOS-23).
+**AOS-21 (second repo — pydantic-ai) in review; merging closes it, then the definitive-roadmap reevaluation.** AOS-PORTFOLIO-001: the first portfolio reality test — ran the pipeline on `pydantic/pydantic-ai` (operator-chosen). **Result: the scanner generalizes** (all 8 sub-package manifests, ecosystems, CI detected on a real monorepo, no crash), with **two honest gaps** recorded as open lessons — LES-013 (file-count language mix reads pydantic-ai as 28% Python) + LES-014 (architecture edges tree-only). Ships a repeatable repo-acquisition capability (`clone_repo` + `onboard_repo.sh`), the captured scan + evaluation, and the lessons (which now surface in the digest + Knowledge dashboard — the loop consuming its own findings). Gaps are scoped follow-ups, not fixed here. Prior done this thrust: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002/003 (PRs #51/#52, AOS-23).
 
 ## Active Branch
 
@@ -82,16 +83,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verified (PR #52 merged as `c022c6b`; AOS-23 Done)
+- Status: Verification pending (AOS-PORTFOLIO-001 in review; PR #52 merged as `c022c6b`)
 - Level: Level 4
-- Method: CI run 28761004456 all 6 jobs green on head `6a8942e` (compose-smoke booted api with the vault mount; web-e2e ran the knowledge spec) plus Orchestrator's independent full Playwright suite headless → **5/5** incl. `knowledge.spec.ts` (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persists); strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service
-- Evidence: knowledge fully operational — queryable, syncable, digest-visible, browsable from the Control Tower; repo remains authoritative
-- Limitations: only lessons render (other vault domains empty); list view (no drill-down); read-only/advisory
-- Required Next Verifier: None — AOS-23 complete and reconciled
+- Method: Orchestrator ran the real full pipeline on pydantic-ai (clone → register → run_scan → DNA + 15 arch nodes / 14 contains edges + 8 manifests → digest) + captured evidence; independently verified `clone_repo` (real `file://` clone + idempotent + path-safety); api **102** (99 + 3 onboarding); full Playwright **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after 2 new open lessons; also fixed the count-coupled digest test); ruff at full CI scope + compile clean. CI (api-tests, compose-smoke, web-e2e) pending on the PR
+- Evidence: scanner generalizes to a real monorepo; LES-013/014 gaps quantified + recorded (now digest/dashboard-visible)
+- Limitations: gaps recorded not fixed (follow-ups); pydantic-ai run is captured evidence, not a CI test; acquisition is a script/function (no API endpoint yet)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review; on merge AOS-21 → Done
 
 ## In Scope Now
 
-- Nothing active. Next: AOS-21 (second repo) — awaiting operator go-ahead — then a definitive-roadmap reevaluation.
+- AOS-PORTFOLIO-001 (Plane AOS-21): portfolio reality test on pydantic-ai + repo-acquisition capability + honest lessons. Closes AOS-21.
 
 ## Out Of Scope Now
 
@@ -118,7 +119,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-**AOS-21 (second repo)** — awaiting operator go-ahead: register + scan a real external repo through the existing pipeline (Repository Registry + Scanner + DNA + Architecture). The highest-value proof that ArchetypeOS generalizes beyond scanning itself, and it feeds real data to the knowledge + council surfaces. Then the definitive-roadmap reevaluation the operator flagged. Remaining after: AOS-20 (LES-007 doc-staleness — now machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`) validates Intelligence Phase 1.
+Merge AOS-PORTFOLIO-001 under the Manual Merge Gate — **closes AOS-21**. Then the **definitive-roadmap reevaluation** the operator flagged (with a proposed phase map). The reality test spawned two scoped follow-ups: a language-mix weighting package (LES-013) and an architecture-semantics / dependency-edge package (LES-014, Fable-flagged). Other remaining: AOS-20 (doc-staleness/LES-007 — machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`), now feedable with pydantic-ai data, validates Intelligence Phase 1.
 
 ## Required Reading For New Sessions
 

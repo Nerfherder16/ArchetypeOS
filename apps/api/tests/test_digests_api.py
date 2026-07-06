@@ -156,23 +156,26 @@ def test_digest_surfaces_open_lessons(client: TestClient) -> None:
         entry["title"].startswith("Consume open lesson:") for entry in before.json()["recommendations"]
     )
 
-    # Sync the repo vault (LES-007 is the only open lesson), then re-run.
+    # Sync the repo vault, then re-run. Counts are self-consistent (the digest
+    # surfaces however many open lessons the vault currently has) rather than a
+    # magic number — lessons are append-only, so open-lesson count grows (LES-012).
     settings.knowledge_root = KNOWLEDGE_ROOT
     synced = client.post("/knowledge/sync")
     assert synced.status_code == 200, synced.text
-    assert synced.json()["open_lessons"] == 1
+    open_count = synced.json()["open_lessons"]
+    assert open_count >= 1
 
     after = client.post(f"/projects/{project['id']}/digests")
     assert after.status_code == 200, after.text
     open_changes = [entry for entry in after.json()["changes"] if entry["type"] == "open_lesson"]
-    assert len(open_changes) == 1
-    assert "at" in open_changes[0]
+    assert len(open_changes) == open_count
+    assert all("at" in entry for entry in open_changes)
     lesson_recs = [
         entry for entry in after.json()["recommendations"] if entry["title"].startswith("Consume open lesson:")
     ]
-    assert len(lesson_recs) == 1
-    assert lesson_recs[0]["reason"] == "open lesson in the learning queue"
-    assert lesson_recs[0]["status"] == "draft"
+    assert len(lesson_recs) == open_count
+    assert all(rec["reason"] == "open lesson in the learning queue" for rec in lesson_recs)
+    assert all(rec["status"] == "draft" for rec in lesson_recs)
 
 
 def test_digest_404s(client: TestClient) -> None:

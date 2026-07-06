@@ -1,0 +1,123 @@
+{
+  "architecture": {
+    "directories": [
+      ".agents",
+      ".claude",
+      ".gemini",
+      ".github",
+      "agent_docs",
+      "clai",
+      "docs",
+      "docs-site",
+      "examples",
+      "pydantic_ai_slim",
+      "pydantic_evals",
+      "pydantic_graph",
+      "scripts",
+      "tests"
+    ],
+    "edge_count": 14,
+    "edge_types": [
+      "contains"
+    ],
+    "node_count": 15,
+    "node_types": [
+      "directory",
+      "repository"
+    ]
+  },
+  "ci_files_count": 23,
+  "dna": {
+    "confidence": 0.65,
+    "package_managers": [
+      "npm",
+      "python"
+    ],
+    "status": "draft"
+  },
+  "docker_files": [],
+  "language_mix_by_file_count": {
+    "CSS": 1,
+    "HTML": 3,
+    "JavaScript": 1,
+    "Markdown": 251,
+    "Python": 564,
+    "Shell": 6,
+    "TypeScript": 3,
+    "YAML": 1183
+  },
+  "language_mix_python_share_pct": 28.0,
+  "manifests": [
+    {
+      "kind": "python",
+      "path": "clai/pyproject.toml"
+    },
+    {
+      "kind": "node",
+      "path": "docs-site/package-lock.json"
+    },
+    {
+      "kind": "node",
+      "path": "docs-site/package.json"
+    },
+    {
+      "kind": "python",
+      "path": "examples/pyproject.toml"
+    },
+    {
+      "kind": "python",
+      "path": "pydantic_ai_slim/pyproject.toml"
+    },
+    {
+      "kind": "python",
+      "path": "pydantic_evals/pyproject.toml"
+    },
+    {
+      "kind": "python",
+      "path": "pydantic_graph/pyproject.toml"
+    },
+    {
+      "kind": "python",
+      "path": "pyproject.toml"
+    }
+  ],
+  "note": "Captured in-session by the Orchestrator (AOS-21 reality test). Derived scan output; the clone under repositories/ is gitignored.",
+  "package_managers": [
+    "npm",
+    "python"
+  ],
+  "remote_url": "https://github.com/pydantic/pydantic-ai",
+  "repo": "pydantic/pydantic-ai",
+  "risk_flags": [],
+  "risk_signals": [
+    {
+      "code": "MULTIPLE_ECOSYSTEMS",
+      "message": "Manifests span multiple language ecosystems",
+      "path": null,
+      "severity": "info"
+    }
+  ],
+  "summary": {
+    "has_ci": true,
+    "has_docker": false,
+    "has_env_example": false,
+    "has_tests": true,
+    "languages": [
+      "CSS",
+      "HTML",
+      "JavaScript",
+      "Markdown",
+      "Python",
+      "Shell",
+      "TypeScript",
+      "YAML"
+    ],
+    "primary_language_hints": [
+      "Python",
+      "Shell",
+      "HTML"
+    ],
+    "total_dirs_seen": 163,
+    "total_files_seen": 2071
+  }
+}

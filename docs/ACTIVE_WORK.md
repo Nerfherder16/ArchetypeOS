@@ -398,6 +398,22 @@ Lead-Architect critique (operator-relayed 2026-07-05) flagged `main.py` growth, 
 - Notes: Level 4 — CI run 28761004456 all 6 jobs green on head `6a8942e` (compose-smoke booted api with the `:/knowledge:ro` mount; web-e2e ran the knowledge spec) plus Orchestrator's independent full Playwright suite headless → **5/5** incl. `knowledge.spec.ts` (real sync vs the committed vault → LES-007 open badge, ≥12 rows, Open filter → 1, reload persists); strict tsc/vite build exit 0; `docker compose config` valid with the mount in the api service. Merge commit `c022c6b`. **AOS-23 is Done — the full knowledge read path (backend sync + API + digest visibility + dashboard) is complete, closing the AOS-KNOW-001 and RFC-0004 deferrals.**
 - Required Next Verifier: None.
 
+### AOS-PORTFOLIO-001 — Portfolio: onboard + scan a second real repo (pydantic-ai), evaluate every engine (Plane AOS-21)
+
+- Status: In Review
+- Owner: Runtime Agent (Opus, acquisition code) + Orchestrator (Opus 4.8, reality test + evaluation)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw` (env-pinned)
+- Plane: AOS-21 (In Progress — **merging closes it**)
+- PR: to be opened
+- Spec: `.archetype/work/AOS-PORTFOLIO-001.md`
+- Goal: the first portfolio reality test — run the pipeline on a repo the system did not write (`pydantic/pydantic-ai`, operator-chosen) + a repeatable repo-acquisition capability (the missing clone step). Deliverables: `clone_repo` (`aos_core/services/onboarding.py`) + `scripts/onboard_repo.sh` + tests; the captured real scan (`.archetype/portfolio/pydantic-ai/scan.json`) + evaluation (`docs/PORTFOLIO_PYDANTIC_AI.md`); **honest lessons LES-013 (file-count language mix misreads a library — pydantic-ai Python 28% by file count) + LES-014 (architecture edges tree-only; dependency edges the Fable-flagged follow-up)**, both open. Does NOT fix the two gaps (scoped follow-ups per the Plane issue). LES-015 (self-caught e2e count-race) recorded closed.
+- Verification Status: Verification pending
+- Verification Level: Level 4
+- Verification Method: Orchestrator ran the **real full pipeline** on pydantic-ai (clone → register → run_scan → DNA + 15 architecture nodes / 14 contains edges + 8 manifests → digest) and captured evidence; independently verified `clone_repo` (real `file://` clone + idempotent + all path-safety rejections); api suite **102 passed** (99 + 3 onboarding); full Playwright suite **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after adding 2 open lessons); ruff at **full CI scope** (`apps/api packages/aos_core apps/worker tools`) + compile clean. Also fixed the count-coupled digest test (was pinned to `open_lessons==1`; now self-consistent). CI (api-tests, compose-smoke, web-e2e) pending on the PR.
+- Evidence: the scanner generalizes to a real monorepo (all sub-package manifests, ecosystems, CI detected, no crash); two honest gaps quantified + recorded as open lessons (they now surface in the digest + Knowledge dashboard)
+- Limitations: gaps recorded, not fixed (follow-up packages); the pydantic-ai run is captured evidence, not a CI test (no live clone in CI); acquisition is a script/function (no API onboard endpoint yet)
+- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator merge review under the Manual Merge Gate; on merge AOS-21 → Done
+
 ### AOS-COUNCIL-001 — Agent Council Seed: LLM Provider Abstraction + Council MVP + Final Judge (RFC-0005 Phase 1)
 
 - Status: Merged

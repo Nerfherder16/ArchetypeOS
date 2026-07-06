@@ -1,9 +1,10 @@
 """Knowledge read path (RFC-0002 / RFC-0004).
 
-The repo vault (``knowledge/wiki/lessons/index.md``) stays the source of
-truth; this module parses it and upserts derived ``KnowledgePage`` rows so
-lessons gain an API/DB read surface. A DB reset loses nothing — re-run the
-sync from the repo tree. Stdlib-only, no new dependencies.
+The repo vault stays the source of truth; this module parses it and upserts
+derived ``KnowledgePage`` rows so vault content gains an API/DB read surface:
+lessons from ``knowledge/wiki/lessons/index.md`` and approved-decision ADRs from
+``knowledge/wiki/decisions/*.md``. A DB reset loses nothing — re-run the sync
+from the repo tree. Stdlib-only, no new dependencies.
 """
 
 from __future__ import annotations
@@ -60,57 +61,124 @@ def _row_checksum(row: dict) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def sync_knowledge(db: Session, knowledge_root: Path) -> dict:
-    """Upsert lesson ``KnowledgePage`` rows from the vault lessons index.
+def parse_adr(text: str) -> dict | None:
+    """Parse an ADR markdown file into ``{title, validation_state}``, or None.
 
-    Idempotent: keyed by ``vault_path`` (``wiki/lessons/<LES-id>.md``); existing
-    rows are updated in place, new ones created. A missing vault dir/file returns
-    all-zero counts rather than raising.
+    Tolerant: a file with no ``# `` heading (empty / malformed) yields ``None``
+    (skip it) and never raises. ``validation_state`` is ``"approved"`` when the
+    ``## Status`` block reads Accepted/Approved, else ``"raw"``.
     """
-    index_path = Path(knowledge_root) / "wiki" / "lessons" / "index.md"
-    if not index_path.is_file():
-        return {"synced": 0, "created": 0, "updated": 0, "open_lessons": 0}
+    lines = text.splitlines()
+    title = None
+    for line in lines:
+        if line.startswith("# "):
+            title = line[2:].strip()
+            break
+    if not title:
+        return None
 
-    text = index_path.read_text(encoding="utf-8")
-    lessons = parse_lessons_index(text)
+    validation_state = "raw"
+    for i, line in enumerate(lines):
+        if line.strip().lower() == "## status":
+            for sub in lines[i + 1:]:
+                if sub.strip():
+                    low = sub.lower()
+                    if "accepted" in low or "approved" in low:
+                        validation_state = "approved"
+                    break
+            break
+    return {"title": title, "validation_state": validation_state}
 
+
+def sync_knowledge(db: Session, knowledge_root: Path) -> dict:
+    """Upsert ``KnowledgePage`` rows from the vault (lessons index + ADRs).
+
+    Idempotent: keyed by ``vault_path`` (``wiki/lessons/<LES-id>.md`` for lessons,
+    ``wiki/decisions/<name>.md`` for ADRs); existing rows are updated in place,
+    new ones created. A missing lessons file / decisions dir is skipped rather
+    than raising, so decision pages are re-derivable from the vault even after a
+    DB reset. ``open_lessons`` stays lessons-only; ``synced``/``created``/
+    ``updated`` fold in decision pages.
+    """
     created = 0
     updated = 0
     open_lessons = 0
-    for row in lessons:
-        lesson_id = row["lesson_id"]
-        vault_path = f"wiki/lessons/{lesson_id}.md"
-        status = row.get("status") or "raw"
-        if status == "open":
-            open_lessons += 1
+    lesson_count = 0
+    decision_count = 0
 
-        page = db.query(KnowledgePage).filter(KnowledgePage.vault_path == vault_path).first()
-        source = row.get("source") or ""
-        checksum = _row_checksum(row)
-        if page is None:
-            page = KnowledgePage(
-                project_id=None,
-                title=row.get("short") or lesson_id,
-                vault_path=vault_path,
-                page_type="lesson",
-                validation_state=status,
-                source_refs=[{"type": "pr_or_run", "ref": source}],
-                checksum=checksum,
-            )
-            db.add(page)
-            created += 1
-        else:
-            page.project_id = None
-            page.title = row.get("short") or lesson_id
-            page.page_type = "lesson"
-            page.validation_state = status
-            page.source_refs = [{"type": "pr_or_run", "ref": source}]
-            page.checksum = checksum
-            updated += 1
+    index_path = Path(knowledge_root) / "wiki" / "lessons" / "index.md"
+    if index_path.is_file():
+        lessons = parse_lessons_index(index_path.read_text(encoding="utf-8"))
+        lesson_count = len(lessons)
+        for row in lessons:
+            lesson_id = row["lesson_id"]
+            vault_path = f"wiki/lessons/{lesson_id}.md"
+            status = row.get("status") or "raw"
+            if status == "open":
+                open_lessons += 1
+
+            page = db.query(KnowledgePage).filter(KnowledgePage.vault_path == vault_path).first()
+            source = row.get("source") or ""
+            checksum = _row_checksum(row)
+            if page is None:
+                page = KnowledgePage(
+                    project_id=None,
+                    title=row.get("short") or lesson_id,
+                    vault_path=vault_path,
+                    page_type="lesson",
+                    validation_state=status,
+                    source_refs=[{"type": "pr_or_run", "ref": source}],
+                    checksum=checksum,
+                )
+                db.add(page)
+                created += 1
+            else:
+                page.project_id = None
+                page.title = row.get("short") or lesson_id
+                page.page_type = "lesson"
+                page.validation_state = status
+                page.source_refs = [{"type": "pr_or_run", "ref": source}]
+                page.checksum = checksum
+                updated += 1
+
+    decisions_dir = Path(knowledge_root) / "wiki" / "decisions"
+    if decisions_dir.is_dir():
+        for md_path in sorted(decisions_dir.glob("*.md")):
+            if md_path.name == ".gitkeep":
+                continue
+            try:
+                text = md_path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            parsed = parse_adr(text)
+            if parsed is None:
+                continue
+            vault_path = f"wiki/decisions/{md_path.name}"
+            checksum = hashlib.sha256(text.encode("utf-8")).hexdigest()
+            page = db.query(KnowledgePage).filter(KnowledgePage.vault_path == vault_path).first()
+            if page is None:
+                page = KnowledgePage(
+                    project_id=None,
+                    title=parsed["title"],
+                    vault_path=vault_path,
+                    page_type="decision",
+                    validation_state=parsed["validation_state"],
+                    source_refs=[{"type": "vault_file", "ref": vault_path}],
+                    checksum=checksum,
+                )
+                db.add(page)
+                created += 1
+            else:
+                page.title = parsed["title"]
+                page.page_type = "decision"
+                page.validation_state = parsed["validation_state"]
+                page.checksum = checksum
+                updated += 1
+            decision_count += 1
 
     db.commit()
     return {
-        "synced": len(lessons),
+        "synced": lesson_count + decision_count,
         "created": created,
         "updated": updated,
         "open_lessons": open_lessons,

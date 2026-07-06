@@ -60,6 +60,8 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/council-reviews/{review_id}/draft-decision"),
         ("POST", "/decisions/{decision_id}/approve"),
         ("POST", "/decisions/{decision_id}/reject"),
+        # decision → knowledge (AOS-COUNCIL-PHASEC2A — approved decision → repo-vault ADR)
+        ("POST", "/decisions/{decision_id}/adr"),
         # digests
         ("POST", "/projects/{project_id}/digests"),
         ("GET", "/projects/{project_id}/digests"),
@@ -98,6 +100,8 @@ def test_route_inventory_count() -> None:
     # AOS-KNOW-002 knowledge routes (POST /knowledge/sync, GET /knowledge/pages,
     # GET /knowledge/pages/{page_id}) = 42, plus the 3 AOS-COUNCIL-PHASEC decision
     # -loop routes (POST /council-reviews/{review_id}/draft-decision, POST
-    # /decisions/{decision_id}/approve, POST /decisions/{decision_id}/reject) = 45.
-    assert len(EXPECTED_ROUTES) == 45
-    assert len(_actual_routes()) == 45
+    # /decisions/{decision_id}/approve, POST /decisions/{decision_id}/reject) = 45,
+    # plus the AOS-COUNCIL-PHASEC2A ADR export route (POST
+    # /decisions/{decision_id}/adr) = 46.
+    assert len(EXPECTED_ROUTES) == 46
+    assert len(_actual_routes()) == 46

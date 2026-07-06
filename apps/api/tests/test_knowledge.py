@@ -115,6 +115,38 @@ def test_sync_knowledge_missing_dir(db, tmp_path) -> None:
     assert db.query(KnowledgePage).count() == 0
 
 
+def test_sync_knowledge_derives_decision_pages(db, tmp_path) -> None:
+    """Approved-decision ADRs in the vault are re-derived as `decision` pages.
+
+    Count-agnostic (LES-012): a temp vault with no lessons index is used, so the
+    invariants asserted are about the decision page itself, not any pinned total.
+    """
+    decisions_dir = tmp_path / "wiki" / "decisions"
+    decisions_dir.mkdir(parents=True)
+    (decisions_dir / "ADR-sample-decision-abcd1234.md").write_text(
+        "# ADR — Sample decision\n\n## Status\n\nAccepted\n\n## Context\n\nBecause reasons.\n",
+        encoding="utf-8",
+    )
+    # Tolerant: a heading-less / empty file and .gitkeep are skipped, never raise.
+    (decisions_dir / "empty.md").write_text("", encoding="utf-8")
+    (decisions_dir / ".gitkeep").write_text("", encoding="utf-8")
+
+    result = sync_knowledge(db, tmp_path)
+    assert result["synced"] >= 1
+
+    decision_pages = db.query(KnowledgePage).filter(KnowledgePage.page_type == "decision").all()
+    assert len(decision_pages) == 1
+    page = decision_pages[0]
+    assert page.vault_path == "wiki/decisions/ADR-sample-decision-abcd1234.md"
+    assert page.validation_state == "approved"
+    assert page.title == "ADR — Sample decision"
+    assert page.checksum
+
+    # Idempotent re-sync: update in place, no duplicate decision page.
+    sync_knowledge(db, tmp_path)
+    assert db.query(KnowledgePage).filter(KnowledgePage.page_type == "decision").count() == 1
+
+
 def test_knowledge_api(client: TestClient) -> None:
     settings.knowledge_root = KNOWLEDGE_ROOT
 

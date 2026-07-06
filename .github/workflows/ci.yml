@@ -79,6 +79,40 @@ jobs:
       - name: Test worker
         run: PYTHONPATH=apps/worker pytest apps/worker/tests
 
+  vector-store-tests:
+    name: Vector store tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: archetypeos_test
+          POSTGRES_USER: archetypeos
+          POSTGRES_PASSWORD: archetypeos
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U archetypeos -d archetypeos_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: apps/api/requirements.txt
+      - name: Install API dependencies (pgvector, NO torch)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/api/requirements.txt
+          pip install -e ./packages/aos_core
+      - name: Run pgvector-gated tests
+        env:
+          AOS_TEST_DATABASE_URL: postgresql+psycopg://archetypeos:archetypeos@localhost:5432/archetypeos_test
+        run: PYTHONPATH=apps/api pytest apps/api/tests -m pgvector
+
   web-build:
     name: Web typecheck and build
     runs-on: ubuntu-latest

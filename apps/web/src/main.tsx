@@ -12,6 +12,7 @@ import {
   enqueueJob,
   exportDecisionAdr,
   fetchArchitecture,
+  fetchCouncilReview,
   fetchCouncilReviews,
   fetchDecisions,
   fetchDigests,
@@ -65,6 +66,59 @@ const DECISION_STATUS_COLORS: Record<string, { color: string; background: string
   rejected: { color: '#b91c1c', background: '#fee2e2', border: '#ef4444' },
   active: { color: '#4b5563', background: '#f3f4f6', border: '#9ca3af' },
 };
+
+// Palette for verdict badges; "Insufficient evidence" (abstention) is styled
+// with a dashed border and italic label to be visually distinct.
+const VERDICT_BADGE_COLORS: Record<string, { color: string; background: string; border: string }> = {
+  Accept: { color: '#166534', background: '#dcfce7', border: '#22c55e' },
+  'Accept with warnings': { color: '#b45309', background: '#fef3c7', border: '#f59e0b' },
+  Reject: { color: '#b91c1c', background: '#fee2e2', border: '#ef4444' },
+  Defer: { color: '#1d4ed8', background: '#dbeafe', border: '#3b82f6' },
+  'Research further': { color: '#1d4ed8', background: '#dbeafe', border: '#3b82f6' },
+  'Simulate first': { color: '#6d28d9', background: '#ede9fe', border: '#8b5cf6' },
+  'Escalate to human': { color: '#c2410c', background: '#ffedd5', border: '#f97316' },
+  'Insufficient evidence': { color: '#6b7280', background: '#f3f4f6', border: '#9ca3af' },
+};
+
+function VerdictBadge({ verdict }: { verdict: string }) {
+  const isAbstention = verdict === 'Insufficient evidence';
+  const palette = VERDICT_BADGE_COLORS[verdict] ?? { color: '#4b5563', background: '#f3f4f6', border: '#9ca3af' };
+  return (
+    <span
+      style={{
+        display: 'inline-block',
+        marginRight: 8,
+        padding: '1px 8px',
+        borderRadius: 10,
+        fontSize: 12,
+        fontWeight: 600,
+        fontStyle: isAbstention ? 'italic' : 'normal',
+        color: palette.color,
+        background: palette.background,
+        border: isAbstention ? `1px dashed ${palette.border}` : `1px solid ${palette.border}`,
+      }}
+    >
+      {verdict}
+    </span>
+  );
+}
+
+// Defensive renderer for list items whose shape may be a plain string or a
+// small object (e.g. { text: '...' } or { summary: '...' }).  Never crashes.
+function renderListItem(item: unknown): string {
+  if (typeof item === 'string') {
+    return item;
+  }
+  if (item !== null && typeof item === 'object') {
+    const obj = item as Record<string, unknown>;
+    const field = obj.text ?? obj.summary ?? obj.description ?? obj.message ?? obj.content;
+    if (typeof field === 'string') {
+      return field;
+    }
+    return JSON.stringify(item);
+  }
+  return String(item ?? '');
+}
 
 function DecisionStatusBadge({ status }: { status: string }) {
   const palette = DECISION_STATUS_COLORS[status] ?? DECISION_STATUS_COLORS.active;
@@ -156,6 +210,14 @@ function App() {
   const [creatingSchedule, setCreatingSchedule] = useState(false);
   const [scanJobRepoId, setScanJobRepoId] = useState('');
   const [schedulingBusy, setSchedulingBusy] = useState(false);
+
+  // Agent Council section state (separate from Decision Loop).
+  const [councilSectionLoading, setCouncilSectionLoading] = useState(false);
+  const [councilSectionError, setCouncilSectionError] = useState<string | null>(null);
+  const [councilExpandedId, setCouncilExpandedId] = useState<string | null>(null);
+  const [councilDetailMap, setCouncilDetailMap] = useState<Record<string, CouncilReview>>({});
+  const [councilDetailLoading, setCouncilDetailLoading] = useState<string | null>(null);
+  const [councilDetailError, setCouncilDetailError] = useState<Record<string, string>>({});
 
   const loadHealth = useCallback(async () => {
     setHealthError(null);
@@ -318,6 +380,12 @@ function App() {
     setJobs([]);
     setSchedulingError(null);
     setScanJobRepoId('');
+    setCouncilSectionLoading(false);
+    setCouncilSectionError(null);
+    setCouncilExpandedId(null);
+    setCouncilDetailMap({});
+    setCouncilDetailLoading(null);
+    setCouncilDetailError({});
     if (selectedProjectId) {
       void loadRepositories(selectedProjectId);
       void loadArtifacts(selectedProjectId);
@@ -522,6 +590,48 @@ function App() {
     }
     await Promise.all([loadCouncilReviews(selectedProjectId), loadArtifacts(selectedProjectId)]);
   }, [selectedProjectId, loadCouncilReviews, loadArtifacts]);
+
+  // Agent Council section: independent refresh button with its own loading/error
+  // state so it does not interfere with the Decision Loop's councilError.
+  const handleRefreshCouncilSection = useCallback(async () => {
+    if (!selectedProjectId) {
+      return;
+    }
+    setCouncilSectionLoading(true);
+    setCouncilSectionError(null);
+    try {
+      setCouncilReviews(await fetchCouncilReviews(selectedProjectId));
+    } catch (err) {
+      setCouncilSectionError(errorMessage(err));
+    } finally {
+      setCouncilSectionLoading(false);
+    }
+  }, [selectedProjectId]);
+
+  const handleExpandReview = useCallback(
+    async (reviewId: string) => {
+      if (councilExpandedId === reviewId) {
+        setCouncilExpandedId(null);
+        return;
+      }
+      setCouncilExpandedId(reviewId);
+      // Already cached — no re-fetch needed.
+      if (councilDetailMap[reviewId]) {
+        return;
+      }
+      setCouncilDetailLoading(reviewId);
+      setCouncilDetailError((prev) => ({ ...prev, [reviewId]: '' }));
+      try {
+        const detail = await fetchCouncilReview(reviewId);
+        setCouncilDetailMap((prev) => ({ ...prev, [reviewId]: detail }));
+      } catch (err) {
+        setCouncilDetailError((prev) => ({ ...prev, [reviewId]: errorMessage(err) }));
+      } finally {
+        setCouncilDetailLoading((prev) => (prev === reviewId ? null : prev));
+      }
+    },
+    [councilExpandedId, councilDetailMap],
+  );
 
   const handleDraftDecision = useCallback(
     async (reviewId: string) => {
@@ -1292,6 +1402,179 @@ function App() {
               {creatingDecision ? 'Adding...' : 'Add decision'}
             </button>
           </form>
+        </section>
+      ) : null}
+
+      {selectedProjectId ? (
+        <section style={sectionStyle}>
+          <h2>Agent Council</h2>
+          {councilSectionError ? (
+            <p role="alert" style={errorStyle}>
+              {councilSectionError}
+            </p>
+          ) : null}
+          <button
+            type="button"
+            disabled={councilSectionLoading}
+            onClick={() => void handleRefreshCouncilSection()}
+          >
+            {councilSectionLoading ? 'Loading...' : 'Refresh council'}
+          </button>
+          {councilReviews.length === 0 ? (
+            <p>No council reviews yet. Use the Decision Loop to enqueue one.</p>
+          ) : (
+            <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+              {councilReviews.map((review) => {
+                const isExpanded = councilExpandedId === review.id;
+                const isDetailLoading = councilDetailLoading === review.id;
+                const detailErr = councilDetailError[review.id];
+                const detail = councilDetailMap[review.id];
+                return (
+                  <li
+                    key={review.id}
+                    data-testid="council-review-row"
+                    style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #eee' }}
+                  >
+                    <VerdictBadge verdict={review.verdict} />
+                    <span>confidence {review.confidence}</span>
+                    {review.question ? <span> &middot; {review.question}</span> : null}
+                    {review.provider ? (
+                      <span style={{ color: '#777' }}> &middot; {review.provider}</span>
+                    ) : null}
+                    <button
+                      type="button"
+                      aria-expanded={isExpanded}
+                      onClick={() => void handleExpandReview(review.id)}
+                      style={{ marginLeft: 8 }}
+                    >
+                      {isExpanded ? 'Hide details' : 'Show details'}
+                    </button>
+                    {isExpanded ? (
+                      <div
+                        data-testid="council-detail-panel"
+                        style={{ marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #ddd' }}
+                      >
+                        {isDetailLoading ? <p>Loading details...</p> : null}
+                        {detailErr ? (
+                          <p role="alert" style={errorStyle}>
+                            {detailErr}
+                          </p>
+                        ) : null}
+                        {detail ? (
+                          <div>
+                            <h4 style={{ marginBottom: 4 }}>Final Judge</h4>
+                            <p>
+                              <strong>Verdict:</strong> {detail.verdict} &middot;{' '}
+                              <strong>Confidence:</strong> {detail.confidence}
+                            </p>
+                            {(detail.agreements ?? []).length > 0 ? (
+                              <div>
+                                <strong>Agreements:</strong>
+                                <ul>
+                                  {(detail.agreements ?? []).map((item, i) => (
+                                    <li key={i}>{renderListItem(item)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
+                            {(detail.disagreements ?? []).length > 0 ? (
+                              <div>
+                                <strong>Disagreements:</strong>
+                                <ul>
+                                  {(detail.disagreements ?? []).map((item, i) => (
+                                    <li key={i}>{renderListItem(item)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
+                            {(detail.unsupported_claims ?? []).length > 0 ? (
+                              <div>
+                                <strong>Unsupported claims:</strong>
+                                <ul>
+                                  {(detail.unsupported_claims ?? []).map((item, i) => (
+                                    <li key={i}>{renderListItem(item)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
+                            {(detail.follow_up ?? []).length > 0 ? (
+                              <div>
+                                <strong>Follow-up:</strong>
+                                <ul>
+                                  {(detail.follow_up ?? []).map((item, i) => (
+                                    <li key={i}>{renderListItem(item)}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            ) : null}
+                            {(detail.agent_outputs ?? []).length > 0 ? (
+                              <div style={{ marginTop: 8 }}>
+                                <h4 style={{ marginBottom: 4 }}>Agent Outputs</h4>
+                                {(detail.agent_outputs ?? []).map((output) => (
+                                  <div
+                                    key={output.id}
+                                    data-testid="council-agent-card"
+                                    style={{
+                                      marginBottom: 8,
+                                      padding: 8,
+                                      border: '1px solid #ddd',
+                                      borderRadius: 4,
+                                    }}
+                                  >
+                                    <p style={{ margin: '0 0 4px', fontWeight: 600 }}>
+                                      {output.agent_name}{' '}
+                                      <span style={{ fontWeight: 400, color: '#777' }}>
+                                        ({output.agent_type})
+                                      </span>{' '}
+                                      &middot; status: {output.status} &middot; confidence{' '}
+                                      {output.confidence}
+                                    </p>
+                                    {output.summary ? (
+                                      <p style={{ margin: '0 0 4px' }}>{output.summary}</p>
+                                    ) : null}
+                                    {output.findings.length > 0 ? (
+                                      <div>
+                                        <strong>Findings:</strong>
+                                        <ul style={{ margin: '0 0 4px' }}>
+                                          {output.findings.map((item, i) => (
+                                            <li key={i}>{renderListItem(item)}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    ) : null}
+                                    {output.evidence.length > 0 ? (
+                                      <div>
+                                        <strong>Evidence:</strong>
+                                        <ul style={{ margin: '0 0 4px' }}>
+                                          {output.evidence.map((item, i) => (
+                                            <li key={i}>{renderListItem(item)}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    ) : null}
+                                    {output.concerns.length > 0 ? (
+                                      <div>
+                                        <strong>Concerns:</strong>
+                                        <ul style={{ margin: '0 0 4px' }}>
+                                          {output.concerns.map((item, i) => (
+                                            <li key={i}>{renderListItem(item)}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
         </section>
       ) : null}
 

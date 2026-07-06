@@ -332,7 +332,7 @@ Capabilities:
 - Dashboard
 - Command palette
 - Voice interface
-- agent council dashboard
+- agent council dashboard (AOS-COUNCIL-002: a Control Tower "Agent Council" section surfacing the full council reasoning the API already returns — verdict + confidence, a Final Judge panel with agreements/disagreements/unsupported claims/follow-up, and per-agent cards (summary/findings/evidence/concerns/status); the "Insufficient evidence" abstention is rendered distinctly. Read-focused; enqueue stays in the Decision Loop)
 - engineering observatory
 - multi-monitor layouts
 
@@ -342,6 +342,7 @@ Primary artifacts:
 - docs/VOICE_PROVIDER_ADAPTERS.md
 - docs/VOICE_SAFETY_MODEL.md
 - docs/AGENT_COUNCIL_DASHBOARD.md
+- apps/web/src/main.tsx ("Agent Council" Control Tower section — AOS-COUNCIL-002) with apps/web/e2e/council-dashboard.spec.ts
 - docs/ENGINEERING_OBSERVATORY.md
 
 ## Layer 11: Runtime and Infrastructure

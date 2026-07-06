@@ -5,19 +5,25 @@ duck-typed interface — :class:`EmbeddingProvider` — resolved from settings b
 :func:`get_embedder`. It is the storage/retrieval half of the Embedding Relevance
 Tier, delivered **without torch** so CI stays fast and hermetic.
 
-Part 1 ships exactly one concrete backend:
+Two concrete backends exist:
 
 - :class:`DeterministicEmbedder` — the CI/hermetic default. ``embed()`` returns
   ``None`` (no vector), which every caller reads as "fall back to the
   deterministic lexical Layer-0 path". It imports nothing heavy, makes no network
   call, and needs no model — so the whole vector-store + retrieval path can be
   wired, migrated, and (Postgres-gated) tested with synthetic vectors + fake
-  embedders, all off the torch dependency path.
+  embedders, all off any heavy dependency path.
 
-The real ``sentence-transformers`` (torch) backend — :class:`!SentenceTransformerEmbedder`
-— is **AOS-EMBED-002** (Part 2). It registers here behind a *lazy* import so that
-importing this module, and running with the deterministic default, never pulls in
-torch. Do NOT add a torch import to this file.
+- :class:`!FastEmbedEmbedder` — the real tier (AOS-EMBED-002, Part 2), living in
+  :mod:`._fastembed`. It runs ``all-MiniLM-L6-v2`` (384-dim) via **fastembed**
+  (ONNX runtime), *not* torch / sentence-transformers — ~50 MB vs GBs, same model
+  and dim (drop-in for the pgvector column). It registers here behind a **lazy**
+  import: :func:`get_embedder` only imports :mod:`._fastembed` when
+  ``embedding_provider == "fastembed"``, and ``._fastembed`` defers the
+  ``fastembed`` import further still. So importing this module, and running with
+  the deterministic default, never pulls in fastembed/onnxruntime/torch.
+  **Do NOT add a fastembed/onnxruntime/torch import to this file, and do NOT
+  import ``._fastembed`` eagerly.**
 """
 
 from __future__ import annotations
@@ -63,19 +69,24 @@ class DeterministicEmbedder:
 def get_embedder(settings) -> EmbeddingProvider:
     """Select an embedder from ``settings.embedding_provider`` (default deterministic).
 
-    ``deterministic`` → :class:`DeterministicEmbedder`. The real
-    ``sentence_transformers`` (torch) tier is AOS-EMBED-002 and will register here
-    behind a lazy import — no torch is imported in Part 1. Any other name is an
-    explicit error (surface a misconfiguration rather than silently mis-embed).
+    ``deterministic`` → :class:`DeterministicEmbedder`. ``fastembed`` → the real
+    :class:`!FastEmbedEmbedder` (AOS-EMBED-002), imported **lazily** here so no
+    fastembed/onnxruntime/torch is loaded on the deterministic default path. Any
+    other name is an explicit error (surface a misconfiguration rather than
+    silently mis-embed).
     """
     name = getattr(settings, "embedding_provider", "deterministic")
     if name == "deterministic":
         return DeterministicEmbedder()
-    # Seam for AOS-EMBED-002: ``if name == "sentence_transformers": from
-    # ._sentence_transformers import SentenceTransformerEmbedder (lazy torch)``.
+    if name == "fastembed":
+        # Lazy import: fastembed (ONNX) is pulled in only when the real tier is
+        # selected — never on package import or the deterministic default.
+        from ._fastembed import FastEmbedEmbedder
+
+        return FastEmbedEmbedder(settings)
     raise ValueError(
         f"Unknown embedding_provider: {name!r} "
-        "(Part 1 ships 'deterministic'; the sentence-transformers tier is AOS-EMBED-002)"
+        "(ships 'deterministic' default and the real 'fastembed' ONNX tier — AOS-EMBED-002)"
     )
 
 

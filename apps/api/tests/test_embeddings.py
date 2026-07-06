@@ -107,12 +107,106 @@ def test_get_embedder_unknown_raises() -> None:
         get_embedder(Settings(embedding_provider="sentence_transformers"))
 
 
-def test_no_torch_import_in_embeddings_module() -> None:
+def test_no_heavy_import_on_embeddings_package_import() -> None:
+    """Importing the seam pulls in no fastembed/onnxruntime/torch (RFC-0010 invariant).
+
+    Part 1 shipped this torch-free; Part 2 keeps it fastembed-free too — the real
+    embedder's ``fastembed`` import is lazy (only ``get_embedder("fastembed")`` +
+    the first ``embed`` load it). If any of these appear in ``sys.modules`` after a
+    bare package import, the lazy seam has regressed to an eager import.
+    """
     import sys
+
+    for mod in ("fastembed", "onnxruntime", "torch"):
+        sys.modules.pop(mod, None)
 
     import aos_core.embeddings  # noqa: F401
 
-    assert "torch" not in sys.modules, "the embeddings seam must not import torch (Part 1 invariant)"
+    for mod in ("fastembed", "onnxruntime", "torch"):
+        assert mod not in sys.modules, f"the embeddings seam must not import {mod} on package import"
+
+
+# --- FastEmbedEmbedder: hermetic (fake fastembed, no real model) -------------
+
+
+_CANNED_RAW = [3.0] + [4.0] + [0.0] * (EMBEDDING_DIM - 2)  # norm 5.0 → known unit vector
+
+
+class _FakeTextEmbedding:
+    """Stand-in for ``fastembed.TextEmbedding``: counts loads, yields a canned vector."""
+
+    instances = 0
+
+    def __init__(self, model_name: str) -> None:
+        type(self).instances += 1
+        self.model_name = model_name
+
+    def embed(self, texts):
+        for _ in texts:
+            yield list(_CANNED_RAW)
+
+
+@pytest.fixture()
+def fake_fastembed(monkeypatch):
+    """Install a fake ``fastembed`` module and reset the embedder's singleton cache."""
+    import sys
+    import types
+
+    from aos_core.embeddings import _fastembed
+
+    fake_module = types.ModuleType("fastembed")
+    fake_module.TextEmbedding = _FakeTextEmbedding
+    monkeypatch.setitem(sys.modules, "fastembed", fake_module)
+
+    _FakeTextEmbedding.instances = 0
+    monkeypatch.setattr(_fastembed, "_MODEL_CACHE", {}, raising=True)
+    yield _FakeTextEmbedding
+
+
+def test_fastembed_embed_returns_normalized_vector(fake_fastembed) -> None:
+    from aos_core.embeddings._fastembed import FastEmbedEmbedder
+
+    emb = FastEmbedEmbedder(Settings())
+    assert emb.name == "fastembed"
+    assert emb.dim == EMBEDDING_DIM == 384
+
+    vec = emb.embed("some text")
+    assert vec is not None
+    assert len(vec) == EMBEDDING_DIM
+    # Canned raw was (3, 4, 0, ...), norm 5 → (0.6, 0.8, 0, ...).
+    assert vec[0] == pytest.approx(0.6)
+    assert vec[1] == pytest.approx(0.8)
+    assert sum(x * x for x in vec) == pytest.approx(1.0)
+
+
+def test_fastembed_embed_none_on_empty(fake_fastembed) -> None:
+    from aos_core.embeddings._fastembed import FastEmbedEmbedder
+
+    emb = FastEmbedEmbedder(Settings())
+    assert emb.embed("") is None
+    assert emb.embed("   \n\t ") is None
+
+
+def test_fastembed_loads_model_once_singleton(fake_fastembed) -> None:
+    from aos_core.embeddings._fastembed import FastEmbedEmbedder
+
+    emb = FastEmbedEmbedder(Settings())
+    emb.embed("first")
+    emb.embed("second")
+    # Two embeds, one model construction (module-level singleton cache).
+    assert fake_fastembed.instances == 1
+
+    # A second embedder for the same model reuses the cached load (still one).
+    FastEmbedEmbedder(Settings()).embed("third")
+    assert fake_fastembed.instances == 1
+
+
+def test_get_embedder_resolves_fastembed(fake_fastembed) -> None:
+    from aos_core.embeddings._fastembed import FastEmbedEmbedder
+
+    embedder = get_embedder(Settings(embedding_provider="fastembed"))
+    assert isinstance(embedder, FastEmbedEmbedder)
+    assert embedder.name == "fastembed"
 
 
 # --- recommend_reuse: deterministic == lexical, dialect gate ----------------

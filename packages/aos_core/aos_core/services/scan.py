@@ -24,6 +24,7 @@ def run_scan(repository_id: str, db: Session) -> dict:
     dna = repository.dna or RepositoryDNA(repository_id=repository.id)
     dna.language_mix = scan["language_mix"]
     dna.package_managers = scan["package_managers"]
+    dna.frameworks = scan.get("frameworks", [])
     dna.deployment_files = scan["deployment_files"]
     dna.runtime_services = scan["summary"].get("runtime_services", [])
     dna.risk_flags = scan["risk_flags"]
@@ -153,6 +154,7 @@ def run_scan(repository_id: str, db: Session) -> dict:
         "dna": {
             "language_mix": dna.language_mix,
             "package_managers": dna.package_managers,
+            "frameworks": dna.frameworks,
             "deployment_files": dna.deployment_files,
             "risk_flags": dna.risk_flags,
             "confidence": dna.confidence,

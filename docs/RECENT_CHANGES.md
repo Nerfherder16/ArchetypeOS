@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Distillation reality test → evidence-quality fix (AOS-DISTILL-003, in review)
+
+### Reality test (Orchestrator)
+
+- **First end-to-end reality test of the intelligence loop.** Ran the real service layer (`run_scan` → `distill_repository` → `recommend_reuse`) over the 6 cloned repos. Verdict: the loop connects and transfer's ranking is directionally correct and abstains honestly, **but distillation quality starves it** ("right engine, wrong evidence"): kubernetes missed `"container orchestration"` entirely (its `DNA.purpose` was raw badge markdown), gin ranked 3rd on `"HTTP routing"` (badge purpose), pydantic-ai's purpose was the README's FastAPI analogy, and `DNA.frameworks` was empty for all 6 (never populated). This set the mature-state path: a two-tier evidence pipeline, delivered as sequenced subsets (not patch-then-replace) — recorded as the operator rule "design to the mature-state target" in `docs/ORCHESTRATOR_PLAYBOOK.md`.
+
+### In Review
+
+- AOS-DISTILL-003 — **Package 1: distillation evidence quality.** Hardened the **deterministic summary floor** (`_clean_summary`: drop badge/image-link/HTML-comment/heading/bullet noise → prefer the first declarative `<Name> is/are/provides… a …` description sentence, subject matching the repo/title name → honest fallback, **never** badge/link markup) and added **framework detection** from manifest **bodies** (`package.json`/`requirements.txt`/`pyproject.toml`/`go.mod` → a curated, byte-capped, tolerant table → `DNA.frameworks`, stamped by `run_scan`) so the Transfer Engine's technology-match boost fires. Committed a repeatable, hermetic `scripts/reality_test_distillation.py` regression harness. LES-022 records the self-found reality-test defects; LES-016 remediation updated (manifest-body framework detection shipped; stays open for dotnet/jvm/cargo breadth). Built by an Opus builder subagent; **Orchestrator-verified independently** (builder ≠ verifier): the reality-test gate **flips** — kubernetes **#1** on "container orchestration", gin **#1** on "HTTP routing" (conf 0.108, beating the noise repos), pydantic-ai's purpose now "Pydantic AI is a Python agent framework…", frameworks populated (express/flask, gin, pydantic); api **167** / worker 7, ruff full CI scope + compileall clean, no migration/frontend. Also lands the mature-state operating rule + queues Package 2 (AOS-DISTILL-004, reasoned-tier `DNA.purpose`). Specs: `.archetype/work/AOS-DISTILL-003.md`, `AOS-DISTILL-004.md`. Limitation: the floor's token yield is coupled to the current lexical Jaccard scorer (k8s matches only `container`, conf 0.0147) — the reasoned tier (Package 2) and scorer normalization (Package 3) make it robust.
+
 ## 2026-07-06 — RFC-0009 MVP: Knowledge Transfer Engine (AOS-TRANSFER-001 merged)
 
 ### Merged

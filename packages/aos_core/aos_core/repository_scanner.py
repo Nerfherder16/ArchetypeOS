@@ -23,13 +23,25 @@ Report schema (scan_repository return dict):
     manifests: list[dict]          {path, kind}
     docker_files: list[dict]       {path, kind}
     ci_files: list[dict]           {path, kind}
+    frameworks: list[str]          curated frameworks detected in manifest bodies
     folder_structure: list[dict]   {path, type, depth} up to depth 4
     summary: dict                  aggregate flags and counts
     risk_signals: list[dict]       {severity, code, path, message}
     notes: list[str]               truncation and diagnostic notes
+
+Framework detection is a deliberate, bounded extension of the "reads no bodies
+except compose" rule (AOS-DISTILL-003, aligned with LES-016): the scanner reads
+the BODIES of the manifest files it already detects (``package.json``,
+``requirements.txt``, ``pyproject.toml``, ``go.mod``) — byte-capped and wrapped
+in tolerant try/except → skip — and maps a small, curated table of well-known
+frameworks to normalized names. It is conservative: only high-confidence curated
+dependencies emit a framework; unknown dependencies are ignored (no guessing).
 """
 from __future__ import annotations
+import json
 import os
+import re
+import tomllib
 from collections import Counter
 from pathlib import Path
 
@@ -134,6 +146,190 @@ LANGUAGE_CLASS = {
 MAX_FILES = 20000
 MAX_FOLDER_STRUCTURE = 500
 MAX_COMPOSE_SERVICES = 200
+
+# --- Framework detection (curated, conservative — AOS-DISTILL-003) ------------
+# Bounded read of manifest BODIES: at most this many manifests, each capped to
+# this many bytes. High-confidence curated tables only; unknown deps are ignored.
+_MANIFEST_READ_CAP = 512_000
+_MAX_MANIFESTS_READ = 100
+
+# npm dependency name (lowercased) -> normalized framework name.
+_NPM_FRAMEWORKS = {
+    "express": "express",
+    "react": "react",
+    "react-dom": "react",
+    "next": "next",
+    "vue": "vue",
+    "@angular/core": "angular",
+    "svelte": "svelte",
+    "@sveltejs/kit": "svelte",
+    "@nestjs/core": "nest",
+    "fastify": "fastify",
+    "koa": "koa",
+    "@remix-run/react": "remix",
+}
+# Python distribution name (PEP 503 normalized) -> normalized framework name.
+_PY_FRAMEWORKS = {
+    "fastapi": "fastapi",
+    "flask": "flask",
+    "django": "django",
+    "starlette": "starlette",
+    "pydantic": "pydantic",
+    "pydantic-ai": "pydantic-ai",
+    "pydantic-ai-slim": "pydantic-ai",
+    "langchain": "langchain",
+    "langchain-core": "langchain",
+    "sqlalchemy": "sqlalchemy",
+    "celery": "celery",
+    "tornado": "tornado",
+    "aiohttp": "aiohttp",
+    "sanic": "sanic",
+    "streamlit": "streamlit",
+}
+# go.mod module path (lowercased) -> normalized framework name. Matched by exact
+# path or a ``<path>/`` prefix so a ``/v4`` major-version suffix still resolves.
+_GO_FRAMEWORKS = {
+    "github.com/gin-gonic/gin": "gin",
+    "github.com/labstack/echo": "echo",
+    "github.com/gofiber/fiber": "fiber",
+    "github.com/gorilla/mux": "gorilla-mux",
+    "github.com/go-chi/chi": "chi",
+    "github.com/beego/beego": "beego",
+}
+
+_PY_NAME_SPLIT_RE = re.compile(r"[<>=!~;,\[\(\s]")
+_GO_REQUIRE_RE = re.compile(r"^(?:module|require)\s+(\S+)")
+_GO_BARE_REQUIRE_RE = re.compile(r"^([a-z0-9][\w.\-]+\.[a-z]{2,}/\S+)\s+v")
+
+
+def _read_capped(target: Path) -> str | None:
+    """Read a manifest body up to ``_MANIFEST_READ_CAP`` bytes, tolerantly (None on error)."""
+    try:
+        with open(target, encoding="utf-8", errors="replace") as handle:
+            return handle.read(_MANIFEST_READ_CAP)
+    except (OSError, ValueError):
+        return None
+
+
+def _norm_py_name(raw: str) -> str:
+    """PEP 503-ish normalization of a requirement string to its bare distribution name."""
+    name = _PY_NAME_SPLIT_RE.split(raw.strip(), 1)[0]
+    return re.sub(r"[_.]+", "-", name.strip().lower())
+
+
+def _frameworks_from_package_json(text: str) -> set[str]:
+    try:
+        data = json.loads(text)
+    except (ValueError, TypeError):
+        return set()
+    if not isinstance(data, dict):
+        return set()
+    found: set[str] = set()
+    for key in ("dependencies", "devDependencies", "peerDependencies", "optionalDependencies"):
+        deps = data.get(key)
+        if isinstance(deps, dict):
+            for dep in deps:
+                framework = _NPM_FRAMEWORKS.get(str(dep).strip().lower())
+                if framework:
+                    found.add(framework)
+    return found
+
+
+def _frameworks_from_requirements(text: str) -> set[str]:
+    found: set[str] = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", "-")):
+            continue
+        framework = _PY_FRAMEWORKS.get(_norm_py_name(stripped))
+        if framework:
+            found.add(framework)
+    return found
+
+
+def _frameworks_from_pyproject(text: str) -> set[str]:
+    def _scan(deps) -> set[str]:
+        out: set[str] = set()
+        for dep in deps or []:
+            framework = _PY_FRAMEWORKS.get(_norm_py_name(str(dep)))
+            if framework:
+                out.add(framework)
+        return out
+
+    try:
+        data = tomllib.loads(text)
+    except (tomllib.TOMLDecodeError, ValueError, TypeError):
+        # Templated / malformed pyproject: fall back to a light regex over quoted
+        # requirement strings (still curated-only, so conservative).
+        found: set[str] = set()
+        for match in re.findall(r"""["']([A-Za-z0-9_.\-]+)""", text):
+            framework = _PY_FRAMEWORKS.get(_norm_py_name(match))
+            if framework:
+                found.add(framework)
+        return found
+
+    found = set()
+    project = data.get("project") if isinstance(data, dict) else None
+    if isinstance(project, dict):
+        found |= _scan(project.get("dependencies"))
+        optional = project.get("optional-dependencies")
+        if isinstance(optional, dict):
+            for group in optional.values():
+                found |= _scan(group)
+    tool = data.get("tool") if isinstance(data, dict) else None
+    poetry = tool.get("poetry") if isinstance(tool, dict) else None
+    if isinstance(poetry, dict) and isinstance(poetry.get("dependencies"), dict):
+        found |= _scan(list(poetry["dependencies"].keys()))
+    return found
+
+
+def _frameworks_from_gomod(text: str) -> set[str]:
+    found: set[str] = set()
+    for line in text.splitlines():
+        stripped = line.strip()
+        match = _GO_REQUIRE_RE.match(stripped) or _GO_BARE_REQUIRE_RE.match(stripped)
+        if not match:
+            continue
+        path = match.group(1).strip().lower()
+        for key, framework in _GO_FRAMEWORKS.items():
+            if path == key or path.startswith(key + "/"):
+                found.add(framework)
+    return found
+
+
+_FRAMEWORK_PARSERS = {
+    "package.json": _frameworks_from_package_json,
+    "requirements.txt": _frameworks_from_requirements,
+    "pyproject.toml": _frameworks_from_pyproject,
+    "go.mod": _frameworks_from_gomod,
+}
+
+
+def _detect_frameworks(path: Path, files: list[tuple[str, str, str]]) -> list[str]:
+    """Curated framework detection from detected manifest BODIES (bounded, tolerant).
+
+    Reads at most ``_MAX_MANIFESTS_READ`` recognized manifests (``package.json`` /
+    ``requirements.txt`` / ``pyproject.toml`` / ``go.mod``), each byte-capped, and
+    unions their curated-table matches. Any read/parse failure on a single manifest
+    is skipped, never raised. Returns a sorted, deduped list.
+    """
+    found: set[str] = set()
+    read = 0
+    for rel, name, _suffix in files:
+        parser = _FRAMEWORK_PARSERS.get(name)
+        if parser is None:
+            continue
+        if read >= _MAX_MANIFESTS_READ:
+            break
+        read += 1
+        text = _read_capped(path / rel)
+        if text is None:
+            continue
+        try:
+            found |= parser(text)
+        except Exception:  # noqa: BLE001 - stay tolerant, never raise out of a scan
+            continue
+    return sorted(found)
 
 
 def safe_repo_path(repository_root: Path, local_path: str) -> Path:
@@ -444,6 +640,8 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
     if service_truncated:
         notes.append(f"compose services truncated at {MAX_COMPOSE_SERVICES}")
 
+    frameworks = _detect_frameworks(path, files)
+
     summary = {
         "total_files_seen": len(files),
         "total_dirs_seen": len(dir_rels),
@@ -474,6 +672,7 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
         "manifests": manifests,
         "docker_files": docker_files,
         "ci_files": ci_files,
+        "frameworks": frameworks,
         "folder_structure": folder_structure,
         "summary": summary,
         "risk_signals": signals,

@@ -319,3 +319,69 @@ def test_non_mapping_compose_is_tolerated(tmp_path: Path):
 
     assert not [node for node in result["architecture_nodes"] if node["type"] == "service"]
     assert any("no services mapping" in note for note in result["notes"])
+
+
+# --- Framework detection from manifest bodies (AOS-DISTILL-003) --------------
+
+
+def test_frameworks_detected_from_manifest_bodies(tmp_path: Path):
+    # A polyglot fixture: npm (express + react), pip requirements (fastapi/flask),
+    # pyproject (django + pydantic), and a go.mod requiring gin.
+    (tmp_path / "package.json").write_text(
+        '{"dependencies": {"express": "^4.18.0", "react": "^18.2.0", "left-pad": "1.3.0"}}',
+        encoding="utf-8",
+    )
+    (tmp_path / "requirements.txt").write_text(
+        "fastapi==0.115.0\nflask>=3.0\nrequests==2.32.0\n# a comment\n", encoding="utf-8"
+    )
+    (tmp_path / "pyproject.toml").write_text(
+        '[project]\nname = "svc"\ndependencies = ["django>=5.0", "pydantic>=2.0", "boto3"]\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "go.mod").write_text(
+        "module example.com/app\n\ngo 1.22\n\nrequire (\n"
+        "\tgithub.com/gin-gonic/gin v1.10.0\n\tgithub.com/some/other v0.1.0\n)\n",
+        encoding="utf-8",
+    )
+
+    result = scan_repository(tmp_path)
+
+    assert result["frameworks"] == sorted(
+        {"express", "react", "fastapi", "flask", "django", "pydantic", "gin"}
+    )
+
+
+def test_frameworks_ignores_unknown_dependencies(tmp_path: Path):
+    # Only curated, high-confidence deps emit a framework — unknowns are never guessed.
+    (tmp_path / "requirements.txt").write_text(
+        "requests==2.32.0\nnumpy==2.0\nbeautifulsoup4==4.12\n", encoding="utf-8"
+    )
+    (tmp_path / "package.json").write_text(
+        '{"dependencies": {"lodash": "^4.17.0", "axios": "^1.6.0"}}', encoding="utf-8"
+    )
+
+    result = scan_repository(tmp_path)
+
+    assert result["frameworks"] == []
+
+
+def test_frameworks_detection_tolerates_malformed_manifests(tmp_path: Path):
+    # A malformed package.json + a broken pyproject must not crash the scan; a
+    # valid go.mod alongside them is still detected.
+    (tmp_path / "package.json").write_text('{"dependencies": {"express": ', encoding="utf-8")
+    (tmp_path / "pyproject.toml").write_text("[project\nname = broken toml", encoding="utf-8")
+    (tmp_path / "go.mod").write_text(
+        "module example.com/app\n\nrequire github.com/labstack/echo/v4 v4.12.0\n", encoding="utf-8"
+    )
+
+    result = scan_repository(tmp_path)  # must not raise
+
+    assert result["frameworks"] == ["echo"]
+
+
+def test_frameworks_key_present_and_empty_without_manifests(tmp_path: Path):
+    (tmp_path / "app.py").write_text("x = 1\n", encoding="utf-8")
+
+    result = scan_repository(tmp_path)
+
+    assert result["frameworks"] == []

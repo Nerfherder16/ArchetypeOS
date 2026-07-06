@@ -31,6 +31,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
+from ..embeddings import get_embedder
 from ..llm import get_provider
 from ..models import KnowledgePage, Repository, RepositoryDNA
 from ..repository_scanner import EXTENSIONS, LANGUAGE_CLASS, safe_repo_path
@@ -845,7 +846,7 @@ def _read_primary_readme(repository: Repository) -> str:
 
 
 def distill_repository(
-    db: Session, *, repository_id: str, knowledge_root: Path | str, provider=None
+    db: Session, *, repository_id: str, knowledge_root: Path | str, provider=None, embedder=None
 ) -> KnowledgePage:
     """Distil a scanned repo's content into a vault page + ``KnowledgePage``.
 
@@ -872,6 +873,8 @@ def distill_repository(
 
     if provider is None:
         provider = get_provider(get_settings())
+    if embedder is None:
+        embedder = get_embedder(get_settings())
 
     readme_text = _read_primary_readme(repository)
     dna = repository.dna
@@ -905,6 +908,17 @@ def distill_repository(
         validation_state = "reasoned"
     else:
         validation_state = "derived"
+
+    # RFC-0010 semantic index: embed the same content the Transfer Engine searches
+    # over — title + the distilled purpose/summary (its lexical candidate text is
+    # ``title + " " + DNA.purpose``). The deterministic embedder returns ``None``,
+    # so the column stays NULL and behaviour is unchanged/hermetic; a real embedder
+    # (AOS-EMBED-002) yields a vector stored below. Never raises out of distillation.
+    embed_text = f"{distillation['title']} {distillation['summary']}".strip()
+    try:
+        embedding_vec = embedder.embed(embed_text)
+    except Exception:
+        embedding_vec = None
 
     markdown = render_repository_markdown(distillation)
     slug = _repo_slug(repository.name)
@@ -943,6 +957,7 @@ def distill_repository(
             validation_state=validation_state,
             source_refs=source_refs,
             checksum=checksum,
+            embedding=embedding_vec,
         )
         db.add(page)
     else:
@@ -952,6 +967,10 @@ def distill_repository(
         page.validation_state = validation_state
         page.source_refs = source_refs
         page.checksum = checksum
+        # Only overwrite the embedding when a real embedder produced one; the
+        # deterministic tier (None) leaves any existing vector untouched.
+        if embedding_vec is not None:
+            page.embedding = embedding_vec
 
     if dna is not None:
         dna.purpose = distillation["summary"]

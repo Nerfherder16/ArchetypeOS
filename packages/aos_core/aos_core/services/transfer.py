@@ -25,9 +25,21 @@ from __future__ import annotations
 
 import re
 
+import sqlalchemy as sa
 from sqlalchemy.orm import Session
 
+from ..config import get_settings
+from ..embeddings import get_embedder
 from ..models import KnowledgePage, Repository
+
+# RFC-0010 confidence calibration. The semantic path blends the calibrated cosine
+# similarity ``sem = clamp(1 - cosine_distance, 0, 1)`` with the lexical need
+# coverage, and never emits a raw cosine (LES-023). Semantic carries the majority
+# weight (it is the richer signal) but the blend is floored at the lexical coverage
+# so a strong keyword match is never dragged below its honest coverage:
+#     confidence = round(max(coverage, _W_SEM * sem + _W_COV * coverage), 4)
+_W_SEM = 0.6
+_W_COV = 0.4
 
 _PAGE_TYPE = "repository"
 
@@ -124,25 +136,44 @@ def score_relevance(
     return round(score, 4), sorted(covered)
 
 
-def recommend_reuse(
-    db: Session, *, need: str, exclude_project_id: str | None = None, limit: int = 5
+def _recommendation(
+    page: KnowledgePage, repo: Repository | None, matched_terms: list[str], tech_hits: int, confidence: float
+) -> dict:
+    """Assemble the documented recommendation dict (shared by the lexical + semantic paths)."""
+    name = repo.name if repo is not None else page.title
+    evidence: list[dict] = [{"type": "distillation", "ref": page.vault_path}]
+    if repo is not None:
+        evidence.append({"type": "repository", "id": repo.id})
+    return {
+        "source_repository": name,
+        "source_project_id": repo.project_id if repo is not None else None,
+        "reusable_asset": f"{name} (distilled repository knowledge)",
+        "reason": "; ".join(matched_terms) or "portfolio match",
+        "matched_terms": matched_terms,
+        "evidence": evidence,
+        "required_changes": "Review the source distillation and adapt interfaces/config to the target.",
+        "risks": "Version/API drift and integration effort not yet quantified (MVP heuristic).",
+        "confidence": confidence,
+        "_tech_hits": tech_hits,
+    }
+
+
+def _finalize(results: list[dict], limit: int) -> list[dict]:
+    """Sort by confidence desc, tech-match count desc, name (stable); strip the transient key; cap."""
+    results.sort(key=lambda r: (-r["confidence"], -r["_tech_hits"], str(r["source_repository"])))
+    for result in results:
+        del result["_tech_hits"]
+    return results[:limit]
+
+
+def _recommend_lexical(
+    db: Session, need_tokens: set[str], exclude_project_id: str | None, limit: int
 ) -> list[dict]:
-    """Rank the portfolio's distilled repos for a target ``need`` (advisory, compute-and-return).
+    """The deterministic Layer-0 lexical path — need coverage over text + technologies.
 
-    Tokenizes ``need``; scores every repository :class:`KnowledgePage` by **need
-    coverage** (see :func:`score_relevance`) against its candidate text + technologies;
-    drops zero-score matches and any repo owned by ``exclude_project_id``; sorts by
-    coverage desc, then by number of technology matches desc (a strong reuse signal),
-    then by source repository name (stable); returns the top ``limit``. Each result
-    carries the documented recommendation
-    format (source repository / reusable asset / reason / evidence / required changes /
-    risks / confidence). Tolerant: empty portfolio / empty need / no matches → ``[]``,
-    never raises.
+    This is the pre-RFC-0010 behaviour, unchanged: it runs for the deterministic
+    embedder, on sqlite, or whenever no candidate carries a usable embedding.
     """
-    need_tokens = _tokenize(need or "")
-    if not need_tokens:
-        return []
-
     pages = db.query(KnowledgePage).filter(KnowledgePage.page_type == _PAGE_TYPE).all()
 
     results: list[dict] = []
@@ -158,32 +189,94 @@ def recommend_reuse(
             continue
 
         tech_hits = len(need_tokens & tech_terms)
-        name = repo.name if repo is not None else page.title
-        evidence: list[dict] = [{"type": "distillation", "ref": page.vault_path}]
-        if repo is not None:
-            evidence.append({"type": "repository", "id": repo.id})
+        results.append(_recommendation(page, repo, matched_terms, tech_hits, score))
 
-        results.append(
-            {
-                "source_repository": name,
-                "source_project_id": repo.project_id if repo is not None else None,
-                "reusable_asset": f"{name} (distilled repository knowledge)",
-                "reason": "; ".join(matched_terms) or "portfolio match",
-                "matched_terms": matched_terms,
-                "evidence": evidence,
-                "required_changes": "Review the source distillation and adapt interfaces/config to the target.",
-                "risks": "Version/API drift and integration effort not yet quantified (MVP heuristic).",
-                "confidence": score,
-                "_tech_hits": tech_hits,
-            }
-        )
+    return _finalize(results, limit)
 
-    # Coverage desc, then technology-match count desc (a strong reuse signal), then
-    # source repository name (stable). ``_tech_hits`` is a transient sort key only.
-    results.sort(key=lambda r: (-r["confidence"], -r["_tech_hits"], str(r["source_repository"])))
-    for result in results:
-        del result["_tech_hits"]
-    return results[:limit]
+
+def _recommend_semantic(
+    db: Session, need_tokens: set[str], need_vec: list[float], exclude_project_id: str | None, limit: int
+) -> list[dict]:
+    """The RFC-0010 semantic path (Postgres + pgvector) — cosine retrieval, calibrated confidence.
+
+    Orders embedding-bearing repository pages by ``embedding <=> need_vec`` (cosine
+    distance) and blends the calibrated similarity with the lexical need coverage
+    (see ``_W_SEM``/``_W_COV``) so the reported confidence is a bounded ``0..1``
+    coverage-like value, never a raw cosine (LES-023); lexical ``matched_terms`` are
+    kept as provenance. Candidates without an embedding fall back to their lexical
+    coverage. Any DB error degrades to the lexical path (never raises).
+    """
+    try:
+        rows = db.execute(
+            sa.select(KnowledgePage.id, KnowledgePage.embedding.cosine_distance(need_vec).label("distance"))
+            .where(KnowledgePage.page_type == _PAGE_TYPE, KnowledgePage.embedding.isnot(None))
+        ).all()
+    except Exception:
+        return _recommend_lexical(db, need_tokens, exclude_project_id, limit)
+    distances: dict = {row[0]: float(row[1]) for row in rows if row[1] is not None}
+
+    pages = db.query(KnowledgePage).filter(KnowledgePage.page_type == _PAGE_TYPE).all()
+
+    results: list[dict] = []
+    for page in pages:
+        candidate = _candidate(db, page)
+        repo = candidate["repository"]
+        if exclude_project_id is not None and repo is not None and repo.project_id == exclude_project_id:
+            continue
+
+        tech_terms = candidate["tech_terms"]
+        coverage, matched_terms = score_relevance(need_tokens, _tokenize(candidate["text"]), tech_terms)
+        tech_hits = len(need_tokens & tech_terms)
+
+        distance = distances.get(page.id)
+        if distance is None:
+            # No embedding → lexical coverage only (identical to Layer-0 for this repo).
+            confidence = coverage
+        else:
+            sem = max(0.0, min(1.0, 1.0 - distance))
+            confidence = round(max(coverage, _W_SEM * sem + _W_COV * coverage), 4)
+
+        if confidence <= 0.0:
+            continue
+        results.append(_recommendation(page, repo, matched_terms, tech_hits, confidence))
+
+    return _finalize(results, limit)
+
+
+def recommend_reuse(
+    db: Session, *, need: str, exclude_project_id: str | None = None, limit: int = 5, embedder=None
+) -> list[dict]:
+    """Rank the portfolio's distilled repos for a target ``need`` (advisory, compute-and-return).
+
+    Tokenizes ``need``; scores every repository :class:`KnowledgePage` and returns
+    the top ``limit`` documented recommendations (source repository / reusable asset /
+    reason / evidence / required changes / risks / confidence). Tolerant: empty
+    portfolio / empty need / no matches → ``[]``, never raises.
+
+    Two paths behind one seam (RFC-0010): the **semantic** path is taken only when
+    the ``embedder`` returns a non-``None`` vector for ``need`` **and** the DB dialect
+    is ``postgresql`` — then candidates are ordered by ``embedding <=> need_vec`` and
+    the confidence is a calibrated blend of cosine similarity + lexical coverage
+    (never a raw cosine, LES-023). Otherwise — the deterministic embedder, sqlite, or
+    an embedder error — it is **exactly today's lexical Layer-0** need-coverage
+    behaviour. The return shape/schema is identical for both.
+    """
+    need_tokens = _tokenize(need or "")
+    if not need_tokens:
+        return []
+
+    if embedder is None:
+        embedder = get_embedder(get_settings())
+    try:
+        need_vec = embedder.embed(need or "")
+    except Exception:
+        need_vec = None
+
+    bind = getattr(db, "bind", None)
+    dialect = getattr(getattr(bind, "dialect", None), "name", None)
+    if need_vec is not None and dialect == "postgresql":
+        return _recommend_semantic(db, need_tokens, need_vec, exclude_project_id, limit)
+    return _recommend_lexical(db, need_tokens, exclude_project_id, limit)
 
 
 __all__ = ["score_relevance", "recommend_reuse"]

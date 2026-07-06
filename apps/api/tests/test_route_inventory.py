@@ -56,6 +56,10 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/recommendations"),
         ("GET", "/projects/{project_id}/recommendations"),
         ("GET", "/recommendations/{recommendation_id}"),
+        # decision loop (AOS-COUNCIL-PHASEC — Council review → draft → approve/reject)
+        ("POST", "/council-reviews/{review_id}/draft-decision"),
+        ("POST", "/decisions/{decision_id}/approve"),
+        ("POST", "/decisions/{decision_id}/reject"),
         # digests
         ("POST", "/projects/{project_id}/digests"),
         ("GET", "/projects/{project_id}/digests"),
@@ -92,6 +96,8 @@ def test_route_inventory_matches_frozen_set() -> None:
 def test_route_inventory_count() -> None:
     # 38 domain routes + GET /health = 39 (method, path) pairs, plus the 3
     # AOS-KNOW-002 knowledge routes (POST /knowledge/sync, GET /knowledge/pages,
-    # GET /knowledge/pages/{page_id}) = 42.
-    assert len(EXPECTED_ROUTES) == 42
-    assert len(_actual_routes()) == 42
+    # GET /knowledge/pages/{page_id}) = 42, plus the 3 AOS-COUNCIL-PHASEC decision
+    # -loop routes (POST /council-reviews/{review_id}/draft-decision, POST
+    # /decisions/{decision_id}/approve, POST /decisions/{decision_id}/reject) = 45.
+    assert len(EXPECTED_ROUTES) == 45
+    assert len(_actual_routes()) == 45

@@ -9,6 +9,7 @@ from aos_core.models import (
     ResearchNote,
     now_utc,
 )
+from aos_core.services.decisions import DECISION_DRAFT, DECISION_NEEDS_EVIDENCE
 
 
 def build_digest(project_id: str, db: Session) -> NightlyDigest:
@@ -142,6 +143,22 @@ def build_digest(project_id: str, db: Session) -> NightlyDigest:
             {
                 "title": f"Consume open lesson: {page.title}",
                 "reason": "open lesson in the learning queue",
+                "status": "draft",
+            }
+        )
+
+    # rule 6: decisions awaiting the human gate. A Council→Decision draft
+    # (status draft or needs_evidence) is advisory until a human approves or
+    # rejects it — surface the pending queue so the gate is active, not passive.
+    pending_decisions = [d for d in decisions if d.status in (DECISION_DRAFT, DECISION_NEEDS_EVIDENCE)]
+    for decision in pending_decisions:
+        changes.append(
+            {"type": "decision_pending", "title": decision.title, "at": decision.created_at.isoformat()}
+        )
+        draft_recommendations.append(
+            {
+                "title": f"Approve or reject the drafted decision: {decision.title}",
+                "reason": "decision awaiting human approval",
                 "status": "draft",
             }
         )

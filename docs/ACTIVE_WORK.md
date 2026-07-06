@@ -18,14 +18,23 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-COUNCIL-PHASEA — First real Agent Council run (pydantic-ai) + provider parse hardening
+### AOS-COUNCIL-PHASEC — The decision loop (Council review → draft → human approve/reject → memory)
 
 - Status: In Progress (PR open)
-- Owner: Chief Architect / Orchestrator
+- Owner: Chief Architect / Orchestrator (built by Opus builder subagent; Orchestrator-verified)
 - PR: (open on `claude/aos-runtime-002-scanner-1egyjw`)
-- Summary: Reality test for Intelligence Phase 1 — ran the RFC-0005 Council over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, 132 s). Constitution-faithful **abstention** (`Insufficient evidence`, conf 0.0375). Surfaced + fixed LES-018 (fenced-JSON parse defect — `_loads_tolerant`) and recorded LES-019 (evidence-class mismatch → Phase C input). Ships captured review, evaluation doc, both lessons, parser fix + 4 tests.
-- Verification Status: Orchestrator-verified (api 106, worker 7, ruff full CI scope + compileall clean; fix validated against captured raw run output)
+- Summary: RFC-0005 Phase 2 — the Decision stage of `DECISION_LIFECYCLE.md`, motivated by LES-019. `CouncilReview` → governed draft `Decision` (idempotent, links back as evidence) → named-human approve/reject with an `ApprovalRecord` audit trail. **Abstention blocks approval** (a `needs_evidence` draft → 409 naming the re-draft path). Pending drafts surface in the digest. No new tables/migration; backend only. New `services/decisions.py` + `test_decisions_loop.py`; 3 endpoints; digest rule 6.
+- Verification Status: Orchestrator-verified independently (api 116, worker 7, ruff full CI scope + compileall clean; 409 + ApprovalRecord asserted; no migration; no web change)
 - Required Next Verifier: GitHub CI / PR Guardian, then Manual Merge Gate.
+
+### AOS-COUNCIL-PHASEA — First real Agent Council run (pydantic-ai) + provider parse hardening
+
+- Status: Merged
+- Owner: Chief Architect / Orchestrator
+- PR: #54 (merged as `894e418`)
+- Summary: Reality test for Intelligence Phase 1 — ran the RFC-0005 Council over `pydantic/pydantic-ai` with the live `claude_code` provider (4 agents, 132 s). Constitution-faithful **abstention** (`Insufficient evidence`, conf 0.0375). Surfaced + fixed LES-018 (fenced-JSON parse defect — `_loads_tolerant`) and recorded LES-019 (evidence-class mismatch → Phase C input). Shipped captured review, evaluation doc, both lessons, parser fix + 4 tests.
+- Verification Status: Verified (CI run 28764871261 6/6 green on `225f8b4`; Orchestrator independent live run + api 106 / worker 7 / ruff full scope + compileall clean)
+- Required Next Verifier: None — merged and reconciled.
 
 ### AOS-CI-001 — Verification Protocol
 

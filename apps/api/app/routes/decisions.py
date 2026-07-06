@@ -3,10 +3,17 @@ from sqlalchemy.orm import Session
 
 from aos_core.database import get_db
 from aos_core.models import Decision, Project, Recommendation, ResearchNote
+from aos_core.services.decisions import (
+    approve_decision,
+    draft_decision_from_review,
+    reject_decision,
+)
 
 from ..schemas import (
+    DecisionApprove,
     DecisionCreate,
     DecisionRead,
+    DecisionReject,
     RecommendationCreate,
     RecommendationRead,
     ResearchNoteCreate,
@@ -55,6 +62,29 @@ def get_decision(decision_id: str, db: Session = Depends(get_db)) -> Decision:
     if not decision:
         raise HTTPException(status_code=404, detail="Decision not found")
     return decision
+
+
+@router.post("/council-reviews/{review_id}/draft-decision", response_model=DecisionRead)
+def draft_decision(review_id: str, db: Session = Depends(get_db)) -> Decision:
+    # Service 404s a missing review; idempotent (one draft per review).
+    return draft_decision_from_review(db, review_id=review_id)
+
+
+@router.post("/decisions/{decision_id}/approve", response_model=DecisionRead)
+def approve_decision_endpoint(
+    decision_id: str, payload: DecisionApprove, db: Session = Depends(get_db)
+) -> Decision:
+    # Service 404s a missing decision and 409s an invalid transition (a
+    # needs_evidence draft cannot be approved — LES-019).
+    return approve_decision(db, decision_id=decision_id, approver=payload.approver, rationale=payload.rationale)
+
+
+@router.post("/decisions/{decision_id}/reject", response_model=DecisionRead)
+def reject_decision_endpoint(
+    decision_id: str, payload: DecisionReject, db: Session = Depends(get_db)
+) -> Decision:
+    # Service 404s a missing decision and 409s an already-transitioned decision.
+    return reject_decision(db, decision_id=decision_id, approver=payload.approver, rationale=payload.rationale)
 
 
 @router.post("/projects/{project_id}/research-notes", response_model=ResearchNoteRead)

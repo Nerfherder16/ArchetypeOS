@@ -149,6 +149,7 @@ Capabilities:
 - Knowledge Transfer Engine
 - Agent Council (backend seed: four MVP agents produce structured, persisted, evidence-bearing outputs; validated on real external code — first live run over pydantic-ai correctly abstained)
 - Final Judge synthesis (deterministic, rule-based verdict + abstention over agent outputs)
+- Decision loop (AOS-COUNCIL-PHASEC: a `CouncilReview` drafts a governed `Decision` linked back to the review as evidence; a named human approves/rejects it with an `ApprovalRecord` audit trail; an abstained-review draft is `needs_evidence` and cannot be approved until re-drafted — LES-019 operationalized; pending drafts surface in the digest)
 - LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018)
 
 Primary artifacts:
@@ -166,6 +167,8 @@ Primary artifacts:
 - docs/ARBITER_FINAL_JUDGE.md (verdict set + abstention rule the Final Judge encodes)
 - packages/aos_core/aos_core/llm/ (Provider protocol + DeterministicProvider + ClaudeCodeProvider)
 - packages/aos_core/aos_core/services/council.py (run_council + synthesize_verdict; the four agent personas)
+- packages/aos_core/aos_core/services/decisions.py (Council → Decision loop: draft_decision_from_review + approve_decision + reject_decision; abstention blocks approval — LES-019)
+- docs/DECISION_LIFECYCLE.md (Decision stage — implemented: draft → approve/reject with ApprovalRecord memory)
 
 ## Layer 5: Design and User Experience
 

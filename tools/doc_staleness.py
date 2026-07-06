@@ -85,9 +85,15 @@ def check_roadmap_phase(roadmap_text: str, current_state_text: str) -> list[Find
     if not phase:
         return []
     phase_l = phase.lower()
-    is_early = any(token in phase_l for token in EARLY_PHASE_TOKENS)
+    # An early-phase LABEL *starts with* an early token (the roadmap "Current phase"
+    # is a short label by convention). Substring-matching would false-positive on
+    # prose that names an early word as history, e.g. "Post-v0.1 ... runtime
+    # foundation ..." (LES-024). Defense in depth: a phase that carries its own
+    # completion markers ("v0.1 shipped", "post-v0.1") is self-evidently not early.
+    is_early = any(phase_l.startswith(token) for token in EARLY_PHASE_TOKENS)
+    phase_self_complete = bool(COMPLETION_MARKERS.search(phase))
     reality_complete = bool(COMPLETION_MARKERS.search(current_state_text))
-    if is_early and reality_complete:
+    if is_early and not phase_self_complete and reality_complete:
         marker = COMPLETION_MARKERS.search(current_state_text)
         return [
             Finding(

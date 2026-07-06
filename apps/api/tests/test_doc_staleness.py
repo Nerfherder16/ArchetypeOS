@@ -32,6 +32,13 @@ CURRENT_STATE_COMPLETE = (
     "- Current sprint: Sprint 5 delivered (PRs #43-#48)\n"
 )
 CURRENT_STATE_EARLY = "## Status\n\n- Phase: Foundation; docs still being written\n"
+# A fixed roadmap whose phase names an early word ("foundation") only as HISTORY.
+# Must NOT trip signal 1 (regression for the substring false positive, LES-024).
+POST_V01_ROADMAP = (
+    "# Machine Roadmap\n\n## Current phase\n\n"
+    "Post-v0.1 — Intelligence layer maturing. v0.1 shipped 2026-07-05 "
+    "(runtime foundation, scanner, Control Tower, learning loop).\n"
+)
 
 GIT_LOG_66 = "\n".join(
     f"abc123 Merge pull request #{n} from Nerfherder16/x" for n in (60, 62, 64, 66)
@@ -62,6 +69,13 @@ def test_roadmap_phase_fresh_passes() -> None:
 def test_roadmap_phase_early_reality_not_flagged() -> None:
     # Roadmap says Foundation AND reality is genuinely early -> no drift.
     assert check_roadmap_phase(STALE_ROADMAP, CURRENT_STATE_EARLY) == []
+
+
+def test_roadmap_phase_history_word_not_flagged() -> None:
+    # A fixed phase that names "foundation" only as history must not false-positive
+    # (regression: the early-token match is a startswith on the label, not a
+    # substring scan over prose; LES-024).
+    assert check_roadmap_phase(POST_V01_ROADMAP, CURRENT_STATE_COMPLETE) == []
 
 
 # --- Signal 2: state-doc PR lag --------------------------------------------

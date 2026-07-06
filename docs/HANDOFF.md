@@ -18,19 +18,19 @@ Runtime Agent (Opus) under Orchestrator (Opus 4.8)
 
 ### Task
 
-The Control Tower decision-approval view + worker-driven e2e (AOS-COUNCIL-PHASEC2B, Phase C Part 2b) — **completes Phase C**. (Prior: AOS-COUNCIL-PHASEC2A PR #56 / `973d532` — ADR export; AOS-COUNCIL-PHASEC PR #55 — the decision loop; AOS-COUNCIL-PHASEA PR #54 — first real Council run; AOS-COUNCIL-001 PR #49 / AOS-19.)
+Phase B — architecture semantics (compose-derived edges) + source-classified language weighting (AOS-ARCH-SEMANTICS-001). (Prior: RFC-0008 proposed PR #58; AOS-COUNCIL-PHASEC2B PR #57 / `78709e3` — Phase C complete; PHASEC2A #56, PHASEC #55, PHASEA #54; AOS-COUNCIL-001 #49.)
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `78709e3` after the PR #57 merge; env-pinned — see branch note above)
+`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8296cfc` after the PR #59 merge; env-pinned — see branch note above)
 
 ### PR
 
-#57 — **Merged** as `78709e3` (merge commit). CI run 28788348725 all 6 jobs green on head `2406ecd` (incl. the worker-driven web-e2e).
+#59 — **Merged** as `8296cfc` (merge commit).
 
 ### Status
 
-Merged — **Phase C is COMPLETE end to end.** The Intelligence decision loop is drivable from the Control Tower: Council reasons (real Claude via `claude_code`) → drafts a governed `Decision` → a named human approves/rejects (with an `ApprovalRecord`; abstention blocks approval — LES-019) → an approved decision exports to an ADR in the source-of-truth vault (`knowledge/wiki/decisions/`) → surfaces on the Knowledge dashboard. The "Decision Loop" UI extends the existing Decisions section (enqueue review → draft → approve/reject → export, with 409s as readable inline errors). A **full worker-driven Playwright e2e** proves both branches deterministically (`serve-api.sh` runs `python -m app.worker` against a throwaway vault copy; `database.py` sqlite WAL/busy_timeout for file DBs). No backend/API/schema change. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `78709e3`. **Next: operator's direction — Phase B (architecture semantics / language weighting), the Council dashboard (AOS-COUNCIL-002), or scanner precision (LES-016/017). Recommendation: Phase B.**
+Merged — **the scanner's structural evidence is now richer.** Detected Docker Compose files are parsed (`yaml.safe_load`, tolerant) into `service` nodes + `depends_on` edges (both the list and map `depends_on` forms) and surfaced in `RepositoryDNA.runtime_services` — LES-014's compose/service half (closed; manifest/dependency + import-graph edges remain, LES-014 stays open). A `LANGUAGE_CLASS` map derives a source-classified `primary_language` so config/docs-heavy repos aren't misreported as YAML/Markdown-primary — LES-013 (closed). Required a `scan.py` edge-persistence generalization (the loop hardcoded every edge's `from` to the repo root and dedup'd by `type=="directory"`); now resolves each edge's real `from`/`to` and dedups by node type — verified rescan-idempotent. Adds PyYAML to api+worker; no migration/frontend. Built by an Opus builder subagent, Orchestrator-verified independently. Branch restarted from `main` at `8296cfc`. **Next: operator's direction. Recommendation: LES-021 (provider isolation) → RFC-0008 (repository content extraction) — the founding "extract what's useful → Obsidian" capability.**
 
 ### Note — GitHub connector expired mid-session
 
@@ -46,31 +46,29 @@ The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI wer
 
 ### Completed
 
-- **The Control Tower decision-approval view (Phase C Part 2b — completes Phase C).** `apps/web/src/api.ts`: `CouncilReview` type; `status`/`approved_by`/`approved_at` on `Decision`; `fetchCouncilReviews`/`enqueueCouncilReview`/`draftDecisionFromReview`/`approveDecision`/`rejectDecision`/`exportDecisionAdr`; `request<T>` now surfaces the FastAPI `detail` (for inline 409s).
-- `apps/web/src/main.tsx`: a **Decision Loop** block in the Decisions section — enqueue council review + reviews list (verdict/confidence + Draft-decision) + Refresh; per-decision status badge + approver input + Approve/Reject + Export-ADR on approved; inline per-action errors; per-section error isolation.
-- `apps/web/e2e/serve-api.sh`: runs `python -m app.worker` alongside uvicorn (own PYTHONPATH so `app.worker` resolves ahead of `app.main`) draining the queue; `KNOWLEDGE_ROOT` → a throwaway **copy** of the vault (ADR writes never touch the committed tree).
-- `packages/aos_core/aos_core/database.py`: sqlite **WAL + busy_timeout** via a `connect` listener, guarded to **file-based sqlite only** (`_is_file_sqlite`) so API+worker share one file. `apps/api/tests/test_database_pragma.py` pins the guard (added after a `missing-core-tests` guardian BLOCK — LES-020).
-- `apps/web/e2e/decision-loop.spec.ts` (new): happy path (scan → cleared-floor review conf 0.4 → draft → approve → export ADR) + blocked path (no scan → abstain → `needs_evidence` → approve 409, decision unchanged). `scheduling.spec.ts` made worker-tolerant (assert `project_digest — (queued|running|completed)`; Orchestrator dropped `failed`).
-- Lesson `LES-020.md` (closed) + index row. Spec `.archetype/work/AOS-COUNCIL-PHASEC2B.md`. State files.
+- **Phase B — compose-derived architecture edges + source-classified language weighting.** `packages/aos_core/aos_core/repository_scanner.py`: parse detected compose files (`yaml.safe_load`, tolerant try/except) into `service` nodes + `depends_on` edges (list form `[db, redis]` and map form `{db: {condition: ...}}`), capped at `MAX_COMPOSE_SERVICES`; add `LANGUAGE_CLASS` (source/config/markup/docs) → `primary_language` (top source language, fallback overall) + source-first `primary_language_hints` + `language_classes` in the summary; raw `language_mix` unchanged; the scanner reads no file bodies except compose files.
+- `packages/aos_core/aos_core/services/scan.py`: populate `RepositoryDNA.runtime_services` from compose services; **generalize edge persistence** — register the root node under `scan["root_name"]`, resolve each edge's real `from` via `item["from"]`, dedup by `item["type"]` (was: repo-rooted `from`, `type=="directory"` dedup) — so `depends_on` edges render service→dep and services dedup on rescan.
+- `apps/api/requirements.txt` + `apps/worker/requirements.txt`: `PyYAML==6.0.2` (the scanner's only new dep).
+- `apps/api/tests/test_scanner.py` (+6 tests) + `apps/api/tests/fixtures/compose-repo/` (new fixture: `docker-compose.yml` with list+map `depends_on`, plus `.py`/`.md`/`.yml`/`.toml` for language classification).
+- Lessons: `LES-013.md` → **closed**; `LES-014.md` → compose half delivered, **stays open** for manifest/dependency + import-graph edges; `index.md` both rows. `docs/CAPABILITY_MAP.md` (Layer 3). Spec `.archetype/work/AOS-ARCH-SEMANTICS-001.md`.
 
 ### Files changed
 
-- `apps/web/src/api.ts`, `apps/web/src/main.tsx`
-- `apps/web/e2e/serve-api.sh`, `apps/web/e2e/decision-loop.spec.ts` (new), `apps/web/e2e/scheduling.spec.ts`
-- `packages/aos_core/aos_core/database.py`, `apps/api/tests/test_database_pragma.py` (new)
-- `knowledge/wiki/lessons/LES-020.md` (new), `knowledge/wiki/lessons/index.md`, `.archetype/work/AOS-COUNCIL-PHASEC2B.md`
+- `packages/aos_core/aos_core/repository_scanner.py`, `packages/aos_core/aos_core/services/scan.py`
+- `apps/api/requirements.txt`, `apps/worker/requirements.txt`
+- `apps/api/tests/test_scanner.py`, `apps/api/tests/fixtures/compose-repo/*` (new)
+- `knowledge/wiki/lessons/LES-013.md`, `LES-014.md`, `index.md`, `docs/CAPABILITY_MAP.md`, `.archetype/work/AOS-ARCH-SEMANTICS-001.md`
 - `docs/ACTIVE_WORK.md`, `docs/CURRENT_STATE.md`, `docs/HANDOFF.md`, `docs/RECENT_CHANGES.md`
 
 ### Tests run
 
-- **Full Playwright suite 7/7 headless** (`PW_LOCAL_CHROMIUM`) incl. both `decision-loop.spec.ts` tests + the tightened `scheduling.spec.ts`; ran twice (once after the vault gained LES-020) — stable. Worker logs confirm it drains the queue (`job completed: …`).
-- `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests -q` → **126 passed** (+3 pragma); `apps/worker/tests` → **7 passed**; strict `tsc` + `vite build` exit 0; `ruff` full CI scope + `compileall` clean.
-- Independently confirmed (builder ≠ verifier): the approve path and the abstention-409 path both assert real state; `_is_file_sqlite` excludes `:memory:`/Postgres; `build_digest` succeeds on a repo-less project (basis for tightening the scheduling assertion); vault stays clean; no `apps/api`/schema/migration change.
+- `PYTHONPATH=apps/api:packages/aos_core pytest apps/api/tests -q` → **132 passed** (+6 scanner); `apps/worker/tests` → **7 passed**; `ruff` full CI scope + `compileall` clean.
+- Independently confirmed (builder ≠ verifier): scanned the compose fixture → `service` nodes `{db,redis,web,worker}`, `depends_on` edges `{web→db, web→redis, worker→db}`, `runtime_services` populated, `primary_language=Python`; **rescan idempotent** (nodes 5→5, edges 3→3 — validates the `scan.py` generalization); malformed compose → note, no raise; no-compose repo → no service nodes; no `apps/api/alembic`/`apps/web` change.
 
 ### Known Risks
 
-- The e2e now runs a worker in-harness (sqlite WAL/busy_timeout) — a legitimate harness evolution; the deterministic provider drives reproducible reviews. If web-e2e ever flakes, check worker startup / redis 9999 / the WAL PRAGMA first.
-- ADR export remains local-first (compose `:ro` → 409, by design — 2a).
+- Adds a **PyYAML** runtime dependency for the scanner (api+worker). compose-smoke covers the container build; if a scan ever fails on `import yaml`, check the image requirements first.
+- LES-014's manifest/dependency + import-graph edges remain unbuilt (the non-compose half).
 
 ### Blockers
 
@@ -78,31 +76,31 @@ The GitHub MCP OAuth token expired during PR #53 (long session). git push/CI wer
 
 ### Verification Status
 
-Verified (PR #57 merged as `78709e3`; AOS-COUNCIL-PHASEC2B Done; **Phase C complete**)
+Verified (PR #59 merged as `8296cfc`; AOS-ARCH-SEMANTICS-001 Done — Phase B)
 
 ### Verification Level
 
-Level 4
+Level 3
 
 ### Verification Method
 
-CI run 28788348725 all 6 jobs green on head `2406ecd` (incl. the worker-driven **web-e2e** — first CI run of the worker-in-harness); built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier): **full Playwright 7/7 headless**; `pytest apps/api/tests` → **126 passed**; `apps/worker/tests` → **7 passed**; strict `tsc` + `vite build` exit 0; `ruff` full CI scope + `compileall` clean; `git status` confirmed no `apps/api`/schema/migration change and a clean vault; guardian PASS (after a `missing-core-tests` BLOCK fixed with a real test — LES-020). Branch restarted from `main` at `78709e3`.
+Built by an Opus builder subagent, then Orchestrator-verified independently (builder ≠ verifier): scanned the `compose-repo` fixture and confirmed the `service`/`depends_on` graph + `primary_language` + `runtime_services`; confirmed **rescan idempotency** (nodes 5→5, edges 3→3) and malformed-compose tolerance; `pytest apps/api/tests` → **132 passed**; `apps/worker/tests` → **7 passed**; `ruff` full CI scope + `compileall` clean; `git status` confirms no Alembic migration and no `apps/web` change; guardian **PASS_WITH_WARNINGS** (the `scanner-new-ecosystem` WARN is the test-fixture files tripping the self-scan — acknowledged in the PR body). Branch restarted from `main` at `8296cfc`.
 
 ### Evidence
 
-- The decision loop is drivable end to end from the UI; deterministic e2e proves the approve path (scan → review → draft → approve → export ADR) and the abstention-409 path; api 126 / worker 7; full Playwright 7/7 headless; no backend/API/schema change.
+- Compose files now yield real `service`/`depends_on` architecture (`{web→db, web→redis, worker→db}` on the fixture) + `RepositoryDNA.runtime_services`; config/docs-heavy repos report a source-classified `primary_language` (`Python`, not YAML/Markdown); api 132 / worker 7; rescan idempotent; no migration/frontend.
 
 ### Limitations
 
-Uses the existing project-scoped Decisions section (a standalone cross-project Council dashboard is AOS-COUNCIL-002, separate). ADR export remains local-first (compose `:ro` → 409, by design). The e2e runs a worker in-harness with sqlite WAL — a deliberate, deterministic harness evolution.
+LES-014's manifest/dependency + import-graph edges are a follow-up (LES-014 stays open). Language weighting is source-vs-config classification, not lines-of-code (the scanner reads no non-compose file bodies). Adds a PyYAML runtime dependency (compose-smoke covers the build).
 
 ### Required Next Verifier
 
-None — PR #57 merged as `78709e3` and reconciled. Phase C complete.
+None — PR #59 merged as `8296cfc` and reconciled. Phase B complete.
 
 ### Next Recommended Step
 
-**Operator's direction — Phase C is complete.** Recommended: **Phase B — architecture semantics** (dependency/compose-derived architecture edges, LES-014, with `example-voting-app`'s compose file as a ready test; + language weighting, LES-013), because richer scan evidence directly improves the Council's inputs (the loop it now feeds). Alternatives: the standalone **Council dashboard** (AOS-COUNCIL-002); **scanner precision** (LES-016 manifest/ecosystem coverage, LES-017 secret-signal precision); AOS-20 (doc-staleness), AOS-22 (backups).
+**Operator's direction — Phase C complete, Phase B merged.** Recommended: **LES-021 (isolate the `claude_code` provider — a small tactical prerequisite) → RFC-0008 (repository content extraction)**, the operator's founding "feed a repo → extract what's useful → Obsidian for reuse" capability; Phase B just made its structural counterpart richer. Alternatives: **scanner precision** (LES-016 manifest/ecosystem coverage, LES-017 secret-signal precision); **LES-014 manifest/import architecture edges**; the standalone **Council dashboard** (AOS-COUNCIL-002); AOS-20 (doc-staleness), AOS-22 (backups).
 
 ## Handoff Template
 

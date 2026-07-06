@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import types
 
 import pytest
@@ -183,8 +184,19 @@ def test_claude_code_provider_mocked(monkeypatch):
     # system is prepended to the prompt in the single -p argument.
     prompt_arg = argv[argv.index("-p") + 1]
     assert prompt_arg == "SYS\n\nPROMPT"
-    assert argv[-2:] == ["--output-format", "json"]
+    assert "--output-format" in argv and argv[argv.index("--output-format") + 1] == "json"
     assert captured["kwargs"].get("timeout") == provider.timeout
+    # LES-021: the subprocess must be isolated from ambient project context —
+    # a fresh empty cwd (not the process cwd) so no CLAUDE.md / repo files leak,
+    # plus denied state-reading/acting tools and strict MCP so the agent reasons
+    # only from the prompt.
+    cwd = captured["kwargs"].get("cwd")
+    assert cwd is not None and cwd != os.getcwd()
+    assert "--strict-mcp-config" in argv
+    assert "--disallowedTools" in argv
+    disallowed = argv[argv.index("--disallowedTools") + 1]
+    for tool in ("Bash", "Read", "Write", "WebFetch", "Task"):
+        assert tool in disallowed
     # stdout envelope's "result" field becomes the ProviderResult text.
     assert isinstance(result, ProviderResult)
     assert result.text == '{"summary": "ok", "status": "Complete"}'

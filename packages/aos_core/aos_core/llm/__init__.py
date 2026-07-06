@@ -24,8 +24,32 @@ from __future__ import annotations
 
 import json
 import subprocess
+import tempfile
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
+
+# LES-021: a council/extraction agent must reason ONLY from the supplied
+# evidence in its prompt. The shelled ``claude -p`` otherwise inherits the
+# working directory's ``CLAUDE.md`` + filesystem, so an agent silently reasoned
+# about ArchetypeOS itself instead of the target repo. Isolation is two-part:
+# (1) run in a fresh EMPTY working directory (no project ``CLAUDE.md``, no repo
+# files), and (2) deny every tool that reads state or acts (so absolute paths
+# and the network are unreachable) plus ignore ambient MCP servers. The result
+# is a pure function of ``system`` + ``prompt``.
+_ISOLATED_DISALLOWED_TOOLS = (
+    "Bash",
+    "BashOutput",
+    "KillShell",
+    "Read",
+    "Edit",
+    "Write",
+    "NotebookEdit",
+    "Glob",
+    "Grep",
+    "WebFetch",
+    "WebSearch",
+    "Task",
+)
 
 
 @dataclass
@@ -188,6 +212,10 @@ class ClaudeCodeProvider:
     def _build_argv(self, *, system: str, prompt: str) -> list[str]:
         full_prompt = f"{system}\n\n{prompt}" if system else prompt
         argv = [self.binary, "-p", full_prompt, "--output-format", "json"]
+        # LES-021: deny state-reading/acting tools + ignore ambient MCP so the
+        # agent reasons only from the prompt (paired with the isolated cwd below).
+        argv += ["--disallowedTools", " ".join(_ISOLATED_DISALLOWED_TOOLS)]
+        argv += ["--strict-mcp-config"]
         if self.model:
             argv += ["--model", self.model]
         return argv
@@ -195,12 +223,17 @@ class ClaudeCodeProvider:
     def generate(self, *, system: str, prompt: str, max_tokens: int = 1024) -> ProviderResult:
         argv = self._build_argv(system=system, prompt=prompt)
         try:
-            completed = subprocess.run(
-                argv,
-                capture_output=True,
-                text=True,
-                timeout=self.timeout,
-            )
+            # LES-021: run in a fresh EMPTY directory so no project CLAUDE.md and
+            # no repository files are visible in the working tree — the agent
+            # cannot absorb ambient context and reason about the wrong codebase.
+            with tempfile.TemporaryDirectory(prefix="aos-llm-") as isolated_cwd:
+                completed = subprocess.run(
+                    argv,
+                    capture_output=True,
+                    text=True,
+                    timeout=self.timeout,
+                    cwd=isolated_cwd,
+                )
         except FileNotFoundError as exc:
             raise RuntimeError(
                 f"claude binary not found: {self.binary!r} — install Claude Code or set llm_provider=deterministic"

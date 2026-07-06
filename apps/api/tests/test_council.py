@@ -26,7 +26,12 @@ from aos_core.models import (
     RepositoryDNA,
     ResearchNote,
 )
-from aos_core.services.council import VERDICTS, run_council, synthesize_verdict
+from aos_core.services.council import (
+    VERDICTS,
+    _parse_agent_output,
+    run_council,
+    synthesize_verdict,
+)
 
 
 @pytest.fixture()
@@ -220,3 +225,46 @@ def test_synthesize_verdict_abstains_below_floor():
     result = synthesize_verdict(outputs)
     assert result["verdict"] == "Insufficient evidence"
     assert result["follow_up"]
+
+
+# LES-018: real `claude -p --output-format json` output is frequently wrapped in
+# a Markdown code fence (or prefixed with prose); the tolerant parser must strip
+# it so findings/confidence are not silently lost to the prose fallback. Found on
+# the first real Council run over pydantic-ai (3 of 4 agents came back fenced).
+
+_AGENT_JSON = (
+    '{"summary": "s", "findings": ["f1", "f2"], "evidence": ["e1"], '
+    '"concerns": ["c1"], "confidence": 0.35, "status": "Needs Evidence"}'
+)
+
+
+def test_parse_agent_output_bare_json():
+    out = _parse_agent_output(_AGENT_JSON)
+    assert out["findings"] == ["f1", "f2"]
+    assert out["confidence"] == 0.35
+    assert out["status"] == "Needs Evidence"
+
+
+def test_parse_agent_output_fenced_json():
+    fenced = f"```json\n{_AGENT_JSON}\n```"
+    out = _parse_agent_output(fenced)
+    # Without fence-stripping this degraded to the prose fallback (conf 0.05,
+    # empty findings). The fix must recover the real content.
+    assert out["findings"] == ["f1", "f2"]
+    assert out["concerns"] == ["c1"]
+    assert out["confidence"] == 0.35
+    assert not out["summary"].startswith("```")
+
+
+def test_parse_agent_output_prose_then_json_object():
+    messy = f"Here is my assessment:\n{_AGENT_JSON}\nHope that helps."
+    out = _parse_agent_output(messy)
+    assert out["findings"] == ["f1", "f2"]
+    assert out["confidence"] == 0.35
+
+
+def test_parse_agent_output_true_prose_falls_back():
+    out = _parse_agent_output("I could not produce structured output.")
+    assert out["status"] == "Needs Evidence"
+    assert out["confidence"] == 0.05
+    assert out["findings"] == []

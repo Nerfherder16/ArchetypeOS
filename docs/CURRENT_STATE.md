@@ -10,7 +10,7 @@ Every new engineering session should read this before planning or implementation
 
 - Project: ArchetypeOS
 - Phase: v0.1 COMPLETE (2026-07-05); post-v0.1 development underway
-- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23). AOS-PORTFOLIO-001 (Plane AOS-21, second repo pydantic-ai) in review. Next: definitive-roadmap reevaluation. Orchestration Opus 4.8.
+- Current sprint: Sprint 5 delivered (PRs #43–#48; AOS-18 Done). Intelligence Phase 1 (AOS-COUNCIL-001, PR #49, AOS-19). Hardening: AOS-APIROUTES-001 (PR #50, AOS-24). Knowledge read path complete (PRs #51/#52, AOS-23 Done). **AOS-PORTFOLIO-001 merged (PR #53 — 5-repo reality test, AOS-21 Done).** Next: definitive-roadmap reevaluation. Orchestration Opus 4.8.
 - Source of truth: GitHub repository
 - First runtime target: Windows 11 + WSL 2 Ubuntu
 - Plane status: back online and fully synced; `ArchetypeOS` project live (AOS-1..AOS-9, 10 modules, Sprint 2 cycle); markdown state files remain the durable fallback board and win on conflict
@@ -62,11 +62,11 @@ Every new engineering session should read this before planning or implementation
 - PR #50: Split API routes by domain, control-plane hardening (AOS-APIROUTES-001) — `main.py` 487→49; 10 `routes/*.py` modules; behavior-preserving; AOS-24 Done
 - PR #51: Knowledge read path — vault→DB sync + KnowledgePage read API + digest open-lessons rule (AOS-KNOW-002; RFC-0002/RFC-0004; Plane AOS-23 backend phase). Knowledge is operational; repo stays source of truth. (First CI run flagged a ruff F401 in migration `0004` — fixed, LES-012 recorded, tests made count-agnostic.)
 - PR #52: Knowledge dashboard — global Control Tower Knowledge view + `./knowledge:ro` compose mount (AOS-KNOW-003) — **closes AOS-23; knowledge read path complete end to end**
-- (in review) AOS-PORTFOLIO-001: portfolio reality test on pydantic-ai + repo-acquisition capability (Plane AOS-21; **closes it**) — scanner generalizes; LES-013/014 gaps recorded
+- PR #53: Portfolio reality test on **five** real repos + repo-acquisition capability (AOS-PORTFOLIO-001, Plane AOS-21 Done) — scanner robust across language/deployment/scale; LES-013/014/016/017 gaps recorded
 
 ## Current Objective
 
-**AOS-21 (five real repos incl. a scale test) in review; merging closes it, then the definitive-roadmap reevaluation.** AOS-PORTFOLIO-001: the first portfolio reality test — ran the pipeline on **pydantic-ai (Python monorepo), claude-agent-sdk-python (lean Python SDK), gin (Go), example-voting-app (polyglot docker-compose), kubernetes (scale: 30,560 files)**, all operator-chosen. **Result: the scanner is robust and broader than assumed** — Go (`go.mod`) and multi-service compose (all Dockerfiles + compose) both handled well; and at scale it **degrades gracefully** (30k files in ~2s; truncation surfaced via a `SCAN_TRUNCATED` signal + notes, not silent; DNA stayed sane — 35 manifests incl. root go.mod). **Four honest gaps as open lessons:** LES-013 (file-count language mix, repo-dependent — 28% Python on pydantic-ai vs 77% on the SDK), LES-014 (architecture edges tree-only; `example-voting-app`'s compose file has the service graph it ignores), **LES-016 (new — `.csproj`/.NET manifest missed; ecosystem coverage stops at python/node/go)**, LES-017 (`SECRET_LIKE_FILENAME` flags test-cert fixtures). Ships a repeatable repo-acquisition capability (`clone_repo` + `onboard_repo.sh`), the captured scan + evaluation, and the lessons (which now surface in the digest + Knowledge dashboard — the loop consuming its own findings). Gaps are scoped follow-ups, not fixed here. Prior done this thrust: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002/003 (PRs #51/#52, AOS-23).
+**Definitive-roadmap reevaluation (operator-flagged) — this is the active work now that AOS-21 is Done.** AOS-PORTFOLIO-001 (PR #53) merged: a 5-repo portfolio reality test proved the scanner is **robust and generalizes across language / deployment style / scale** (Go + compose handled; graceful non-silent truncation at 30k files). The reality test spawned a concrete backlog of four scanner gaps (LES-013/014/016/017) and **empirically settled the depth-vs-breadth question toward depth** — further ingestion is diminishing returns; the highest-value moves are running the Agent Council over a real repo and closing LES-014 (dependency/compose architecture edges) + LES-013 (language weighting). Awaiting operator direction on the reevaluation. **Four honest gaps as open lessons:** LES-013 (file-count language mix, repo-dependent — 28% Python on pydantic-ai vs 77% on the SDK), LES-014 (architecture edges tree-only; `example-voting-app`'s compose file has the service graph it ignores), **LES-016 (new — `.csproj`/.NET manifest missed; ecosystem coverage stops at python/node/go)**, LES-017 (`SECRET_LIKE_FILENAME` flags test-cert fixtures). Ships a repeatable repo-acquisition capability (`clone_repo` + `onboard_repo.sh`), the captured scan + evaluation, and the lessons (which now surface in the digest + Knowledge dashboard — the loop consuming its own findings). Gaps are scoped follow-ups, not fixed here. Prior done this thrust: AOS-COUNCIL-001 (PR #49, AOS-19), AOS-APIROUTES-001 (PR #50, AOS-24), AOS-KNOW-002/003 (PRs #51/#52, AOS-23).
 
 ## Active Branch
 
@@ -83,16 +83,16 @@ Every new engineering session should read this before planning or implementation
 
 ## Verification Status
 
-- Status: Verification pending (AOS-PORTFOLIO-001 in review; PR #52 merged as `c022c6b`)
+- Status: Verified (PR #53 merged as `b64db41`; AOS-21 Done)
 - Level: Level 4
-- Method: Orchestrator ran the real full pipeline on pydantic-ai (clone → register → run_scan → DNA + 15 arch nodes / 14 contains edges + 8 manifests → digest) + captured evidence; independently verified `clone_repo` (real `file://` clone + idempotent + path-safety); api **102** (99 + 3 onboarding); full Playwright **5/5 headless** (fixed `knowledge.spec.ts` open-filter to retrying/count-agnostic after 2 new open lessons; also fixed the count-coupled digest test); ruff at full CI scope + compile clean. CI (api-tests, compose-smoke, web-e2e) pending on the PR
-- Evidence: scanner generalizes to a real monorepo; LES-013/014 gaps quantified + recorded (now digest/dashboard-visible)
-- Limitations: gaps recorded not fixed (follow-ups); pydantic-ai run is captured evidence, not a CI test; acquisition is a script/function (no API endpoint yet)
-- Required Next Verifier: GitHub CI / PR Guardian, then Orchestrator review; on merge AOS-21 → Done
+- Method: CI run 28763747860 all 6 jobs green on head `73f73ac` plus the Orchestrator's real full pipeline on **five** repos (pydantic-ai, claude-agent-sdk-python, gin, example-voting-app, kubernetes; evidence at `.archetype/portfolio/*/scan.json`); `clone_repo` verified independently; api **102**; full Playwright **5/5 headless**; ruff full CI scope + compile clean
+- Evidence: scanner robust across language/deployment/scale; four gaps (LES-013/014/016/017) recorded + digest/dashboard-visible
+- Limitations: gaps recorded not fixed (follow-ups); repo scans are captured evidence, not CI tests; acquisition is a script/function (no API endpoint yet)
+- Required Next Verifier: None — AOS-21 complete and reconciled
 
 ## In Scope Now
 
-- AOS-PORTFOLIO-001 (Plane AOS-21): portfolio reality test on pydantic-ai + repo-acquisition capability + honest lessons. Closes AOS-21.
+- **AOS-COUNCIL-PHASEA (PR open)** — the reality test for Intelligence Phase 1: the RFC-0005 Agent Council run over `pydantic/pydantic-ai` with the **live `claude_code` provider** (4 agents, real Claude reasoning). It returned a **constitution-faithful abstention** (`Insufficient evidence`, conf 0.0375) — refusing to manufacture an adoption verdict it couldn't support — and surfaced two honest gaps: **LES-018** (fenced-JSON parse defect, **fixed here** — live model wraps JSON in a ` ```json ` fence that a bare `json.loads` drops) and **LES-019** (evidence-class mismatch — a structural scan is the wrong evidence for an adoption question; input for the Phase C decision loop). Ships the captured review + evaluation doc + both lessons + the `_loads_tolerant` parser fix and 4 regression tests.
 
 ## Out Of Scope Now
 
@@ -119,7 +119,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Next Recommended Task
 
-Merge AOS-PORTFOLIO-001 under the Manual Merge Gate — **closes AOS-21**. Then the **definitive-roadmap reevaluation** the operator flagged (with a proposed phase map). The reality test spawned two scoped follow-ups: a language-mix weighting package (LES-013) and an architecture-semantics / dependency-edge package (LES-014, Fable-flagged). Other remaining: AOS-20 (doc-staleness/LES-007 — machine-surfaced by the digest), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard). A real council run on an authed node (`llm_provider=claude_code`), now feedable with pydantic-ai data, validates Intelligence Phase 1.
+**Definitive-roadmap reevaluation** (advisory; operator-flagged) — depth-vs-breadth empirically settled toward **depth**. Highest-value next builds: (1) run the **Agent Council over a real repo** (biggest untapped signal; validates Intelligence Phase 1 on an authed node via `llm_provider=claude_code`); (2) **LES-014** architecture-semantics — dependency/compose-derived edges (`example-voting-app` is a ready test case); (3) **LES-013** language weighting. Scanner backlog also: LES-016 (broaden manifest/ecosystem coverage), LES-017 (secret-signal precision). Other open: AOS-20 (doc-staleness/LES-007 — digest-surfaced), AOS-22 (backups), AOS-COUNCIL-002 (council dashboard).
 
 ## Required Reading For New Sessions
 

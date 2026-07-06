@@ -14,6 +14,10 @@ reads the real ``repositories/`` nor writes the real ``knowledge/`` vault.
 
 from __future__ import annotations
 
+import shutil
+from pathlib import Path
+from types import SimpleNamespace
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -22,11 +26,15 @@ from aos_core.services.distillation import (
     _repo_slug,
     extract_repo_knowledge,
     render_repository_markdown,
+    select_source_files,
+    summarize_sources,
 )
 
 from app.main import settings
 
 UNKNOWN_ID = "00000000-0000-0000-0000-000000000000"
+
+_CODE_FIXTURE = Path(__file__).parent / "fixtures" / "code-repo"
 
 _RICH_README = """\
 # Widget Toolkit
@@ -94,6 +102,18 @@ def _register_repo(client, project_id: str, *, name: str, local_path: str, readm
     repo_dir.mkdir(parents=True, exist_ok=True)
     if readme is not None:
         (repo_dir / "README.md").write_text(readme, encoding="utf-8")
+    resp = client.post(
+        f"/projects/{project_id}/repositories",
+        json={"name": name, "local_path": local_path},
+    )
+    assert resp.status_code == 200, resp.text
+    return resp.json()["id"]
+
+
+def _register_code_repo(client, project_id: str, *, name: str, local_path: str) -> str:
+    """Copy the code-repo fixture under the (tmp) repository_root and register it."""
+    repo_dir = settings.repository_root / local_path
+    shutil.copytree(_CODE_FIXTURE, repo_dir, dirs_exist_ok=True)
     resp = client.post(
         f"/projects/{project_id}/repositories",
         json={"name": name, "local_path": local_path},
@@ -283,3 +303,82 @@ def test_distill_readme_less_repo_is_minimal_and_no_raise(client, tmp_path) -> N
 def test_distill_missing_repository_is_404(client, tmp_path) -> None:
     settings.knowledge_root = tmp_path
     assert client.post(f"/repositories/{UNKNOWN_ID}/distill").status_code == 404
+
+
+# --- Phase 2 (RFC-0008): code-aware distillation ----------------------------
+
+
+def test_select_source_files_picks_entry_points_modules_manifest(client, tmp_path) -> None:
+    # Copy the code fixture under the (tmp) repository_root; settings.repository_root
+    # is pinned by the client fixture and read via get_settings() inside the selector.
+    shutil.copytree(_CODE_FIXTURE, settings.repository_root / "code-repo", dirs_exist_ok=True)
+    repository = SimpleNamespace(local_path="code-repo")
+
+    files = select_source_files(repository)
+    by_path = {f["path"]: f for f in files}
+
+    assert "app.py" in by_path
+    assert "core.py" in by_path
+    assert "pyproject.toml" in by_path
+    # app.py reads as an entry point (app.* stem); core.py is a plain module.
+    assert by_path["app.py"]["is_entry_point"] is True
+    assert by_path["app.py"]["role"] == "entry_point"
+    assert by_path["core.py"]["is_entry_point"] is False
+    assert by_path["core.py"]["role"] == "module"
+    assert by_path["pyproject.toml"]["role"] == "manifest"
+    # Content is carried (needed by the summarizer / narrative).
+    assert "class Engine" in by_path["core.py"]["text"]
+
+    # cap_files is honoured — the entry point is selected first.
+    capped = select_source_files(repository, cap_files=1)
+    assert len(capped) == 1
+    assert capped[0]["path"] == "app.py"
+
+    # A running byte cap is honoured (0 budget → nothing selected).
+    assert select_source_files(repository, cap_bytes=0) == []
+
+
+def test_select_source_files_is_tolerant_of_missing_repo(client, tmp_path) -> None:
+    # A repo path that does not exist under repository_root → [], never raises.
+    assert select_source_files(SimpleNamespace(local_path="does-not-exist")) == []
+
+
+def test_summarize_sources_extracts_docstring_and_symbols(client, tmp_path) -> None:
+    shutil.copytree(_CODE_FIXTURE, settings.repository_root / "code-repo", dirs_exist_ok=True)
+    files = select_source_files(SimpleNamespace(local_path="code-repo"))
+
+    summary = summarize_sources(files)
+    components = {c["path"]: c for c in summary["components"]}
+
+    app = components["app.py"]
+    assert app["docstring"].startswith("Entry point for the sample app")
+    assert "run" in app["symbols"]
+    assert "App" in app["symbols"]
+    assert app["provenance"] == "app.py"
+
+    core = components["core.py"]
+    assert "Engine" in core["symbols"]
+    assert "build_default" in core["symbols"]
+
+    # app.py is reported as an entry point.
+    assert "app.py" in summary["entry_points"]
+
+
+def test_distill_code_repo_renders_components_section(client, tmp_path) -> None:
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_code_repo(client, project_id, name="Code Repo", local_path="code-repo")
+
+    resp = client.post(f"/repositories/{repo_id}/distill")
+    assert resp.status_code == 200, resp.text
+    page = resp.json()
+
+    text = (tmp_path / page["vault_path"]).read_text(encoding="utf-8")
+    # The deterministic Components section names the entry point + module, per-file.
+    assert "## Components (from source)" in text
+    assert "`app.py`" in text
+    assert "`core.py`" in text
+    # Source files read are recorded in Provenance.
+    assert "source file read — source: app.py" in text
+    # The deterministic provider fabricates NO narrative.
+    assert "## How it works / Built for" not in text

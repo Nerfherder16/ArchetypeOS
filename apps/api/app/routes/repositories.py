@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 
 from aos_core.config import get_settings
 from aos_core.database import get_db
+from aos_core.llm import get_provider
 from aos_core.models import KnowledgePage, Project, Repository, RepositoryDNA
 from aos_core.repository_scanner import safe_repo_path
 from aos_core.services.distillation import distill_repository
@@ -54,5 +55,12 @@ def get_repository_dna(repository_id: str, db: Session = Depends(get_db)) -> Rep
 def distill_repository_endpoint(repository_id: str, db: Session = Depends(get_db)) -> KnowledgePage:
     # Service 404s a missing repository and 409s a non-writable (:ro-mounted /
     # read-only) vault — never a 500 (local-first write; the distillation is
-    # projected as a re-syncable KnowledgePage). RFC-0008.
-    return distill_repository(db, repository_id=repository_id, knowledge_root=get_settings().knowledge_root)
+    # projected as a re-syncable KnowledgePage). RFC-0008. Phase 2 reads a bounded
+    # set of source files through the configured (deterministic in CI) provider.
+    settings_ = get_settings()
+    return distill_repository(
+        db,
+        repository_id=repository_id,
+        knowledge_root=settings_.knowledge_root,
+        provider=get_provider(settings_),
+    )

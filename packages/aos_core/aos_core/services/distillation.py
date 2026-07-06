@@ -21,7 +21,9 @@ never a 500, and never mutates state. Stdlib-only; no new dependencies; no LLM.
 
 from __future__ import annotations
 
+import ast
 import hashlib
+import os
 import re
 from pathlib import Path
 
@@ -29,12 +31,34 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from ..config import get_settings
+from ..llm import get_provider
 from ..models import KnowledgePage, Repository, RepositoryDNA
-from ..repository_scanner import safe_repo_path
+from ..repository_scanner import EXTENSIONS, LANGUAGE_CLASS, safe_repo_path
+from .council import _loads_tolerant
 
 _PAGE_TYPE = "repository"
 _README_CAP_BYTES = 40_000
 _FALLBACK_TITLE = "Untitled repository"
+
+# Phase-2 (RFC-0008) source selection: bound + ignore.
+_IGNORED_SOURCE_DIRS = {"node_modules", "__pycache__"}
+# Primary manifests, in the order we prefer them (declare purpose/deps/scripts).
+_MANIFEST_PRIORITY = ("pyproject.toml", "package.json", "go.mod")
+# Entry points by exact filename and by stem (with any extension).
+_ENTRY_POINT_NAMES = {"__init__.py", "lib.rs", "mod.rs"}
+_ENTRY_POINT_STEMS = {"main", "cli", "app", "index"}
+# Cap on top-level symbols surfaced per component (keeps the page readable).
+_SYMBOL_CAP = 12
+
+# Top-level symbol names in non-Python source (JS/TS/Go/Rust/…). Anchored to the
+# line start (re.M) so only top-level (unindented) declarations are captured.
+_GENERIC_SYMBOL_RE = re.compile(
+    r"^(?:pub\s+)?(?:export\s+)?(?:default\s+)?(?:async\s+)?"
+    r"(?:func|fn|class|def|function)\s+([A-Za-z_$][\w$]*)",
+    re.MULTILINE,
+)
+# Python fallback when ``ast.parse`` fails on a syntactically-broken file.
+_PY_FALLBACK_RE = re.compile(r"^(?:async\s+)?(def|class)\s+(\w+)", re.MULTILINE)
 
 # A fenced code block opens with ``` (or ~~~) optionally followed by a language.
 _FENCE_RE = re.compile(r"^(?:```+|~~~+)\s*([A-Za-z0-9_+#.-]+)?\s*$")
@@ -249,6 +273,264 @@ def extract_repo_knowledge(readme_text: str, *, dna: RepositoryDNA | None = None
     }
 
 
+# --- Phase 2 (RFC-0008): code-aware distillation -----------------------------
+
+
+def _language_class_of(name: str) -> str | None:
+    """The coarse language class (``source``/``config``/…) of a filename, or None."""
+    language = EXTENSIONS.get(Path(name).suffix.lower())
+    return LANGUAGE_CLASS.get(language) if language else None
+
+
+def _is_entry_point(name: str) -> bool:
+    """Whether a source filename reads as an entry point (per-language heuristic)."""
+    if name in _ENTRY_POINT_NAMES:
+        return True
+    dot = name.rfind(".")
+    if dot <= 0:
+        return False
+    return name[:dot] in _ENTRY_POINT_STEMS
+
+
+def select_source_files(
+    repository: Repository, *, dna: RepositoryDNA | None = None, cap_files: int = 10, cap_bytes: int = 40_000
+) -> list[dict]:
+    """Pick a bounded, meaningful set of source files from a scanned repo (I/O, tolerant).
+
+    Selects entry-point files (``main.*``/``__init__.py``/``cli.*``/``app.*``/
+    ``index.*``/``lib.rs``/``mod.rs``/``main.go``), the largest **source-classified**
+    files (via the scanner's ``LANGUAGE_CLASS``), and the primary manifest
+    (``pyproject.toml``/``package.json``/``go.mod``). Reads content via
+    ``safe_repo_path``; honours ``cap_files`` and a running ``cap_bytes`` total;
+    skips unreadable / binary (decode error) / oversized files and ignores
+    ``.git``/``node_modules``/``__pycache__``/dot-directories. Each item is
+    ``{"path": rel, "text": content, "is_entry_point": bool, "role": ...}`` where
+    ``role`` is ``"entry_point"``/``"module"``/``"manifest"``. Tolerant: a repo we
+    cannot read yields ``[]`` and never raises out of distillation.
+    """
+    try:
+        repo_dir = safe_repo_path(get_settings().repository_root, repository.local_path)
+    except Exception:
+        return []
+
+    source_candidates: list[tuple[str, int, str]] = []  # (rel, size, name)
+    manifest_candidates: dict[str, tuple[str, int]] = {}  # name -> (rel, depth)
+    try:
+        for dirpath, dirnames, filenames in os.walk(repo_dir):
+            dirnames[:] = sorted(
+                d for d in dirnames if not d.startswith(".") and d not in _IGNORED_SOURCE_DIRS
+            )
+            for name in sorted(filenames):
+                full = Path(dirpath) / name
+                try:
+                    rel = full.relative_to(repo_dir).as_posix()
+                except ValueError:
+                    continue
+                if name in _MANIFEST_PRIORITY:
+                    depth = rel.count("/")
+                    prev = manifest_candidates.get(name)
+                    if prev is None or depth < prev[1]:
+                        manifest_candidates[name] = (rel, depth)
+                    continue
+                if _language_class_of(name) == "source":
+                    try:
+                        size = full.stat().st_size
+                    except OSError:
+                        continue
+                    source_candidates.append((rel, size, name))
+    except Exception:
+        return []
+
+    entry = sorted((c for c in source_candidates if _is_entry_point(c[2])), key=lambda c: c[0])
+    entry_paths = {c[0] for c in entry}
+    modules = sorted(
+        (c for c in source_candidates if c[0] not in entry_paths), key=lambda c: (-c[1], c[0])
+    )
+
+    ordered: list[tuple[str, str, bool]] = [(rel, "entry_point", True) for rel, _, _ in entry]
+    for mname in _MANIFEST_PRIORITY:
+        if mname in manifest_candidates:
+            ordered.append((manifest_candidates[mname][0], "manifest", False))
+            break
+    ordered += [(rel, "module", False) for rel, _, _ in modules]
+
+    selected: list[dict] = []
+    seen: set[str] = set()
+    running = 0
+    for rel, role, is_ep in ordered:
+        if len(selected) >= cap_files:
+            break
+        if rel in seen:
+            continue
+        try:
+            content = (repo_dir / rel).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError, ValueError):
+            continue
+        encoded = len(content.encode("utf-8"))
+        if running + encoded > cap_bytes:
+            continue
+        running += encoded
+        seen.add(rel)
+        selected.append({"path": rel, "text": content, "is_entry_point": is_ep, "role": role})
+    return selected
+
+
+def _first_docstring_line(docstring: str | None) -> str | None:
+    if not docstring or not docstring.strip():
+        return None
+    return docstring.strip().splitlines()[0].strip() or None
+
+
+def _summarize_python(text: str) -> tuple[str | None, list[str]]:
+    """Module docstring first line + top-level def/class names (``ast``; regex fallback)."""
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        symbols: list[str] = []
+        for _, name in _PY_FALLBACK_RE.findall(text):
+            if name not in symbols:
+                symbols.append(name)
+        return None, symbols
+
+    doc = _first_docstring_line(ast.get_docstring(tree))
+    symbols = []
+    all_names: list[str] | None = None
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if node.name not in symbols:
+                symbols.append(node.name)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    try:
+                        value = ast.literal_eval(node.value)
+                    except Exception:
+                        value = None
+                    if isinstance(value, (list, tuple)):
+                        all_names = [str(v) for v in value if isinstance(v, str)]
+    for name in all_names or []:
+        if name not in symbols:
+            symbols.append(name)
+    return doc, symbols
+
+
+def _leading_comment(text: str) -> str | None:
+    """A leading ``//``/``#``/``/*`` comment line, if the file opens with one."""
+    for raw in text.splitlines():
+        s = raw.strip()
+        if not s:
+            continue
+        if s.startswith("//"):
+            return s.lstrip("/").strip() or None
+        if s.startswith("#"):
+            return s.lstrip("#").strip() or None
+        if s.startswith("/*"):
+            return s[2:].strip().rstrip("*/").strip() or None
+        return None
+    return None
+
+
+def _summarize_generic(text: str) -> tuple[str | None, list[str]]:
+    """Top-level export/func/fn/class/def names + a leading comment as the docstring."""
+    symbols: list[str] = []
+    for name in _GENERIC_SYMBOL_RE.findall(text):
+        if name not in symbols:
+            symbols.append(name)
+    return _leading_comment(text), symbols
+
+
+def summarize_sources(files: list[dict]) -> dict:
+    """Deterministic, stdlib-only structural summary of selected source files (pure).
+
+    Per file, builds a **component** — ``{"path", "role", "docstring"(first line or
+    None), "symbols"(top-level names, capped), "provenance": path}``. Python is parsed
+    with ``ast`` (tolerant of ``SyntaxError`` → regex fallback); other source languages
+    use a top-level-symbol regex + a leading comment. Never raises — a file that cannot
+    be summarized yields an empty component. Returns
+    ``{"components": [...], "entry_points": [paths]}``.
+    """
+    components: list[dict] = []
+    entry_points: list[str] = []
+    for f in files or []:
+        path = str(f.get("path") or "")
+        text = f.get("text") or ""
+        role = f.get("role") or "module"
+        if f.get("is_entry_point"):
+            entry_points.append(path)
+        try:
+            if path.endswith(".py"):
+                docstring, symbols = _summarize_python(text)
+            else:
+                docstring, symbols = _summarize_generic(text)
+        except Exception:
+            docstring, symbols = None, []
+        components.append(
+            {
+                "path": path,
+                "role": role,
+                "docstring": docstring,
+                "symbols": symbols[:_SYMBOL_CAP],
+                "provenance": path,
+            }
+        )
+    return {"components": components, "entry_points": entry_points}
+
+
+_REASON_SYSTEM_PROMPT = (
+    "You are a code-distillation agent. You are given the SOURCE of a repository, each file "
+    "labelled with its path. Reason ONLY from the supplied files — do not invent APIs, files, "
+    "or behaviour that is not present. Determine what the repository was built for, how its "
+    "components work together, and what is reusable. CITE the file paths your conclusions rest "
+    "on. Respond ONLY with a JSON object with keys: built_for (string), how_it_works (string), "
+    "reusable (array of strings), provenance (array of file paths you used)."
+)
+
+
+def _coerce_str_list(value) -> list[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if str(item).strip()]
+    if value in (None, ""):
+        return []
+    return [str(value)]
+
+
+def reason_over_source(files: list[dict], provider) -> dict:
+    """Reason over selected source with a real provider (LES-021 isolated), citing files.
+
+    Builds ONE bounded, path-labelled prompt (each file as ``### <path>\\n<text>`` — the
+    files are already capped by :func:`select_source_files`), runs ``provider.generate``,
+    and parses the output with the council's tolerant ``_loads_tolerant`` into
+    ``{"built_for", "how_it_works", "reusable", "provenance"}``. Only produces a narrative
+    for a **real** provider: a ``deterministic`` provider (or an empty parse) yields ``{}``
+    — no fabrication. Never raises out of distillation: any provider error → ``{}``.
+    """
+    if not files:
+        return {}
+    if getattr(provider, "name", "") == "deterministic":
+        return {}
+    try:
+        blocks = "\n\n".join(f"### {f.get('path')}\n{f.get('text') or ''}" for f in files)
+        prompt = (
+            "Distil the following repository source into structured knowledge.\n\n"
+            f"{blocks}"
+        )
+        result = provider.generate(system=_REASON_SYSTEM_PROMPT, prompt=prompt)
+        obj = _loads_tolerant(result.text or "")
+    except Exception:
+        return {}
+    if not obj:
+        return {}
+    narrative = {
+        "built_for": str(obj.get("built_for") or "").strip(),
+        "how_it_works": str(obj.get("how_it_works") or "").strip(),
+        "reusable": _coerce_str_list(obj.get("reusable")),
+        "provenance": _coerce_str_list(obj.get("provenance")),
+    }
+    if not (narrative["built_for"] or narrative["how_it_works"] or narrative["reusable"]):
+        return {}
+    return narrative
+
+
 def render_repository_markdown(distillation: dict) -> str:
     """Render a distillation dict into an Obsidian-friendly markdown page (pure)."""
     title = (distillation.get("title") or _FALLBACK_TITLE).strip()
@@ -275,9 +557,44 @@ def render_repository_markdown(distillation: dict) -> str:
     technologies = distillation.get("technologies") or []
     lines.extend([f"- {tech}" for tech in technologies] or ["- None detected."])
 
+    # Components (from source): always present, one bullet per summarized file,
+    # each citing its own path (deterministic structural layer — RFC-0008 Phase 2).
+    lines += ["", "## Components (from source)", ""]
+    components = distillation.get("components") or []
+    component_lines: list[str] = []
+    for component in components:
+        path = component.get("path", "")
+        role = component.get("role", "module")
+        docstring = component.get("docstring")
+        symbols = component.get("symbols") or []
+        if docstring:
+            detail = docstring
+        elif symbols:
+            detail = "symbols: " + ", ".join(str(sym) for sym in symbols)
+        else:
+            detail = "no docstring or top-level symbols"
+        component_lines.append(f"- `{path}` — {role} — {detail}")
+    lines.extend(component_lines or ["- None extracted from source."])
+
+    # How it works / Built for: only when a real provider produced a narrative
+    # (the deterministic provider fabricates nothing).
+    narrative = distillation.get("narrative") or {}
+    if narrative and (narrative.get("built_for") or narrative.get("how_it_works") or narrative.get("reusable")):
+        lines += ["", "## How it works / Built for", ""]
+        if narrative.get("built_for"):
+            lines += ["**Built for:** " + str(narrative["built_for"]).strip(), ""]
+        if narrative.get("how_it_works"):
+            lines += ["**How it works:** " + str(narrative["how_it_works"]).strip(), ""]
+        reusable = narrative.get("reusable") or []
+        if reusable:
+            lines.append("**Reusable:**")
+            lines.extend([f"- {item}" for item in reusable])
+
     lines += ["", "## Provenance", ""]
     provenance = distillation.get("provenance") or []
     prov_lines = [f"- {entry.get('item', '')} — source: {entry.get('source', '')}" for entry in provenance]
+    for source_file in distillation.get("source_files") or []:
+        prov_lines.append(f"- source file read — source: {source_file}")
     lines.extend(prov_lines or ["- None recorded."])
     lines.append("")
     return "\n".join(lines)
@@ -324,7 +641,9 @@ def _read_primary_readme(repository: Repository) -> str:
         return ""
 
 
-def distill_repository(db: Session, *, repository_id: str, knowledge_root: Path | str) -> KnowledgePage:
+def distill_repository(
+    db: Session, *, repository_id: str, knowledge_root: Path | str, provider=None
+) -> KnowledgePage:
     """Distil a scanned repo's content into a vault page + ``KnowledgePage``.
 
     404s a missing repository. Reads the primary README (tolerantly — an
@@ -341,12 +660,26 @@ def distill_repository(db: Session, *, repository_id: str, knowledge_root: Path 
     if not repository:
         raise HTTPException(status_code=404, detail="Repository not found")
 
+    if provider is None:
+        provider = get_provider(get_settings())
+
     readme_text = _read_primary_readme(repository)
     dna = repository.dna
     distillation = extract_repo_knowledge(readme_text, dna=dna)
     if not readme_text.strip():
         # No README to name the repo — fall back to the registered repo name.
         distillation["title"] = repository.name
+
+    # Phase 2 (RFC-0008): a bounded, provenance-tagged read of the actual source.
+    # The deterministic structural summary is always produced (hermetic, CI-tested);
+    # the reasoned narrative is produced only for a real provider (no fabrication).
+    files = select_source_files(repository, dna=dna)
+    code = summarize_sources(files)
+    narrative = reason_over_source(files, provider) if getattr(provider, "name", "") != "deterministic" else {}
+    distillation["components"] = code["components"]
+    distillation["entry_points"] = code["entry_points"]
+    distillation["source_files"] = [f["path"] for f in files]
+    distillation["narrative"] = narrative
 
     markdown = render_repository_markdown(distillation)
     slug = _repo_slug(repository.name)
@@ -405,6 +738,9 @@ def distill_repository(db: Session, *, repository_id: str, knowledge_root: Path 
 
 __all__ = [
     "extract_repo_knowledge",
+    "select_source_files",
+    "summarize_sources",
+    "reason_over_source",
     "render_repository_markdown",
     "distill_repository",
 ]

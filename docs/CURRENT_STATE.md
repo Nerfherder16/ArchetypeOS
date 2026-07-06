@@ -96,7 +96,7 @@ Every new engineering session should read this before planning or implementation
 - Limitations: LES-014's manifest/dependency + import-graph edges are a follow-up; language weighting is source-vs-config classification, not lines-of-code; adds a PyYAML runtime dep (compose-smoke covers the build)
 - Required Next Verifier: None — Phase B complete and reconciled
 
-- **AOS-LLM-ISOLATION-001 (PR open)** — closes **LES-021**: `ClaudeCodeProvider` now runs `claude -p` in a fresh empty cwd with `--disallowedTools` + `--strict-mcp-config`, so an agent reasons only from the supplied evidence (not the host repo's `CLAUDE.md`/files). Live-validated + hermetic regression test. **This is step 1 of the operator-picked recommendation (LES-021 → RFC-0008)**; RFC-0008 (repository content extraction) is next once this merges. Prior: Phase B merged (PR #59) — compose/service architecture edges + source-classified language weighting (LES-013/014 compose half).
+- **RFC-0008 Step 2 — repository content extraction (starting).** **AOS-LLM-ISOLATION-001 merged (PR #60, LES-021 closed)** — `ClaudeCodeProvider` is now context-isolated (fresh empty cwd + `--disallowedTools` + `--strict-mcp-config`; live-validated). That was step 1 of the operator-picked LES-021 → RFC-0008 plan. **The active build is now RFC-0008's content-extraction MVP** — `distill_repository` reads a scanned repo's actual content (README/bounded source) with the now-trustworthy isolated provider → provenance-tagged `wiki/repositories/*.md` + a re-syncable `KnowledgePage` (`page_type="repository"`) → a council evidence selector, so a content-rich repo yields substance instead of a fingerprint abstention.
 
 ## Out Of Scope Now
 

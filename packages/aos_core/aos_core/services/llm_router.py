@@ -28,6 +28,7 @@ from ..llm import (
     OpenAICompatibleProvider,
     Provider,
 )
+from .llm_pool import build_free_pool, free_pool_provider
 
 
 class Sensitivity(str, Enum):
@@ -69,8 +70,9 @@ def _available(tier: Tier, settings) -> bool:
     if tier is Tier.LOCAL:
         return bool(getattr(settings, "llm_base_url", "") and getattr(settings, "llm_model", ""))
     if tier is Tier.FREE_HOSTED:
-        # A free hosted tier needs a key — without it the endpoint 401s.
-        return bool(getattr(settings, "llm_free_api_key", ""))
+        # A free hosted tier needs a key — from the env rotation pool (slice 3) or
+        # the single configured provider. Without either, the endpoint 401s.
+        return bool(build_free_pool()) or bool(getattr(settings, "llm_free_api_key", ""))
     if tier is Tier.CLAUDE:
         # Claude Code provider shells the local `claude` CLI; treat as available
         # when explicitly enabled (opt-in, since it spends subscription tokens).
@@ -86,6 +88,11 @@ def _provider_for(tier: Tier, settings) -> Provider:
             api_key=getattr(settings, "llm_api_key", ""),
         )
     if tier is Tier.FREE_HOSTED:
+        # Prefer the rotation pool (429-resilient across providers); fall back to
+        # the single configured free provider when no pool keys are in the env.
+        pool = free_pool_provider()
+        if pool is not None:
+            return pool
         return OpenAICompatibleProvider(
             base_url=settings.llm_free_base_url,
             model=settings.llm_free_model,

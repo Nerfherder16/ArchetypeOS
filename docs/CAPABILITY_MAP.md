@@ -287,7 +287,7 @@ Capabilities:
 - Meta Agent
 - Prompt and Workflow Evolution
 - Engineering Simulation Lab
-- Doc-staleness self-heal (AOS-20 detects doc-vs-reality drift; AOS-SELFHEAL-001 closes the loop to *correct* it — `tools/doc_staleness.py --fix` generates a deterministic reconciliation DRAFT from `git log` without editing prose or gaming the alarm (Article XII), a `post-merge` git hook regenerates it when `main` advances, and the `/reconcile-state` skill applies the narrative half for human approval. Follow-ups: a Stop hook + CI-on-main auto-reconciliation PR + nightly-loop wiring)
+- Doc-staleness self-heal (AOS-20 detects doc-vs-reality drift; AOS-SELFHEAL-001 closes the loop to *correct* it — `tools/doc_staleness.py --fix` generates a deterministic reconciliation DRAFT from `git log` without editing prose or gaming the alarm (Article XII), a `post-merge` git hook regenerates it when `main` advances, and the `/reconcile-state` skill applies the narrative half for human approval. **AOS-SELFHEAL-002 adds the CI-on-main trigger** — `.github/workflows/doc-staleness-reconcile.yml` runs `--fix` on every merge and idempotently opens/updates (or auto-closes) a single `doc-staleness` tracking issue with the draft, catching drift the PR-Guardian WARN misses when no PR is open; the LLM narrative reconciliation is intended to run from a nightly Claude routine via `/reconcile-state`. Remaining follow-ups: a Stop hook + in-container nightly-loop/digest wiring (needs a runner→DB path))
 
 Primary artifacts:
 

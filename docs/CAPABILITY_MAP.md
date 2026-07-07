@@ -283,11 +283,13 @@ Capabilities:
 - Meta Agent
 - Prompt and Workflow Evolution
 - Engineering Simulation Lab
+- Doc-staleness self-heal (AOS-20 detects doc-vs-reality drift; AOS-SELFHEAL-001 closes the loop to *correct* it — `tools/doc_staleness.py --fix` generates a deterministic reconciliation DRAFT from `git log` without editing prose or gaming the alarm (Article XII), a `post-merge` git hook regenerates it when `main` advances, and the `/reconcile-state` skill applies the narrative half for human approval. Follow-ups: a Stop hook + CI-on-main auto-reconciliation PR + nightly-loop wiring)
 
 Primary artifacts:
 
 - docs/rfc/RFC-0004-Learning-Feedback-Loop.md
 - knowledge/wiki/lessons/index.md
+- tools/doc_staleness.py (AOS-20 detector + AOS-SELFHEAL-001 `--fix` draft generator) with apps/api/tests/test_doc_staleness.py; scripts/hooks/post-merge + scripts/install-hooks.sh; skills/ci_devops/reconcile_state.md
 - docs/NIGHTLY_SELF_LEARNING_LOOP.md
 - docs/EVOLUTION_INTELLIGENCE.md
 - docs/META_AGENT.md

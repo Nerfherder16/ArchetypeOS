@@ -162,3 +162,74 @@ def test_guardian_doc_staleness_fails_open(monkeypatch) -> None:
     monkeypatch.setattr(pr_guardian._doc_staleness, "evaluate", _boom)
     # Never crash the guardian and never block on a detector failure.
     assert pr_guardian.check_doc_staleness(["docs/CURRENT_STATE.md"]) == []
+
+
+# --- self-heal: reconciliation draft generator (AOS-SELFHEAL-001) ----------
+
+GIT_LOG_72_76 = "\n".join(
+    [
+        "aaa1111 Merge pull request #76 from Nerfherder16/claude/aos-runtime-002-scanner",
+        "bbb2222 Merge pull request #74 from Nerfherder16/laptop/aos-council-002-dashboard",
+        "ccc3333 Merge pull request #72 from Nerfherder16/laptop/playbook-union-note",
+    ]
+)
+
+
+def test_reconciliation_draft_lists_unreferenced_prs() -> None:
+    from tools.doc_staleness import build_reconciliation_draft
+
+    draft = build_reconciliation_draft(
+        git_log_text=GIT_LOG_72_76,
+        current_state_text="reconciled through PR #71",
+        recent_changes_text="",
+    )
+    assert draft is not None
+    assert "#72" in draft and "#74" in draft and "#76" in draft
+    assert "- PR #71" not in draft  # the already-referenced PR is not in the pending list
+    # provenance from the merge line
+    assert "aos-council-002-dashboard" in draft
+
+
+def test_reconciliation_draft_none_when_current() -> None:
+    from tools.doc_staleness import build_reconciliation_draft
+
+    assert (
+        build_reconciliation_draft(
+            git_log_text=GIT_LOG_72_76,
+            current_state_text="current through PR #76",
+            recent_changes_text="",
+        )
+        is None
+    )
+
+
+def test_reconciliation_draft_none_without_merges() -> None:
+    from tools.doc_staleness import build_reconciliation_draft
+
+    assert (
+        build_reconciliation_draft(git_log_text="no merges here", current_state_text="PR #1", recent_changes_text="")
+        is None
+    )
+
+
+def test_fix_writes_pending_draft_never_edits_prose(tmp_path, monkeypatch) -> None:
+    from tools import doc_staleness
+
+    monkeypatch.setattr(doc_staleness, "_git_log", lambda *a, **k: GIT_LOG_72_76)
+    (tmp_path / "docs").mkdir()
+    (tmp_path / ".archetype").mkdir()
+    (tmp_path / "docs" / "CURRENT_STATE.md").write_text("through PR #71", encoding="utf-8")
+    (tmp_path / "docs" / "RECENT_CHANGES.md").write_text("log", encoding="utf-8")
+    (tmp_path / ".archetype" / "roadmap.md").write_text("## Current phase\n\nPost-v0.1.\n", encoding="utf-8")
+    before_cs = (tmp_path / "docs" / "CURRENT_STATE.md").read_text(encoding="utf-8")
+    before_rc = (tmp_path / "docs" / "RECENT_CHANGES.md").read_text(encoding="utf-8")
+
+    rc = doc_staleness.main(["--fix", "--repo-root", str(tmp_path)])
+
+    pending = tmp_path / ".archetype" / "reconciliation" / "PENDING.md"
+    assert pending.exists(), "--fix must write the reconciliation draft"
+    assert "#76" in pending.read_text(encoding="utf-8")
+    # never edits the human prose docs (draft-only; Article XII)
+    assert (tmp_path / "docs" / "CURRENT_STATE.md").read_text(encoding="utf-8") == before_cs
+    assert (tmp_path / "docs" / "RECENT_CHANGES.md").read_text(encoding="utf-8") == before_rc
+    assert rc == 1, "HARD drift still stands until the docs are actually reconciled"

@@ -230,3 +230,28 @@ jobs:
       - name: Tear down
         if: always()
         run: docker compose down -v --remove-orphans
+
+  # Fan-in signal job: runs ONLY when every other job on a PR succeeds, and posts
+  # a "CI green" comment. GitHub PR webhooks deliver comments (but not CI success)
+  # to a watching session, so this converts an all-green run into an event the
+  # Orchestrator receives within seconds — replacing timed polling for green.
+  # `needs` gates it on success of all jobs; `if` restricts it to pull requests.
+  ci-green:
+    name: CI green
+    needs: [pr-guardian, api-tests, worker-tests, vector-store-tests, embedder-tests, web-build, web-e2e, compose-smoke]
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Comment CI-green signal
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const sha = context.payload.pull_request.head.sha.substring(0, 7);
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: `✅ CI green @ ${sha} — all required checks passed. (automated signal)`,
+            });

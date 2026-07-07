@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-UI-002: WebGL radar for the Reuse view (merged) + AOS-OPS-001: CI-green signal (in review)
+
+### Merged
+
+- PR #79 — AOS-UI-002 (this session). **The WebGL radar instrument for the Reuse view — the Control Tower's first WebGL surface.** A react-three-fiber radar on the `.aos-*` ops-deck design system that plots the live reuse candidates from the Transfer Engine. New `apps/web/src/features/reuse/radarLayout.ts` — a **pure, deterministic** candidate→polar mapping (distance-from-center = `1 − confidence`, i.e. stronger reuse sits nearer the core) — and `Radar.tsx`, an r3f `<Canvas>` rendering rings, a rotating sweep, a pulsing core, and **tier-colored blips** (cyan = has `matched_terms`, periwinkle = lexical-lean); the active blip is enlarged and a hovered blip pulses. Robust degradation: a **WebGL capability probe + an error boundary** fall back to a static placeholder, and `prefers-reduced-motion` freezes the animation. `ReuseView.tsx` **lifted the card-expand state up** so the radar and the cards are one interaction surface: **click a blip → expand + scroll to its card; hover a card → highlight its blip.** Deps added: `three@0.171.0`, `@react-three/fiber@9.6.1`, `@types/three`. New e2e `apps/web/e2e/radarLayout.spec.ts` (the pure mapping) + `reuse-radar.spec.ts` (the mounted instrument). Built by an Opus builder subagent; **Orchestrator-verified independently** (builder ≠ verifier): build clean, **15/15 web e2e**, real-app screenshot. **Guardian PASS_WITH_WARNINGS** (acknowledged `scanner-new-ecosystem` — the three/r3f dependency add, still a Node ecosystem); **all 8 CI checks green**. Scope is the Reuse view only — a generic reusable `<Radar>` + the rail-shell migration remain **AOS-UI-003** (a strict superset, nothing throwaway). Spec: `.archetype/work/AOS-UI-002.md`.
+
+### In Review
+
+- **AOS-OPS-001 — CI-green signal** (this session; branch `claude/aos-ci-green-signal`). A `ci-green` **fan-in job** added to `.github/workflows/ci.yml` that runs only when all the PR jobs succeed and posts a `✅ CI green @ <sha>` comment. **Why:** GitHub webhooks deliver issue/PR *comments* but not CI-*success* events, so a watching session can't be event-woken by a green run today — it has to time-poll. Turning all-green into a comment converts CI-success into a webhook-delivered signal, ending timed polling. Ops/tooling only (no product code); this reconciliation change set also carries the AOS-UI-002 (PR #79) post-merge state update.
+
 ## 2026-07-06 — Doc-staleness self-heal: detect → correct (AOS-SELFHEAL-001, laptop session — in review)
 
 ### In Review (tandem laptop session)

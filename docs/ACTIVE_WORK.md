@@ -42,11 +42,21 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — build clean, 9/9 web e2e, a live 200 round-trip against the transfer endpoint with the results path proven; Guardian PASS, all 8 CI checks green.
 - Required Next Verifier: None — merged and reconciled.
 
+### AOS-OPS-001 — CI-green signal (ci-green fan-in job)
+
+- Status: In Progress
+- Owner: Chief Architect / Orchestrator (this cloud session)
+- Branch: `claude/aos-ci-green-signal`
+- Summary: A `ci-green` fan-in job added to `.github/workflows/ci.yml` that runs only when all the PR jobs succeed and posts a `✅ CI green @ <sha>` comment — so a watching session is **woken by the comment** (webhooks deliver comments but not CI-success events), replacing timed polling. Also carries this post-merge state reconciliation for AOS-UI-002 (PR #79). Ops/tooling; no product code.
+
 ### AOS-UI-002 — WebGL radar instrument (react-three-fiber, fed by real reuse candidates)
 
-- Status: Proposed
-- Owner: unassigned
-- Summary: A react-three-fiber radar instrument on the `.aos-*` design system that plots real reuse candidates from the Transfer Engine — distance-from-center = reuse strength (the calibrated need-coverage confidence), so the operator reads portfolio reuse at a glance. Strict superset of AOS-UI-001 (consumes the same `fetchReuseRecommendations` data, adds an instrument surface). The first WebGL surface in the Control Tower.
+- Status: Merged (PR #79)
+- Owner: Chief Architect / Orchestrator (this remote session; built by an Opus builder subagent, Orchestrator-verified)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Summary: A react-three-fiber radar instrument on the `.aos-*` design system that plots the live reuse candidates from the Transfer Engine — distance-from-center = reuse strength. New `apps/web/src/features/reuse/radarLayout.ts` (pure deterministic candidate→polar mapping, distance = `1 − confidence`) + `Radar.tsx` (r3f `<Canvas>` — rings, rotating sweep, pulsing core, tier-colored blips: cyan = has matched_terms, periwinkle = lexical-lean; active blip enlarged, hovered pulses; WebGL capability probe + error boundary → static placeholder fallback; prefers-reduced-motion freezes). `ReuseView.tsx` lifted card-expand state up so the radar drives it: **click a blip → expand + scroll its card; hover a card → highlight its blip**. Deps `three@0.171.0` / `@react-three/fiber@9.6.1` / `@types/three`; new e2e `radarLayout.spec.ts` + `reuse-radar.spec.ts`. Reuse view only; a generic reusable `<Radar>` + the rail-shell migration remain AOS-UI-003 (a strict superset).
+- Verification Status: Guardian PASS_WITH_WARNINGS (acknowledged `scanner-new-ecosystem` — the three/r3f dep add, still Node ecosystem); all 8 CI checks green; Orchestrator-verified independently (builder ≠ verifier) — build clean, 15/15 web e2e, real-app screenshot.
+- Required Next Verifier: None — merged and reconciled.
 
 ### AOS-UI-003 — Control Tower rail shell + view routing
 

@@ -10,15 +10,18 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@react-three/fiber": "9.6.1",
     "@vitejs/plugin-react": "5.1.1",
-    "vite": "7.2.7",
-    "typescript": "5.9.3",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "three": "0.171.0",
+    "typescript": "5.9.3",
+    "vite": "7.2.7"
   },
   "devDependencies": {
     "@playwright/test": "1.61.1",
     "@types/react": "19.2.7",
-    "@types/react-dom": "19.2.3"
+    "@types/react-dom": "19.2.3",
+    "@types/three": "0.171.0"
   }
 }

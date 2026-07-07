@@ -1,9 +1,15 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchReuseRecommendations,
   type TransferEvidence,
   type TransferRecommendation,
 } from '../../api';
+import { Radar } from './Radar';
+
+const prefersReducedMotion = (): boolean =>
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const errorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : 'Request failed';
@@ -91,16 +97,35 @@ function DetailBlock({ label, children }: { label: string; children: React.React
   );
 }
 
-function ReuseCard({ rec, rank }: { rec: TransferRecommendation; rank: number }) {
-  const [open, setOpen] = useState(false);
+type ReuseCardProps = {
+  rec: TransferRecommendation;
+  rank: number;
+  open: boolean;
+  onToggle: () => void;
+  highlighted: boolean;
+  onHover: (hovered: boolean) => void;
+  cardRef: (node: HTMLElement | null) => void;
+};
+
+function ReuseCard({ rec, rank, open, onToggle, highlighted, onHover, cardRef }: ReuseCardProps) {
   const citedRef = firstDistillationRef(rec.evidence);
   const detailId = `reuse-detail-${rank}`;
 
   return (
     <article
+      ref={cardRef}
       className="aos-hud glass"
       data-testid="reuse-result-row"
-      style={{ ['--cut' as string]: '13px', marginBottom: 12 }}
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      style={{
+        ['--cut' as string]: '13px',
+        marginBottom: 12,
+        outline: highlighted ? '1px solid var(--signal)' : 'none',
+        outlineOffset: highlighted ? '2px' : '0',
+        boxShadow: highlighted ? 'var(--glow-soft)' : undefined,
+        transition: 'box-shadow 0.15s',
+      }}
     >
       <div style={{ position: 'absolute', top: 8, left: 12, zIndex: 3 }}>
         <span className="aos-eyebrow" style={{ fontSize: 9, letterSpacing: '0.14em' }}>
@@ -159,7 +184,7 @@ function ReuseCard({ rec, rank }: { rec: TransferRecommendation; rank: number })
             data-testid="reuse-expand"
             aria-expanded={open}
             aria-controls={detailId}
-            onClick={() => setOpen((v) => !v)}
+            onClick={onToggle}
           >
             {open ? 'Hide detail' : 'Show detail'}
           </button>
@@ -223,6 +248,12 @@ export function ReuseView({ projectId }: { projectId: string | null }) {
   const [error, setError] = useState<string | null>(null);
   // Set once a scan has actually run, so the empty state only shows post-submit.
   const [hasRun, setHasRun] = useState(false);
+  // Lifted card-expand + hover state so the radar can drive/read them.
+  // `activeIndex` is the expanded card; `hoveredIndex` highlights a blip/card.
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  // DOM refs per card, so selecting a blip can scroll its card into view.
+  const cardRefs = useRef<(HTMLElement | null)[]>([]);
 
   // Reset the panel when the selected project changes — results from one
   // project must never bleed into another.
@@ -230,7 +261,22 @@ export function ReuseView({ projectId }: { projectId: string | null }) {
     setResults(null);
     setError(null);
     setHasRun(false);
+    setActiveIndex(null);
+    setHoveredIndex(null);
+    cardRefs.current = [];
   }, [projectId]);
+
+  // Selecting a blip: expand the matching card and scroll it into view.
+  const handleSelect = useCallback((index: number) => {
+    setActiveIndex(index);
+    const node = cardRefs.current[index];
+    if (node) {
+      node.scrollIntoView({
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        block: 'nearest',
+      });
+    }
+  }, []);
 
   const trimmedNeed = need.trim();
 
@@ -243,6 +289,9 @@ export function ReuseView({ projectId }: { projectId: string | null }) {
       setLoading(true);
       setError(null);
       setHasRun(true);
+      setActiveIndex(null);
+      setHoveredIndex(null);
+      cardRefs.current = [];
       try {
         setResults(await fetchReuseRecommendations(projectId, trimmedNeed));
       } catch (err) {
@@ -349,6 +398,13 @@ export function ReuseView({ projectId }: { projectId: string | null }) {
 
           {!error && results !== null && results.length > 0 ? (
             <div style={{ marginTop: 20 }}>
+              <Radar
+                candidates={results}
+                activeIndex={activeIndex}
+                hoveredIndex={hoveredIndex}
+                onSelect={handleSelect}
+                onHover={setHoveredIndex}
+              />
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '0 2px 12px' }}>
                 <h3 style={{ fontSize: 13, fontWeight: 600, margin: 0 }}>Ranked candidates</h3>
                 <span className="aos-mono" style={{ fontSize: 11, color: 'var(--ink-3)' }}>
@@ -356,7 +412,18 @@ export function ReuseView({ projectId }: { projectId: string | null }) {
                 </span>
               </div>
               {results.map((rec, index) => (
-                <ReuseCard key={`${rec.source_repository}-${index}`} rec={rec} rank={index + 1} />
+                <ReuseCard
+                  key={`${rec.source_repository}-${index}`}
+                  rec={rec}
+                  rank={index + 1}
+                  open={activeIndex === index}
+                  onToggle={() => setActiveIndex((current) => (current === index ? null : index))}
+                  highlighted={hoveredIndex === index}
+                  onHover={(hovered) => setHoveredIndex(hovered ? index : null)}
+                  cardRef={(node) => {
+                    cardRefs.current[index] = node;
+                  }}
+                />
               ))}
             </div>
           ) : null}

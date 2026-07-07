@@ -6,6 +6,11 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Doc-staleness self-heal: detect → correct (AOS-SELFHEAL-001, laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SELFHEAL-001 — close the AOS-20 loop (Article XX; operator correction, LES-L01).** AOS-20 detected doc drift but the fix was manual and deferred every time — a smoke alarm with no sprinkler. Now: `tools/doc_staleness.py --fix` generates a **deterministic reconciliation draft** from `git log` (every PR merged beyond what the state docs reference, with its merge-branch provenance) into `.archetype/reconciliation/PENDING.md` (gitignored, machine-owned). It **never edits the narrative prose and never games the alarm** (Article XII) — the HARD finding stands until the docs are genuinely reconciled; the draft is the *content* a human/LLM applies. A `post-merge` git hook (`scripts/hooks/post-merge` + `scripts/install-hooks.sh` via `core.hooksPath`) regenerates the draft whenever `main` advances past the docs; the **`/reconcile-state`** skill (`skills/ci_devops/reconcile_state.md`) does the narrative half for human approval. TDD (RED→GREEN): 17 doc-staleness tests (4 new); ruff clean; live-validated on this repo's real #76-vs-#71 drift (accurate draft listing PRs #72–#76). Follow-ups: a Claude Code Stop hook, a CI-on-main auto-reconciliation PR, and wiring findings into the nightly self-learning loop. Spec: `.archetype/work/AOS-SELFHEAL-001.md`.
 ## 2026-07-06 — Manifest-derived architecture edges (AOS-ARCH-EDGES-001, laptop session — in review)
 
 ### In Review (tandem laptop session)

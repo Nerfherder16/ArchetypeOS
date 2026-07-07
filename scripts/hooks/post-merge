@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# AOS-SELFHEAL-001: after a local merge/pull (e.g. pulling a `main` that has
+# advanced past the state docs), refresh the doc-staleness reconciliation draft
+# so drift is surfaced-and-drafted rather than silently accumulating.
+#
+# Non-blocking by contract: a hook must never break a merge/pull, so this always
+# exits 0. It writes a DRAFT (.archetype/reconciliation/PENDING.md); it never
+# edits the state docs. Apply the draft via the /reconcile-state skill.
+set -u
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+python3 "${REPO_ROOT}/tools/doc_staleness.py" --fix >/dev/null 2>&1 || true
+DRAFT="${REPO_ROOT}/.archetype/reconciliation/PENDING.md"
+if [ -f "${DRAFT}" ]; then
+  echo "[doc-staleness] State docs lag git — a reconciliation draft was written:"
+  echo "  ${DRAFT}"
+  echo "  Apply it via the /reconcile-state skill (or by hand), then delete it."
+fi
+exit 0

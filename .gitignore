@@ -15,3 +15,6 @@ archetypeos_dev.db
 
 # Runtime scan artifacts (generated under artifact_root)
 data/artifacts/
+
+# Machine-generated doc-staleness reconciliation drafts (AOS-SELFHEAL-001)
+.archetype/reconciliation/

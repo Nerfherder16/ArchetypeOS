@@ -347,6 +347,38 @@ def test_openai_compatible_provider_missing_content_raises(monkeypatch):
         )
 
 
+class _RawResponse:
+    """A 2xx response whose body is arbitrary bytes (not necessarily JSON)."""
+
+    def __init__(self, body: bytes):
+        self._body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._body
+
+
+def test_openai_compatible_provider_non_json_body_raises(monkeypatch):
+    # A 200 with an HTML/proxy error body must surface a legible RuntimeError,
+    # not a raw JSONDecodeError (AOS-LLM-LOCAL-001 spike finding).
+    import aos_core.llm as llm
+
+    monkeypatch.setattr(
+        llm.urllib.request,
+        "urlopen",
+        lambda *a, **k: _RawResponse(b"<html><body>502 Bad Gateway</body></html>"),
+    )
+    with pytest.raises(RuntimeError, match="non-JSON"):
+        llm.OpenAICompatibleProvider(base_url="http://x/v1", model="m").generate(
+            system="", prompt="p"
+        )
+
+
 def test_synthesize_verdict_abstains_below_floor():
     outputs = [
         CouncilAgentOutput(

@@ -21,3 +21,6 @@ data/artifacts/
 
 # Machine-generated conflict digests (AOS-SELFHEAL-003)
 .archetype/conflicts/
+
+# Local-LLM eval spike log (AOS-LLM-LOCAL-001)
+.archetype/eval/

@@ -318,7 +318,7 @@ class OpenAICompatibleProvider:
         )
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+                raw = response.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as exc:
             detail = ""
             try:
@@ -332,6 +332,18 @@ class OpenAICompatibleProvider:
             raise RuntimeError(
                 f"LLM endpoint {self.base_url} unreachable: {exc.reason} "
                 "— set llm_provider=deterministic to run offline"
+            ) from exc
+
+        # A 2xx with a non-JSON body (a proxy/gateway HTML error page, a truncated
+        # or streamed response) must surface a legible error, not a raw
+        # JSONDecodeError. Found by the local reviewer in the AOS-LLM-LOCAL-001
+        # spike — the reviewer that saves tokens improving its own provider.
+        try:
+            payload = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise RuntimeError(
+                f"LLM endpoint {self.base_url} returned a non-JSON body "
+                f"(first 300 chars): {raw[:300]!r}"
             ) from exc
 
         choice = (payload.get("choices") or [{}])[0] if isinstance(payload, dict) else {}

@@ -15,7 +15,9 @@ export type ViewId =
   | 'knowledge'
   | 'reuse'
   | 'digest'
-  | 'scheduling';
+  | 'scheduling'
+  | 'providers'
+  | 'approvals';
 
 export async function navTo(page: Page, view: ViewId): Promise<void> {
   await page.getByTestId(`mode-${modeForView(view)}`).click();

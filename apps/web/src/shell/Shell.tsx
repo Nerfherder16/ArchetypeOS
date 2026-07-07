@@ -17,7 +17,9 @@ export type ViewId =
   | 'knowledge'
   | 'reuse'
   | 'digest'
-  | 'scheduling';
+  | 'scheduling'
+  | 'providers'
+  | 'approvals';
 
 type Theme = 'dark' | 'light';
 

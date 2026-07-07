@@ -49,8 +49,10 @@ test('control tower: create project, register + scan repo, inspect DNA and archi
   // Architecture is its own rail view.
   await navTo(page, 'architecture');
 
-  // Architecture section shows node and edge counts.
-  const archText = (await page.locator('section', { hasText: 'Architecture' }).textContent()) ?? '';
+  // Architecture view shows node and edge counts. The restyle replaced the
+  // <section> wrapper with a native `.aos-view`, so read the counts from the
+  // page body rather than scoping to a <section>.
+  const archText = (await page.textContent('body')) ?? '';
   const nodeMatch = archText.match(/Nodes:\s*(\d+)/);
   const edgeMatch = archText.match(/Edges:\s*(\d+)/);
   expect(nodeMatch).not.toBeNull();

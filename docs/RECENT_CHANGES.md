@@ -7,6 +7,23 @@ This file gives new sessions a quick chronological view of what changed recently
 It is not a replacement for Git history. It is a human-readable coordination log.
 
 ## 2026-07-07 — AOS-UI-007/008 (merged #93/#94) + AOS-UI-009 orb Operations-home (cloud session)
+## 2026-07-07 — AOS-LLM-EVAL-001 slice 3: free-API rotation pool (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-EVAL-001 (slice 3) — free-API rotation pool (429-resilience).** `aos_core/services/llm_pool.py`: `RotatingProvider` rotates across Tier-2 providers and falls through on ANY per-call failure (429/5xx/timeout), raising only when every member fails; a round-robin cursor spreads load so no single daily quota (Groq 1,000/day, etc.) burns first. `build_free_pool(env)` assembles the pool from whichever providers have a key in the environment (Groq/Cerebras/Gemini/Mistral) — **adding a provider is just exporting its key, no code change**. Wired into the router's FREE tier (prefers the pool, falls back to the single provider). 8 hermetic tests + a router env-isolation fixture. **Live-validated**: a `[broken, groq]` rotation fell through the dead endpoint to Groq (`ROTATE OK`), and the env pool assembled + answered (`POOL OK`). Tier 2 is now rate-limit-resilient. Next: the flagship multi-model Council (each agent on a different free model, Claude as Final Judge).
+## 2026-07-07 — AOS-LLM-EVAL-001 slice 2: LLM tier router + privacy guardrail (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-EVAL-001 (slice 2) — the LLM tier router.** `aos_core/services/llm_router.py`: `route(task_class, sensitivity, settings)` picks a backend over the 4-tier pool (ADR-0001) by a per-task-class preference table, choosing the first *available* (configured) tier and always falling back to deterministic. **The hard privacy guardrail is enforced + tested here: a `PRIVATE` task is NEVER routed to Tier-2 free hosted** (it is stripped from the order) — private work stays local (Tier 1) or Claude (Tier 3). Config adds `llm_free_*` (Tier-2 endpoint/model/key) + `llm_claude_enabled` (opt-in Tier 3). 9 hermetic tests. **Live-validated with real backends**: `code_review/private → local` (teevee 3070, `LOCAL OK`), `research/public → free` (Groq 70B, `FREE OK` in 0.28s), and `research/private → deterministic` (the private task **refused the free API** and fell back safely). Next: slice 3 (free-API rotation pool for 429-resilience) → the multi-model Council.
+
+## 2026-07-07 — AOS-LLM-LOCAL-002: provider User-Agent (Tier-2 unblock) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-LOCAL-002 — send a User-Agent (unblocks Tier-2 hosted APIs; slice 1 of AOS-LLM-EVAL-001).** Cloudflare-fronted free hosted endpoints (Groq et al.) return HTTP 403 / CF error 1010 to `urllib`'s default `Python-urllib/x.y` UA, so `OpenAICompatibleProvider` could reach local Ollama but **not any Tier-2 API**. Fix: send an explicit `User-Agent` header (`ArchetypeOS/1.0`). +1 test (suite 27). **Live-validated Tier-2 end-to-end** against Groq `llama-3.3-70b-versatile`: `generate()` → `TIER2 OK` in 0.34s, and the per-category reviewer produced **12 real findings in 0.9s** on a **synthetic** bug diff (privacy tiering — no real repo code to a free tier). First proof of the routed reasoned tier's Tier-2; the key lives outside the repo (a `chmod 600` file; the Infisical vault path is deferred — its UI login is currently locked). Next: the router + free-API rotation pool (AOS-LLM-EVAL-001 slices 2–3).
+## 2026-07-07 — AOS-UI-007 (merged #93) + AOS-UI-008 neon palette (cloud session)
 
 ### Merged (cloud session)
 

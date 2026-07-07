@@ -269,6 +269,7 @@ def test_openai_compatible_provider_builds_request_and_parses(monkeypatch):
         captured["method"] = request.get_method()
         captured["timeout"] = timeout
         captured["auth"] = request.has_header("Authorization")
+        captured["ua"] = request.get_header("User-agent")
         captured["body"] = json.loads(request.data.decode("utf-8"))
         return _FakeHTTPResponse(
             {
@@ -289,6 +290,7 @@ def test_openai_compatible_provider_builds_request_and_parses(monkeypatch):
     assert captured["url"] == "http://localhost:11434/v1/chat/completions"
     assert captured["method"] == "POST"
     assert captured["auth"] is True  # bearer header present when api_key set
+    assert captured["ua"] and "ArchetypeOS" in captured["ua"]  # UA set (Cloudflare 403s the urllib default)
     assert captured["body"]["model"] == "qwen2.5-coder:7b"
     assert captured["body"]["max_tokens"] == 256
     assert captured["body"]["messages"] == [

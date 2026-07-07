@@ -195,7 +195,7 @@ def test_council_review_multi_model_records_agent_models(worker_db, monkeypatch)
 
     monkeypatch.setattr(
         worker, "council_provider",
-        lambda settings: _SpreadFake(["groq-70b", "gemini", "cerebras-120b", "mistral"]),
+        lambda settings, sink=None: _SpreadFake(["groq-70b", "gemini", "cerebras-120b", "mistral"]),
     )
 
     with worker_db() as db:

@@ -86,6 +86,33 @@ STRUCTURED_SYSTEM = (
 
 JSON_FORMAT = {"type": "json_object"}
 
+# Per-category ("pointwise") checks — the research found scoring one defect class
+# at a time is measurably LESS lenient than one combined rubric pass, which is the
+# recall lever. Each is a focused, anti-FP call; findings are aggregated.
+CATEGORY_CHECKS = {
+    "correctness": (
+        "wrong logic, off-by-one, inverted condition, wrong operator, wrong return value",
+        "`return a - b` where addition was intended, or `if x = 5:`",
+    ),
+    "error_handling": (
+        "an error/exception path that can realistically fire and is NOT handled "
+        "(file I/O, parsing, network, a missing dict key)",
+        "`json.loads(open(p).read())` with no try/except for a missing file or bad JSON",
+    ),
+    "resource": (
+        "a leaked file/socket/lock/handle, or missing close/cleanup/context-manager",
+        "`open(p).read()` without closing the handle or using `with`",
+    ),
+    "security": (
+        "injection, unsafe eval/exec/shell, secret exposure, or unvalidated input used in a sink",
+        "`os.system('rm ' + user_input)`",
+    ),
+    "edge_cases": (
+        "a missing guard for null/empty/zero/negative/bounds that the code actually needs",
+        "`def div(a, b): return a / b` with no guard for `b == 0`",
+    ),
+}
+
 
 # --- diff harvesting --------------------------------------------------------
 
@@ -163,6 +190,43 @@ def _run_structured(provider, diff, max_tokens):
     return r, findings, parse_ok
 
 
+def _run_per_category(provider, diff, max_tokens):
+    """One focused, anti-FP JSON pass per defect class; aggregate the findings.
+
+    Trades ~5x latency for recall (each pass is 'pointwise' and less lenient).
+    """
+    all_findings: list = []
+    parse_fail = False
+    last = None
+    for cat, (guidance, example) in CATEGORY_CHECKS.items():
+        system = (
+            f"You are checking a code diff for ONE defect class: {cat} — {guidance}. "
+            "Review ONLY the added/changed (`+`) lines. Flag a defect ONLY if it is "
+            "genuinely PRESENT in the shown changed code; if the code already handles "
+            "it, do NOT flag it. Ignore every other defect class. "
+            'Output JSON ONLY: {"findings": [{"severity": "nit|warn|bug", '
+            '"location": "<file>:<symbol>", "issue": "<one sentence>"}]}. Empty list if none.\n'
+            f"Example of a {cat} defect: {example}"
+        )
+        r = provider.generate(
+            system=system,
+            prompt="Unified diff:\n\n" + diff,
+            max_tokens=max_tokens,
+            response_format=JSON_FORMAT,
+        )
+        last = r
+        try:
+            data = json.loads(r.text)
+            fs = data.get("findings", []) if isinstance(data, dict) else []
+        except (json.JSONDecodeError, AttributeError):
+            fs, parse_fail = [], True
+        for f in fs:
+            if isinstance(f, dict):
+                f.setdefault("category", cat)
+            all_findings.append(f)
+    return last, all_findings, not parse_fail
+
+
 def _fmt_finding(f: dict) -> str:
     return (
         f"[{f.get('severity', '?')}] {f.get('category', '?')} "
@@ -174,7 +238,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Local-LLM reviewer eval spike.")
     parser.add_argument("--count", type=int, default=10)
     parser.add_argument("--base", default="main")
-    parser.add_argument("--mode", choices=["structured", "plain"], default="structured")
+    parser.add_argument(
+        "--mode", choices=["structured", "per-category", "plain"], default="structured"
+    )
     parser.add_argument("--context-lines", type=int, default=12)
     parser.add_argument("--code-only", action="store_true", default=True)
     parser.add_argument("--all-files", dest="code_only", action="store_false")
@@ -211,6 +277,9 @@ def main(argv: list[str] | None = None) -> int:
             try:
                 if args.mode == "structured":
                     result, findings, parse_ok = _run_structured(provider, diff, args.max_tokens)
+                    text = "" if parse_ok else result.text.strip()
+                elif args.mode == "per-category":
+                    result, findings, parse_ok = _run_per_category(provider, diff, args.max_tokens)
                     text = "" if parse_ok else result.text.strip()
                 else:
                     result = provider.generate(

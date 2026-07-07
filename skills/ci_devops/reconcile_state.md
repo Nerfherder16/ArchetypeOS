@@ -30,7 +30,31 @@ CI / DevOps Agent (or the reconciliation-owning Orchestrator).
 
 - The `post-merge` git hook (`scripts/hooks/post-merge`, installed via `scripts/install-hooks.sh`) regenerates the draft whenever you pull a `main` that is ahead of the state docs.
 - The PR Guardian's non-blocking `doc-staleness` WARN on any PR whose base has drifted.
+- **CI-on-main** (AOS-SELFHEAL-002): `.github/workflows/doc-staleness-reconcile.yml` runs `--fix` on every merge and surfaces the draft in a single idempotent `doc-staleness` tracking issue (auto-closed once reconciled). The *detect + draft* half, no human in the loop.
+- **Nightly automation** (AOS-SELFHEAL-002b) — the *correct* half. See below.
 - Manual: run this skill after a batch of merges.
+
+## Nightly automation (headless)
+
+The reconciliation narrative is applied unattended by a nightly routine that
+**opens a PR for human review and never merges**.
+
+- **Prompt (source of truth):** `scripts/nightly/reconcile_state.prompt.md` — the
+  self-contained contract a headless `claude -p` follows (apply narrative → re-run
+  the detector to FRESH → guardian → open PR). It edits only
+  `docs/RECENT_CHANGES.md` (union-safe append), the `docs/CURRENT_STATE.md`
+  PR-watermark, and (if a roadmap-phase HARD fired) `.archetype/roadmap.md`. It
+  deliberately does **not** touch the "Current sprint" line or `docs/HANDOFF.md` —
+  a live Orchestrator owns those (cross-session single-writer discipline).
+- **Local-cron path:** `scripts/nightly/reconcile_state.sh` — a deterministic gate
+  (sync `main` → run the detector → act only on real drift → one fresh branch per
+  day → invoke the prompt). Refuses to run over a dirty tree and skips if today's
+  reconcile branch already exists. `DRY_RUN=1` for a detect-only dress rehearsal.
+- **Cloud path:** register the prompt as a `/schedule` routine — see
+  `docs/runbooks/nightly-routines.md`.
+
+The loop closes on itself: the routine's PR, once a human merges it, is the merge
+that makes the CI detector see FRESH and **auto-close** the `doc-staleness` issue.
 
 ## Non-goals
 

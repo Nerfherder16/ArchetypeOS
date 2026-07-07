@@ -18,6 +18,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-SELFHEAL-002b — Reconcile nightly routine (the "correct" half, headless)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-selfheal-reconcile-nightly` (fresh, from `origin/main`)
+- Summary: Wires the doc-staleness *correction* into a nightly routine so drift reconciles itself overnight. A deterministic gate (`scripts/nightly/reconcile_state.sh`: sync `main` → `tools/doc_staleness.py --fix` → act only on real drift) then wakes a headless `claude` following `scripts/nightly/reconcile_state.prompt.md` to apply the narrative reconciliation, re-verify FRESH, run the guardian, and **open a PR for review — never merges**. Scope is conservative (union-safe `RECENT_CHANGES.md` append + `CURRENT_STATE.md` watermark; never the "Current sprint" line or `HANDOFF.md`). Registered as a `/schedule` cloud routine or a local crontab entry (runbook `docs/runbooks/nightly-routines.md`). Merging its PR is the merge that auto-closes the AOS-SELFHEAL-002 tracking issue — the loop closes on itself. Spec: `.archetype/work/AOS-SELFHEAL-002b.md`.
+- Verification Status: Level 2 — `bash -n` clean; dirty-tree guard exits 0 without touching branches (exercised); gate keys on `PENDING.md` like the CI workflow; runtime artifacts (`PENDING.md`, `nightly.log`) confirmed gitignored; `--fix` drift/FRESH semantics covered by `test_doc_staleness.py`.
+
 ### AOS-SELFHEAL-002 — CI-on-main doc-staleness self-heal (surface + draft)
 
 - Status: In Review

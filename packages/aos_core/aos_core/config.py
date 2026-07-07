@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     # Tier-3 Claude is opt-in (it spends subscription tokens): the router only
     # routes to it when explicitly enabled.
     llm_claude_enabled: bool = False
+    # AOS-LLM-EVAL-001 flagship: when on (and the free pool has >=2 members), the
+    # Agent Council runs each agent on a different free model (RFC-0005 diversity).
+    council_multi_model: bool = False
     # RFC-0010 embedding tier. Default "deterministic" → the hermetic no-op
     # embedder (embed()→None → lexical fallback); the real "fastembed" (ONNX) tier
     # lands in AOS-EMBED-002. ``embedding_model`` names the fastembed model that

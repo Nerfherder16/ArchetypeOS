@@ -378,6 +378,7 @@ class CouncilAgentOutputRead(BaseModel):
     evidence: list
     concerns: list
     confidence: float
+    agent_model: str | None = None
     version: int
     created_at: datetime
     updated_at: datetime

@@ -168,6 +168,61 @@ def test_council_review_dispatch(worker_db):
         assert len(review.agent_outputs) == 4
 
 
+def test_council_review_multi_model_records_agent_models(worker_db, monkeypatch):
+    # AOS-LLM-EVAL-001: the worker's council_review job goes through
+    # council_provider; with a multi-model pool each agent output records a
+    # DISTINCT model. Patch the selector to a spread fake (no network).
+    import json
+    import types
+
+    class _SpreadFake:
+        name = "rotating"
+
+        def __init__(self, models):
+            self._m = models
+            self._i = 0
+
+        def generate(self, *, system, prompt, max_tokens=1024, response_format=None):
+            m = self._m[self._i % len(self._m)]
+            self._i += 1
+            text = json.dumps({
+                "summary": f"via {m}", "findings": [f"f-{m}"], "evidence": ["e"],
+                "concerns": [], "confidence": 0.7, "status": "Complete",
+            })
+            return types.SimpleNamespace(
+                text=text, provider="openai_compatible", model=m, finish_reason="stop"
+            )
+
+    monkeypatch.setattr(
+        worker, "council_provider",
+        lambda settings: _SpreadFake(["groq-70b", "gemini", "cerebras-120b", "mistral"]),
+    )
+
+    with worker_db() as db:
+        project = Project(name="MM", slug="mm-council")
+        db.add(project)
+        db.flush()
+        repository = Repository(project_id=project.id, name="svc", local_path="svc")
+        db.add(repository)
+        db.flush()
+        db.add(RepositoryDNA(repository_id=repository.id, language_mix={"python": 1.0},
+                             frameworks=["fastapi"], risk_flags=["missing tests"]))
+        job = Job(job_type="council_review", status="queued", project_id=project.id,
+                  payload={"question": "Ready?"})
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+    worker.run_job(job_id)
+
+    with worker_db() as db:
+        review = db.get(CouncilReview, db.get(Job, job_id).result["review_id"])
+        models = [o.agent_model for o in review.agent_outputs]
+        assert all(models), "each agent output records its model through the worker"
+        assert len(set(models)) == 4, "four agents ran on four distinct models"
+        assert review.provider == "rotating"
+
+
 def test_test_job_backward_compat(worker_db):
     with worker_db() as db:
         job = Job(job_type="test", status="queued")

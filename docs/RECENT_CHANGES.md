@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-UI-005: 4 read views restyled (merged) + AOS-UI-006: Council & Decisions (in review — restyle arc complete)
+
+### Merged
+
+- **AOS-UI-005 — restyle Architecture + Knowledge + Digest + Scheduling (PR #87).** Second restyle increment: the four read-surface views moved off `.aos-legacy` onto native `.aos-*` (pills, `.aos-rows` lists, HUD cards), reusing the AOS-UI-004 vocabulary + a `.aos-rows` divider-row list. One spec edit (`control-tower.spec.ts` architecture assertion reads counts from `body`). ci-green-signalled. Spec: `.archetype/work/AOS-UI-005.md`.
+
+### In Review
+
+- **AOS-UI-006 — restyle Council & Decisions (the final legacy view).** The densest view — Decisions & Research (Decision Loop + Decisions + Research/recommendations) + Agent Council (Final Judge panel + per-agent cards) — moved onto native `.aos-*` HUD cards + `.aos-rows` lists. The shared `VerdictBadge`/`DecisionStatusBadge` became `.aos-pill` tier variants (`.info`/`.warn`/`.neutral`/`.abstain` added to `tokens.css`, blue/red palette): draft→cyan, escalate/needs_evidence→muted-red, approved→good, rejected→red, abstention stays dashed+italic. No data-logic change; every selector preserved (decision-loop ×2, council-dashboard, decisions green). **Completes the per-view restyle arc — the whole Control Tower is now on the ops-deck** (only the shared `SelectProjectNotice` stays legacy, by design). Carries the AOS-UI-005 (#87) reconciliation. Orchestrator-verified: build clean, full Playwright 15/15, council view screenshotted with live data. Spec: `.archetype/work/AOS-UI-006.md`.
+
 ## 2026-07-07 — AOS-UI-004: Overview+Repositories restyle (merged) + AOS-UI-005: 4 read views (in review)
 
 ### Merged

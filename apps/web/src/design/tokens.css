@@ -580,6 +580,21 @@
 .aos-pill.good::before { background: var(--signal); box-shadow: var(--glow-soft); }
 .aos-pill.risk { color: var(--red); border-color: color-mix(in srgb, var(--red) 40%, var(--frame)); }
 .aos-pill.risk::before { background: var(--red); box-shadow: 0 0 7px var(--red); }
+/* Informational tier (draft / defer / research) — periwinkle --lex, the third
+ * accent in the blue+red palette, distinct from the cyan `.good`. */
+.aos-pill.info { color: var(--lex); border-color: color-mix(in srgb, var(--lex) 40%, var(--frame)); }
+.aos-pill.info::before { background: var(--lex); box-shadow: 0 0 7px color-mix(in srgb, var(--lex) 60%, transparent); }
+/* Caution tier (needs_evidence / escalate). The palette bans amber/yellow, so
+ * warn lives in the red family as a MUTED red — clearly softer than the solid,
+ * glowing `.risk` red used for hard rejections. */
+.aos-pill.warn { color: color-mix(in srgb, var(--red) 72%, var(--ink-2)); border-color: color-mix(in srgb, var(--red) 28%, var(--frame)); }
+.aos-pill.warn::before { background: color-mix(in srgb, var(--red) 72%, var(--ink-2)); }
+/* Neutral tier (active / unknown) — cool navy neutrals, the default pill look. */
+.aos-pill.neutral { color: var(--ink-2); border-color: var(--frame); }
+.aos-pill.neutral::before { background: var(--ink-3); }
+/* Abstention modifier ("Insufficient evidence"): dashed border + italic label,
+ * kept visually distinct exactly as the legacy badge was. */
+.aos-pill.abstain { border-style: dashed; font-style: italic; }
 .aos-pills { display: flex; gap: 10px; flex-wrap: wrap; }
 
 .aos-kv { display: grid; grid-template-columns: max-content 1fr; gap: 7px 18px; margin: 0; }

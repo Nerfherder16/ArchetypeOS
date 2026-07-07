@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-OPS-001: CI-green signal (merged) + AOS-UI-003: rail shell (in review)
+
+### Merged
+
+- **AOS-OPS-001 — CI-green signal (PR #81).** A `ci-green` fan-in job in `.github/workflows/ci.yml` runs only when all PR jobs succeed and posts a `✅ CI green @ <sha>` comment; GitHub PR webhooks deliver comments (but not CI-success) to a watching session, so an all-green run becomes an event the Orchestrator receives within seconds — ending timed polling. **Self-validated on its own PR** (the job fired and woke the session, which then posted the Merge Gate). Carried the AOS-UI-002 (#79) reconciliation and two flake fixes surfaced by its own CI: **LES-030** (the "Decisions & Research" section renders both the reviews list and the decisions list, each echoing the question → `decisionRow` strict-mode ambiguity; fixed with `data-testid="decision-row"`) and **LES-031** (the CI Guardian reads the PR body from the push event payload, so finalize the body before the triggering push — a late body edit doesn't re-trigger CI). High-risk `ci.yml` change acknowledged (purely additive, comment-only). Spec: `.archetype/work/AOS-OPS-001` (in `.github` + docs).
+
+### In Review
+
+- **AOS-UI-003 — Control Tower rail shell + state-based view routing.** The full-page adoption of the `.aos-*` ops-deck design system: the 11 stacked sections become 8 routed views behind a left rail + topbar + workspace, switched by an `activeView` state (no router dep). New `apps/web/src/shell/Shell.tsx`; `main.tsx` restructured (all state/handlers unchanged — JSX relocated into a `renderView()` switch closure); the active-project selector moves into the rail foot; `tokens.css` gains shell/nav classes + `.aos-legacy` (a light panel quarantining un-restyled sections legibly on the dark deck). Reuse renders native `.aos-*`; other views are legacy-wrapped pending per-view restyle (AOS-UI-004+). All e2e specs navigate via `nav-<id>` rail buttons. **Whole-file `main.tsx` restructure — claimed by the cloud session with operator OK; laptop pauses `main.tsx` edits until merge.** Built by an Opus builder subagent, Orchestrator-verified: build clean, full Playwright suite 15/15, shell screenshotted across Overview/Reuse/Council. Spec: `.archetype/work/AOS-UI-003.md`.
+
 ## 2026-07-07 — AOS-UI-002: WebGL radar for the Reuse view (merged) + AOS-OPS-001: CI-green signal (in review)
 
 ### Merged

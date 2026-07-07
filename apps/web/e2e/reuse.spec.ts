@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // AOS-UI-001 — Reuse view wired to the live transfer endpoint
 // (POST /projects/{id}/transfer). Real API on sqlite (lexical path).
@@ -22,6 +23,9 @@ test('reuse view: create project → scan portfolio → terminal state (results 
   await page.getByPlaceholder('New project name').fill(projectName);
   await page.getByRole('button', { name: /create project/i }).click();
   await expect(page.getByRole('button', { name: projectName })).toBeVisible();
+
+  // Reuse is its own rail view.
+  await navTo(page, 'reuse');
 
   // The Reuse section renders once a project is selected.
   const reuseView = page.getByTestId('reuse-view');

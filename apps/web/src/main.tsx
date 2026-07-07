@@ -47,6 +47,7 @@ import {
   type Schedule,
 } from './api';
 import { ReuseView } from './features/reuse/ReuseView';
+import { Shell, type NavItem, type ViewId } from './shell/Shell';
 import './design/tokens.css';
 
 const errorMessage = (err: unknown): string =>
@@ -59,6 +60,19 @@ const sectionStyle: React.CSSProperties = {
 };
 
 const errorStyle: React.CSSProperties = { color: '#b00020' };
+
+// Rail nav map (AOS-UI-003): each id routes to a view; the labels are the
+// accessible names of the rail buttons.
+const NAV_ITEMS: NavItem[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'repositories', label: 'Repositories' },
+  { id: 'architecture', label: 'Architecture' },
+  { id: 'council', label: 'Council & Decisions' },
+  { id: 'knowledge', label: 'Knowledge' },
+  { id: 'reuse', label: 'Reuse' },
+  { id: 'digest', label: 'Digest' },
+  { id: 'scheduling', label: 'Scheduling' },
+];
 
 // Palette for the decision-loop status badge; unknown statuses fall back to grey.
 const DECISION_STATUS_COLORS: Record<string, { color: string; background: string; border: string }> = {
@@ -143,7 +157,20 @@ function DecisionStatusBadge({ status }: { status: string }) {
   );
 }
 
+// Prompt shown inside a view that needs a selected project when none is active.
+function SelectProjectNotice() {
+  return (
+    <div className="aos-legacy">
+      <p style={{ margin: 0 }}>
+        Select or create a project in the rail to load this view.
+      </p>
+    </div>
+  );
+}
+
 function App() {
+  const [activeView, setActiveView] = useState<ViewId>('overview');
+
   const [health, setHealth] = useState<Health | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
 
@@ -873,885 +900,984 @@ function App() {
         ? Object.keys(dna.language_mix)
         : [];
 
-  return (
-    <main style={{ fontFamily: 'system-ui, sans-serif', padding: 24, maxWidth: 900 }}>
-      <header>
-        <h1 style={{ marginBottom: 4 }}>ArchetypeOS</h1>
-        <p style={{ margin: 0, color: '#555' }}>Engineering Control Tower</p>
-      </header>
+  const selectedProject = projects.find((project) => project.id === selectedProjectId) ?? null;
 
-      <section style={sectionStyle}>
-        <h2>Runtime Health</h2>
-        {healthError ? (
-          <p role="alert" style={errorStyle}>
-            Health unavailable: {healthError}
-          </p>
-        ) : health ? (
-          <ul>
-            <li>API: {health.api ? 'ok' : 'down'}</li>
-            <li>Postgres: {health.database ? 'ok' : 'down'}</li>
-            <li>Redis: {health.redis ? 'ok' : 'down'}</li>
-          </ul>
-        ) : (
-          <p>Loading health...</p>
-        )}
-      </section>
+  // Compact runtime-health pip for the topbar (the full Runtime Health list lives
+  // in the Overview view). Derives from the same health/healthError state.
+  const healthPip = (
+    <span
+      className="aos-mono"
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 11, color: 'var(--ink-2)' }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: '50%',
+          background: healthError ? 'var(--red)' : health ? 'var(--signal)' : 'var(--ink-3)',
+          boxShadow: healthError ? undefined : 'var(--glow-soft)',
+        }}
+      />
+      {healthError ? 'degraded' : health ? 'operational' : 'checking…'}
+    </span>
+  );
 
-      <section style={sectionStyle}>
-        <h2>Knowledge</h2>
-        {knowledgeError ? (
-          <p role="alert" style={errorStyle}>
-            Knowledge unavailable: {knowledgeError}
-          </p>
-        ) : null}
-        <div>
-          <button
-            type="button"
-            disabled={knowledgeSyncing}
-            onClick={() => void handleSyncKnowledge()}
-          >
-            {knowledgeSyncing ? 'Syncing...' : 'Sync from vault'}
-          </button>
-          {knowledgeSyncSummary ? (
-            <span style={{ marginLeft: 8, color: '#555' }}>{knowledgeSyncSummary}</span>
-          ) : null}
-        </div>
-        <div style={{ marginTop: 8 }}>
-          <button
-            type="button"
-            onClick={() => setKnowledgeFilter('all')}
-            style={{
-              cursor: 'pointer',
-              padding: '4px 10px',
-              border: knowledgeFilter === 'all' ? '2px solid #0b57d0' : '1px solid #ccc',
-              background: knowledgeFilter === 'all' ? '#e8f0fe' : '#fff',
-              fontWeight: knowledgeFilter === 'all' ? 600 : 400,
-            }}
-          >
-            All
-          </button>
-          <button
-            type="button"
-            onClick={() => setKnowledgeFilter('open')}
-            style={{
-              cursor: 'pointer',
-              marginLeft: 8,
-              padding: '4px 10px',
-              border: knowledgeFilter === 'open' ? '2px solid #0b57d0' : '1px solid #ccc',
-              background: knowledgeFilter === 'open' ? '#e8f0fe' : '#fff',
-              fontWeight: knowledgeFilter === 'open' ? 600 : 400,
-            }}
-          >
-            Open
-          </button>
-        </div>
-        {knowledgePages.length === 0 ? (
-          <p>No knowledge pages yet. Sync from the vault to load lessons.</p>
-        ) : (
-          <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
-            {knowledgePages.map((page) => {
-              const isOpen = page.validation_state === 'open';
-              return (
-                <li key={page.id} style={{ marginBottom: 6 }}>
-                  {isOpen ? (
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        marginRight: 8,
-                        padding: '1px 8px',
-                        borderRadius: 10,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        color: '#b45309',
-                        background: '#fef3c7',
-                        border: '1px solid #f59e0b',
-                      }}
-                    >
-                      open
-                    </span>
-                  ) : null}
-                  <span style={{ fontWeight: isOpen ? 600 : 400 }}>{page.title}</span>{' '}
-                  <span style={{ color: '#777' }}>
-                    ({page.page_type} · {page.validation_state})
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <section style={sectionStyle}>
-        <h2>Projects</h2>
-        {projectsError ? (
-          <p role="alert" style={errorStyle}>
-            {projectsError}
-          </p>
-        ) : null}
-        {projects.length === 0 ? <p>No projects registered yet.</p> : null}
-        <ul style={{ listStyle: 'none', padding: 0 }}>
-          {projects.map((project) => {
-            const selected = project.id === selectedProjectId;
-            return (
-              <li key={project.id} style={{ marginBottom: 4 }}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedProjectId(project.id)}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '6px 10px',
-                    border: selected ? '2px solid #0b57d0' : '1px solid #ccc',
-                    background: selected ? '#e8f0fe' : '#fff',
-                    fontWeight: selected ? 600 : 400,
-                  }}
-                >
-                  {project.name} — {project.status}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <form onSubmit={handleCreateProject} style={{ marginTop: 8 }}>
-          <input
-            type="text"
-            value={newProjectName}
-            placeholder="New project name"
-            onChange={(event) => setNewProjectName(event.target.value)}
-          />
-          <button type="submit" disabled={creatingProject} style={{ marginLeft: 8 }}>
-            {creatingProject ? 'Creating...' : 'Create project'}
-          </button>
-        </form>
-      </section>
-
-      {selectedProjectId ? <ReuseView projectId={selectedProjectId} /> : null}
-
-      {selectedProjectId ? (
-        <section style={sectionStyle}>
-          <h2>Repositories</h2>
-          {repositoriesError ? (
-            <p role="alert" style={errorStyle}>
-              {repositoriesError}
-            </p>
-          ) : null}
-          {repositories.length === 0 ? <p>No repositories registered yet.</p> : null}
-          {repositories.length > 0 ? (
-            <table style={{ borderCollapse: 'collapse', width: '100%' }}>
-              <thead>
-                <tr style={{ textAlign: 'left' }}>
-                  <th style={{ padding: 4 }}>Name</th>
-                  <th style={{ padding: 4 }}>Local path</th>
-                  <th style={{ padding: 4 }}>Last scanned</th>
-                  <th style={{ padding: 4 }}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {repositories.map((repository) => {
-                  const selected = repository.id === selectedRepositoryId;
-                  return (
-                    <tr
-                      key={repository.id}
-                      style={{ background: selected ? '#e8f0fe' : 'transparent' }}
-                    >
-                      <td style={{ padding: 4 }}>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedRepositoryId(repository.id)}
-                          style={{
-                            cursor: 'pointer',
-                            border: 'none',
-                            background: 'none',
-                            padding: 0,
-                            fontWeight: selected ? 600 : 400,
-                            textDecoration: 'underline',
-                            color: '#0b57d0',
-                          }}
-                        >
-                          {repository.name}
-                        </button>
-                      </td>
-                      <td style={{ padding: 4 }}>{repository.local_path}</td>
-                      <td style={{ padding: 4 }}>{repository.last_scanned_at ?? 'never'}</td>
-                      <td style={{ padding: 4 }}>
-                        <button
-                          type="button"
-                          disabled={scanningRepoId === repository.id}
-                          onClick={() => void handleScan(repository.id)}
-                        >
-                          {scanningRepoId === repository.id ? 'Scanning...' : 'Run scan'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : null}
-          <form onSubmit={handleRegisterRepository} style={{ marginTop: 8 }}>
-            <input
-              type="text"
-              value={newRepoName}
-              placeholder="Repository name"
-              onChange={(event) => setNewRepoName(event.target.value)}
-            />
-            <input
-              type="text"
-              value={newRepoPath}
-              placeholder="Local path"
-              onChange={(event) => setNewRepoPath(event.target.value)}
-              style={{ marginLeft: 8 }}
-            />
-            <button type="submit" disabled={registeringRepo} style={{ marginLeft: 8 }}>
-              {registeringRepo ? 'Registering...' : 'Register repository'}
-            </button>
-          </form>
-        </section>
+  // The active-project selector lives in the rail foot and persists across views.
+  const projectSelector = (
+    <div className="aos-rail-projects">
+      <h2 className="aos-eyebrow" style={{ margin: '0 0 8px' }}>
+        Projects
+      </h2>
+      {projectsError ? (
+        <p role="alert" style={{ color: 'var(--red)', margin: '0 0 6px', fontSize: 12 }}>
+          {projectsError}
+        </p>
       ) : null}
+      {projects.length === 0 ? (
+        <p style={{ margin: '0 0 6px', color: 'var(--ink-3)', fontSize: 12 }}>
+          No projects registered yet.
+        </p>
+      ) : null}
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {projects.map((project) => {
+          const selected = project.id === selectedProjectId;
+          return (
+            <li key={project.id}>
+              <button
+                type="button"
+                className={selected ? 'aos-nav-item active' : 'aos-nav-item'}
+                aria-current={selected ? 'true' : undefined}
+                onClick={() => setSelectedProjectId(project.id)}
+                style={{ fontSize: 12 }}
+              >
+                {project.name} — {project.status}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+      <form onSubmit={handleCreateProject} style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <input
+          className="aos-input"
+          type="text"
+          value={newProjectName}
+          placeholder="New project name"
+          onChange={(event) => setNewProjectName(event.target.value)}
+          style={{ fontSize: 13, padding: '8px 10px' }}
+        />
+        <button type="submit" className="aos-btn-ghost" disabled={creatingProject}>
+          {creatingProject ? 'Creating...' : 'Create project'}
+        </button>
+      </form>
+    </div>
+  );
 
-      {selectedRepositoryId ? (
-        <section style={sectionStyle}>
-          <h2>Scan Summary</h2>
-          {dnaError ? (
-            <p role="alert" style={errorStyle}>
-              {dnaError}
-            </p>
-          ) : null}
-          {dnaLoading ? <p>Loading scan summary...</p> : null}
-          {!dnaLoading && !dnaError && dna === null ? <p>No scan recorded yet.</p> : null}
-          {dna ? (
-            <div>
-              <p>
-                <strong>Primary languages:</strong>{' '}
-                {primaryLanguages.length > 0 ? primaryLanguages.join(', ') : 'none'}
-              </p>
-              <p>
-                <strong>Package managers:</strong>{' '}
-                {dna.package_managers.length > 0 ? dna.package_managers.join(', ') : 'none'}
-              </p>
-              <ul>
-                <li>Has Docker: {summary?.has_docker ? 'yes' : 'no'}</li>
-                <li>Has CI: {summary?.has_ci ? 'yes' : 'no'}</li>
-                <li>Has tests: {summary?.has_tests ? 'yes' : 'no'}</li>
-                <li>Has env example: {summary?.has_env_example ? 'yes' : 'no'}</li>
-              </ul>
-              <p>
-                <strong>Risk flags:</strong>
-              </p>
-              {dna.risk_flags.length > 0 ? (
+  // Each view relocates the pre-existing section JSX verbatim, wrapped in a
+  // light `.aos-legacy` panel so the un-restyled inline-styled markup stays
+  // legible on the dark deck. The Reuse view renders native `.aos-*` bare.
+  const renderView = (): React.ReactNode => {
+    switch (activeView) {
+      case 'overview':
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Runtime Health</h2>
+              {healthError ? (
+                <p role="alert" style={errorStyle}>
+                  Health unavailable: {healthError}
+                </p>
+              ) : health ? (
                 <ul>
-                  {dna.risk_flags.map((flag, index) => (
-                    <li key={index}>{flag}</li>
-                  ))}
+                  <li>API: {health.api ? 'ok' : 'down'}</li>
+                  <li>Postgres: {health.database ? 'ok' : 'down'}</li>
+                  <li>Redis: {health.redis ? 'ok' : 'down'}</li>
                 </ul>
               ) : (
-                <p>No risk flags.</p>
+                <p>Loading health...</p>
               )}
-              <p>
-                <strong>Confidence:</strong> {dna.confidence}
-              </p>
+            </section>
+            <section style={sectionStyle}>
+              <h2>Project</h2>
+              {selectedProject ? (
+                <p style={{ margin: 0 }}>
+                  Active project: <strong>{selectedProject.name}</strong> — {selectedProject.status}.
+                  Use the rail to move between Repositories, Council &amp; Decisions, Digest and more.
+                </p>
+              ) : (
+                <p style={{ margin: 0 }}>
+                  No project selected. Create or select one in the rail foot to begin.
+                </p>
+              )}
+              <p style={{ marginTop: 8, color: '#777' }}>Voice inbox text capture — planned (v0.1).</p>
+            </section>
+          </div>
+        );
+
+      case 'knowledge':
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Knowledge</h2>
+              {knowledgeError ? (
+                <p role="alert" style={errorStyle}>
+                  Knowledge unavailable: {knowledgeError}
+                </p>
+              ) : null}
+              <div>
+                <button
+                  type="button"
+                  disabled={knowledgeSyncing}
+                  onClick={() => void handleSyncKnowledge()}
+                >
+                  {knowledgeSyncing ? 'Syncing...' : 'Sync from vault'}
+                </button>
+                {knowledgeSyncSummary ? (
+                  <span style={{ marginLeft: 8, color: '#555' }}>{knowledgeSyncSummary}</span>
+                ) : null}
+              </div>
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setKnowledgeFilter('all')}
+                  style={{
+                    cursor: 'pointer',
+                    padding: '4px 10px',
+                    border: knowledgeFilter === 'all' ? '2px solid #0b57d0' : '1px solid #ccc',
+                    background: knowledgeFilter === 'all' ? '#e8f0fe' : '#fff',
+                    fontWeight: knowledgeFilter === 'all' ? 600 : 400,
+                  }}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setKnowledgeFilter('open')}
+                  style={{
+                    cursor: 'pointer',
+                    marginLeft: 8,
+                    padding: '4px 10px',
+                    border: knowledgeFilter === 'open' ? '2px solid #0b57d0' : '1px solid #ccc',
+                    background: knowledgeFilter === 'open' ? '#e8f0fe' : '#fff',
+                    fontWeight: knowledgeFilter === 'open' ? 600 : 400,
+                  }}
+                >
+                  Open
+                </button>
+              </div>
+              {knowledgePages.length === 0 ? (
+                <p>No knowledge pages yet. Sync from the vault to load lessons.</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+                  {knowledgePages.map((page) => {
+                    const isOpen = page.validation_state === 'open';
+                    return (
+                      <li key={page.id} style={{ marginBottom: 6 }}>
+                        {isOpen ? (
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              marginRight: 8,
+                              padding: '1px 8px',
+                              borderRadius: 10,
+                              fontSize: 12,
+                              fontWeight: 600,
+                              color: '#b45309',
+                              background: '#fef3c7',
+                              border: '1px solid #f59e0b',
+                            }}
+                          >
+                            open
+                          </span>
+                        ) : null}
+                        <span style={{ fontWeight: isOpen ? 600 : 400 }}>{page.title}</span>{' '}
+                        <span style={{ color: '#777' }}>
+                          ({page.page_type} · {page.validation_state})
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
+          </div>
+        );
+
+      case 'reuse':
+        return <ReuseView projectId={selectedProjectId} />;
+
+      case 'repositories':
+        if (!selectedProjectId) {
+          return <SelectProjectNotice />;
+        }
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Repositories</h2>
+              {repositoriesError ? (
+                <p role="alert" style={errorStyle}>
+                  {repositoriesError}
+                </p>
+              ) : null}
+              {repositories.length === 0 ? <p>No repositories registered yet.</p> : null}
+              {repositories.length > 0 ? (
+                <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+                  <thead>
+                    <tr style={{ textAlign: 'left' }}>
+                      <th style={{ padding: 4 }}>Name</th>
+                      <th style={{ padding: 4 }}>Local path</th>
+                      <th style={{ padding: 4 }}>Last scanned</th>
+                      <th style={{ padding: 4 }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {repositories.map((repository) => {
+                      const selected = repository.id === selectedRepositoryId;
+                      return (
+                        <tr
+                          key={repository.id}
+                          style={{ background: selected ? '#e8f0fe' : 'transparent' }}
+                        >
+                          <td style={{ padding: 4 }}>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedRepositoryId(repository.id)}
+                              style={{
+                                cursor: 'pointer',
+                                border: 'none',
+                                background: 'none',
+                                padding: 0,
+                                fontWeight: selected ? 600 : 400,
+                                textDecoration: 'underline',
+                                color: '#0b57d0',
+                              }}
+                            >
+                              {repository.name}
+                            </button>
+                          </td>
+                          <td style={{ padding: 4 }}>{repository.local_path}</td>
+                          <td style={{ padding: 4 }}>{repository.last_scanned_at ?? 'never'}</td>
+                          <td style={{ padding: 4 }}>
+                            <button
+                              type="button"
+                              disabled={scanningRepoId === repository.id}
+                              onClick={() => void handleScan(repository.id)}
+                            >
+                              {scanningRepoId === repository.id ? 'Scanning...' : 'Run scan'}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              ) : null}
+              <form onSubmit={handleRegisterRepository} style={{ marginTop: 8 }}>
+                <input
+                  type="text"
+                  value={newRepoName}
+                  placeholder="Repository name"
+                  onChange={(event) => setNewRepoName(event.target.value)}
+                />
+                <input
+                  type="text"
+                  value={newRepoPath}
+                  placeholder="Local path"
+                  onChange={(event) => setNewRepoPath(event.target.value)}
+                  style={{ marginLeft: 8 }}
+                />
+                <button type="submit" disabled={registeringRepo} style={{ marginLeft: 8 }}>
+                  {registeringRepo ? 'Registering...' : 'Register repository'}
+                </button>
+              </form>
+            </section>
+
+            {selectedRepositoryId ? (
+              <section style={sectionStyle}>
+                <h2>Scan Summary</h2>
+                {dnaError ? (
+                  <p role="alert" style={errorStyle}>
+                    {dnaError}
+                  </p>
+                ) : null}
+                {dnaLoading ? <p>Loading scan summary...</p> : null}
+                {!dnaLoading && !dnaError && dna === null ? <p>No scan recorded yet.</p> : null}
+                {dna ? (
+                  <div>
+                    <p>
+                      <strong>Primary languages:</strong>{' '}
+                      {primaryLanguages.length > 0 ? primaryLanguages.join(', ') : 'none'}
+                    </p>
+                    <p>
+                      <strong>Package managers:</strong>{' '}
+                      {dna.package_managers.length > 0 ? dna.package_managers.join(', ') : 'none'}
+                    </p>
+                    <ul>
+                      <li>Has Docker: {summary?.has_docker ? 'yes' : 'no'}</li>
+                      <li>Has CI: {summary?.has_ci ? 'yes' : 'no'}</li>
+                      <li>Has tests: {summary?.has_tests ? 'yes' : 'no'}</li>
+                      <li>Has env example: {summary?.has_env_example ? 'yes' : 'no'}</li>
+                    </ul>
+                    <p>
+                      <strong>Risk flags:</strong>
+                    </p>
+                    {dna.risk_flags.length > 0 ? (
+                      <ul>
+                        {dna.risk_flags.map((flag, index) => (
+                          <li key={index}>{flag}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p>No risk flags.</p>
+                    )}
+                    <p>
+                      <strong>Confidence:</strong> {dna.confidence}
+                    </p>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+          </div>
+        );
+
+      case 'architecture':
+        if (!selectedProjectId) {
+          return <SelectProjectNotice />;
+        }
+        if (!selectedRepositoryId) {
+          return (
+            <div className="aos-legacy">
+              <section>
+                <h2>Architecture</h2>
+                <p>Select a repository in the Repositories view and run a scan to load its architecture.</p>
+              </section>
             </div>
-          ) : null}
-        </section>
-      ) : null}
+          );
+        }
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Architecture</h2>
+              {architectureError ? (
+                <p role="alert" style={errorStyle}>
+                  {architectureError}
+                </p>
+              ) : null}
+              {architecture ? (
+                <div>
+                  <p>
+                    Nodes: {architecture.nodes.length} · Edges: {architecture.edges.length}
+                  </p>
+                  <ul>
+                    {architecture.nodes.map((node) => (
+                      <li key={node.id}>
+                        {node.label} ({node.type}) — confidence {node.confidence}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : !architectureError ? (
+                <p>Loading architecture...</p>
+              ) : null}
+            </section>
+          </div>
+        );
 
-      {selectedRepositoryId ? (
-        <section style={sectionStyle}>
-          <h2>Architecture</h2>
-          {architectureError ? (
-            <p role="alert" style={errorStyle}>
-              {architectureError}
-            </p>
-          ) : null}
-          {architecture ? (
-            <div>
-              <p>
-                Nodes: {architecture.nodes.length} · Edges: {architecture.edges.length}
-              </p>
-              <ul>
-                {architecture.nodes.map((node) => (
-                  <li key={node.id}>
-                    {node.label} ({node.type}) — confidence {node.confidence}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : !architectureError ? (
-            <p>Loading architecture...</p>
-          ) : null}
-        </section>
-      ) : null}
+      case 'council':
+        if (!selectedProjectId) {
+          return <SelectProjectNotice />;
+        }
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Decisions &amp; Research</h2>
+              {artifactsError ? (
+                <p role="alert" style={errorStyle}>
+                  {artifactsError}
+                </p>
+              ) : null}
 
-      {selectedProjectId ? (
-        <section style={sectionStyle}>
-          <h2>Decisions &amp; Research</h2>
-          {artifactsError ? (
-            <p role="alert" style={errorStyle}>
-              {artifactsError}
-            </p>
-          ) : null}
+              <h3 style={{ marginBottom: 4 }}>Decision Loop</h3>
+              {councilError ? (
+                <p role="alert" style={errorStyle}>
+                  {councilError}
+                </p>
+              ) : null}
+              <form onSubmit={handleEnqueueCouncilReview}>
+                <input
+                  type="text"
+                  value={councilQuestion}
+                  placeholder="Council question"
+                  onChange={(event) => setCouncilQuestion(event.target.value)}
+                />
+                <button type="submit" disabled={councilBusy} style={{ marginLeft: 8 }}>
+                  {councilBusy ? 'Enqueuing...' : 'Enqueue council review'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleRefreshLoop()}
+                  style={{ marginLeft: 8 }}
+                >
+                  Refresh reviews
+                </button>
+              </form>
 
-          <h3 style={{ marginBottom: 4 }}>Decision Loop</h3>
-          {councilError ? (
-            <p role="alert" style={errorStyle}>
-              {councilError}
-            </p>
-          ) : null}
-          <form onSubmit={handleEnqueueCouncilReview}>
-            <input
-              type="text"
-              value={councilQuestion}
-              placeholder="Council question"
-              onChange={(event) => setCouncilQuestion(event.target.value)}
-            />
-            <button type="submit" disabled={councilBusy} style={{ marginLeft: 8 }}>
-              {councilBusy ? 'Enqueuing...' : 'Enqueue council review'}
-            </button>
-            <button
-              type="button"
-              onClick={() => void handleRefreshLoop()}
-              style={{ marginLeft: 8 }}
-            >
-              Refresh reviews
-            </button>
-          </form>
+              <h4 style={{ marginBottom: 4 }}>Council Reviews</h4>
+              {councilReviews.length === 0 ? (
+                <p>
+                  No council reviews yet. Enqueue one — the worker produces it asynchronously, then
+                  click Refresh reviews.
+                </p>
+              ) : (
+                <ul>
+                  {councilReviews.map((review) => {
+                    const drafting = loopBusyKey === `draft:${review.id}`;
+                    return (
+                      <li key={review.id} style={{ marginBottom: 4 }}>
+                        {review.verdict} — confidence {review.confidence}
+                        {review.question ? ` · ${review.question}` : ''}
+                        <button
+                          type="button"
+                          disabled={drafting}
+                          onClick={() => void handleDraftDecision(review.id)}
+                          style={{ marginLeft: 8 }}
+                        >
+                          {drafting ? 'Drafting...' : 'Draft decision'}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
 
-          <h4 style={{ marginBottom: 4 }}>Council Reviews</h4>
-          {councilReviews.length === 0 ? (
-            <p>
-              No council reviews yet. Enqueue one — the worker produces it asynchronously, then
-              click Refresh reviews.
-            </p>
-          ) : (
-            <ul>
-              {councilReviews.map((review) => {
-                const drafting = loopBusyKey === `draft:${review.id}`;
-                return (
-                  <li key={review.id} style={{ marginBottom: 4 }}>
-                    {review.verdict} — confidence {review.confidence}
-                    {review.question ? ` · ${review.question}` : ''}
-                    <button
-                      type="button"
-                      disabled={drafting}
-                      onClick={() => void handleDraftDecision(review.id)}
-                      style={{ marginLeft: 8 }}
-                    >
-                      {drafting ? 'Drafting...' : 'Draft decision'}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          <h3 style={{ marginBottom: 4 }}>Decisions</h3>
-          {decisions.length === 0 ? (
-            <p>No decisions yet.</p>
-          ) : (
-            <ul>
-              {decisions.map((decision) => {
-                const linkedResearch = decision.evidence.filter(
-                  (entry) => entry.type === 'research_note',
-                ).length;
-                const governed =
-                  decision.status === 'draft' || decision.status === 'needs_evidence';
-                const approveBusy = loopBusyKey === `approve:${decision.id}`;
-                const rejectBusy = loopBusyKey === `reject:${decision.id}`;
-                const adrBusy = loopBusyKey === `adr:${decision.id}`;
-                const inlineError = decisionErrors[decision.id];
-                const adrResult = adrResults[decision.id];
-                return (
-                  <li key={decision.id} data-testid="decision-row" style={{ marginBottom: 8 }}>
-                    <DecisionStatusBadge status={decision.status} />
-                    <span>
-                      {decision.title} — confidence {decision.confidence} · {linkedResearch} linked
-                      research
-                    </span>
-                    {decision.approved_by ? (
-                      <span style={{ color: '#166534' }}> · approved by {decision.approved_by}</span>
-                    ) : null}
-                    {governed ? (
-                      <div style={{ marginTop: 4 }}>
-                        {decision.status === 'needs_evidence' ? (
-                          <p style={{ margin: '0 0 4px', color: '#777' }}>
-                            Drafted from an abstained review — gather evidence and re-draft before
-                            approval.
+              <h3 style={{ marginBottom: 4 }}>Decisions</h3>
+              {decisions.length === 0 ? (
+                <p>No decisions yet.</p>
+              ) : (
+                <ul>
+                  {decisions.map((decision) => {
+                    const linkedResearch = decision.evidence.filter(
+                      (entry) => entry.type === 'research_note',
+                    ).length;
+                    const governed =
+                      decision.status === 'draft' || decision.status === 'needs_evidence';
+                    const approveBusy = loopBusyKey === `approve:${decision.id}`;
+                    const rejectBusy = loopBusyKey === `reject:${decision.id}`;
+                    const adrBusy = loopBusyKey === `adr:${decision.id}`;
+                    const inlineError = decisionErrors[decision.id];
+                    const adrResult = adrResults[decision.id];
+                    return (
+                      <li key={decision.id} data-testid="decision-row" style={{ marginBottom: 8 }}>
+                        <DecisionStatusBadge status={decision.status} />
+                        <span>
+                          {decision.title} — confidence {decision.confidence} · {linkedResearch} linked
+                          research
+                        </span>
+                        {decision.approved_by ? (
+                          <span style={{ color: '#166534' }}> · approved by {decision.approved_by}</span>
+                        ) : null}
+                        {governed ? (
+                          <div style={{ marginTop: 4 }}>
+                            {decision.status === 'needs_evidence' ? (
+                              <p style={{ margin: '0 0 4px', color: '#777' }}>
+                                Drafted from an abstained review — gather evidence and re-draft before
+                                approval.
+                              </p>
+                            ) : null}
+                            <input
+                              type="text"
+                              value={approverInputs[decision.id] ?? ''}
+                              placeholder="Approver name"
+                              onChange={(event) =>
+                                setApproverInputs((prev) => ({
+                                  ...prev,
+                                  [decision.id]: event.target.value,
+                                }))
+                              }
+                            />
+                            <button
+                              type="button"
+                              disabled={approveBusy}
+                              onClick={() => void handleApproveDecision(decision.id)}
+                              style={{ marginLeft: 8 }}
+                            >
+                              {approveBusy ? 'Approving...' : 'Approve'}
+                            </button>
+                            <button
+                              type="button"
+                              disabled={rejectBusy}
+                              onClick={() => void handleRejectDecision(decision.id)}
+                              style={{ marginLeft: 8 }}
+                            >
+                              {rejectBusy ? 'Rejecting...' : 'Reject'}
+                            </button>
+                          </div>
+                        ) : null}
+                        {decision.status === 'approved' ? (
+                          <div style={{ marginTop: 4 }}>
+                            <button
+                              type="button"
+                              disabled={adrBusy}
+                              onClick={() => void handleExportAdr(decision.id)}
+                            >
+                              {adrBusy ? 'Exporting...' : 'Export ADR'}
+                            </button>
+                          </div>
+                        ) : null}
+                        {adrResult ? (
+                          <p style={{ margin: '4px 0 0', color: '#166534' }}>{adrResult}</p>
+                        ) : null}
+                        {inlineError ? (
+                          <p role="alert" style={{ ...errorStyle, margin: '4px 0 0' }}>
+                            {inlineError}
                           </p>
                         ) : null}
-                        <input
-                          type="text"
-                          value={approverInputs[decision.id] ?? ''}
-                          placeholder="Approver name"
-                          onChange={(event) =>
-                            setApproverInputs((prev) => ({
-                              ...prev,
-                              [decision.id]: event.target.value,
-                            }))
-                          }
-                        />
-                        <button
-                          type="button"
-                          disabled={approveBusy}
-                          onClick={() => void handleApproveDecision(decision.id)}
-                          style={{ marginLeft: 8 }}
-                        >
-                          {approveBusy ? 'Approving...' : 'Approve'}
-                        </button>
-                        <button
-                          type="button"
-                          disabled={rejectBusy}
-                          onClick={() => void handleRejectDecision(decision.id)}
-                          style={{ marginLeft: 8 }}
-                        >
-                          {rejectBusy ? 'Rejecting...' : 'Reject'}
-                        </button>
-                      </div>
-                    ) : null}
-                    {decision.status === 'approved' ? (
-                      <div style={{ marginTop: 4 }}>
-                        <button
-                          type="button"
-                          disabled={adrBusy}
-                          onClick={() => void handleExportAdr(decision.id)}
-                        >
-                          {adrBusy ? 'Exporting...' : 'Export ADR'}
-                        </button>
-                      </div>
-                    ) : null}
-                    {adrResult ? (
-                      <p style={{ margin: '4px 0 0', color: '#166534' }}>{adrResult}</p>
-                    ) : null}
-                    {inlineError ? (
-                      <p role="alert" style={{ ...errorStyle, margin: '4px 0 0' }}>
-                        {inlineError}
-                      </p>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
 
-          <h3 style={{ marginBottom: 4 }}>Research Notes</h3>
-          {researchNotes.length === 0 ? (
-            <p>No research notes yet.</p>
-          ) : (
-            <ul>
-              {researchNotes.map((note) => (
-                <li key={note.id}>
-                  {note.title} — {note.freshness ?? 'unset'}
-                </li>
-              ))}
-            </ul>
-          )}
+              <h3 style={{ marginBottom: 4 }}>Research Notes</h3>
+              {researchNotes.length === 0 ? (
+                <p>No research notes yet.</p>
+              ) : (
+                <ul>
+                  {researchNotes.map((note) => (
+                    <li key={note.id}>
+                      {note.title} — {note.freshness ?? 'unset'}
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-          <h3 style={{ marginBottom: 4 }}>Recommendations</h3>
-          {recommendations.length === 0 ? (
-            <p>No recommendations yet.</p>
-          ) : (
-            <ul>
-              {recommendations.map((recommendation) => (
-                <li key={recommendation.id}>
-                  {recommendation.title} — {recommendation.evidence.length} evidence items
-                </li>
-              ))}
-            </ul>
-          )}
+              <h3 style={{ marginBottom: 4 }}>Recommendations</h3>
+              {recommendations.length === 0 ? (
+                <p>No recommendations yet.</p>
+              ) : (
+                <ul>
+                  {recommendations.map((recommendation) => (
+                    <li key={recommendation.id}>
+                      {recommendation.title} — {recommendation.evidence.length} evidence items
+                    </li>
+                  ))}
+                </ul>
+              )}
 
-          <form onSubmit={handleCreateResearchNote} style={{ marginTop: 8 }}>
-            <input
-              type="text"
-              value={newNoteTitle}
-              placeholder="Research note title"
-              onChange={(event) => setNewNoteTitle(event.target.value)}
-            />
-            <input
-              type="text"
-              value={newNoteSummary}
-              placeholder="Summary"
-              onChange={(event) => setNewNoteSummary(event.target.value)}
-              style={{ marginLeft: 8 }}
-            />
-            <button type="submit" disabled={creatingNote} style={{ marginLeft: 8 }}>
-              {creatingNote ? 'Adding...' : 'Add research note'}
-            </button>
-          </form>
+              <form onSubmit={handleCreateResearchNote} style={{ marginTop: 8 }}>
+                <input
+                  type="text"
+                  value={newNoteTitle}
+                  placeholder="Research note title"
+                  onChange={(event) => setNewNoteTitle(event.target.value)}
+                />
+                <input
+                  type="text"
+                  value={newNoteSummary}
+                  placeholder="Summary"
+                  onChange={(event) => setNewNoteSummary(event.target.value)}
+                  style={{ marginLeft: 8 }}
+                />
+                <button type="submit" disabled={creatingNote} style={{ marginLeft: 8 }}>
+                  {creatingNote ? 'Adding...' : 'Add research note'}
+                </button>
+              </form>
 
-          <form onSubmit={handleCreateDecision} style={{ marginTop: 8 }}>
-            <input
-              type="text"
-              value={newDecisionTitle}
-              placeholder="Decision title"
-              onChange={(event) => setNewDecisionTitle(event.target.value)}
-            />
-            <input
-              type="text"
-              value={newDecisionText}
-              placeholder="Decision text"
-              onChange={(event) => setNewDecisionText(event.target.value)}
-              style={{ marginLeft: 8 }}
-            />
-            <select
-              value={newDecisionNoteId}
-              onChange={(event) => setNewDecisionNoteId(event.target.value)}
-              style={{ marginLeft: 8 }}
-            >
-              <option value="">No linked research</option>
-              {researchNotes.map((note) => (
-                <option key={note.id} value={note.id}>
-                  {note.title}
-                </option>
-              ))}
-            </select>
-            <button type="submit" disabled={creatingDecision} style={{ marginLeft: 8 }}>
-              {creatingDecision ? 'Adding...' : 'Add decision'}
-            </button>
-          </form>
-        </section>
-      ) : null}
+              <form onSubmit={handleCreateDecision} style={{ marginTop: 8 }}>
+                <input
+                  type="text"
+                  value={newDecisionTitle}
+                  placeholder="Decision title"
+                  onChange={(event) => setNewDecisionTitle(event.target.value)}
+                />
+                <input
+                  type="text"
+                  value={newDecisionText}
+                  placeholder="Decision text"
+                  onChange={(event) => setNewDecisionText(event.target.value)}
+                  style={{ marginLeft: 8 }}
+                />
+                <select
+                  value={newDecisionNoteId}
+                  onChange={(event) => setNewDecisionNoteId(event.target.value)}
+                  style={{ marginLeft: 8 }}
+                >
+                  <option value="">No linked research</option>
+                  {researchNotes.map((note) => (
+                    <option key={note.id} value={note.id}>
+                      {note.title}
+                    </option>
+                  ))}
+                </select>
+                <button type="submit" disabled={creatingDecision} style={{ marginLeft: 8 }}>
+                  {creatingDecision ? 'Adding...' : 'Add decision'}
+                </button>
+              </form>
+            </section>
 
-      {selectedProjectId ? (
-        <section style={sectionStyle}>
-          <h2>Agent Council</h2>
-          {councilSectionError ? (
-            <p role="alert" style={errorStyle}>
-              {councilSectionError}
-            </p>
-          ) : null}
-          <button
-            type="button"
-            disabled={councilSectionLoading}
-            onClick={() => void handleRefreshCouncilSection()}
-          >
-            {councilSectionLoading ? 'Loading...' : 'Refresh council'}
-          </button>
-          {councilReviews.length === 0 ? (
-            <p>No council reviews yet. Use the Decision Loop to enqueue one.</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
-              {councilReviews.map((review) => {
-                const isExpanded = councilExpandedId === review.id;
-                const isDetailLoading = councilDetailLoading === review.id;
-                const detailErr = councilDetailError[review.id];
-                const detail = councilDetailMap[review.id];
-                return (
-                  <li
-                    key={review.id}
-                    data-testid="council-review-row"
-                    style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #eee' }}
-                  >
-                    <VerdictBadge verdict={review.verdict} />
-                    <span>confidence {review.confidence}</span>
-                    {review.question ? <span> &middot; {review.question}</span> : null}
-                    {review.provider ? (
-                      <span style={{ color: '#777' }}> &middot; {review.provider}</span>
-                    ) : null}
-                    <button
-                      type="button"
-                      aria-expanded={isExpanded}
-                      onClick={() => void handleExpandReview(review.id)}
-                      style={{ marginLeft: 8 }}
-                    >
-                      {isExpanded ? 'Hide details' : 'Show details'}
-                    </button>
-                    {isExpanded ? (
-                      <div
-                        data-testid="council-detail-panel"
-                        style={{ marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #ddd' }}
+            <section style={sectionStyle}>
+              <h2>Agent Council</h2>
+              {councilSectionError ? (
+                <p role="alert" style={errorStyle}>
+                  {councilSectionError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                disabled={councilSectionLoading}
+                onClick={() => void handleRefreshCouncilSection()}
+              >
+                {councilSectionLoading ? 'Loading...' : 'Refresh council'}
+              </button>
+              {councilReviews.length === 0 ? (
+                <p>No council reviews yet. Use the Decision Loop to enqueue one.</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+                  {councilReviews.map((review) => {
+                    const isExpanded = councilExpandedId === review.id;
+                    const isDetailLoading = councilDetailLoading === review.id;
+                    const detailErr = councilDetailError[review.id];
+                    const detail = councilDetailMap[review.id];
+                    return (
+                      <li
+                        key={review.id}
+                        data-testid="council-review-row"
+                        style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #eee' }}
                       >
-                        {isDetailLoading ? <p>Loading details...</p> : null}
-                        {detailErr ? (
-                          <p role="alert" style={errorStyle}>
-                            {detailErr}
-                          </p>
+                        <VerdictBadge verdict={review.verdict} />
+                        <span>confidence {review.confidence}</span>
+                        {review.question ? <span> &middot; {review.question}</span> : null}
+                        {review.provider ? (
+                          <span style={{ color: '#777' }}> &middot; {review.provider}</span>
                         ) : null}
-                        {detail ? (
-                          <div>
-                            <h4 style={{ marginBottom: 4 }}>Final Judge</h4>
-                            <p>
-                              <strong>Verdict:</strong> {detail.verdict} &middot;{' '}
-                              <strong>Confidence:</strong> {detail.confidence}
-                            </p>
-                            {(detail.agreements ?? []).length > 0 ? (
-                              <div>
-                                <strong>Agreements:</strong>
-                                <ul>
-                                  {(detail.agreements ?? []).map((item, i) => (
-                                    <li key={i}>{renderListItem(item)}</li>
-                                  ))}
-                                </ul>
-                              </div>
+                        <button
+                          type="button"
+                          aria-expanded={isExpanded}
+                          onClick={() => void handleExpandReview(review.id)}
+                          style={{ marginLeft: 8 }}
+                        >
+                          {isExpanded ? 'Hide details' : 'Show details'}
+                        </button>
+                        {isExpanded ? (
+                          <div
+                            data-testid="council-detail-panel"
+                            style={{ marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #ddd' }}
+                          >
+                            {isDetailLoading ? <p>Loading details...</p> : null}
+                            {detailErr ? (
+                              <p role="alert" style={errorStyle}>
+                                {detailErr}
+                              </p>
                             ) : null}
-                            {(detail.disagreements ?? []).length > 0 ? (
+                            {detail ? (
                               <div>
-                                <strong>Disagreements:</strong>
-                                <ul>
-                                  {(detail.disagreements ?? []).map((item, i) => (
-                                    <li key={i}>{renderListItem(item)}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ) : null}
-                            {(detail.unsupported_claims ?? []).length > 0 ? (
-                              <div>
-                                <strong>Unsupported claims:</strong>
-                                <ul>
-                                  {(detail.unsupported_claims ?? []).map((item, i) => (
-                                    <li key={i}>{renderListItem(item)}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ) : null}
-                            {(detail.follow_up ?? []).length > 0 ? (
-                              <div>
-                                <strong>Follow-up:</strong>
-                                <ul>
-                                  {(detail.follow_up ?? []).map((item, i) => (
-                                    <li key={i}>{renderListItem(item)}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            ) : null}
-                            {(detail.agent_outputs ?? []).length > 0 ? (
-                              <div style={{ marginTop: 8 }}>
-                                <h4 style={{ marginBottom: 4 }}>Agent Outputs</h4>
-                                {(detail.agent_outputs ?? []).map((output) => (
-                                  <div
-                                    key={output.id}
-                                    data-testid="council-agent-card"
-                                    style={{
-                                      marginBottom: 8,
-                                      padding: 8,
-                                      border: '1px solid #ddd',
-                                      borderRadius: 4,
-                                    }}
-                                  >
-                                    <p style={{ margin: '0 0 4px', fontWeight: 600 }}>
-                                      {output.agent_name}{' '}
-                                      <span style={{ fontWeight: 400, color: '#777' }}>
-                                        ({output.agent_type})
-                                      </span>{' '}
-                                      &middot; status: {output.status} &middot; confidence{' '}
-                                      {output.confidence}
-                                    </p>
-                                    {output.summary ? (
-                                      <p style={{ margin: '0 0 4px' }}>{output.summary}</p>
-                                    ) : null}
-                                    {output.findings.length > 0 ? (
-                                      <div>
-                                        <strong>Findings:</strong>
-                                        <ul style={{ margin: '0 0 4px' }}>
-                                          {output.findings.map((item, i) => (
-                                            <li key={i}>{renderListItem(item)}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    ) : null}
-                                    {output.evidence.length > 0 ? (
-                                      <div>
-                                        <strong>Evidence:</strong>
-                                        <ul style={{ margin: '0 0 4px' }}>
-                                          {output.evidence.map((item, i) => (
-                                            <li key={i}>{renderListItem(item)}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    ) : null}
-                                    {output.concerns.length > 0 ? (
-                                      <div>
-                                        <strong>Concerns:</strong>
-                                        <ul style={{ margin: '0 0 4px' }}>
-                                          {output.concerns.map((item, i) => (
-                                            <li key={i}>{renderListItem(item)}</li>
-                                          ))}
-                                        </ul>
-                                      </div>
-                                    ) : null}
+                                <h4 style={{ marginBottom: 4 }}>Final Judge</h4>
+                                <p>
+                                  <strong>Verdict:</strong> {detail.verdict} &middot;{' '}
+                                  <strong>Confidence:</strong> {detail.confidence}
+                                </p>
+                                {(detail.agreements ?? []).length > 0 ? (
+                                  <div>
+                                    <strong>Agreements:</strong>
+                                    <ul>
+                                      {(detail.agreements ?? []).map((item, i) => (
+                                        <li key={i}>{renderListItem(item)}</li>
+                                      ))}
+                                    </ul>
                                   </div>
-                                ))}
+                                ) : null}
+                                {(detail.disagreements ?? []).length > 0 ? (
+                                  <div>
+                                    <strong>Disagreements:</strong>
+                                    <ul>
+                                      {(detail.disagreements ?? []).map((item, i) => (
+                                        <li key={i}>{renderListItem(item)}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ) : null}
+                                {(detail.unsupported_claims ?? []).length > 0 ? (
+                                  <div>
+                                    <strong>Unsupported claims:</strong>
+                                    <ul>
+                                      {(detail.unsupported_claims ?? []).map((item, i) => (
+                                        <li key={i}>{renderListItem(item)}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ) : null}
+                                {(detail.follow_up ?? []).length > 0 ? (
+                                  <div>
+                                    <strong>Follow-up:</strong>
+                                    <ul>
+                                      {(detail.follow_up ?? []).map((item, i) => (
+                                        <li key={i}>{renderListItem(item)}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                ) : null}
+                                {(detail.agent_outputs ?? []).length > 0 ? (
+                                  <div style={{ marginTop: 8 }}>
+                                    <h4 style={{ marginBottom: 4 }}>Agent Outputs</h4>
+                                    {(detail.agent_outputs ?? []).map((output) => (
+                                      <div
+                                        key={output.id}
+                                        data-testid="council-agent-card"
+                                        style={{
+                                          marginBottom: 8,
+                                          padding: 8,
+                                          border: '1px solid #ddd',
+                                          borderRadius: 4,
+                                        }}
+                                      >
+                                        <p style={{ margin: '0 0 4px', fontWeight: 600 }}>
+                                          {output.agent_name}{' '}
+                                          <span style={{ fontWeight: 400, color: '#777' }}>
+                                            ({output.agent_type})
+                                          </span>{' '}
+                                          &middot; status: {output.status} &middot; confidence{' '}
+                                          {output.confidence}
+                                        </p>
+                                        {output.summary ? (
+                                          <p style={{ margin: '0 0 4px' }}>{output.summary}</p>
+                                        ) : null}
+                                        {output.findings.length > 0 ? (
+                                          <div>
+                                            <strong>Findings:</strong>
+                                            <ul style={{ margin: '0 0 4px' }}>
+                                              {output.findings.map((item, i) => (
+                                                <li key={i}>{renderListItem(item)}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        ) : null}
+                                        {output.evidence.length > 0 ? (
+                                          <div>
+                                            <strong>Evidence:</strong>
+                                            <ul style={{ margin: '0 0 4px' }}>
+                                              {output.evidence.map((item, i) => (
+                                                <li key={i}>{renderListItem(item)}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        ) : null}
+                                        {output.concerns.length > 0 ? (
+                                          <div>
+                                            <strong>Concerns:</strong>
+                                            <ul style={{ margin: '0 0 4px' }}>
+                                              {output.concerns.map((item, i) => (
+                                                <li key={i}>{renderListItem(item)}</li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
                               </div>
                             ) : null}
                           </div>
                         ) : null}
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      {selectedProjectId ? (
-        <section style={sectionStyle}>
-          <h2>Nightly Digest</h2>
-          {digestsError ? (
-            <p role="alert" style={errorStyle}>
-              {digestsError}
-            </p>
-          ) : null}
-          <button type="button" disabled={runningDigest} onClick={() => void handleRunDigest()}>
-            {runningDigest ? 'Running...' : 'Run digest'}
-          </button>
-          {digests.length === 0 ? (
-            <p>No digests yet.</p>
-          ) : (
-            <ul>
-              {digests.map((digest, index) => (
-                <li key={digest.id}>
-                  {new Date(digest.digest_date).toLocaleDateString()} — {digest.summary ?? 'no summary'}
-                  {index === 0 && digest.recommendations.length > 0 ? (
-                    <ul>
-                      {digest.recommendations.map((recommendation, recIndex) => (
-                        <li key={recIndex}>
-                          {recommendation.title ?? 'Untitled'} — {recommendation.reason ?? ''}
-                        </li>
-                      ))}
-                    </ul>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
-
-      {selectedProjectId ? (
-        <section style={sectionStyle}>
-          <h2>Scheduling &amp; Jobs</h2>
-          {schedulingError ? (
-            <p role="alert" style={errorStyle}>
-              {schedulingError}
-            </p>
-          ) : null}
-
-          <h3 style={{ marginBottom: 4 }}>Schedules</h3>
-          {schedules.length === 0 ? (
-            <p>No schedules yet.</p>
-          ) : (
-            <ul>
-              {schedules.map((schedule) => (
-                <li key={schedule.id} style={{ marginBottom: 4 }}>
-                  {schedule.name} — {schedule.job_type} — every {schedule.interval_seconds}s —{' '}
-                  {schedule.enabled ? 'enabled' : 'disabled'} — next{' '}
-                  {new Date(schedule.next_run_at).toLocaleString()}
-                  <button
-                    type="button"
-                    disabled={schedulingBusy}
-                    onClick={() => void handleToggleSchedule(schedule)}
-                    style={{ marginLeft: 8 }}
-                  >
-                    {schedule.enabled ? 'Disable' : 'Enable'}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={schedulingBusy}
-                    onClick={() => void handleRunSchedule(schedule.id)}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Run now
-                  </button>
-                  <button
-                    type="button"
-                    disabled={schedulingBusy}
-                    onClick={() => void handleDeleteSchedule(schedule.id)}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <form onSubmit={handleCreateSchedule} style={{ marginTop: 8 }}>
-            <input
-              type="text"
-              value={newScheduleName}
-              placeholder="Schedule name"
-              onChange={(event) => setNewScheduleName(event.target.value)}
-            />
-            <select
-              value={newScheduleJobType}
-              onChange={(event) => setNewScheduleJobType(event.target.value)}
-              style={{ marginLeft: 8 }}
-            >
-              <option value="repository_scan">repository_scan</option>
-              <option value="project_digest">project_digest</option>
-            </select>
-            <input
-              type="number"
-              value={newScheduleInterval}
-              placeholder="Interval seconds"
-              onChange={(event) => setNewScheduleInterval(event.target.value)}
-              style={{ marginLeft: 8, width: 140 }}
-            />
-            <button type="submit" disabled={creatingSchedule} style={{ marginLeft: 8 }}>
-              {creatingSchedule ? 'Creating...' : 'Create schedule'}
-            </button>
-          </form>
-
-          <h3 style={{ marginTop: 12, marginBottom: 4 }}>Enqueue now</h3>
-          <div>
-            <button
-              type="button"
-              disabled={schedulingBusy}
-              onClick={() => void handleEnqueueDigest()}
-            >
-              Enqueue digest job
-            </button>
-            <select
-              value={scanJobRepoId}
-              onChange={(event) => setScanJobRepoId(event.target.value)}
-              style={{ marginLeft: 8 }}
-            >
-              <option value="">Select repository</option>
-              {repositories.map((repository) => (
-                <option key={repository.id} value={repository.id}>
-                  {repository.name}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              disabled={schedulingBusy || !scanJobRepoId}
-              onClick={() => void handleEnqueueScan()}
-              style={{ marginLeft: 8 }}
-            >
-              Enqueue scan job
-            </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </section>
           </div>
+        );
 
-          <h3 style={{ marginTop: 12, marginBottom: 4 }}>Job history</h3>
-          <button
-            type="button"
-            disabled={schedulingBusy}
-            onClick={() => selectedProjectId && void loadJobs(selectedProjectId)}
-          >
-            Refresh jobs
-          </button>
-          {jobs.length === 0 ? (
-            <p>No jobs yet.</p>
-          ) : (
-            <ul>
-              {jobs.map((job) => (
-                <li key={job.id}>
-                  {job.job_type} — {job.status} — {new Date(job.queued_at).toLocaleString()} —
-                  attempts {job.attempts}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ) : null}
+      case 'digest':
+        if (!selectedProjectId) {
+          return <SelectProjectNotice />;
+        }
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Nightly Digest</h2>
+              {digestsError ? (
+                <p role="alert" style={errorStyle}>
+                  {digestsError}
+                </p>
+              ) : null}
+              <button type="button" disabled={runningDigest} onClick={() => void handleRunDigest()}>
+                {runningDigest ? 'Running...' : 'Run digest'}
+              </button>
+              {digests.length === 0 ? (
+                <p>No digests yet.</p>
+              ) : (
+                <ul>
+                  {digests.map((digest, index) => (
+                    <li key={digest.id}>
+                      {new Date(digest.digest_date).toLocaleDateString()} — {digest.summary ?? 'no summary'}
+                      {index === 0 && digest.recommendations.length > 0 ? (
+                        <ul>
+                          {digest.recommendations.map((recommendation, recIndex) => (
+                            <li key={recIndex}>
+                              {recommendation.title ?? 'Untitled'} — {recommendation.reason ?? ''}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        );
 
-      <section style={sectionStyle}>
-        <h2>v0.1 Placeholders</h2>
-        <ul>
-          <li>Voice inbox text capture</li>
-        </ul>
-      </section>
-    </main>
+      case 'scheduling':
+        if (!selectedProjectId) {
+          return <SelectProjectNotice />;
+        }
+        return (
+          <div className="aos-legacy">
+            <section>
+              <h2>Scheduling &amp; Jobs</h2>
+              {schedulingError ? (
+                <p role="alert" style={errorStyle}>
+                  {schedulingError}
+                </p>
+              ) : null}
+
+              <h3 style={{ marginBottom: 4 }}>Schedules</h3>
+              {schedules.length === 0 ? (
+                <p>No schedules yet.</p>
+              ) : (
+                <ul>
+                  {schedules.map((schedule) => (
+                    <li key={schedule.id} style={{ marginBottom: 4 }}>
+                      {schedule.name} — {schedule.job_type} — every {schedule.interval_seconds}s —{' '}
+                      {schedule.enabled ? 'enabled' : 'disabled'} — next{' '}
+                      {new Date(schedule.next_run_at).toLocaleString()}
+                      <button
+                        type="button"
+                        disabled={schedulingBusy}
+                        onClick={() => void handleToggleSchedule(schedule)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        {schedule.enabled ? 'Disable' : 'Enable'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={schedulingBusy}
+                        onClick={() => void handleRunSchedule(schedule.id)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        Run now
+                      </button>
+                      <button
+                        type="button"
+                        disabled={schedulingBusy}
+                        onClick={() => void handleDeleteSchedule(schedule.id)}
+                        style={{ marginLeft: 8 }}
+                      >
+                        Delete
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <form onSubmit={handleCreateSchedule} style={{ marginTop: 8 }}>
+                <input
+                  type="text"
+                  value={newScheduleName}
+                  placeholder="Schedule name"
+                  onChange={(event) => setNewScheduleName(event.target.value)}
+                />
+                <select
+                  value={newScheduleJobType}
+                  onChange={(event) => setNewScheduleJobType(event.target.value)}
+                  style={{ marginLeft: 8 }}
+                >
+                  <option value="repository_scan">repository_scan</option>
+                  <option value="project_digest">project_digest</option>
+                </select>
+                <input
+                  type="number"
+                  value={newScheduleInterval}
+                  placeholder="Interval seconds"
+                  onChange={(event) => setNewScheduleInterval(event.target.value)}
+                  style={{ marginLeft: 8, width: 140 }}
+                />
+                <button type="submit" disabled={creatingSchedule} style={{ marginLeft: 8 }}>
+                  {creatingSchedule ? 'Creating...' : 'Create schedule'}
+                </button>
+              </form>
+
+              <h3 style={{ marginTop: 12, marginBottom: 4 }}>Enqueue now</h3>
+              <div>
+                <button
+                  type="button"
+                  disabled={schedulingBusy}
+                  onClick={() => void handleEnqueueDigest()}
+                >
+                  Enqueue digest job
+                </button>
+                <select
+                  value={scanJobRepoId}
+                  onChange={(event) => setScanJobRepoId(event.target.value)}
+                  style={{ marginLeft: 8 }}
+                >
+                  <option value="">Select repository</option>
+                  {repositories.map((repository) => (
+                    <option key={repository.id} value={repository.id}>
+                      {repository.name}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  disabled={schedulingBusy || !scanJobRepoId}
+                  onClick={() => void handleEnqueueScan()}
+                  style={{ marginLeft: 8 }}
+                >
+                  Enqueue scan job
+                </button>
+              </div>
+
+              <h3 style={{ marginTop: 12, marginBottom: 4 }}>Job history</h3>
+              <button
+                type="button"
+                disabled={schedulingBusy}
+                onClick={() => selectedProjectId && void loadJobs(selectedProjectId)}
+              >
+                Refresh jobs
+              </button>
+              {jobs.length === 0 ? (
+                <p>No jobs yet.</p>
+              ) : (
+                <ul>
+                  {jobs.map((job) => (
+                    <li key={job.id}>
+                      {job.job_type} — {job.status} — {new Date(job.queued_at).toLocaleString()} —
+                      attempts {job.attempts}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Shell
+      activeView={activeView}
+      onNav={setActiveView}
+      navItems={NAV_ITEMS}
+      projectSelector={projectSelector}
+      health={healthPip}
+    >
+      {renderView()}
+    </Shell>
   );
 }
 

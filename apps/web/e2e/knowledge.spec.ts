@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // AOS-KNOW-003 (RFC-0002 read surface): the GLOBAL Knowledge dashboard view.
 // Knowledge is not project-scoped (lessons have no project), so this drives it
@@ -16,6 +17,9 @@ test('knowledge: sync from vault surfaces lessons, open lesson badged, open filt
 
   await page.goto('/');
   await expect(page.getByText('Engineering Control Tower')).toBeVisible();
+
+  // Knowledge is its own rail view (global — no project needed).
+  await navTo(page, 'knowledge');
 
   // Global surface: renders with no project selected.
   const knowledge = page
@@ -62,6 +66,7 @@ test('knowledge: sync from vault surfaces lessons, open lesson badged, open filt
   // Reload persistence: the synced lessons survive (DB-backed read projection).
   // After reload the filter resets to All, so all lessons render again.
   await page.reload();
+  await navTo(page, 'knowledge');
   const knowledgeAfter = page
     .locator('section')
     .filter({ has: page.getByRole('heading', { name: 'Knowledge', exact: true }) });

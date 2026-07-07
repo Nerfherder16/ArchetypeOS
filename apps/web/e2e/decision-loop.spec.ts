@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // AOS-COUNCIL-PHASEC2B — worker-driven Council → draft → approve/reject → ADR loop.
 // Uniquely-named entities keep serial reuse of the single shared API/db safe.
@@ -42,6 +43,7 @@ test('decision loop: scan → council review → draft → approve → export AD
 
   // Register + scan the demo-repo fixture so the review clears the abstention
   // floor (arch/fitness/security selectors get evidence → verdict + confidence).
+  await navTo(page, 'repositories');
   await page.getByPlaceholder('Repository name').fill(repoName);
   await page.getByPlaceholder('Local path').fill('demo-repo');
   await page.getByRole('button', { name: /register repository/i }).click();
@@ -50,6 +52,7 @@ test('decision loop: scan → council review → draft → approve → export AD
   await expect(page.getByText('Python').first()).toBeVisible({ timeout: 20000 });
 
   // Enqueue a council review; the worker produces it asynchronously.
+  await navTo(page, 'council');
   await expect(page.getByRole('heading', { name: 'Decision Loop' })).toBeVisible();
   await page.getByPlaceholder('Council question').fill(question);
   await page.getByRole('button', { name: 'Enqueue council review' }).click();
@@ -89,6 +92,7 @@ test('decision loop: no scan → abstained review → needs_evidence draft → a
   await page.getByRole('button', { name: /create project/i }).click();
   await expect(page.getByRole('button', { name: projectName })).toBeVisible();
 
+  await navTo(page, 'council');
   await expect(page.getByRole('heading', { name: 'Decision Loop' })).toBeVisible();
   await page.getByPlaceholder('Council question').fill(question);
   await page.getByRole('button', { name: 'Enqueue council review' }).click();

@@ -42,12 +42,19 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — build clean, 9/9 web e2e, a live 200 round-trip against the transfer endpoint with the results path proven; Guardian PASS, all 8 CI checks green.
 - Required Next Verifier: None — merged and reconciled.
 
-### AOS-OPS-001 — CI-green signal (ci-green fan-in job)
+### AOS-UI-003 — Control Tower rail shell + state-based view routing
 
 - Status: In Progress
+- Owner: Chief Architect / Orchestrator (this cloud session; built by an Opus builder subagent, Orchestrator-verified)
+- Branch: `claude/aos-ui-003-rail-shell` (fresh from `origin/main`)
+- Summary: Turns the Control Tower from one stacked scroll-page into an ops-deck **rail shell** — left nav + topbar + workspace with **state-based view routing** (`activeView`, no router dep). The 11 stacked sections become 8 routed views (Overview / Repositories / Architecture / Council & Decisions / Knowledge / Reuse / Digest / Scheduling); the active-project selector moves into the rail foot. New `apps/web/src/shell/Shell.tsx`; `main.tsx` restructured (state/handlers unchanged, JSX relocated into a `renderView()` switch); `tokens.css` gains shell/nav classes + `.aos-legacy` (a light panel that quarantines un-restyled sections legibly on the dark deck). Reuse renders native `.aos-*`; all other views are legacy-wrapped pending per-view restyle (AOS-UI-004+). All e2e specs navigate via the rail (`nav-<id>` testids). **Whole-file restructure of `main.tsx` — claimed by the cloud session with operator OK; laptop pauses `main.tsx` edits until merge.** Orchestrator-verified: build clean, full Playwright suite 15/15. Spec: `.archetype/work/AOS-UI-003.md`.
+
+### AOS-OPS-001 — CI-green signal (ci-green fan-in job) + LES-030/031 flake fixes
+
+- Status: Merged (PR #81)
 - Owner: Chief Architect / Orchestrator (this cloud session)
 - Branch: `claude/aos-ci-green-signal`
-- Summary: A `ci-green` fan-in job added to `.github/workflows/ci.yml` that runs only when all the PR jobs succeed and posts a `✅ CI green @ <sha>` comment — so a watching session is **woken by the comment** (webhooks deliver comments but not CI-success events), replacing timed polling. Also carries this post-merge state reconciliation for AOS-UI-002 (PR #79). Ops/tooling; no product code.
+- Summary: A `ci-green` fan-in job added to `.github/workflows/ci.yml` that runs only when all the PR jobs succeed and posts a `✅ CI green @ <sha>` comment — so a watching session is **woken by the comment** (webhooks deliver comments but not CI-success events), replacing timed polling. Self-validated on its own PR (the job fired and woke the session). Also carried the AOS-UI-002 (#79) reconciliation and two flake fixes surfaced by its own CI: **LES-030** (decision-row locator ambiguity → `data-testid="decision-row"`) and **LES-031** (finalize the PR body before the triggering push — the guardian reads the body from the event payload).
 
 ### AOS-UI-002 — WebGL radar instrument (react-three-fiber, fed by real reuse candidates)
 

@@ -379,6 +379,183 @@
   height: 100%;
 }
 
+/* ---- Ops-deck shell chrome (AOS-UI-003): rail + topbar + workspace ---- */
+.aos-shell {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.aos-rail {
+  flex: 0 0 250px;
+  width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 14px;
+  background: var(--ground-2);
+  border-right: 1px solid var(--frame);
+}
+
+.aos-rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 12px;
+  border-bottom: 1px solid var(--frame);
+}
+.aos-rail-mark {
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  background: linear-gradient(145deg, var(--signal-bright), var(--signal-deep));
+  box-shadow: var(--glow-soft);
+  flex: 0 0 auto;
+}
+.aos-rail-wordmark {
+  font-size: 22px;
+  color: var(--ink);
+}
+
+.aos-nav {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.aos-nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 560;
+  color: var(--ink-2);
+  background: transparent;
+  padding: 9px 12px;
+  border-radius: 8px;
+  border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.aos-nav-item:hover {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+.aos-nav-item.active {
+  color: var(--signal);
+  background: var(--signal-wash);
+  border-left-color: var(--signal);
+}
+
+.aos-rail-foot,
+.aos-rail-projects {
+  margin-top: auto;
+}
+.aos-rail-foot {
+  padding-top: 14px;
+  border-top: 1px solid var(--frame);
+}
+
+.aos-main {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.aos-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--frame);
+  background: var(--glass);
+  backdrop-filter: blur(8px);
+}
+.aos-topbar-crumb {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  min-width: 0;
+}
+.aos-crumb-sep {
+  color: var(--ink-3);
+}
+.aos-crumb-view {
+  font-family: var(--display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 19px;
+  color: var(--ink);
+}
+.aos-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 0 0 auto;
+}
+
+.aos-workspace {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 24px;
+  overflow-x: auto;
+}
+
+/* ---- Legacy quarantine panel: a stable light surface that RESETS the ground/
+ * ink tokens to a legible light scheme, so un-restyled inline-styled sections
+ * (dark hardcoded text on light) read correctly on the dark deck. Stays light
+ * in both themes — it is a transitional container, dropped as views are
+ * restyled onto native `.aos-*` (AOS-UI-004+). ---- */
+.aos-surface .aos-legacy {
+  --ground: #f7f9fc;
+  --ground-2: #eef2f8;
+  --panel: #ffffff;
+  --panel-2: #f0f3f8;
+  --glass: rgba(255, 255, 255, 0.7);
+  --frame: #d3dced;
+  --frame-bright: #b7c6de;
+  --ink: #17202e;
+  --ink-2: #44566f;
+  --ink-3: #6b7a90;
+
+  color: #17202e;
+  background: #f7f9fc;
+  border: 1px solid #d3dced;
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: var(--elev-lo);
+  font-family: var(--sans);
+  line-height: 1.5;
+  max-width: 960px;
+}
+.aos-surface .aos-legacy h1,
+.aos-surface .aos-legacy h2,
+.aos-surface .aos-legacy h3,
+.aos-surface .aos-legacy h4 {
+  color: #101826;
+}
+.aos-surface .aos-legacy a {
+  color: #0b57d0;
+}
+
+@media (max-width: 720px) {
+  .aos-shell {
+    flex-direction: column;
+  }
+  .aos-rail {
+    flex-basis: auto;
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--frame);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .aos-surface *,
   .aos-surface *::before,

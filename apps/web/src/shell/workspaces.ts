@@ -36,7 +36,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
     label: 'Operations',
     focus: 'Command home — live ops.',
     surfaces: [
-      { id: 'command-home', label: 'Command home', status: 'soon' },
+      { id: 'command', label: 'Command', status: 'live', view: 'command' },
       { id: 'observatory', label: 'Observatory', status: 'soon' },
       { id: 'live-activity', label: 'Live Activity', status: 'soon' },
       { id: 'digest', label: 'Digest', status: 'live', view: 'digest' },

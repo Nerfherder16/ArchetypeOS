@@ -7,6 +7,7 @@ import { modeForView } from '../../src/shell/workspaces';
 // owning mode first (revealing that mode's surface list), then clicks the view's
 // `data-testid="nav-<id>"` button. The `nav-<id>` contract is unchanged.
 export type ViewId =
+  | 'command'
   | 'overview'
   | 'repositories'
   | 'architecture'

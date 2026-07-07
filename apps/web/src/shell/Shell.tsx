@@ -9,6 +9,7 @@ import {
 // State-based view routing ids (no router dependency, no URL change). The rail
 // nav swaps `activeView`; only the active view is mounted in the workspace.
 export type ViewId =
+  | 'command'
   | 'overview'
   | 'repositories'
   | 'architecture'

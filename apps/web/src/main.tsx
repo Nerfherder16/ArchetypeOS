@@ -47,6 +47,7 @@ import {
   type Schedule,
 } from './api';
 import { ReuseView } from './features/reuse/ReuseView';
+import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { WORKSPACE_MODES } from './shell/workspaces';
 import './design/tokens.css';
@@ -929,6 +930,9 @@ function App() {
   // legible on the dark deck. The Reuse view renders native `.aos-*` bare.
   const renderView = (): React.ReactNode => {
     switch (activeView) {
+      case 'command':
+        return <CommandDeck />;
+
       case 'overview':
         return (
           <div className="aos-view">

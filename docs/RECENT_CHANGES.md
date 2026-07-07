@@ -6,6 +6,11 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-EVAL-001: multi-model Council wired into the run_council route (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-EVAL-001 — multi-model Council productionized.** The flagship is now wired into the DB-backed council path (not just the headless demo). `CouncilAgentOutput.agent_model` (Alembic `0006`, single head) records **which model produced each agent's output**; `run_council` captures `result.model` per agent and the review's `provider` is the top-level name (a rotating pool shows as `rotating`). `council_provider(settings)` returns the free rotation pool when `council_multi_model` is on and the pool has ≥2 members (each agent then draws a different free model), else the single provider — and the **worker's `council_review` job uses it**, so enqueuing a review runs multi-model end to end. `CouncilAgentOutputRead` exposes `agent_model` for the dashboard. Privacy: the guardrail is unchanged; multi-model is opt-in and intended for non-private council questions. 4 new tests (per-agent model recorded + distinct across agents; provider selection); suite 25; ruff clean; alembic chain valid (0006). Follow-up: a per-agent model badge in the Council dashboard (cloud UI lane), and an opt-in real-model Final Judge. This completes the local/free-LLM arc end to end.
 ## 2026-07-07 — AOS-UI-007/008 (merged #93/#94) + AOS-UI-009 orb Operations-home (cloud session)
 ## 2026-07-07 — AOS-LLM-EVAL-001 flagship: multi-model Council (laptop session — in review)
 

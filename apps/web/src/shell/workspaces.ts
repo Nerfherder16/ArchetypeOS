@@ -42,7 +42,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
       { id: 'digest', label: 'Digest', status: 'live', view: 'digest' },
       { id: 'scheduling', label: 'Scheduling', status: 'live', view: 'scheduling' },
       { id: 'nodes-runtime', label: 'Nodes / Runtime', status: 'soon' },
-      { id: 'providers-routing', label: 'Providers & Model Routing', status: 'soon' },
+      { id: 'providers-routing', label: 'Providers & Model Routing', status: 'live', view: 'providers' },
       { id: 'claude-code-bridge', label: 'Claude Code Bridge', status: 'soon' },
     ],
   },

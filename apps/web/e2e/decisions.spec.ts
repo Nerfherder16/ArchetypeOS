@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // Promoted from scripts/web_drive/drive_dec.mjs (AOS-DEC-001, PR #34).
 // Uniquely-named entities keep serial reuse of the single shared API/db safe.
@@ -18,7 +19,8 @@ test('decisions & research: create note, link a decision, confirm typed evidence
   await page.getByRole('button', { name: /create project/i }).click();
   await expect(page.getByRole('button', { name: projectName })).toBeVisible();
 
-  // Selecting the project reveals the Decisions & Research section.
+  // Council & Decisions (Decisions & Research) is its own rail view.
+  await navTo(page, 'council');
   await expect(page.getByRole('heading', { name: 'Decisions & Research' })).toBeVisible();
 
   // Create a research note via the form.
@@ -48,6 +50,7 @@ test('decisions & research: create note, link a decision, confirm typed evidence
   // Reload persistence.
   await page.reload();
   await page.getByRole('button', { name: projectName }).first().click();
+  await navTo(page, 'council');
   await expect(page.getByText(decisionTitle)).toBeVisible();
   await expect(page.getByRole('listitem').filter({ hasText: noteTitle })).toBeVisible();
 

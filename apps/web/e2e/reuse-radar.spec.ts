@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import * as THREE from 'three';
+import { navTo } from './support/nav';
 import { candidateToPolar, polarToXZ } from '../src/features/reuse/radarLayout';
 
 // AOS-UI-002 — the WebGL reuse radar over route-mocked candidates.
@@ -78,6 +79,8 @@ test('reuse radar: renders over route-mocked candidates and a blip click expands
   await page.getByPlaceholder('New project name').fill(projectName);
   await page.getByRole('button', { name: /create project/i }).click();
   await expect(page.getByRole('button', { name: projectName })).toBeVisible();
+
+  await navTo(page, 'reuse');
 
   const reuseView = page.getByTestId('reuse-view');
   await expect(reuseView).toBeVisible();

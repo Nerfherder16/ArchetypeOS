@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // AOS-COUNCIL-002 — worker-driven Agent Council read surface.
 // Mirrors decision-loop.spec.ts: same harness, same retrying web-first polling
@@ -33,12 +34,16 @@ test('agent council dashboard: scan → council review → expand → assert ver
 
   // Register + scan the demo-repo fixture so agents have evidence and the
   // review clears the abstention floor (confidence > ABSTAIN_CONFIDENCE=0.35).
+  await navTo(page, 'repositories');
   await page.getByPlaceholder('Repository name').fill(repoName);
   await page.getByPlaceholder('Local path').fill('demo-repo');
   await page.getByRole('button', { name: /register repository/i }).click();
   await expect(page.getByText('demo-repo')).toBeVisible();
   await page.getByRole('button', { name: /run scan/i }).first().click();
   await expect(page.getByText('Python').first()).toBeVisible({ timeout: 20000 });
+
+  // Council & Decisions (Decision Loop + Agent Council) is its own rail view.
+  await navTo(page, 'council');
 
   // Enqueue a council review via the existing Decision Loop form (read-only
   // Agent Council section has no enqueue form per spec).

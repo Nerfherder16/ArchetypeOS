@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // Promoted from scripts/web_drive/drive.mjs (AOS-CTRL-001, PR #27).
 // Uniquely-named entities keep serial reuse of the single shared API/db safe.
@@ -22,6 +23,9 @@ test('control tower: create project, register + scan repo, inspect DNA and archi
   await page.getByRole('button', { name: /create project/i }).click();
   await expect(page.getByRole('button', { name: projectName })).toBeVisible();
 
+  // Repositories (+ Scan Summary) now live in their own rail view.
+  await navTo(page, 'repositories');
+
   // Register a repository pointing at the committed demo-repo fixture.
   await page.getByPlaceholder('Repository name').fill(repoName);
   await page.getByPlaceholder('Local path').fill('demo-repo');
@@ -42,6 +46,9 @@ test('control tower: create project, register + scan repo, inspect DNA and archi
   // Docker detected in the scan summary ("Has Docker: yes").
   expect(bodyText).toMatch(/docker/i);
 
+  // Architecture is its own rail view.
+  await navTo(page, 'architecture');
+
   // Architecture section shows node and edge counts.
   const archText = (await page.locator('section', { hasText: 'Architecture' }).textContent()) ?? '';
   const nodeMatch = archText.match(/Nodes:\s*(\d+)/);
@@ -54,6 +61,7 @@ test('control tower: create project, register + scan repo, inspect DNA and archi
   // Reload: stored DNA must persist (GET /repositories/{id}/dna).
   await page.reload();
   await page.getByRole('button', { name: projectName }).first().click();
+  await navTo(page, 'repositories');
   await expect(page.getByText('demo-repo')).toBeVisible();
   await page.getByRole('button', { name: repoName }).first().click();
   await expect(page.getByText('Python').first()).toBeVisible({ timeout: 20000 });

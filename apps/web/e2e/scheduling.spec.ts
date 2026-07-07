@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { navTo } from './support/nav';
 
 // AOS-SCHED-002 (RFC-0007 Phase 3b): the Scheduling & Jobs control surface.
 // Uniquely-named entities keep serial reuse of the single shared API/db safe.
@@ -17,7 +18,8 @@ test('scheduling & jobs: create a schedule, run it now, see the job in history',
   await page.getByRole('button', { name: /create project/i }).click();
   await expect(page.getByRole('button', { name: projectName })).toBeVisible();
 
-  // Selecting the project reveals the Scheduling & Jobs section.
+  // Scheduling & Jobs is its own rail view.
+  await navTo(page, 'scheduling');
   await expect(page.getByRole('heading', { name: 'Scheduling & Jobs' })).toBeVisible();
   await expect(page.getByText('No schedules yet.')).toBeVisible();
 
@@ -54,6 +56,7 @@ test('scheduling & jobs: create a schedule, run it now, see the job in history',
   // Reload persistence: the schedule and the job survive.
   await page.reload();
   await page.getByRole('button', { name: projectName }).first().click();
+  await navTo(page, 'scheduling');
   await expect(page.getByRole('listitem').filter({ hasText: scheduleName })).toBeVisible();
   await expect(
     page.getByText(/project_digest — (queued|running|completed)/),

@@ -58,9 +58,16 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — build clean, 9/9 web e2e, a live 200 round-trip against the transfer endpoint with the results path proven; Guardian PASS, all 8 CI checks green.
 - Required Next Verifier: None — merged and reconciled.
 
+### AOS-UI-006 — Restyle Council & Decisions onto the ops-deck (final legacy view — arc complete)
+
+- Status: In Review
+- Owner: Chief Architect / Orchestrator (this cloud session; built by an Opus builder subagent, Orchestrator-verified)
+- Branch: `claude/aos-ui-006-restyle-council` (fresh from `origin/main`)
+- Summary: The last legacy view. Restyles the `council` case (Decisions & Research + Agent Council) + the shared `VerdictBadge`/`DecisionStatusBadge` onto native `.aos-*`: HUD `.aos-card` panels, `.aos-rows` lists, `.aos-input`/`.aos-btn` forms, per-agent Final-Judge cards, and the badges → `.aos-pill` tier variants (draft→info/cyan, needs_evidence→warn/muted-red, approved→good, rejected→risk; abstention "Insufficient evidence" stays dashed+italic). Added `.aos-pill.info`/`.warn`/`.neutral`/`.abstain` to `tokens.css` (blue/red palette — no amber/green). No data-logic changes; every e2e selector preserved (decision-loop ×2, council-dashboard, decisions all green). **Completes the per-view restyle arc — the entire Control Tower is now on the ops-deck** (only the shared `SelectProjectNotice` remains legacy, by design). Whole-file council region claimed with operator OK; laptop paused that region. Carries the AOS-UI-005 (#87) reconciliation. Orchestrator-verified: build clean, full Playwright 15/15, council view screenshotted with a live review + drafted decision + expanded Final Judge.
+
 ### AOS-UI-005 — Restyle Architecture + Knowledge + Digest + Scheduling onto the ops-deck
 
-- Status: In Progress
+- Status: Merged (PR #87)
 - Owner: Chief Architect / Orchestrator (this cloud session; built by an Opus builder subagent, Orchestrator-verified)
 - Branch: `claude/aos-ui-005-restyle-readviews` (fresh from `origin/main`)
 - Summary: Second restyle increment — moves the four read-surface views (**Architecture / Knowledge / Digest / Scheduling**) off their `.aos-legacy` panels onto the native `.aos-*` ops-deck, reusing the AOS-UI-004 vocabulary + a small `.aos-rows`/`.aos-subrows`/`.aos-rowmeta` divider-row list (added to `tokens.css`) that keeps `<li>` semantics. Node/edge counts + signal states → pills; lessons/schedules/jobs/digests → row lists; forms → `.aos-input`/`.aos-btn`. No data-logic changes. One spec edit: `control-tower.spec.ts`'s architecture assertion reads the counts from `body` instead of a `<section>` wrapper (nothing weakened). Every other e2e selector preserved. Only **Council & Decisions** remains legacy (its own PR — laptop territory). Carries the AOS-UI-004 (#84) reconciliation. Orchestrator-verified: build clean, full Playwright 15/15, all four views screenshotted.

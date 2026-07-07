@@ -53,14 +53,6 @@ import './design/tokens.css';
 const errorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : 'Request failed';
 
-const sectionStyle: React.CSSProperties = {
-  marginTop: 24,
-  paddingTop: 16,
-  borderTop: '1px solid #ddd',
-};
-
-const errorStyle: React.CSSProperties = { color: '#b00020' };
-
 // Rail nav map (AOS-UI-003): each id routes to a view; the labels are the
 // accessible names of the rail buttons.
 const NAV_ITEMS: NavItem[] = [
@@ -75,48 +67,35 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 // Palette for the decision-loop status badge; unknown statuses fall back to grey.
-const DECISION_STATUS_COLORS: Record<string, { color: string; background: string; border: string }> = {
-  draft: { color: '#1d4ed8', background: '#dbeafe', border: '#3b82f6' },
-  needs_evidence: { color: '#b45309', background: '#fef3c7', border: '#f59e0b' },
-  approved: { color: '#166534', background: '#dcfce7', border: '#22c55e' },
-  rejected: { color: '#b91c1c', background: '#fee2e2', border: '#ef4444' },
-  active: { color: '#4b5563', background: '#f3f4f6', border: '#9ca3af' },
+// Ops-deck `.aos-pill` tier per decision status (blue+red palette):
+// draft → info (periwinkle), needs_evidence → warn (muted red),
+// approved → good (cyan), rejected → risk (red), active/unknown → neutral.
+const DECISION_STATUS_PILL_TIER: Record<string, string> = {
+  draft: 'info',
+  needs_evidence: 'warn',
+  approved: 'good',
+  rejected: 'risk',
+  active: 'neutral',
 };
 
-// Palette for verdict badges; "Insufficient evidence" (abstention) is styled
-// with a dashed border and italic label to be visually distinct.
-const VERDICT_BADGE_COLORS: Record<string, { color: string; background: string; border: string }> = {
-  Accept: { color: '#166534', background: '#dcfce7', border: '#22c55e' },
-  'Accept with warnings': { color: '#b45309', background: '#fef3c7', border: '#f59e0b' },
-  Reject: { color: '#b91c1c', background: '#fee2e2', border: '#ef4444' },
-  Defer: { color: '#1d4ed8', background: '#dbeafe', border: '#3b82f6' },
-  'Research further': { color: '#1d4ed8', background: '#dbeafe', border: '#3b82f6' },
-  'Simulate first': { color: '#6d28d9', background: '#ede9fe', border: '#8b5cf6' },
-  'Escalate to human': { color: '#c2410c', background: '#ffedd5', border: '#f97316' },
-  'Insufficient evidence': { color: '#6b7280', background: '#f3f4f6', border: '#9ca3af' },
+// Ops-deck `.aos-pill` tier per council verdict. "Insufficient evidence"
+// (abstention) additionally carries the `abstain` modifier — dashed border +
+// italic label — to stay visually distinct exactly as the legacy badge was.
+const VERDICT_PILL_TIER: Record<string, string> = {
+  Accept: 'good',
+  'Accept with warnings': 'good',
+  Reject: 'risk',
+  Defer: 'info',
+  'Research further': 'info',
+  'Simulate first': 'info',
+  'Escalate to human': 'warn',
+  'Insufficient evidence': 'neutral',
 };
 
 function VerdictBadge({ verdict }: { verdict: string }) {
   const isAbstention = verdict === 'Insufficient evidence';
-  const palette = VERDICT_BADGE_COLORS[verdict] ?? { color: '#4b5563', background: '#f3f4f6', border: '#9ca3af' };
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        marginRight: 8,
-        padding: '1px 8px',
-        borderRadius: 10,
-        fontSize: 12,
-        fontWeight: 600,
-        fontStyle: isAbstention ? 'italic' : 'normal',
-        color: palette.color,
-        background: palette.background,
-        border: isAbstention ? `1px dashed ${palette.border}` : `1px solid ${palette.border}`,
-      }}
-    >
-      {verdict}
-    </span>
-  );
+  const tier = VERDICT_PILL_TIER[verdict] ?? 'neutral';
+  return <span className={`aos-pill ${tier}${isAbstention ? ' abstain' : ''}`}>{verdict}</span>;
 }
 
 // Defensive renderer for list items whose shape may be a plain string or a
@@ -137,24 +116,8 @@ function renderListItem(item: unknown): string {
 }
 
 function DecisionStatusBadge({ status }: { status: string }) {
-  const palette = DECISION_STATUS_COLORS[status] ?? DECISION_STATUS_COLORS.active;
-  return (
-    <span
-      style={{
-        display: 'inline-block',
-        marginRight: 8,
-        padding: '1px 8px',
-        borderRadius: 10,
-        fontSize: 12,
-        fontWeight: 600,
-        color: palette.color,
-        background: palette.background,
-        border: `1px solid ${palette.border}`,
-      }}
-    >
-      {status}
-    </span>
-  );
+  const tier = DECISION_STATUS_PILL_TIER[status] ?? 'neutral';
+  return <span className={`aos-pill ${tier}`}>{status}</span>;
 }
 
 // Prompt shown inside a view that needs a selected project when none is active.
@@ -1273,59 +1236,66 @@ function App() {
           return <SelectProjectNotice />;
         }
         return (
-          <div className="aos-legacy">
-            <section>
+          <section className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">Governance</span>
               <h2>Decisions &amp; Research</h2>
-              {artifactsError ? (
-                <p role="alert" style={errorStyle}>
-                  {artifactsError}
-                </p>
-              ) : null}
+            </div>
+            {artifactsError ? (
+              <p role="alert" className="aos-error">
+                {artifactsError}
+              </p>
+            ) : null}
 
-              <h3 style={{ marginBottom: 4 }}>Decision Loop</h3>
+            <div className="aos-hud glass aos-card">
+              <h3 style={{ margin: '0 0 10px' }}>Decision Loop</h3>
               {councilError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   {councilError}
                 </p>
               ) : null}
-              <form onSubmit={handleEnqueueCouncilReview}>
+              <form onSubmit={handleEnqueueCouncilReview} className="aos-form-row" style={{ marginTop: 0 }}>
                 <input
+                  className="aos-input"
                   type="text"
                   value={councilQuestion}
                   placeholder="Council question"
                   onChange={(event) => setCouncilQuestion(event.target.value)}
+                  style={{ width: 'auto', flex: '1 1 240px' }}
                 />
-                <button type="submit" disabled={councilBusy} style={{ marginLeft: 8 }}>
+                <button type="submit" className="aos-btn aos-btn-sm" disabled={councilBusy}>
                   {councilBusy ? 'Enqueuing...' : 'Enqueue council review'}
                 </button>
                 <button
                   type="button"
+                  className="aos-btn-ghost aos-btn-sm"
                   onClick={() => void handleRefreshLoop()}
-                  style={{ marginLeft: 8 }}
                 >
                   Refresh reviews
                 </button>
               </form>
 
-              <h4 style={{ marginBottom: 4 }}>Council Reviews</h4>
+              <h3>Council Reviews</h3>
               {councilReviews.length === 0 ? (
-                <p>
+                <p className="aos-muted" style={{ margin: 0 }}>
                   No council reviews yet. Enqueue one — the worker produces it asynchronously, then
                   click Refresh reviews.
                 </p>
               ) : (
-                <ul>
+                <ul className="aos-rows">
                   {councilReviews.map((review) => {
                     const drafting = loopBusyKey === `draft:${review.id}`;
                     return (
-                      <li key={review.id} style={{ marginBottom: 4 }}>
-                        {review.verdict} — confidence {review.confidence}
-                        {review.question ? ` · ${review.question}` : ''}
+                      <li key={review.id}>
+                        <span>
+                          {review.verdict} — confidence {review.confidence}
+                          {review.question ? ` · ${review.question}` : ''}
+                        </span>
                         <button
                           type="button"
+                          className="aos-btn-ghost aos-btn-sm"
                           disabled={drafting}
                           onClick={() => void handleDraftDecision(review.id)}
-                          style={{ marginLeft: 8 }}
                         >
                           {drafting ? 'Drafting...' : 'Draft decision'}
                         </button>
@@ -1334,12 +1304,14 @@ function App() {
                   })}
                 </ul>
               )}
+            </div>
 
-              <h3 style={{ marginBottom: 4 }}>Decisions</h3>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Decisions</span>
               {decisions.length === 0 ? (
-                <p>No decisions yet.</p>
+                <p className="aos-muted" style={{ margin: 0 }}>No decisions yet.</p>
               ) : (
-                <ul>
+                <ul className="aos-rows">
                   {decisions.map((decision) => {
                     const linkedResearch = decision.evidence.filter(
                       (entry) => entry.type === 'research_note',
@@ -1352,24 +1324,25 @@ function App() {
                     const inlineError = decisionErrors[decision.id];
                     const adrResult = adrResults[decision.id];
                     return (
-                      <li key={decision.id} data-testid="decision-row" style={{ marginBottom: 8 }}>
+                      <li key={decision.id} data-testid="decision-row">
                         <DecisionStatusBadge status={decision.status} />
                         <span>
                           {decision.title} — confidence {decision.confidence} · {linkedResearch} linked
                           research
                         </span>
                         {decision.approved_by ? (
-                          <span style={{ color: '#166534' }}> · approved by {decision.approved_by}</span>
+                          <span className="aos-rowmeta"> · approved by {decision.approved_by}</span>
                         ) : null}
                         {governed ? (
-                          <div style={{ marginTop: 4 }}>
+                          <div className="aos-form-row" style={{ flexBasis: '100%', marginTop: 6 }}>
                             {decision.status === 'needs_evidence' ? (
-                              <p style={{ margin: '0 0 4px', color: '#777' }}>
+                              <p className="aos-muted" style={{ flexBasis: '100%', margin: 0 }}>
                                 Drafted from an abstained review — gather evidence and re-draft before
                                 approval.
                               </p>
                             ) : null}
                             <input
+                              className="aos-input"
                               type="text"
                               value={approverInputs[decision.id] ?? ''}
                               placeholder="Approver name"
@@ -1379,29 +1352,31 @@ function App() {
                                   [decision.id]: event.target.value,
                                 }))
                               }
+                              style={{ width: 'auto', flex: '1 1 180px' }}
                             />
                             <button
                               type="button"
+                              className="aos-btn aos-btn-sm"
                               disabled={approveBusy}
                               onClick={() => void handleApproveDecision(decision.id)}
-                              style={{ marginLeft: 8 }}
                             >
                               {approveBusy ? 'Approving...' : 'Approve'}
                             </button>
                             <button
                               type="button"
+                              className="aos-btn-ghost aos-btn-sm"
                               disabled={rejectBusy}
                               onClick={() => void handleRejectDecision(decision.id)}
-                              style={{ marginLeft: 8 }}
                             >
                               {rejectBusy ? 'Rejecting...' : 'Reject'}
                             </button>
                           </div>
                         ) : null}
                         {decision.status === 'approved' ? (
-                          <div style={{ marginTop: 4 }}>
+                          <div className="aos-form-row" style={{ flexBasis: '100%', marginTop: 6 }}>
                             <button
                               type="button"
+                              className="aos-btn aos-btn-sm"
                               disabled={adrBusy}
                               onClick={() => void handleExportAdr(decision.id)}
                             >
@@ -1410,10 +1385,12 @@ function App() {
                           </div>
                         ) : null}
                         {adrResult ? (
-                          <p style={{ margin: '4px 0 0', color: '#166534' }}>{adrResult}</p>
+                          <p className="aos-mono aos-muted" style={{ flexBasis: '100%', margin: '4px 0 0' }}>
+                            {adrResult}
+                          </p>
                         ) : null}
                         {inlineError ? (
-                          <p role="alert" style={{ ...errorStyle, margin: '4px 0 0' }}>
+                          <p role="alert" className="aos-error" style={{ flexBasis: '100%', margin: '4px 0 0' }}>
                             {inlineError}
                           </p>
                         ) : null}
@@ -1422,70 +1399,82 @@ function App() {
                   })}
                 </ul>
               )}
+            </div>
 
-              <h3 style={{ marginBottom: 4 }}>Research Notes</h3>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Research &amp; recommendations</span>
+              <h3 style={{ marginTop: 0 }}>Research Notes</h3>
               {researchNotes.length === 0 ? (
-                <p>No research notes yet.</p>
+                <p className="aos-muted" style={{ margin: 0 }}>No research notes yet.</p>
               ) : (
-                <ul>
+                <ul className="aos-rows">
                   {researchNotes.map((note) => (
                     <li key={note.id}>
-                      {note.title} — {note.freshness ?? 'unset'}
+                      <span>{note.title}</span>{' '}
+                      <span className="aos-rowmeta">{note.freshness ?? 'unset'}</span>
                     </li>
                   ))}
                 </ul>
               )}
 
-              <h3 style={{ marginBottom: 4 }}>Recommendations</h3>
+              <h3>Recommendations</h3>
               {recommendations.length === 0 ? (
-                <p>No recommendations yet.</p>
+                <p className="aos-muted" style={{ margin: 0 }}>No recommendations yet.</p>
               ) : (
-                <ul>
+                <ul className="aos-rows">
                   {recommendations.map((recommendation) => (
                     <li key={recommendation.id}>
-                      {recommendation.title} — {recommendation.evidence.length} evidence items
+                      <span>{recommendation.title}</span>{' '}
+                      <span className="aos-rowmeta">{recommendation.evidence.length} evidence items</span>
                     </li>
                   ))}
                 </ul>
               )}
 
-              <form onSubmit={handleCreateResearchNote} style={{ marginTop: 8 }}>
+              <form onSubmit={handleCreateResearchNote} className="aos-form-row">
                 <input
+                  className="aos-input"
                   type="text"
                   value={newNoteTitle}
                   placeholder="Research note title"
                   onChange={(event) => setNewNoteTitle(event.target.value)}
+                  style={{ width: 'auto', flex: '1 1 200px' }}
                 />
                 <input
+                  className="aos-input"
                   type="text"
                   value={newNoteSummary}
                   placeholder="Summary"
                   onChange={(event) => setNewNoteSummary(event.target.value)}
-                  style={{ marginLeft: 8 }}
+                  style={{ width: 'auto', flex: '1 1 200px' }}
                 />
-                <button type="submit" disabled={creatingNote} style={{ marginLeft: 8 }}>
+                <button type="submit" className="aos-btn aos-btn-sm" disabled={creatingNote}>
                   {creatingNote ? 'Adding...' : 'Add research note'}
                 </button>
               </form>
 
-              <form onSubmit={handleCreateDecision} style={{ marginTop: 8 }}>
+              <form onSubmit={handleCreateDecision} className="aos-form-row">
                 <input
+                  className="aos-input"
                   type="text"
                   value={newDecisionTitle}
                   placeholder="Decision title"
                   onChange={(event) => setNewDecisionTitle(event.target.value)}
+                  style={{ width: 'auto', flex: '1 1 200px' }}
                 />
                 <input
+                  className="aos-input"
                   type="text"
                   value={newDecisionText}
                   placeholder="Decision text"
                   onChange={(event) => setNewDecisionText(event.target.value)}
-                  style={{ marginLeft: 8 }}
+                  style={{ width: 'auto', flex: '1 1 200px' }}
                 />
                 <select
+                  className="aos-input"
                   value={newDecisionNoteId}
                   onChange={(event) => setNewDecisionNoteId(event.target.value)}
-                  style={{ marginLeft: 8 }}
+                  style={{ width: 'auto' }}
                 >
                   <option value="">No linked research</option>
                   {researchNotes.map((note) => (
@@ -1494,77 +1483,92 @@ function App() {
                     </option>
                   ))}
                 </select>
-                <button type="submit" disabled={creatingDecision} style={{ marginLeft: 8 }}>
+                <button type="submit" className="aos-btn aos-btn-sm" disabled={creatingDecision}>
                   {creatingDecision ? 'Adding...' : 'Add decision'}
                 </button>
               </form>
-            </section>
+            </div>
 
-            <section style={sectionStyle}>
+            <div className="aos-view-head" style={{ marginTop: 8 }}>
+              <span className="aos-eyebrow">Multi-agent review</span>
               <h2>Agent Council</h2>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Council reviews</span>
               {councilSectionError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   {councilSectionError}
                 </p>
               ) : null}
-              <button
-                type="button"
-                disabled={councilSectionLoading}
-                onClick={() => void handleRefreshCouncilSection()}
-              >
-                {councilSectionLoading ? 'Loading...' : 'Refresh council'}
-              </button>
+              <div className="aos-form-row" style={{ marginTop: 0 }}>
+                <button
+                  type="button"
+                  className="aos-btn aos-btn-sm"
+                  disabled={councilSectionLoading}
+                  onClick={() => void handleRefreshCouncilSection()}
+                >
+                  {councilSectionLoading ? 'Loading...' : 'Refresh council'}
+                </button>
+              </div>
               {councilReviews.length === 0 ? (
-                <p>No council reviews yet. Use the Decision Loop to enqueue one.</p>
+                <p className="aos-muted" style={{ margin: '12px 0 0' }}>
+                  No council reviews yet. Use the Decision Loop to enqueue one.
+                </p>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+                <ul className="aos-rows" style={{ marginTop: 12 }}>
                   {councilReviews.map((review) => {
                     const isExpanded = councilExpandedId === review.id;
                     const isDetailLoading = councilDetailLoading === review.id;
                     const detailErr = councilDetailError[review.id];
                     const detail = councilDetailMap[review.id];
                     return (
-                      <li
-                        key={review.id}
-                        data-testid="council-review-row"
-                        style={{ marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid #eee' }}
-                      >
+                      <li key={review.id} data-testid="council-review-row">
                         <VerdictBadge verdict={review.verdict} />
                         <span>confidence {review.confidence}</span>
-                        {review.question ? <span> &middot; {review.question}</span> : null}
+                        {review.question ? (
+                          <span className="aos-rowmeta">&middot; {review.question}</span>
+                        ) : null}
                         {review.provider ? (
-                          <span style={{ color: '#777' }}> &middot; {review.provider}</span>
+                          <span className="aos-rowmeta">&middot; {review.provider}</span>
                         ) : null}
                         <button
                           type="button"
+                          className="aos-btn-ghost aos-btn-sm"
                           aria-expanded={isExpanded}
                           onClick={() => void handleExpandReview(review.id)}
-                          style={{ marginLeft: 8 }}
                         >
                           {isExpanded ? 'Hide details' : 'Show details'}
                         </button>
                         {isExpanded ? (
                           <div
                             data-testid="council-detail-panel"
-                            style={{ marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #ddd' }}
+                            className="aos-subrows"
+                            style={{
+                              flexBasis: '100%',
+                              paddingLeft: 14,
+                              marginTop: 8,
+                              borderLeft: '2px solid var(--frame)',
+                            }}
                           >
-                            {isDetailLoading ? <p>Loading details...</p> : null}
+                            {isDetailLoading ? (
+                              <p className="aos-muted" style={{ margin: 0 }}>Loading details...</p>
+                            ) : null}
                             {detailErr ? (
-                              <p role="alert" style={errorStyle}>
+                              <p role="alert" className="aos-error">
                                 {detailErr}
                               </p>
                             ) : null}
                             {detail ? (
                               <div>
-                                <h4 style={{ marginBottom: 4 }}>Final Judge</h4>
+                                <h3 style={{ marginTop: 0 }}>Final Judge</h3>
                                 <p>
-                                  <strong>Verdict:</strong> {detail.verdict} &middot;{' '}
-                                  <strong>Confidence:</strong> {detail.confidence}
+                                  <span className="aos-strong">Verdict:</span> {detail.verdict} &middot;{' '}
+                                  <span className="aos-strong">Confidence:</span> {detail.confidence}
                                 </p>
                                 {(detail.agreements ?? []).length > 0 ? (
                                   <div>
-                                    <strong>Agreements:</strong>
-                                    <ul>
+                                    <span className="aos-strong">Agreements:</span>
+                                    <ul className="aos-subrows">
                                       {(detail.agreements ?? []).map((item, i) => (
                                         <li key={i}>{renderListItem(item)}</li>
                                       ))}
@@ -1573,8 +1577,8 @@ function App() {
                                 ) : null}
                                 {(detail.disagreements ?? []).length > 0 ? (
                                   <div>
-                                    <strong>Disagreements:</strong>
-                                    <ul>
+                                    <span className="aos-strong">Disagreements:</span>
+                                    <ul className="aos-subrows">
                                       {(detail.disagreements ?? []).map((item, i) => (
                                         <li key={i}>{renderListItem(item)}</li>
                                       ))}
@@ -1583,8 +1587,8 @@ function App() {
                                 ) : null}
                                 {(detail.unsupported_claims ?? []).length > 0 ? (
                                   <div>
-                                    <strong>Unsupported claims:</strong>
-                                    <ul>
+                                    <span className="aos-strong">Unsupported claims:</span>
+                                    <ul className="aos-subrows">
                                       {(detail.unsupported_claims ?? []).map((item, i) => (
                                         <li key={i}>{renderListItem(item)}</li>
                                       ))}
@@ -1593,8 +1597,8 @@ function App() {
                                 ) : null}
                                 {(detail.follow_up ?? []).length > 0 ? (
                                   <div>
-                                    <strong>Follow-up:</strong>
-                                    <ul>
+                                    <span className="aos-strong">Follow-up:</span>
+                                    <ul className="aos-subrows">
                                       {(detail.follow_up ?? []).map((item, i) => (
                                         <li key={i}>{renderListItem(item)}</li>
                                       ))}
@@ -1603,33 +1607,33 @@ function App() {
                                 ) : null}
                                 {(detail.agent_outputs ?? []).length > 0 ? (
                                   <div style={{ marginTop: 8 }}>
-                                    <h4 style={{ marginBottom: 4 }}>Agent Outputs</h4>
+                                    <h3>Agent Outputs</h3>
                                     {(detail.agent_outputs ?? []).map((output) => (
                                       <div
                                         key={output.id}
                                         data-testid="council-agent-card"
+                                        className="aos-card"
                                         style={{
                                           marginBottom: 8,
-                                          padding: 8,
-                                          border: '1px solid #ddd',
-                                          borderRadius: 4,
+                                          padding: 12,
+                                          border: '1px solid var(--frame)',
+                                          borderRadius: 6,
+                                          background: 'var(--panel-2)',
                                         }}
                                       >
-                                        <p style={{ margin: '0 0 4px', fontWeight: 600 }}>
-                                          {output.agent_name}{' '}
-                                          <span style={{ fontWeight: 400, color: '#777' }}>
-                                            ({output.agent_type})
-                                          </span>{' '}
+                                        <p style={{ margin: '0 0 6px' }}>
+                                          <span className="aos-strong">{output.agent_name}</span>{' '}
+                                          <span className="aos-rowmeta">({output.agent_type})</span>{' '}
                                           &middot; status: {output.status} &middot; confidence{' '}
                                           {output.confidence}
                                         </p>
                                         {output.summary ? (
-                                          <p style={{ margin: '0 0 4px' }}>{output.summary}</p>
+                                          <p style={{ margin: '0 0 6px' }}>{output.summary}</p>
                                         ) : null}
                                         {output.findings.length > 0 ? (
                                           <div>
-                                            <strong>Findings:</strong>
-                                            <ul style={{ margin: '0 0 4px' }}>
+                                            <span className="aos-strong">Findings:</span>
+                                            <ul className="aos-subrows" style={{ margin: '0 0 4px' }}>
                                               {output.findings.map((item, i) => (
                                                 <li key={i}>{renderListItem(item)}</li>
                                               ))}
@@ -1638,8 +1642,8 @@ function App() {
                                         ) : null}
                                         {output.evidence.length > 0 ? (
                                           <div>
-                                            <strong>Evidence:</strong>
-                                            <ul style={{ margin: '0 0 4px' }}>
+                                            <span className="aos-strong">Evidence:</span>
+                                            <ul className="aos-subrows" style={{ margin: '0 0 4px' }}>
                                               {output.evidence.map((item, i) => (
                                                 <li key={i}>{renderListItem(item)}</li>
                                               ))}
@@ -1648,8 +1652,8 @@ function App() {
                                         ) : null}
                                         {output.concerns.length > 0 ? (
                                           <div>
-                                            <strong>Concerns:</strong>
-                                            <ul style={{ margin: '0 0 4px' }}>
+                                            <span className="aos-strong">Concerns:</span>
+                                            <ul className="aos-subrows" style={{ margin: '0 0 4px' }}>
                                               {output.concerns.map((item, i) => (
                                                 <li key={i}>{renderListItem(item)}</li>
                                               ))}
@@ -1669,8 +1673,8 @@ function App() {
                   })}
                 </ul>
               )}
-            </section>
-          </div>
+            </div>
+          </section>
         );
 
       case 'digest':

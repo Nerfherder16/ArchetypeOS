@@ -1626,6 +1626,19 @@ function App() {
                                           <span className="aos-rowmeta">({output.agent_type})</span>{' '}
                                           &middot; status: {output.status} &middot; confidence{' '}
                                           {output.confidence}
+                                          {output.agent_model ? (
+                                            <>
+                                              {' '}
+                                              <span
+                                                className="aos-pill info"
+                                                data-testid="council-agent-model"
+                                                title="Model that produced this agent's output"
+                                                style={{ marginLeft: 4 }}
+                                              >
+                                                {output.agent_model}
+                                              </span>
+                                            </>
+                                          ) : null}
                                         </p>
                                         {output.summary ? (
                                           <p style={{ margin: '0 0 6px' }}>{output.summary}</p>

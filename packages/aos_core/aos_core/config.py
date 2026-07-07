@@ -42,6 +42,15 @@ class Settings(BaseSettings):
     # supported id for all-MiniLM-L6-v2 (384-dim, drop-in for the pgvector column).
     embedding_provider: str = "deterministic"
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    # AOS-USAGE-001: per-tier cost rate table ($ per 1M tokens) for the usage
+    # ledger's cost *estimate* — used only when a provider does not report a real
+    # cost. Claude Code reports its own ``total_cost_usd`` (preferred, exact); these
+    # rates are the documented fallback and any cost derived from them is flagged
+    # ``estimated``. Local (self-hosted GPU) and free hosted tiers cost ~$0.
+    usage_cost_claude_input_per_mtok: float = 3.0
+    usage_cost_claude_output_per_mtok: float = 15.0
+    usage_cost_local_per_mtok: float = 0.0
+    usage_cost_free_per_mtok: float = 0.0
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

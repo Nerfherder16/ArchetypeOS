@@ -872,7 +872,14 @@ def distill_repository(
         raise HTTPException(status_code=404, detail="Repository not found")
 
     if provider is None:
-        provider = get_provider(get_settings())
+        # AOS-USAGE-001: when no provider is injected, resolve one instrumented so a
+        # real (non-deterministic) distillation call records a usage event. The
+        # deterministic CI provider is skipped by the wrapper → hermetic + unchanged.
+        from ..database import SessionLocal
+        from .usage import make_ledger_sink
+
+        _settings = get_settings()
+        provider = get_provider(_settings, sink=make_ledger_sink(SessionLocal, _settings, context="distillation"))
     if embedder is None:
         embedder = get_embedder(get_settings())
 

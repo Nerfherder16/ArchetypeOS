@@ -369,6 +369,32 @@ class AuthorityGrant(AuditMixin, Base):
     reason: Mapped[str | None] = mapped_column(Text)
 
 
+class UsageEvent(AuditMixin, Base):
+    """LLM usage ledger row (AOS-USAGE-001).
+
+    One row per reasoned ``generate()`` (the deterministic CI floor records
+    none). ``tier`` is derived from the provider name + config
+    (claude / local / free); tokens/cost carry the provider's real numbers, or an
+    explicitly ``estimated`` fallback. Local-first: the ledger starts recording
+    from deploy (no historical backfill). ``ts`` is the moment of the call and is
+    the column the usage summary windows on.
+    """
+
+    __tablename__ = "usage_events"
+
+    ts: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    tier: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    model: Mapped[str | None] = mapped_column(String(255))
+    input_tokens: Mapped[int | None] = mapped_column(Integer)
+    output_tokens: Mapped[int | None] = mapped_column(Integer)
+    cost_usd: Mapped[float | None] = mapped_column(Float)
+    estimated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    agent: Mapped[str | None] = mapped_column(String(128))
+    session: Mapped[str | None] = mapped_column(String(128))
+    context: Mapped[str | None] = mapped_column(String(128))
+
+
 class ApprovalRecord(AuditMixin, Base):
     __tablename__ = "approval_records"
 

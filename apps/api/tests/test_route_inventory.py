@@ -78,6 +78,8 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/knowledge/pages/{page_id}"),
         # knowledge transfer (AOS-TRANSFER-001 — RFC-0009 portfolio reuse)
         ("POST", "/projects/{project_id}/transfer"),
+        # usage ledger (AOS-USAGE-001 — LLM token/cost summary per tier)
+        ("GET", "/usage/summary"),
     }
 )
 
@@ -109,6 +111,7 @@ def test_route_inventory_count() -> None:
     # /decisions/{decision_id}/adr) = 46, plus the AOS-DISTILL-001 repository
     # distillation route (POST /repositories/{repository_id}/distill) = 47,
     # plus the AOS-TRANSFER-001 knowledge-transfer route (POST
-    # /projects/{project_id}/transfer) = 48.
-    assert len(EXPECTED_ROUTES) == 48
-    assert len(_actual_routes()) == 48
+    # /projects/{project_id}/transfer) = 48, plus the AOS-USAGE-001 usage-ledger
+    # route (GET /usage/summary) = 49.
+    assert len(EXPECTED_ROUTES) == 49
+    assert len(_actual_routes()) == 49

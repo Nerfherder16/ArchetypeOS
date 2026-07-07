@@ -64,12 +64,25 @@ class ProviderResult:
 
     ``text`` is the model's raw output (the council parses it tolerantly as a
     JSON agent output); the rest is lightweight provenance metadata.
+
+    AOS-USAGE-001 adds optional, nullable usage/cost provenance so the usage
+    ledger can record real token/cost numbers per reasoned call. All fields
+    default to ``None``/``False`` so every existing construction and caller is
+    unaffected. Each provider populates them where it can: the OpenAI-compatible
+    endpoint from its response ``usage`` (``prompt_tokens``/``completion_tokens``);
+    the Claude Code CLI from ``--output-format json`` ``usage`` + ``total_cost_usd``
+    (or a length-derived estimate flagged ``usage_estimated``); the deterministic
+    backend leaves them ``None`` (no model, no tokens).
     """
 
     text: str
     provider: str
     model: str | None
     finish_reason: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cost_usd: float | None = None
+    usage_estimated: bool = False
 
 
 @runtime_checkable
@@ -185,6 +198,20 @@ class DeterministicProvider:
         )
 
 
+# AOS-USAGE-001: a coarse chars→tokens ratio for the length-based estimate used
+# only when a provider does not report real token counts. ~4 chars/token is the
+# widely-cited English average; it is deliberately approximate and every value it
+# produces is flagged ``usage_estimated=True`` so it is never presented as exact.
+_CHARS_PER_TOKEN = 4.0
+
+
+def _estimate_tokens(text: str) -> int:
+    """A coarse length-based token estimate (chars / ~4), floored at 1 for non-empty."""
+    if not text:
+        return 0
+    return max(1, round(len(text) / _CHARS_PER_TOKEN))
+
+
 def _extract_claude_text(stdout: str) -> str:
     """Map ``claude --output-format json`` stdout to the model's text.
 
@@ -199,6 +226,34 @@ def _extract_claude_text(stdout: str) -> str:
     if isinstance(envelope, dict) and "result" in envelope:
         return str(envelope["result"])
     return stdout
+
+
+def _extract_claude_usage(stdout: str) -> tuple[int | None, int | None, float | None]:
+    """Pull ``(input_tokens, output_tokens, cost_usd)`` from the Claude JSON envelope.
+
+    Build-time verification (AOS-USAGE-001): Claude Code 2.1.x
+    ``claude -p ... --output-format json`` emits a top-level ``usage`` object with
+    ``input_tokens`` / ``output_tokens`` and a top-level ``total_cost_usd`` (the
+    subscription's own reported cost). We read those directly — this is the
+    operator's real usage, not the metered Anthropic API. Tolerant: any missing
+    field yields ``None`` for that field so the caller falls back to an estimate.
+    """
+    try:
+        envelope = json.loads(stdout)
+    except Exception:
+        return None, None, None
+    if not isinstance(envelope, dict):
+        return None, None, None
+    usage = envelope.get("usage")
+    input_tokens = output_tokens = None
+    if isinstance(usage, dict):
+        raw_in = usage.get("input_tokens")
+        raw_out = usage.get("output_tokens")
+        input_tokens = int(raw_in) if isinstance(raw_in, (int, float)) else None
+        output_tokens = int(raw_out) if isinstance(raw_out, (int, float)) else None
+    raw_cost = envelope.get("total_cost_usd")
+    cost_usd = float(raw_cost) if isinstance(raw_cost, (int, float)) else None
+    return input_tokens, output_tokens, cost_usd
 
 
 class ClaudeCodeProvider:
@@ -252,11 +307,28 @@ class ClaudeCodeProvider:
                 f"claude exited with code {completed.returncode}: {(completed.stderr or '').strip()}"
             )
 
+        stdout = completed.stdout or ""
+        text = _extract_claude_text(stdout)
+        # AOS-USAGE-001: prefer the subscription's own reported usage/cost from the
+        # JSON envelope; only when it is absent do we fall back to a length-based
+        # estimate, explicitly flagged so it is never presented as exact.
+        input_tokens, output_tokens, cost_usd = _extract_claude_usage(stdout)
+        usage_estimated = False
+        if input_tokens is None or output_tokens is None:
+            full_prompt = f"{system}\n\n{prompt}" if system else prompt
+            input_tokens = _estimate_tokens(full_prompt)
+            output_tokens = _estimate_tokens(text)
+            usage_estimated = True
+
         return ProviderResult(
-            text=_extract_claude_text(completed.stdout or ""),
+            text=text,
             provider=self.name,
             model=self.model,
             finish_reason="stop",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+            usage_estimated=usage_estimated,
         )
 
 
@@ -365,15 +437,96 @@ class OpenAICompatibleProvider:
             ) from exc
 
         choice = (payload.get("choices") or [{}])[0] if isinstance(payload, dict) else {}
+        # AOS-USAGE-001: OpenAI-compatible endpoints (Ollama/vLLM and the free
+        # hosted APIs) return a ``usage`` object with ``prompt_tokens`` /
+        # ``completion_tokens``. Read it when present; a provider that omits it
+        # leaves the fields None (no fabricated numbers). Cost is left None — the
+        # local/free tiers are ~$0 and the usage service applies the tier rate.
+        usage = payload.get("usage") if isinstance(payload, dict) else None
+        input_tokens = output_tokens = None
+        if isinstance(usage, dict):
+            raw_in = usage.get("prompt_tokens")
+            raw_out = usage.get("completion_tokens")
+            input_tokens = int(raw_in) if isinstance(raw_in, (int, float)) else None
+            output_tokens = int(raw_out) if isinstance(raw_out, (int, float)) else None
         return ProviderResult(
             text=_extract_openai_text(payload),
             provider=self.name,
             model=(payload.get("model") if isinstance(payload, dict) else None) or self.model,
             finish_reason=choice.get("finish_reason") or "stop",
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
         )
 
 
-def get_provider(settings) -> Provider:
+class InstrumentedProvider:
+    """Wrap any :class:`Provider` and record one usage event per ``generate()``.
+
+    AOS-USAGE-001 central instrumentation: instead of editing every reasoned
+    call site, the resolved provider is wrapped once. On each ``generate()`` the
+    inner provider runs, the returned :class:`ProviderResult` is passed to an
+    injected ``sink`` (which records a ``UsageEvent`` in the ledger), and the
+    **inner result is returned unchanged** — the wrapper is transparent.
+
+    The ``sink`` is a plain callable (a session-factory-backed closure supplied by
+    ``aos_core.services.usage``), so the ``llm/`` package keeps **no** dependency
+    on the database or the ORM. The sink is invoked best-effort: a ledger failure
+    must never break a real LLM call, so any sink exception is swallowed.
+
+    Deterministic calls record nothing: the deterministic backend has no model and
+    no tokens, so it is skipped here (the ledger tracks only reasoned tiers).
+
+    ``base_url`` of the inner provider (when it exposes one) is forwarded so the
+    sink can distinguish the *local* tier from the *free hosted* tier — both use
+    :class:`OpenAICompatibleProvider`. Optional ``context``/``agent``/``session``
+    labels are attached to every event this wrapper records.
+    """
+
+    def __init__(
+        self,
+        inner: Provider,
+        sink,
+        *,
+        context: str | None = None,
+        agent: str | None = None,
+        session: str | None = None,
+    ) -> None:
+        self.inner = inner
+        self._sink = sink
+        self._context = context
+        self._agent = agent
+        self._session = session
+
+    @property
+    def name(self) -> str:
+        return getattr(self.inner, "name", "instrumented")
+
+    def generate(
+        self, *, system: str, prompt: str, max_tokens: int = 1024, **kwargs
+    ) -> ProviderResult:
+        result = self.inner.generate(system=system, prompt=prompt, max_tokens=max_tokens, **kwargs)
+        if result.provider != DeterministicProvider.name:
+            try:
+                self._sink(
+                    provider=result.provider,
+                    model=result.model,
+                    input_tokens=result.input_tokens,
+                    output_tokens=result.output_tokens,
+                    cost_usd=result.cost_usd,
+                    estimated=result.usage_estimated,
+                    base_url=getattr(self.inner, "base_url", None),
+                    context=self._context,
+                    agent=self._agent,
+                    session=self._session,
+                )
+            except Exception:
+                # Best-effort ledger: a recording failure must never break the
+                # actual reasoned call. The inner result is still returned.
+                pass
+        return result
+
+
+def get_provider(settings, sink=None) -> Provider:
     """Select a provider from ``settings.llm_provider``.
 
     ``deterministic`` → :class:`DeterministicProvider`;
@@ -381,22 +534,31 @@ def get_provider(settings) -> Provider:
     ``openai_compatible`` → :class:`OpenAICompatibleProvider` (local Ollama or a
     free hosted API, from ``llm_base_url`` / ``llm_model`` / ``llm_api_key``);
     anything else → ``ValueError``.
+
+    AOS-USAGE-001: when a ledger ``sink`` is provided the resolved provider is
+    wrapped in :class:`InstrumentedProvider` so each ``generate()`` records a
+    usage event. ``sink`` defaults to ``None`` — every existing caller (and the
+    CI/hermetic + DB-less paths) gets the **bare** provider unchanged.
     """
     name = getattr(settings, "llm_provider", "deterministic")
     if name == "deterministic":
-        return DeterministicProvider()
-    if name == "claude_code":
-        return ClaudeCodeProvider()
-    if name == "openai_compatible":
-        return OpenAICompatibleProvider(
+        provider: Provider = DeterministicProvider()
+    elif name == "claude_code":
+        provider = ClaudeCodeProvider()
+    elif name == "openai_compatible":
+        provider = OpenAICompatibleProvider(
             base_url=getattr(settings, "llm_base_url", "http://localhost:11434/v1"),
             model=getattr(settings, "llm_model", "qwen2.5-coder:7b"),
             api_key=getattr(settings, "llm_api_key", ""),
         )
-    raise ValueError(
-        f"Unknown llm_provider: {name!r} "
-        "(expected 'deterministic', 'claude_code', or 'openai_compatible')"
-    )
+    else:
+        raise ValueError(
+            f"Unknown llm_provider: {name!r} "
+            "(expected 'deterministic', 'claude_code', or 'openai_compatible')"
+        )
+    if sink is not None:
+        return InstrumentedProvider(provider, sink)
+    return provider
 
 
 __all__ = [
@@ -405,5 +567,6 @@ __all__ = [
     "DeterministicProvider",
     "ClaudeCodeProvider",
     "OpenAICompatibleProvider",
+    "InstrumentedProvider",
     "get_provider",
 ]

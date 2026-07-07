@@ -27,34 +27,49 @@
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, monospace;
   --sans: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  --ground: #060b18;
-  --ground-2: #030710;
-  --panel: #0a1120;
-  --panel-2: #0e1728;
-  --glass: rgba(11, 20, 38, 0.5);
-  --frame: #1b2e4e;
-  --frame-bright: #29456f;
-  --ink: #dce7f7;
-  --ink-2: #8da0be;
-  --ink-3: #55688a;
+  --ground: #0a0406;
+  --ground-2: #050304;
+  --panel: #120a0d;
+  --panel-2: #1a0f13;
+  --glass: rgba(18, 10, 13, 0.5);
+  --frame: #3a2029;
+  --frame-bright: #5e3340;
+  --ink: #f0e6ea;
+  --ink-2: #b39aa4;
+  --ink-3: #7a6470;
 
-  --red: #ff4757;
-  --red-deep: #c81e2b;
-  --red-wash: #2a0b0e;
+  --red: #ff2f4d;
+  --red-deep: #c8112e;
+  --red-wash: #2a0810;
   --signal: #2fd3e8;
   --signal-bright: #63ecfb;
   --signal-deep: #0fa6bc;
   --signal-wash: #07222b;
   --lex: #5b8df0;
-  --lex-wash: #101e3a;
+  --lex-wash: #141026;
 
   --glow: 0 0 20px rgba(47, 211, 232, 0.45);
   --glow-soft: 0 0 12px rgba(47, 211, 232, 0.28);
-  --elev: 0 14px 30px rgba(0, 0, 0, 0.55);
-  --elev-lo: 0 5px 14px rgba(0, 0, 0, 0.42);
+  --glow-red: 0 0 22px rgba(255, 47, 77, 0.42);
+  --elev: 0 18px 40px rgba(0, 0, 0, 0.72);
+  --elev-lo: 0 6px 16px rgba(0, 0, 0, 0.55);
 
-  --neu-up: -2px -2px 4px rgba(96, 140, 205, 0.16), 2px 2px 6px rgba(0, 0, 0, 0.62);
-  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.62), inset -2px -2px 4px rgba(96, 140, 205, 0.13);
+  --neu-up: -2px -2px 4px rgba(200, 120, 145, 0.10), 2px 2px 6px rgba(0, 0, 0, 0.72);
+  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.72), inset -2px -2px 4px rgba(200, 120, 145, 0.08);
+
+  --agent-librarian: #35d0f0;
+  --agent-cartographer: #4f7cf7;
+  --agent-fitness: #7b5cf5;
+  --agent-scout: #b45cf0;
+  --agent-guardian: #ff3d68;
+  --agent-security: #ff2f3f;
+
+  /* Dark command-deck field: black ground + neon-red glow (AOS-UI-008).
+     Light themes reset this to `none` so they keep a flat light ground. */
+  --shell-glow:
+    radial-gradient(1500px 900px at 50% 116%, rgba(255, 28, 66, 0.2), transparent 60%),
+    radial-gradient(1100px 700px at 100% -6%, rgba(255, 44, 84, 0.1), transparent 54%),
+    radial-gradient(880px 780px at 0% 106%, rgba(180, 92, 240, 0.08), transparent 58%);
 
   --cut: 12px;
 
@@ -93,11 +108,15 @@
 
     --glow: 0 0 0 rgba(0, 0, 0, 0);
     --glow-soft: 0 0 0 rgba(0, 0, 0, 0);
+    --glow-red: 0 0 0 rgba(0, 0, 0, 0);
     --elev: 0 14px 30px rgba(23, 38, 64, 0.16);
     --elev-lo: 0 5px 14px rgba(23, 38, 64, 0.11);
 
     --neu-up: -2px -2px 4px rgba(255, 255, 255, 0.95), 2px 2px 6px rgba(23, 38, 64, 0.16);
     --neu-down: inset 2px 2px 5px rgba(23, 38, 64, 0.16), inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+
+    /* Flat light ground — no neon-red field. */
+    --shell-glow: none;
   }
 }
 
@@ -124,38 +143,51 @@
   --lex-wash: #e4eaf8;
   --glow: 0 0 0 rgba(0, 0, 0, 0);
   --glow-soft: 0 0 0 rgba(0, 0, 0, 0);
+  --glow-red: 0 0 0 rgba(0, 0, 0, 0);
   --elev: 0 14px 30px rgba(23, 38, 64, 0.16);
   --elev-lo: 0 5px 14px rgba(23, 38, 64, 0.11);
   --neu-up: -2px -2px 4px rgba(255, 255, 255, 0.95), 2px 2px 6px rgba(23, 38, 64, 0.16);
   --neu-down: inset 2px 2px 5px rgba(23, 38, 64, 0.16), inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+  --shell-glow: none;
 }
 
 :root[data-theme='dark'] .aos-surface {
-  --ground: #060b18;
-  --ground-2: #030710;
-  --panel: #0a1120;
-  --panel-2: #0e1728;
-  --glass: rgba(11, 20, 38, 0.5);
-  --frame: #1b2e4e;
-  --frame-bright: #29456f;
-  --ink: #dce7f7;
-  --ink-2: #8da0be;
-  --ink-3: #55688a;
-  --red: #ff4757;
-  --red-deep: #c81e2b;
-  --red-wash: #2a0b0e;
+  --ground: #0a0406;
+  --ground-2: #050304;
+  --panel: #120a0d;
+  --panel-2: #1a0f13;
+  --glass: rgba(18, 10, 13, 0.5);
+  --frame: #3a2029;
+  --frame-bright: #5e3340;
+  --ink: #f0e6ea;
+  --ink-2: #b39aa4;
+  --ink-3: #7a6470;
+  --red: #ff2f4d;
+  --red-deep: #c8112e;
+  --red-wash: #2a0810;
   --signal: #2fd3e8;
   --signal-bright: #63ecfb;
   --signal-deep: #0fa6bc;
   --signal-wash: #07222b;
   --lex: #5b8df0;
-  --lex-wash: #101e3a;
+  --lex-wash: #141026;
   --glow: 0 0 20px rgba(47, 211, 232, 0.45);
   --glow-soft: 0 0 12px rgba(47, 211, 232, 0.28);
-  --elev: 0 14px 30px rgba(0, 0, 0, 0.55);
-  --elev-lo: 0 5px 14px rgba(0, 0, 0, 0.42);
-  --neu-up: -2px -2px 4px rgba(96, 140, 205, 0.16), 2px 2px 6px rgba(0, 0, 0, 0.62);
-  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.62), inset -2px -2px 4px rgba(96, 140, 205, 0.13);
+  --glow-red: 0 0 22px rgba(255, 47, 77, 0.42);
+  --elev: 0 18px 40px rgba(0, 0, 0, 0.72);
+  --elev-lo: 0 6px 16px rgba(0, 0, 0, 0.55);
+  --neu-up: -2px -2px 4px rgba(200, 120, 145, 0.1), 2px 2px 6px rgba(0, 0, 0, 0.72);
+  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.72), inset -2px -2px 4px rgba(200, 120, 145, 0.08);
+  --agent-librarian: #35d0f0;
+  --agent-cartographer: #4f7cf7;
+  --agent-fitness: #7b5cf5;
+  --agent-scout: #b45cf0;
+  --agent-guardian: #ff3d68;
+  --agent-security: #ff2f3f;
+  --shell-glow:
+    radial-gradient(1500px 900px at 50% 116%, rgba(255, 28, 66, 0.2), transparent 60%),
+    radial-gradient(1100px 700px at 100% -6%, rgba(255, 44, 84, 0.1), transparent 54%),
+    radial-gradient(880px 780px at 0% 106%, rgba(180, 92, 240, 0.08), transparent 58%);
 }
 
 .aos-surface *,
@@ -384,6 +416,12 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
+  /* Neon command-deck field (AOS-UI-008): black ground + fixed, non-interactive
+     red glow in dark; `--shell-glow` resolves to `none` under light themes. */
+  background-color: var(--ground-2);
+  background-image: var(--shell-glow, none);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 .aos-rail {

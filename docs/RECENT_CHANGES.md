@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-UI-007 (merged #93) + AOS-UI-008 neon palette (cloud session)
+
+### Merged (cloud session)
+
+- **AOS-UI-007 — workspace-mode shell + resolution-adaptive layout (PR #93).** The rail shell gains a top-level **workspace-mode** organizing layer (Operations / Council / Architect / Research / Executive / Builder, per `docs/WORKSPACE_LAYOUT_ENGINE.md`): the 8 shipped views group under their mode, and the ~30 planned surfaces render as disabled **"soon"** entries so the full system map is navigable and honest. Adds **four resolution-adaptive tiers** — Command Wall (≥2200px, G9 57" 32:9), Desktop, Tablet (horizontal top bar), Phone (fixed bottom tab bar) — with no horizontal overflow at any tier and a Builder coming-soon empty state. Structure + responsiveness only on the existing `.aos-*` blue+red system (no palette change, no orb). Preserves the `nav-<view>` testid contract via a mode-aware `navTo`; new `apps/web/e2e/shell-modes.spec.ts`. New `apps/web/src/shell/workspaces.ts` (pure mode/surface registry + `modeForView`/`firstLiveView`). Built by an Opus builder, Orchestrator-verified (clean build, 20/20 e2e, screenshots at all four tiers); Guardian PASS; all 9 CI checks green. Spec `.archetype/work/AOS-UI-007.md`.
+
+### In Review (cloud session)
+
+- **AOS-UI-008 — neon command-deck palette migration.** A values-level `.aos-*` token migration: the **dark** theme moves from blue+navy ground to the approved **black → neon-red** command-deck field (near-black warm grounds, neon `--red #ff2f4d`, a `--shell-glow` red radial field on `.aos-shell`), while **cyan `--signal` stays the cool accent** and blue/`--lex` remain for secondary hues. Adds six `--agent-*` hue tokens (librarian cyan … security neon-red) for the coming orb, and a `--glow-red` token. Light theme kept flat/legible (`--shell-glow: none`); `.aos-legacy` quarantine unchanged. No markup/structure change — `tokens.css`-only — so all e2e stays green. The substrate for AOS-UI-009 (orb Operations-home), built first so nothing is built twice. Spec `.archetype/work/AOS-UI-008.md`.
+
 ## 2026-07-07 — AOS-LLM-REVIEW-001 + ADR-0001: routed reasoned tier & local reviewer (laptop session — in review)
 
 ### In Review (tandem laptop session, on PR #92)

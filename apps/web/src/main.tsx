@@ -47,24 +47,12 @@ import {
   type Schedule,
 } from './api';
 import { ReuseView } from './features/reuse/ReuseView';
-import { Shell, type NavItem, type ViewId } from './shell/Shell';
+import { Shell, type ViewId } from './shell/Shell';
+import { WORKSPACE_MODES } from './shell/workspaces';
 import './design/tokens.css';
 
 const errorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : 'Request failed';
-
-// Rail nav map (AOS-UI-003): each id routes to a view; the labels are the
-// accessible names of the rail buttons.
-const NAV_ITEMS: NavItem[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'repositories', label: 'Repositories' },
-  { id: 'architecture', label: 'Architecture' },
-  { id: 'council', label: 'Council & Decisions' },
-  { id: 'knowledge', label: 'Knowledge' },
-  { id: 'reuse', label: 'Reuse' },
-  { id: 'digest', label: 'Digest' },
-  { id: 'scheduling', label: 'Scheduling' },
-];
 
 // Palette for the decision-loop status badge; unknown statuses fall back to grey.
 // Ops-deck `.aos-pill` tier per decision status (blue+red palette):
@@ -1894,7 +1882,7 @@ function App() {
     <Shell
       activeView={activeView}
       onNav={setActiveView}
-      navItems={NAV_ITEMS}
+      modes={WORKSPACE_MODES}
       projectSelector={projectSelector}
       health={healthPip}
     >

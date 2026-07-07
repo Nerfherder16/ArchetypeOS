@@ -27,8 +27,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
-import re
 import subprocess
 import sys
 import time
@@ -39,11 +37,10 @@ sys.path.insert(0, str(REPO_ROOT / "packages" / "aos_core"))
 
 from aos_core.config import get_settings  # noqa: E402
 from aos_core.llm import OpenAICompatibleProvider  # noqa: E402
-
-CODE_EXTS = {
-    ".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".sh", ".java", ".rb",
-    ".c", ".h", ".cpp", ".cs", ".kt", ".sql", ".php",
-}
+from aos_core.services.code_review import (  # noqa: E402
+    CATEGORY_CHECKS,
+    filter_code_files,
+)
 
 # --- prompts ----------------------------------------------------------------
 
@@ -86,33 +83,8 @@ STRUCTURED_SYSTEM = (
 
 JSON_FORMAT = {"type": "json_object"}
 
-# Per-category ("pointwise") checks — the research found scoring one defect class
-# at a time is measurably LESS lenient than one combined rubric pass, which is the
-# recall lever. Each is a focused, anti-FP call; findings are aggregated.
-CATEGORY_CHECKS = {
-    "correctness": (
-        "wrong logic, off-by-one, inverted condition, wrong operator, wrong return value",
-        "`return a - b` where addition was intended, or `if x = 5:`",
-    ),
-    "error_handling": (
-        "an error/exception path that can realistically fire and is NOT handled "
-        "(file I/O, parsing, network, a missing dict key)",
-        "`json.loads(open(p).read())` with no try/except for a missing file or bad JSON",
-    ),
-    "resource": (
-        "a leaked file/socket/lock/handle, or missing close/cleanup/context-manager",
-        "`open(p).read()` without closing the handle or using `with`",
-    ),
-    "security": (
-        "injection, unsafe eval/exec/shell, secret exposure, or unvalidated input used in a sink",
-        "`os.system('rm ' + user_input)`",
-    ),
-    "edge_cases": (
-        "a missing guard for null/empty/zero/negative/bounds that the code actually needs",
-        "`def div(a, b): return a / b` with no guard for `b == 0`",
-    ),
-}
-
+# CATEGORY_CHECKS + filter_code_files are imported from the shared reviewer
+# service so the eval harness and the production reviewer never drift.
 
 # --- diff harvesting --------------------------------------------------------
 
@@ -121,26 +93,6 @@ def _git(args: list[str]) -> str:
     return subprocess.run(
         ["git", "-C", str(REPO_ROOT), *args], capture_output=True, text=True, check=False
     ).stdout
-
-
-def _code_only(diff: str) -> str:
-    """Keep only the per-file sections whose path has a code extension.
-
-    Docs/YAML/markdown diffs made both models ramble into prose summaries, and
-    they are out of scope for a code reviewer.
-    """
-    sections = re.split(r"(?=^diff --git )", diff, flags=re.M)
-    kept: list[str] = []
-    for sec in sections:
-        if not sec.strip():
-            continue
-        m = re.search(r"^\+\+\+ b/(.+)$", sec, flags=re.M) or re.search(
-            r"^diff --git a/\S+ b/(\S+)", sec, flags=re.M
-        )
-        path = m.group(1).strip() if m else ""
-        if os.path.splitext(path)[1].lower() in CODE_EXTS:
-            kept.append(sec)
-    return "".join(kept)
 
 
 def _merge_diffs(
@@ -154,7 +106,7 @@ def _merge_diffs(
         sha, subject = line.split("\t", 1)
         diff = _git(["diff", f"-U{context_lines}", "--no-color", f"{sha}^1", sha])
         if code_only:
-            diff = _code_only(diff)
+            diff = filter_code_files(diff)
         if not diff.strip():
             continue
         lines = diff.splitlines()

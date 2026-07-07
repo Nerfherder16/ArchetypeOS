@@ -30,6 +30,10 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+# Sent on every hosted HTTP call — Cloudflare-fronted Tier-2 endpoints (Groq et al.)
+# 403 the default ``Python-urllib`` User-Agent.
+_USER_AGENT = "ArchetypeOS/1.0 (+llm-provider)"
+
 # LES-021: a council/extraction agent must reason ONLY from the supplied
 # evidence in its prompt. The shelled ``claude -p`` otherwise inherits the
 # working directory's ``CLAUDE.md`` + filesystem, so an agent silently reasoned
@@ -321,7 +325,10 @@ class OpenAICompatibleProvider:
         if response_format is not None:
             body_obj["response_format"] = response_format
         body = json.dumps(body_obj).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
+        # An explicit User-Agent is required: hosted Tier-2 endpoints behind
+        # Cloudflare (Groq, others) reject urllib's default ``Python-urllib/x.y``
+        # UA as a bot (HTTP 403, CF error 1010). Local Ollama does not care.
+        headers = {"Content-Type": "application/json", "User-Agent": _USER_AGENT}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"
         request = urllib.request.Request(

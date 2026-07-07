@@ -227,6 +227,182 @@ def test_claude_code_provider_missing_binary(monkeypatch):
         ClaudeCodeProvider(binary="nope").generate(system="", prompt="p")
 
 
+# --- OpenAICompatibleProvider (AOS-LLM-LOCAL-001) ---------------------------
+
+
+class _FakeHTTPResponse:
+    def __init__(self, payload: dict):
+        self._body = json.dumps(payload).encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._body
+
+
+def test_get_provider_openai_compatible():
+    import aos_core.llm as llm
+
+    settings = types.SimpleNamespace(
+        llm_provider="openai_compatible",
+        llm_base_url="http://localhost:11434/v1",
+        llm_model="qwen2.5-coder:7b",
+        llm_api_key="",
+    )
+    provider = get_provider(settings)
+    assert isinstance(provider, llm.OpenAICompatibleProvider)
+    assert provider.base_url == "http://localhost:11434/v1"
+    assert provider.model == "qwen2.5-coder:7b"
+
+
+def test_openai_compatible_provider_builds_request_and_parses(monkeypatch):
+    import aos_core.llm as llm
+
+    captured = {}
+
+    def fake_urlopen(request, timeout=None):
+        captured["url"] = request.full_url
+        captured["method"] = request.get_method()
+        captured["timeout"] = timeout
+        captured["auth"] = request.has_header("Authorization")
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        return _FakeHTTPResponse(
+            {
+                "model": "qwen2.5-coder:7b",
+                "choices": [
+                    {"message": {"content": '{"summary": "ok"}'}, "finish_reason": "stop"}
+                ],
+            }
+        )
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+
+    provider = llm.OpenAICompatibleProvider(
+        base_url="http://localhost:11434/v1", model="qwen2.5-coder:7b", api_key="secret"
+    )
+    result = provider.generate(system="SYS", prompt="PROMPT", max_tokens=256)
+
+    assert captured["url"] == "http://localhost:11434/v1/chat/completions"
+    assert captured["method"] == "POST"
+    assert captured["auth"] is True  # bearer header present when api_key set
+    assert captured["body"]["model"] == "qwen2.5-coder:7b"
+    assert captured["body"]["max_tokens"] == 256
+    assert captured["body"]["messages"] == [
+        {"role": "system", "content": "SYS"},
+        {"role": "user", "content": "PROMPT"},
+    ]
+    assert isinstance(result, ProviderResult)
+    assert result.text == '{"summary": "ok"}'
+    assert result.provider == "openai_compatible"
+    assert result.provider != "deterministic"  # treated as a real provider
+
+
+def test_openai_compatible_provider_omits_auth_without_key(monkeypatch):
+    import aos_core.llm as llm
+
+    captured = {}
+
+    def fake_urlopen(request, timeout=None):
+        captured["auth"] = request.has_header("Authorization")
+        return _FakeHTTPResponse(
+            {"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}
+        )
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+    llm.OpenAICompatibleProvider(base_url="http://localhost:11434/v1", model="m").generate(
+        system="", prompt="p"
+    )
+    assert captured["auth"] is False  # local Ollama needs no auth header
+
+
+def test_openai_compatible_provider_http_error_raises(monkeypatch):
+    import urllib.error
+
+    import aos_core.llm as llm
+
+    def fake_urlopen(request, timeout=None):
+        raise urllib.error.HTTPError(request.full_url, 429, "Too Many Requests", {}, None)
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+    with pytest.raises(RuntimeError, match="429"):
+        llm.OpenAICompatibleProvider(base_url="http://x/v1", model="m").generate(
+            system="", prompt="p"
+        )
+
+
+def test_openai_compatible_provider_missing_content_raises(monkeypatch):
+    import aos_core.llm as llm
+
+    def fake_urlopen(request, timeout=None):
+        return _FakeHTTPResponse({"choices": []})  # no message
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+    with pytest.raises(RuntimeError, match="content"):
+        llm.OpenAICompatibleProvider(base_url="http://x/v1", model="m").generate(
+            system="", prompt="p"
+        )
+
+
+class _RawResponse:
+    """A 2xx response whose body is arbitrary bytes (not necessarily JSON)."""
+
+    def __init__(self, body: bytes):
+        self._body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def read(self):
+        return self._body
+
+
+def test_openai_compatible_provider_non_json_body_raises(monkeypatch):
+    # A 200 with an HTML/proxy error body must surface a legible RuntimeError,
+    # not a raw JSONDecodeError (AOS-LLM-LOCAL-001 spike finding).
+    import aos_core.llm as llm
+
+    monkeypatch.setattr(
+        llm.urllib.request,
+        "urlopen",
+        lambda *a, **k: _RawResponse(b"<html><body>502 Bad Gateway</body></html>"),
+    )
+    with pytest.raises(RuntimeError, match="non-JSON"):
+        llm.OpenAICompatibleProvider(base_url="http://x/v1", model="m").generate(
+            system="", prompt="p"
+        )
+
+
+def test_openai_compatible_provider_passes_response_format(monkeypatch):
+    # Structured-output passthrough (AOS-LLM-LOCAL-001): response_format reaches
+    # the request body when supplied, and is absent when not.
+    import aos_core.llm as llm
+
+    captured = {}
+
+    def fake_urlopen(request, timeout=None):
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        return _FakeHTTPResponse(
+            {"choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}]}
+        )
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+    provider = llm.OpenAICompatibleProvider(base_url="http://x/v1", model="m")
+
+    rf = {"type": "json_object"}
+    provider.generate(system="", prompt="p", response_format=rf)
+    assert captured["body"]["response_format"] == rf
+
+    provider.generate(system="", prompt="p")
+    assert "response_format" not in captured["body"]
+
+
 def test_synthesize_verdict_abstains_below_floor():
     outputs = [
         CouncilAgentOutput(

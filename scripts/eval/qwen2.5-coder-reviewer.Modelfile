@@ -1,0 +1,24 @@
+# qwen2.5-coder-reviewer — inference baseline for the local PR reviewer
+# (AOS-LLM-LOCAL-001, from the deep-research setup).
+#
+# Why a Modelfile: num_ctx / top_k / repeat_penalty are NOT settable through the
+# OpenAI-compatible /v1/chat/completions endpoint we call — they must be baked in
+# here (or set via the native API). Sampling params are pinned to Qwen's own
+# generation_config values; num_ctx is raised well above Ollama's 4096 default,
+# which was silently truncating large diffs (the real cause of the rambling-on-
+# big-diffs failure). No SYSTEM/few-shot is baked in — the reviewer prompt lives
+# in scripts/eval/review_spike.py so it stays iterable.
+#
+# Create on the serving node:
+#   curl -X POST http://<host>:11434/api/create \
+#     -d '{"model":"qwen2.5-coder-reviewer","modelfile":"<this file>"}'
+# or:  ollama create qwen2.5-coder-reviewer -f qwen2.5-coder-reviewer.Modelfile
+
+FROM qwen2.5-coder:7b
+
+PARAMETER num_ctx 8192
+PARAMETER temperature 0
+PARAMETER top_p 0.8
+PARAMETER top_k 20
+PARAMETER repeat_penalty 1.05
+PARAMETER num_predict 512

@@ -6,6 +6,18 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-REVIEW-001 + ADR-0001: routed reasoned tier & local reviewer (laptop session — in review)
+
+### In Review (tandem laptop session, on PR #92)
+
+- **AOS-LLM-REVIEW-001 — local code reviewer tier + ADR-0001 (routed reasoned tier).** The first Tier-1 app of a decision recorded in `docs/adr/ADR-0001-routed-reasoned-tier.md`: the reasoned tier becomes a **4-tier routed pool** — deterministic (CI floor) / local 7B (teevee 3070, private) / free hosted (Gemini/Groq/Cerebras/DeepSeek, non-private only) / Claude (highest-stakes + Final Judge), with **privacy tiering** as a hard guardrail (private code never leaves for a free tier) and eval-driven routing. `aos_core/services/code_review.py` (`review_diff`, per-category advisory findings, fail-open, code-only filter) + `tools/pr_reviewer.py` (CLI, `--comment` posts via gh) run on the on-node `qwen2.5-coder-reviewer` model, **layered on the deterministic PR Guardian and never a merge gate**. Built via a deep-research pass (26 sources, 21 confirmed) + the LLM Council + the eval harness: the `num_ctx` fix (Ollama's 4096 default was silently truncating large diffs) + structured JSON + a per-category rubric gave **high precision + tripled recall** (1/3 → 3/3 on a planted-bug diff) at ~2–10s/diff on the 3070. 6 hermetic tests (suite 27); ruff clean; live-validated end-to-end. Strategy: `docs/reviews/2026-07-07-local-and-free-llm-opportunity-map.md` (flagship follow-on: a free multi-model Council). Next: the eval-driven router + free-API rotation pool (AOS-LLM-EVAL-001).
+
+## 2026-07-07 — AOS-LLM-LOCAL-001: local / free LLM provider (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-LOCAL-001 — run the reasoned tiers off Claude to save tokens.** Operator running low on Claude subscription tokens for the week; this lets ArchetypeOS's reasoned tiers (distillation, council, research) run on a local model or a free hosted API instead. New `OpenAICompatibleProvider` on the existing `llm_provider` seam (whose docstring already anticipated "Ollama / vLLM on the GPU node; a hosted fallback") — **one config-driven adapter** for any OpenAI-compatible `/chat/completions`, covering both a **local** model on teevee's RTX 3070 (Ollama at `http://localhost:11434/v1`) and a **free hosted API** (Groq/Cerebras/OpenRouter from the `free-llm-api-resources` catalog ArchetypeOS already scanned) with the same code; only `LLM_BASE_URL`/`LLM_MODEL`/`LLM_API_KEY` differ. Stdlib `urllib` only — **no new dependency**, and CI stays hermetic (deterministic remains the default and is never selected in CI). Isolation (LES-021) is inherent since an HTTP provider transmits only system+prompt. Callers unchanged (`get_provider(get_settings())`). TDD (RED→GREEN): 6 hermetic tests (request shape, bearer-when-keyed, no-auth-local, HTTP-error, missing-content, get_provider selection); ruff clean; full council suite 19/19. **Live-validated: a real `generate()` against the homelab Ollama (qwen3:14b) returned `'ready'` (finish `stop`)** — the teevee-local path is identical code, a different base_url. Runbook `docs/runbooks/llm-provider.md` (local + free-API profiles) + `.env.example`. Spec: `.archetype/work/AOS-LLM-LOCAL-001.md`. Plane AOS-47.
+
 ## 2026-07-07 — AOS-UI-005: 4 read views restyled (merged) + AOS-UI-006: Council & Decisions (in review — restyle arc complete)
 
 ### Merged

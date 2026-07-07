@@ -18,6 +18,21 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-LLM-REVIEW-001 — Local code reviewer tier (advisory, on the Guardian)
+
+- Status: In Review (rides on the AOS-LLM-LOCAL-001 branch/PR #92)
+- Owner: laptop session (parallel Orchestrator)
+- Summary: The first Tier-1 application of the routed reasoned tier (ADR-0001). `packages/aos_core/aos_core/services/code_review.py` (`review_diff`) runs a per-category ("pointwise") advisory review of a unified diff on the on-node `qwen2.5-coder-reviewer` model; `tools/pr_reviewer.py` is the CLI (`--base/--head` or `--pr`, `--comment` posts via gh). **Layered on the deterministic PR Guardian, never a merge gate, fail-open** (no model → no findings, never raises). Validated on teevee's 3070 via the deep-research setup: the `num_ctx` fix (Ollama's 4096 default was truncating large diffs) + structured JSON + rubric gave high precision; per-category passes **tripled recall** (1/3 → 3/3 on a planted-bug diff — div-by-zero, error-handling, resource leak) while precision held. 6 hermetic tests; DRY with the eval harness. ADR: `docs/adr/ADR-0001-routed-reasoned-tier.md`; opportunity map: `docs/reviews/2026-07-07-local-and-free-llm-opportunity-map.md`.
+- Verification Status: TDD (6 hermetic reviewer tests; full suite 27); ruff clean; live-validated end-to-end (CLI → teevee 3070 → advisory finding, fail-open). Next: eval-driven router + free-API rotation (AOS-LLM-EVAL-001) → multi-model Council.
+
+### AOS-LLM-LOCAL-001 — Local / free LLM provider (OpenAI-compatible)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-llm-local` (fresh, from `origin/main`)
+- Summary: Run ArchetypeOS's reasoned tiers off Claude to save subscription tokens. New `OpenAICompatibleProvider` on the existing `llm_provider` seam — one config-driven adapter for **any** OpenAI-compatible `/chat/completions`, covering both a **local** model on teevee's RTX 3070 (Ollama, `http://localhost:11434/v1`) and a **free hosted API** (Groq/Cerebras/OpenRouter from the `free-llm-api-resources` catalog) with the same code; only `LLM_BASE_URL`/`LLM_MODEL`/`LLM_API_KEY` differ. Stdlib `urllib` (no new dep; CI stays hermetic — deterministic remains the default, never selected in CI). Isolation (LES-021) is inherent (HTTP sends only system+prompt). Runbook `docs/runbooks/llm-provider.md` + `.env.example` profiles. Spec: `.archetype/work/AOS-LLM-LOCAL-001.md`.
+- Verification Status: TDD (RED→GREEN) — 6 hermetic tests in `test_council.py` (request shape, bearer-when-keyed, no-auth-local, HTTP-error, missing-content, get_provider); ruff clean; full council suite 19/19; **live smoke against the homelab Ollama (qwen3:14b) returned `'ready'`** (finish `stop`).
+
 ### AOS-CI-AUTOREBASE-001 — Auto-update open PRs when main advances (LES-L03)
 
 - Status: In Review

@@ -1,0 +1,84 @@
+name: Doc-staleness self-heal
+
+# AOS-SELFHEAL-002: on every merge to main, detect doc-vs-reality drift and
+# surface the deterministic reconciliation DRAFT in a single idempotent tracking
+# issue. This closes the gap the PR Guardian WARN leaves open — drift that
+# accumulates when nobody has a PR open. It never edits the state docs (Article
+# XII); the LLM narrative reconciliation is done by the /reconcile-state skill
+# (e.g. from a nightly Claude routine), which then closes the issue.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: doc-staleness-reconcile
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  reconcile:
+    name: Detect drift and surface the draft
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for git log)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run the doc-staleness detector and generate the fix draft
+        run: |
+          python3 tools/doc_staleness.py --fix || true
+          if [ -f .archetype/reconciliation/PENDING.md ]; then
+            echo "drift=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "drift=false" >> "$GITHUB_OUTPUT"
+          fi
+        id: detect
+
+      - name: Ensure the tracking label exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh label create doc-staleness --color FBCA04 --description "State docs lag reality (AOS-SELFHEAL)" 2>/dev/null || true
+
+      - name: Open or update the reconciliation issue (on drift)
+        if: steps.detect.outputs.drift == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          {
+            echo "State docs have drifted from git and need reconciliation. This draft was"
+            echo "generated deterministically by \`tools/doc_staleness.py --fix\` on the merge to"
+            echo "main; it is not applied automatically. Run the \`/reconcile-state\` skill (or a"
+            echo "nightly routine) to apply it, then this issue auto-closes on the next merge."
+            echo ""
+            cat .archetype/reconciliation/PENDING.md
+          } > /tmp/issue_body.md
+          existing="$(gh issue list --label doc-staleness --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file /tmp/issue_body.md
+            echo "Updated tracking issue #$existing"
+          else
+            gh issue create --title "State docs reconciliation needed" --label doc-staleness --body-file /tmp/issue_body.md
+          fi
+
+      - name: Auto-close the reconciliation issue (docs are fresh)
+        if: steps.detect.outputs.drift == 'false'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          existing="$(gh issue list --label doc-staleness --state open --json number --jq '.[0].number // empty')"
+          if [ -n "$existing" ]; then
+            gh issue close "$existing" --comment "State docs are current with git again — auto-closed by the doc-staleness self-heal."
+          fi

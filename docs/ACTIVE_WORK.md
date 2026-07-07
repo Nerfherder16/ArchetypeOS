@@ -18,6 +18,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-SELFHEAL-002 — CI-on-main doc-staleness self-heal (surface + draft)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-selfheal-ci` (fresh, from `origin/main` @ `a80e737`)
+- Summary: The deterministic **CI-on-main** trigger deferred in AOS-SELFHEAL-001. A new isolated workflow `.github/workflows/doc-staleness-reconcile.yml` (separate from `ci.yml`, no risk to the 9 gating jobs) runs on every push to `main` + `workflow_dispatch`: it runs `tools/doc_staleness.py --fix`, and on drift **idempotently opens or updates a single `doc-staleness`-labelled tracking issue** whose body is the deterministic reconciliation draft — never editing the state docs (Article XII). When the docs are reconciled the next merge **auto-closes** that issue (self-healing). This closes the gap the PR Guardian WARN leaves open: drift that accumulates when nobody has a PR open was invisible (the exact case seen all session — CURRENT_STATE lagged 5 PRs). The LLM narrative half stays with `/reconcile-state`, intended to run from a nightly Claude routine that applies the draft + opens the PR. Spec: `.archetype/work/AOS-SELFHEAL-002.md`.
+- Verification Status: Level 2 (local) — new workflow YAML parses (`yaml.safe_load`, 1 job `reconcile`); `ci.yml` untouched (still 9 jobs); no LES-027 inline-colon trap (all `run:` are block scalars); dry-ran the detect logic on this tree (real #79-vs-#81 drift → accurate draft). Level 3 dogfoods on merge (first run opens the tracking issue given current drift).
+
 ### AOS-SELFHEAL-001 — Close the doc-staleness loop (detect → correct)
 
 - Status: In Review

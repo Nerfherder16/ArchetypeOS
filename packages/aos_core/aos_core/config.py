@@ -26,6 +26,15 @@ class Settings(BaseSettings):
     llm_base_url: str = "http://localhost:11434/v1"
     llm_model: str = "qwen2.5-coder:7b"
     llm_api_key: str = ""
+    # AOS-LLM-EVAL-001: Tier-2 free hosted provider (non-private tasks only — see
+    # the router's privacy tiering). Distinct from the local llm_* above so both
+    # tiers can be configured at once. Key from env (LLM_FREE_API_KEY), never committed.
+    llm_free_base_url: str = "https://api.groq.com/openai/v1"
+    llm_free_model: str = "llama-3.3-70b-versatile"
+    llm_free_api_key: str = ""
+    # Tier-3 Claude is opt-in (it spends subscription tokens): the router only
+    # routes to it when explicitly enabled.
+    llm_claude_enabled: bool = False
     # RFC-0010 embedding tier. Default "deterministic" → the hermetic no-op
     # embedder (embed()→None → lexical fallback); the real "fastembed" (ONNX) tier
     # lands in AOS-EMBED-002. ``embedding_model`` names the fastembed model that

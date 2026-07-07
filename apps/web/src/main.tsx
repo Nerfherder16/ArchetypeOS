@@ -1022,82 +1022,60 @@ function App() {
 
       case 'knowledge':
         return (
-          <div className="aos-legacy">
-            <section>
+          <section className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">Engineering memory</span>
               <h2>Knowledge</h2>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Lessons vault</span>
               {knowledgeError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   Knowledge unavailable: {knowledgeError}
                 </p>
               ) : null}
-              <div>
+              <div className="aos-form-row" style={{ marginTop: 0 }}>
                 <button
                   type="button"
+                  className="aos-btn aos-btn-sm"
                   disabled={knowledgeSyncing}
                   onClick={() => void handleSyncKnowledge()}
                 >
                   {knowledgeSyncing ? 'Syncing...' : 'Sync from vault'}
                 </button>
                 {knowledgeSyncSummary ? (
-                  <span style={{ marginLeft: 8, color: '#555' }}>{knowledgeSyncSummary}</span>
+                  <span className="aos-mono aos-muted">{knowledgeSyncSummary}</span>
                 ) : null}
               </div>
-              <div style={{ marginTop: 8 }}>
+              <div className="aos-form-row">
                 <button
                   type="button"
+                  className={knowledgeFilter === 'all' ? 'aos-mchip on' : 'aos-mchip'}
                   onClick={() => setKnowledgeFilter('all')}
-                  style={{
-                    cursor: 'pointer',
-                    padding: '4px 10px',
-                    border: knowledgeFilter === 'all' ? '2px solid #0b57d0' : '1px solid #ccc',
-                    background: knowledgeFilter === 'all' ? '#e8f0fe' : '#fff',
-                    fontWeight: knowledgeFilter === 'all' ? 600 : 400,
-                  }}
                 >
                   All
                 </button>
                 <button
                   type="button"
+                  className={knowledgeFilter === 'open' ? 'aos-mchip on' : 'aos-mchip'}
                   onClick={() => setKnowledgeFilter('open')}
-                  style={{
-                    cursor: 'pointer',
-                    marginLeft: 8,
-                    padding: '4px 10px',
-                    border: knowledgeFilter === 'open' ? '2px solid #0b57d0' : '1px solid #ccc',
-                    background: knowledgeFilter === 'open' ? '#e8f0fe' : '#fff',
-                    fontWeight: knowledgeFilter === 'open' ? 600 : 400,
-                  }}
                 >
                   Open
                 </button>
               </div>
               {knowledgePages.length === 0 ? (
-                <p>No knowledge pages yet. Sync from the vault to load lessons.</p>
+                <p className="aos-muted" style={{ margin: '12px 0 0' }}>
+                  No knowledge pages yet. Sync from the vault to load lessons.
+                </p>
               ) : (
-                <ul style={{ listStyle: 'none', padding: 0, marginTop: 8 }}>
+                <ul className="aos-rows" style={{ marginTop: 12 }}>
                   {knowledgePages.map((page) => {
                     const isOpen = page.validation_state === 'open';
                     return (
-                      <li key={page.id} style={{ marginBottom: 6 }}>
-                        {isOpen ? (
-                          <span
-                            style={{
-                              display: 'inline-block',
-                              marginRight: 8,
-                              padding: '1px 8px',
-                              borderRadius: 10,
-                              fontSize: 12,
-                              fontWeight: 600,
-                              color: '#b45309',
-                              background: '#fef3c7',
-                              border: '1px solid #f59e0b',
-                            }}
-                          >
-                            open
-                          </span>
-                        ) : null}
-                        <span style={{ fontWeight: isOpen ? 600 : 400 }}>{page.title}</span>{' '}
-                        <span style={{ color: '#777' }}>
+                      <li key={page.id}>
+                        {isOpen ? <span className="aos-pill risk">open</span> : null}
+                        <span className={isOpen ? 'aos-strong' : undefined}>{page.title}</span>{' '}
+                        <span className="aos-rowmeta">
                           ({page.page_type} · {page.validation_state})
                         </span>
                       </li>
@@ -1105,8 +1083,8 @@ function App() {
                   })}
                 </ul>
               )}
-            </section>
-          </div>
+            </div>
+          </section>
         );
 
       case 'reuse':
@@ -1240,40 +1218,53 @@ function App() {
         }
         if (!selectedRepositoryId) {
           return (
-            <div className="aos-legacy">
-              <section>
+            <div className="aos-view">
+              <div className="aos-view-head">
+                <span className="aos-eyebrow">System map</span>
                 <h2>Architecture</h2>
-                <p>Select a repository in the Repositories view and run a scan to load its architecture.</p>
-              </section>
+              </div>
+              <div className="aos-hud glass aos-card">
+                <p className="aos-muted" style={{ margin: 0 }}>
+                  Select a repository in the Repositories view and run a scan to load its architecture.
+                </p>
+              </div>
             </div>
           );
         }
         return (
-          <div className="aos-legacy">
-            <section>
+          <div className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">System map</span>
               <h2>Architecture</h2>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Dependency graph</span>
               {architectureError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   {architectureError}
                 </p>
               ) : null}
               {architecture ? (
-                <div>
-                  <p>
-                    Nodes: {architecture.nodes.length} · Edges: {architecture.edges.length}
-                  </p>
-                  <ul>
+                <>
+                  <div className="aos-pills">
+                    <span className="aos-pill good">Nodes: {architecture.nodes.length}</span>
+                    <span className="aos-pill good">Edges: {architecture.edges.length}</span>
+                  </div>
+                  <ul className="aos-rows" style={{ marginTop: 12 }}>
                     {architecture.nodes.map((node) => (
                       <li key={node.id}>
-                        {node.label} ({node.type}) — confidence {node.confidence}
+                        <span className="aos-strong">{node.label}</span>{' '}
+                        <span className="aos-rowmeta">
+                          ({node.type}) — confidence {node.confidence}
+                        </span>
                       </li>
                     ))}
                   </ul>
-                </div>
+                </>
               ) : !architectureError ? (
-                <p>Loading architecture...</p>
+                <p className="aos-muted" style={{ margin: 0 }}>Loading architecture...</p>
               ) : null}
-            </section>
+            </div>
           </div>
         );
 
@@ -1687,29 +1678,44 @@ function App() {
           return <SelectProjectNotice />;
         }
         return (
-          <div className="aos-legacy">
-            <section>
+          <div className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">Automation</span>
               <h2>Nightly Digest</h2>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Digest runs</span>
               {digestsError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   {digestsError}
                 </p>
               ) : null}
-              <button type="button" disabled={runningDigest} onClick={() => void handleRunDigest()}>
-                {runningDigest ? 'Running...' : 'Run digest'}
-              </button>
+              <div className="aos-form-row" style={{ marginTop: 0 }}>
+                <button
+                  type="button"
+                  className="aos-btn aos-btn-sm"
+                  disabled={runningDigest}
+                  onClick={() => void handleRunDigest()}
+                >
+                  {runningDigest ? 'Running...' : 'Run digest'}
+                </button>
+              </div>
               {digests.length === 0 ? (
-                <p>No digests yet.</p>
+                <p className="aos-muted" style={{ margin: '12px 0 0' }}>No digests yet.</p>
               ) : (
-                <ul>
+                <ul className="aos-rows" style={{ marginTop: 12 }}>
                   {digests.map((digest, index) => (
                     <li key={digest.id}>
-                      {new Date(digest.digest_date).toLocaleDateString()} — {digest.summary ?? 'no summary'}
+                      <span className="aos-rowmeta">
+                        {new Date(digest.digest_date).toLocaleDateString()}
+                      </span>{' '}
+                      <span>{digest.summary ?? 'no summary'}</span>
                       {index === 0 && digest.recommendations.length > 0 ? (
-                        <ul>
+                        <ul className="aos-subrows">
                           {digest.recommendations.map((recommendation, recIndex) => (
                             <li key={recIndex}>
-                              {recommendation.title ?? 'Untitled'} — {recommendation.reason ?? ''}
+                              <span className="aos-strong">{recommendation.title ?? 'Untitled'}</span> —{' '}
+                              {recommendation.reason ?? ''}
                             </li>
                           ))}
                         </ul>
@@ -1718,7 +1724,7 @@ function App() {
                   ))}
                 </ul>
               )}
-            </section>
+            </div>
           </div>
         );
 
@@ -1727,46 +1733,51 @@ function App() {
           return <SelectProjectNotice />;
         }
         return (
-          <div className="aos-legacy">
-            <section>
+          <div className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">Automation</span>
               <h2>Scheduling &amp; Jobs</h2>
+            </div>
+
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Schedules</span>
               {schedulingError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   {schedulingError}
                 </p>
               ) : null}
-
-              <h3 style={{ marginBottom: 4 }}>Schedules</h3>
               {schedules.length === 0 ? (
-                <p>No schedules yet.</p>
+                <p className="aos-muted" style={{ margin: 0 }}>No schedules yet.</p>
               ) : (
-                <ul>
+                <ul className="aos-rows">
                   {schedules.map((schedule) => (
-                    <li key={schedule.id} style={{ marginBottom: 4 }}>
-                      {schedule.name} — {schedule.job_type} — every {schedule.interval_seconds}s —{' '}
-                      {schedule.enabled ? 'enabled' : 'disabled'} — next{' '}
-                      {new Date(schedule.next_run_at).toLocaleString()}
+                    <li key={schedule.id}>
+                      <span>
+                        {schedule.name} — {schedule.job_type} — every {schedule.interval_seconds}s —{' '}
+                        {schedule.enabled ? 'enabled' : 'disabled'} — next{' '}
+                        {new Date(schedule.next_run_at).toLocaleString()}
+                      </span>
                       <button
                         type="button"
+                        className="aos-btn-ghost aos-btn-sm"
                         disabled={schedulingBusy}
                         onClick={() => void handleToggleSchedule(schedule)}
-                        style={{ marginLeft: 8 }}
                       >
                         {schedule.enabled ? 'Disable' : 'Enable'}
                       </button>
                       <button
                         type="button"
+                        className="aos-btn aos-btn-sm"
                         disabled={schedulingBusy}
                         onClick={() => void handleRunSchedule(schedule.id)}
-                        style={{ marginLeft: 8 }}
                       >
                         Run now
                       </button>
                       <button
                         type="button"
+                        className="aos-btn-ghost aos-btn-sm"
                         disabled={schedulingBusy}
                         onClick={() => void handleDeleteSchedule(schedule.id)}
-                        style={{ marginLeft: 8 }}
                       >
                         Delete
                       </button>
@@ -1775,46 +1786,54 @@ function App() {
                 </ul>
               )}
 
-              <form onSubmit={handleCreateSchedule} style={{ marginTop: 8 }}>
+              <form onSubmit={handleCreateSchedule} className="aos-form-row">
                 <input
+                  className="aos-input"
                   type="text"
                   value={newScheduleName}
                   placeholder="Schedule name"
                   onChange={(event) => setNewScheduleName(event.target.value)}
+                  style={{ width: 'auto', flex: '1 1 180px' }}
                 />
                 <select
+                  className="aos-input"
                   value={newScheduleJobType}
                   onChange={(event) => setNewScheduleJobType(event.target.value)}
-                  style={{ marginLeft: 8 }}
+                  style={{ width: 'auto' }}
                 >
                   <option value="repository_scan">repository_scan</option>
                   <option value="project_digest">project_digest</option>
                 </select>
                 <input
+                  className="aos-input"
                   type="number"
                   value={newScheduleInterval}
                   placeholder="Interval seconds"
                   onChange={(event) => setNewScheduleInterval(event.target.value)}
-                  style={{ marginLeft: 8, width: 140 }}
+                  style={{ width: 140 }}
                 />
-                <button type="submit" disabled={creatingSchedule} style={{ marginLeft: 8 }}>
+                <button type="submit" className="aos-btn aos-btn-sm" disabled={creatingSchedule}>
                   {creatingSchedule ? 'Creating...' : 'Create schedule'}
                 </button>
               </form>
+            </div>
 
-              <h3 style={{ marginTop: 12, marginBottom: 4 }}>Enqueue now</h3>
-              <div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Enqueue now</span>
+              <div className="aos-form-row" style={{ marginTop: 0 }}>
                 <button
                   type="button"
+                  className="aos-btn aos-btn-sm"
                   disabled={schedulingBusy}
                   onClick={() => void handleEnqueueDigest()}
                 >
                   Enqueue digest job
                 </button>
                 <select
+                  className="aos-input"
                   value={scanJobRepoId}
                   onChange={(event) => setScanJobRepoId(event.target.value)}
-                  style={{ marginLeft: 8 }}
+                  style={{ width: 'auto' }}
                 >
                   <option value="">Select repository</option>
                   {repositories.map((repository) => (
@@ -1825,26 +1844,31 @@ function App() {
                 </select>
                 <button
                   type="button"
+                  className="aos-btn aos-btn-sm"
                   disabled={schedulingBusy || !scanJobRepoId}
                   onClick={() => void handleEnqueueScan()}
-                  style={{ marginLeft: 8 }}
                 >
                   Enqueue scan job
                 </button>
               </div>
+            </div>
 
-              <h3 style={{ marginTop: 12, marginBottom: 4 }}>Job history</h3>
-              <button
-                type="button"
-                disabled={schedulingBusy}
-                onClick={() => selectedProjectId && void loadJobs(selectedProjectId)}
-              >
-                Refresh jobs
-              </button>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Job history</span>
+              <div className="aos-form-row" style={{ marginTop: 0 }}>
+                <button
+                  type="button"
+                  className="aos-btn-ghost aos-btn-sm"
+                  disabled={schedulingBusy}
+                  onClick={() => selectedProjectId && void loadJobs(selectedProjectId)}
+                >
+                  Refresh jobs
+                </button>
+              </div>
               {jobs.length === 0 ? (
-                <p>No jobs yet.</p>
+                <p className="aos-muted" style={{ margin: '12px 0 0' }}>No jobs yet.</p>
               ) : (
-                <ul>
+                <ul className="aos-rows" style={{ marginTop: 12 }}>
                   {jobs.map((job) => (
                     <li key={job.id}>
                       {job.job_type} — {job.status} — {new Date(job.queued_at).toLocaleString()} —
@@ -1853,7 +1877,7 @@ function App() {
                   ))}
                 </ul>
               )}
-            </section>
+            </div>
           </div>
         );
 

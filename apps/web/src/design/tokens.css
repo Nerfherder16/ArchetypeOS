@@ -609,6 +609,19 @@
 .aos-form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
 .aos-error { color: var(--red); margin: 0; }
 
+/* Divider-row list for read surfaces that must keep <li> semantics (e2e
+ * `getByRole('listitem')`) rather than table rows — knowledge lessons,
+ * schedules, jobs, digest recommendations. */
+.aos-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.aos-rows > li {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 9px 2px; border-bottom: 1px solid var(--frame); color: var(--ink-2); font-size: 13px;
+}
+.aos-rows > li:last-child { border-bottom: 0; }
+.aos-rows .aos-subrows { flex-basis: 100%; margin: 4px 0 0; padding-left: 14px; }
+.aos-rows .aos-subrows > li { border: 0; padding: 3px 0; }
+.aos-rowmeta { color: var(--ink-3); font-family: var(--mono); font-size: 11.5px; }
+
 @media (prefers-reduced-motion: reduce) {
   .aos-surface *,
   .aos-surface *::before,

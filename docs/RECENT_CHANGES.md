@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-UI-004: Overview+Repositories restyle (merged) + AOS-UI-005: 4 read views (in review)
+
+### Merged
+
+- **AOS-UI-004 — restyle Overview + Repositories onto the ops-deck (PR #84).** First per-view restyle increment: the two views moved off their transitional `.aos-legacy` light panels onto native dark `.aos-*` — health as good/risk pills, the repositories table + register form as HUD panels, scan summary as a stat grid + signal/risk pills. Added the reusable view-restyle vocabulary to `tokens.css` (`.aos-view`/`.aos-card`/`.aos-pill`/`.aos-kv`/`.aos-table`/`.aos-linkbtn`). Every e2e selector preserved; ci-green-signalled. Spec: `.archetype/work/AOS-UI-004.md`.
+
+### In Review
+
+- **AOS-UI-005 — restyle Architecture + Knowledge + Digest + Scheduling.** Second restyle increment reusing the AOS-UI-004 vocabulary + a small `.aos-rows` divider-row list (keeps `<li>` semantics): node/edge counts + signals → pills; lessons/schedules/jobs/digests → row lists; forms → `.aos-input`/`.aos-btn`. One spec edit — `control-tower.spec.ts`'s architecture assertion reads counts from `body` not a `<section>` (nothing weakened). Only **Council & Decisions** remains `.aos-legacy` (its own PR — laptop territory). Carries the AOS-UI-004 (#84) reconciliation. Orchestrator-verified: build clean, full Playwright 15/15, all four views screenshotted. Spec: `.archetype/work/AOS-UI-005.md`.
+
 ## 2026-07-07 — AOS-UI-003: rail shell (merged) + AOS-UI-004: per-view restyle (in review)
 
 ### Merged

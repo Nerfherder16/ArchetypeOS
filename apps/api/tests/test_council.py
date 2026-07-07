@@ -379,6 +379,30 @@ def test_openai_compatible_provider_non_json_body_raises(monkeypatch):
         )
 
 
+def test_openai_compatible_provider_passes_response_format(monkeypatch):
+    # Structured-output passthrough (AOS-LLM-LOCAL-001): response_format reaches
+    # the request body when supplied, and is absent when not.
+    import aos_core.llm as llm
+
+    captured = {}
+
+    def fake_urlopen(request, timeout=None):
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        return _FakeHTTPResponse(
+            {"choices": [{"message": {"content": "{}"}, "finish_reason": "stop"}]}
+        )
+
+    monkeypatch.setattr(llm.urllib.request, "urlopen", fake_urlopen)
+    provider = llm.OpenAICompatibleProvider(base_url="http://x/v1", model="m")
+
+    rf = {"type": "json_object"}
+    provider.generate(system="", prompt="p", response_format=rf)
+    assert captured["body"]["response_format"] == rf
+
+    provider.generate(system="", prompt="p")
+    assert "response_format" not in captured["body"]
+
+
 def test_synthesize_verdict_abstains_below_floor():
     outputs = [
         CouncilAgentOutput(

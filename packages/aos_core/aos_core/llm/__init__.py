@@ -297,19 +297,30 @@ class OpenAICompatibleProvider:
         self.api_key = api_key
         self.timeout = timeout
 
-    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024) -> ProviderResult:
-        body = json.dumps(
-            {
-                "model": self.model,
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user", "content": prompt},
-                ],
-                "max_tokens": max_tokens,
-                "temperature": 0,
-                "stream": False,
-            }
-        ).encode("utf-8")
+    def generate(
+        self,
+        *,
+        system: str,
+        prompt: str,
+        max_tokens: int = 1024,
+        response_format: dict | None = None,
+    ) -> ProviderResult:
+        body_obj = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system},
+                {"role": "user", "content": prompt},
+            ],
+            "max_tokens": max_tokens,
+            "temperature": 0,
+            "stream": False,
+        }
+        # Structured output (e.g. {"type": "json_object"}) — Ollama's OpenAI
+        # endpoint honors response_format to constrain output to JSON, which the
+        # research found cuts the reviewer's prose-rambling failure.
+        if response_format is not None:
+            body_obj["response_format"] = response_format
+        body = json.dumps(body_obj).encode("utf-8")
         headers = {"Content-Type": "application/json"}
         if self.api_key:
             headers["Authorization"] = f"Bearer {self.api_key}"

@@ -48,6 +48,7 @@ import {
 } from './api';
 import { ReuseView } from './features/reuse/ReuseView';
 import { ProvidersView } from './features/providers/ProvidersView';
+import { ApprovalsView } from './features/approvals/ApprovalsView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { WORKSPACE_MODES } from './shell/workspaces';
@@ -1048,6 +1049,9 @@ function App() {
 
       case 'providers':
         return <ProvidersView />;
+
+      case 'approvals':
+        return <ApprovalsView />;
 
       case 'repositories':
         if (!selectedProjectId) {

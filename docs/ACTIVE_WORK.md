@@ -18,6 +18,15 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-ARCH-EDGES-001 — Manifest-derived architecture edges (LES-014, non-compose half)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-arch-manifest-edges` (fresh, cut from `origin/main` @ `8a7fd6a`)
+- Summary: Closes **LES-014** (the manifest/dependency half; compose/service edges shipped in AOS-ARCH-SEMANTICS-001). Wires the **dormant** `_LOCAL_DEP_PARSERS` (`requirements.txt` `-e ./`, `pyproject` poetry/uv `path=`, `package.json` `file:`/`link:`, `go.mod` `replace => ./`) — defined but never called — into `depends_on` architecture edges at top-level-directory granularity: each local dep is resolved relative to its manifest's dir, mapped to top-level segments, emitted between existing directory/repository nodes with manifest-provenance evidence, deduped, bounded (`MAX_LOCAL_DEP_EDGES=200`), tolerant (repo-escaping/unresolvable/malformed skipped, never raises). Scanner-only. Source `import`-graph edges are a separate follow-up. Spec: `.archetype/work/AOS-ARCH-EDGES-001.md`.
+- Verification Status: TDD (RED→GREEN) by a python builder, Orchestrator-verified independently — 25 scanner tests pass, ruff full CI scope clean; self-scan of this repo emits 0 manifest-derived edges (its committed manifests declare no local path deps — confirmed by grep; no misfire), the fixture test proves apps→packages/web→shared/svc→shared.
+- Required Next Verifier: GitHub CI then Manual Merge Gate.
+
 ### AOS-SCAN-PRECISION-001 — Scanner precision (manifest breadth + secret-signal fixture awareness)
 
 - Status: In Review

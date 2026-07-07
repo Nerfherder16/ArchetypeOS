@@ -7,6 +7,11 @@ This file gives new sessions a quick chronological view of what changed recently
 It is not a replacement for Git history. It is a human-readable coordination log.
 
 ## 2026-07-07 — AOS-UI-007/008 (merged #93/#94) + AOS-UI-009 orb Operations-home (cloud session)
+## 2026-07-07 — AOS-LLM-EVAL-001 flagship: multi-model Council (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-EVAL-001 (flagship) — multi-model Agent Council (RFC-0005).** The payoff of the routed reasoned tier: `tools/council_multimodel.py` runs the REAL council agents (research/architecture/fitness/security), **each on a DIFFERENT free frontier model** from the rotation pool, then the deterministic Final Judge synthesis — genuine model diversity (the actual point of a council, not one model role-played N times) at **~zero Claude cost**, with Claude reserved for Final Judge only. Live-validated across **4 models** (Groq Llama-3.3-70B, Cerebras GPT-OSS-120B, Gemini-2.5-Flash, Mistral-Large): the four agents produced independent substantive assessments and the Final Judge returned **"Accept with warnings" (conf 0.86)** with 3-agent agreement on the concerns + follow-ups (rate-limiting, load-testing). Headless (no DB) to prove the mechanism; privacy guardrail holds (public questions only). Productionization = wiring per-agent model into the DB-backed `run_council` route (follow-up). This closes the local/free-LLM arc: provider seam -> local reviewer -> Tier-2 unblock -> router+guardrail -> rotation pool -> multi-model Council.
 ## 2026-07-07 — AOS-LLM-EVAL-001 slice 3: free-API rotation pool (laptop session — in review)
 
 ### In Review (tandem laptop session)

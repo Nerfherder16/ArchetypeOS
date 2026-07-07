@@ -219,6 +219,33 @@ export type KnowledgeSyncResult = {
   open_lessons: number;
 };
 
+// LLM usage ledger (AOS-USAGE-001/002). `GET /usage/summary?window=today|7d|30d`
+// returns real token/cost usage across the three reported tiers (claude / local
+// / free). `estimated: true` on a bucket means at least one figure was
+// length-derived (an envelope lacked `usage`), so it must never be shown as
+// exact. Tiers are always present in `by_tier` (zeroed when empty); `by_model` is
+// busiest-first.
+export type UsageWindow = 'today' | '7d' | '30d';
+
+export type UsageBucket = {
+  input_tokens: number;
+  output_tokens: number;
+  total_tokens: number;
+  cost_usd: number;
+  events: number;
+  estimated: boolean;
+};
+
+export type UsageModelRow = UsageBucket & { model: string; tier: string };
+
+export type UsageSummary = {
+  window: UsageWindow;
+  since: string; // ISO timestamp
+  totals: UsageBucket;
+  by_tier: { claude: UsageBucket; local: UsageBucket; free: UsageBucket };
+  by_model: UsageModelRow[];
+};
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, init);
   if (!response.ok) {
@@ -474,4 +501,12 @@ export async function fetchReuseRecommendations(
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ need }),
   });
+}
+
+// LLM usage ledger summary for the Providers & Model Routing view (AOS-USAGE-002).
+// Read-only; the ledger is written centrally by the InstrumentedProvider wrapper,
+// never from the UI. An empty ledger returns zeroed totals + tiers with `[]`
+// models — the caller renders that as the empty state, not an error.
+export async function fetchUsageSummary(window: UsageWindow): Promise<UsageSummary> {
+  return request<UsageSummary>(`/usage/summary?window=${encodeURIComponent(window)}`);
 }

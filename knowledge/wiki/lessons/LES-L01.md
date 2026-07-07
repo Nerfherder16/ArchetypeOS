@@ -1,4 +1,4 @@
-# LES-029 — A detector without a remediation trigger is not self-learning
+# LES-L01 — A detector without a remediation trigger is not self-learning
 
 ## Aliases
 

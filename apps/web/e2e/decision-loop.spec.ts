@@ -17,16 +17,14 @@ async function refreshUntilReviewAppears(page: Page): Promise<Locator> {
   return draftButton;
 }
 
-// Scope to the drafted decision's <li> WITHIN the "Decisions & Research" section.
-// The Agent Council dashboard (AOS-COUNCIL-002) renders the same reviews in a
-// separate section, so a page-global listitem+question locator is now ambiguous
-// (LES-028) — scope to the section that owns the decision row.
+// Target the drafted decision's row by its stable testid. The "Decisions &
+// Research" section renders BOTH the Decision-Loop council-reviews list (each row
+// echoes the question) AND the decisions list, so a section-scoped
+// listitem+question locator is ambiguous — it matched the review <li> and the
+// decision <li> (LES-028 fixed the cross-section case; LES-030 fixes this
+// intra-section one). `data-testid="decision-row"` marks only the decision rows.
 const decisionRow = (page: Page, question: string): Locator =>
-  page
-    .locator('section')
-    .filter({ has: page.getByRole('heading', { name: 'Decisions & Research' }) })
-    .getByRole('listitem')
-    .filter({ hasText: question });
+  page.getByTestId('decision-row').filter({ hasText: question });
 
 test('decision loop: scan → council review → draft → approve → export ADR', async ({ page }) => {
   const projectName = `Council Happy ${uid()}`;

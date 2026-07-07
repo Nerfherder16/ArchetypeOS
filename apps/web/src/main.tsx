@@ -1260,7 +1260,7 @@ function App() {
                 const inlineError = decisionErrors[decision.id];
                 const adrResult = adrResults[decision.id];
                 return (
-                  <li key={decision.id} style={{ marginBottom: 8 }}>
+                  <li key={decision.id} data-testid="decision-row" style={{ marginBottom: 8 }}>
                     <DecisionStatusBadge status={decision.status} />
                     <span>
                       {decision.title} — confidence {decision.confidence} · {linkedResearch} linked

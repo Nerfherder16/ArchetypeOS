@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-REVIEW-001 + ADR-0001: routed reasoned tier & local reviewer (laptop session — in review)
+
+### In Review (tandem laptop session, on PR #92)
+
+- **AOS-LLM-REVIEW-001 — local code reviewer tier + ADR-0001 (routed reasoned tier).** The first Tier-1 app of a decision recorded in `docs/adr/ADR-0001-routed-reasoned-tier.md`: the reasoned tier becomes a **4-tier routed pool** — deterministic (CI floor) / local 7B (teevee 3070, private) / free hosted (Gemini/Groq/Cerebras/DeepSeek, non-private only) / Claude (highest-stakes + Final Judge), with **privacy tiering** as a hard guardrail (private code never leaves for a free tier) and eval-driven routing. `aos_core/services/code_review.py` (`review_diff`, per-category advisory findings, fail-open, code-only filter) + `tools/pr_reviewer.py` (CLI, `--comment` posts via gh) run on the on-node `qwen2.5-coder-reviewer` model, **layered on the deterministic PR Guardian and never a merge gate**. Built via a deep-research pass (26 sources, 21 confirmed) + the LLM Council + the eval harness: the `num_ctx` fix (Ollama's 4096 default was silently truncating large diffs) + structured JSON + a per-category rubric gave **high precision + tripled recall** (1/3 → 3/3 on a planted-bug diff) at ~2–10s/diff on the 3070. 6 hermetic tests (suite 27); ruff clean; live-validated end-to-end. Strategy: `docs/reviews/2026-07-07-local-and-free-llm-opportunity-map.md` (flagship follow-on: a free multi-model Council). Next: the eval-driven router + free-API rotation pool (AOS-LLM-EVAL-001).
+
 ## 2026-07-07 — AOS-LLM-LOCAL-001: local / free LLM provider (laptop session — in review)
 
 ### In Review (tandem laptop session)

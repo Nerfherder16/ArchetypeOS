@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-EVAL-001 slice 2: LLM tier router + privacy guardrail (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-EVAL-001 (slice 2) — the LLM tier router.** `aos_core/services/llm_router.py`: `route(task_class, sensitivity, settings)` picks a backend over the 4-tier pool (ADR-0001) by a per-task-class preference table, choosing the first *available* (configured) tier and always falling back to deterministic. **The hard privacy guardrail is enforced + tested here: a `PRIVATE` task is NEVER routed to Tier-2 free hosted** (it is stripped from the order) — private work stays local (Tier 1) or Claude (Tier 3). Config adds `llm_free_*` (Tier-2 endpoint/model/key) + `llm_claude_enabled` (opt-in Tier 3). 9 hermetic tests. **Live-validated with real backends**: `code_review/private → local` (teevee 3070, `LOCAL OK`), `research/public → free` (Groq 70B, `FREE OK` in 0.28s), and `research/private → deterministic` (the private task **refused the free API** and fell back safely). Next: slice 3 (free-API rotation pool for 429-resilience) → the multi-model Council.
+
 ## 2026-07-07 — AOS-LLM-LOCAL-002: provider User-Agent (Tier-2 unblock) (laptop session — in review)
 
 ### In Review (tandem laptop session)

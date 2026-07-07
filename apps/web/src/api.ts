@@ -143,6 +143,25 @@ export type Recommendation = {
   evidence: EvidenceEntry[];
 };
 
+// Portfolio reuse recommendation (RFC-0009). Evidence is a discriminated union:
+// a distilled repository page (`distillation`, cited by vault-path `ref`) or the
+// underlying repository row (`repository`, keyed by `id`).
+export type TransferEvidence =
+  | { type: 'distillation'; ref: string }
+  | { type: 'repository'; id: string };
+
+export type TransferRecommendation = {
+  source_repository: string;
+  source_project_id: string | null;
+  reusable_asset: string;
+  reason: string;
+  matched_terms: string[];
+  evidence: TransferEvidence[];
+  required_changes: string | null;
+  risks: string | null;
+  confidence: number;
+};
+
 export type DigestRecommendation = {
   title?: string;
   reason?: string;
@@ -441,4 +460,18 @@ export async function fetchKnowledgePages(params?: {
 
 export async function syncKnowledge(): Promise<KnowledgeSyncResult> {
   return request<KnowledgeSyncResult>('/knowledge/sync', { method: 'POST' });
+}
+
+// Knowledge Transfer Engine: scan the portfolio's distilled knowledge for a
+// described need. The backend excludes the target project's own repos and sorts
+// results by confidence; an empty portfolio / no match returns `[]`.
+export async function fetchReuseRecommendations(
+  projectId: string,
+  need: string,
+): Promise<TransferRecommendation[]> {
+  return request<TransferRecommendation[]>(`/projects/${projectId}/transfer`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ need }),
+  });
 }

@@ -6,6 +6,11 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-EVAL-001 slice 3: free-API rotation pool (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-EVAL-001 (slice 3) — free-API rotation pool (429-resilience).** `aos_core/services/llm_pool.py`: `RotatingProvider` rotates across Tier-2 providers and falls through on ANY per-call failure (429/5xx/timeout), raising only when every member fails; a round-robin cursor spreads load so no single daily quota (Groq 1,000/day, etc.) burns first. `build_free_pool(env)` assembles the pool from whichever providers have a key in the environment (Groq/Cerebras/Gemini/Mistral) — **adding a provider is just exporting its key, no code change**. Wired into the router's FREE tier (prefers the pool, falls back to the single provider). 8 hermetic tests + a router env-isolation fixture. **Live-validated**: a `[broken, groq]` rotation fell through the dead endpoint to Groq (`ROTATE OK`), and the env pool assembled + answered (`POOL OK`). Tier 2 is now rate-limit-resilient. Next: the flagship multi-model Council (each agent on a different free model, Claude as Final Judge).
 ## 2026-07-07 — AOS-LLM-EVAL-001 slice 2: LLM tier router + privacy guardrail (laptop session — in review)
 
 ### In Review (tandem laptop session)

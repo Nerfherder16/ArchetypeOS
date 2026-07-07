@@ -8,6 +8,8 @@ from __future__ import annotations
 
 import types
 
+import pytest
+
 from aos_core.llm import (
     ClaudeCodeProvider,
     DeterministicProvider,
@@ -18,6 +20,14 @@ from aos_core.services.llm_router import (
     Tier,
     route,
 )
+
+
+@pytest.fixture(autouse=True)
+def _no_pool_env(monkeypatch):
+    # The router consults the env rotation pool (slice 3); clear those keys so
+    # these tests exercise the single-provider path deterministically.
+    for key in ("GROQ_API_KEY", "CEREBRAS_API_KEY", "GEMINI_API_KEY", "MISTRAL_API_KEY"):
+        monkeypatch.delenv(key, raising=False)
 
 
 def _settings(**over):

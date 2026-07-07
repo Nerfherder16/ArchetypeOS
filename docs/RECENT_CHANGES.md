@@ -6,6 +6,16 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-UI-003: rail shell (merged) + AOS-UI-004: per-view restyle (in review)
+
+### Merged
+
+- **AOS-UI-003 — Control Tower rail shell + state-based view routing (PR #82).** The full-page adoption of the `.aos-*` ops-deck: the 11 stacked sections become 8 routed views behind a left rail + topbar + workspace, switched by an `activeView` state (no router dep). `apps/web/src/shell/Shell.tsx`; `main.tsx` restructured (all state/handlers unchanged — JSX relocated into a `renderView()` switch); the active-project selector moved to the rail foot; `tokens.css` gained shell/nav classes + `.aos-legacy` (a light panel quarantining un-restyled sections legibly on the dark deck). Reuse renders native `.aos-*`; other views legacy-wrapped pending restyle. All e2e navigate via `nav-<id>`. Self-validated via the ci-green signal (woke the session on green, no polling). Orchestrator-verified: build clean, full Playwright 15/15, shell screenshotted across Overview/Reuse/Council. Spec: `.archetype/work/AOS-UI-003.md`.
+
+### In Review
+
+- **AOS-UI-004 — restyle Overview + Repositories onto the ops-deck.** First increment of the per-view restyle arc: the **Overview** and **Repositories** views move off their transitional `.aos-legacy` light panels onto native dark `.aos-*` — runtime health as good/risk pills; the repositories table + register form as HUD panels (mono table, cyan link/buttons, dark inputs); scan summary as a stat grid + signal/risk pills. Adds a reusable view-restyle vocabulary to `tokens.css` (`.aos-view`/`.aos-card`/`.aos-pill`/`.aos-kv`/`.aos-table`/`.aos-linkbtn`) the remaining views inherit next. Every e2e selector preserved; build clean, full Playwright 15/15, both views screenshotted. Carries the AOS-UI-003 (#82) reconciliation. Spec: `.archetype/work/AOS-UI-004.md`.
+
 ## 2026-07-07 — AOS-OPS-001: CI-green signal (merged) + AOS-UI-003: rail shell (in review)
 
 ### Merged

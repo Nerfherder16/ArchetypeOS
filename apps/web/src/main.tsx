@@ -980,37 +980,43 @@ function App() {
     switch (activeView) {
       case 'overview':
         return (
-          <div className="aos-legacy">
-            <section>
-              <h2>Runtime Health</h2>
+          <div className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">Control Tower</span>
+              <h2>Overview</h2>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Runtime health</span>
               {healthError ? (
-                <p role="alert" style={errorStyle}>
+                <p role="alert" className="aos-error">
                   Health unavailable: {healthError}
                 </p>
               ) : health ? (
-                <ul>
-                  <li>API: {health.api ? 'ok' : 'down'}</li>
-                  <li>Postgres: {health.database ? 'ok' : 'down'}</li>
-                  <li>Redis: {health.redis ? 'ok' : 'down'}</li>
-                </ul>
+                <div className="aos-pills">
+                  <span className={`aos-pill ${health.api ? 'good' : 'risk'}`}>API {health.api ? 'ok' : 'down'}</span>
+                  <span className={`aos-pill ${health.database ? 'good' : 'risk'}`}>Postgres {health.database ? 'ok' : 'down'}</span>
+                  <span className={`aos-pill ${health.redis ? 'good' : 'risk'}`}>Redis {health.redis ? 'ok' : 'down'}</span>
+                </div>
               ) : (
-                <p>Loading health...</p>
+                <p className="aos-muted" style={{ margin: 0 }}>Loading health…</p>
               )}
-            </section>
-            <section style={sectionStyle}>
-              <h2>Project</h2>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Active project</span>
               {selectedProject ? (
-                <p style={{ margin: 0 }}>
-                  Active project: <strong>{selectedProject.name}</strong> — {selectedProject.status}.
+                <p style={{ margin: 0, color: 'var(--ink-2)' }}>
+                  <span className="aos-strong">{selectedProject.name}</span> — {selectedProject.status}.
                   Use the rail to move between Repositories, Council &amp; Decisions, Digest and more.
                 </p>
               ) : (
-                <p style={{ margin: 0 }}>
+                <p style={{ margin: 0, color: 'var(--ink-2)' }}>
                   No project selected. Create or select one in the rail foot to begin.
                 </p>
               )}
-              <p style={{ marginTop: 8, color: '#777' }}>Voice inbox text capture — planned (v0.1).</p>
-            </section>
+              <p className="aos-mono aos-muted" style={{ marginTop: 12, fontSize: 12 }}>
+                Voice inbox text capture — planned (v0.1).
+              </p>
+            </div>
           </div>
         );
 
@@ -1111,55 +1117,46 @@ function App() {
           return <SelectProjectNotice />;
         }
         return (
-          <div className="aos-legacy">
-            <section>
+          <div className="aos-view">
+            <div className="aos-view-head">
+              <span className="aos-eyebrow">Portfolio</span>
               <h2>Repositories</h2>
-              {repositoriesError ? (
-                <p role="alert" style={errorStyle}>
-                  {repositoriesError}
-                </p>
-              ) : null}
-              {repositories.length === 0 ? <p>No repositories registered yet.</p> : null}
-              {repositories.length > 0 ? (
-                <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+            </div>
+            <div className="aos-hud glass aos-card">
+              <span className="aos-eyebrow">Registered repositories</span>
+              {repositoriesError ? <p role="alert" className="aos-error">{repositoriesError}</p> : null}
+              {repositories.length === 0 ? (
+                <p className="aos-muted" style={{ margin: 0 }}>No repositories registered yet.</p>
+              ) : (
+                <table className="aos-table">
                   <thead>
-                    <tr style={{ textAlign: 'left' }}>
-                      <th style={{ padding: 4 }}>Name</th>
-                      <th style={{ padding: 4 }}>Local path</th>
-                      <th style={{ padding: 4 }}>Last scanned</th>
-                      <th style={{ padding: 4 }}>Actions</th>
+                    <tr>
+                      <th>Name</th>
+                      <th>Local path</th>
+                      <th>Last scanned</th>
+                      <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {repositories.map((repository) => {
                       const selected = repository.id === selectedRepositoryId;
                       return (
-                        <tr
-                          key={repository.id}
-                          style={{ background: selected ? '#e8f0fe' : 'transparent' }}
-                        >
-                          <td style={{ padding: 4 }}>
+                        <tr key={repository.id} className={selected ? 'sel' : undefined}>
+                          <td>
                             <button
                               type="button"
+                              className={`aos-linkbtn${selected ? ' sel' : ''}`}
                               onClick={() => setSelectedRepositoryId(repository.id)}
-                              style={{
-                                cursor: 'pointer',
-                                border: 'none',
-                                background: 'none',
-                                padding: 0,
-                                fontWeight: selected ? 600 : 400,
-                                textDecoration: 'underline',
-                                color: '#0b57d0',
-                              }}
                             >
                               {repository.name}
                             </button>
                           </td>
-                          <td style={{ padding: 4 }}>{repository.local_path}</td>
-                          <td style={{ padding: 4 }}>{repository.last_scanned_at ?? 'never'}</td>
-                          <td style={{ padding: 4 }}>
+                          <td>{repository.local_path}</td>
+                          <td>{repository.last_scanned_at ?? 'never'}</td>
+                          <td>
                             <button
                               type="button"
+                              className="aos-btn aos-btn-sm"
                               disabled={scanningRepoId === repository.id}
                               onClick={() => void handleScan(repository.id)}
                             >
@@ -1171,71 +1168,68 @@ function App() {
                     })}
                   </tbody>
                 </table>
-              ) : null}
-              <form onSubmit={handleRegisterRepository} style={{ marginTop: 8 }}>
+              )}
+              <form onSubmit={handleRegisterRepository} className="aos-form-row">
                 <input
+                  className="aos-input"
                   type="text"
                   value={newRepoName}
                   placeholder="Repository name"
                   onChange={(event) => setNewRepoName(event.target.value)}
+                  style={{ width: 'auto', flex: '1 1 180px' }}
                 />
                 <input
+                  className="aos-input"
                   type="text"
                   value={newRepoPath}
                   placeholder="Local path"
                   onChange={(event) => setNewRepoPath(event.target.value)}
-                  style={{ marginLeft: 8 }}
+                  style={{ width: 'auto', flex: '1 1 180px' }}
                 />
-                <button type="submit" disabled={registeringRepo} style={{ marginLeft: 8 }}>
+                <button type="submit" className="aos-btn aos-btn-sm" disabled={registeringRepo}>
                   {registeringRepo ? 'Registering...' : 'Register repository'}
                 </button>
               </form>
-            </section>
+            </div>
 
             {selectedRepositoryId ? (
-              <section style={sectionStyle}>
-                <h2>Scan Summary</h2>
-                {dnaError ? (
-                  <p role="alert" style={errorStyle}>
-                    {dnaError}
-                  </p>
+              <div className="aos-hud glass aos-card">
+                <span className="aos-eyebrow">Scan summary</span>
+                {dnaError ? <p role="alert" className="aos-error">{dnaError}</p> : null}
+                {dnaLoading ? <p className="aos-muted" style={{ margin: 0 }}>Loading scan summary…</p> : null}
+                {!dnaLoading && !dnaError && dna === null ? (
+                  <p className="aos-muted" style={{ margin: 0 }}>No scan recorded yet.</p>
                 ) : null}
-                {dnaLoading ? <p>Loading scan summary...</p> : null}
-                {!dnaLoading && !dnaError && dna === null ? <p>No scan recorded yet.</p> : null}
                 {dna ? (
-                  <div>
-                    <p>
-                      <strong>Primary languages:</strong>{' '}
-                      {primaryLanguages.length > 0 ? primaryLanguages.join(', ') : 'none'}
-                    </p>
-                    <p>
-                      <strong>Package managers:</strong>{' '}
-                      {dna.package_managers.length > 0 ? dna.package_managers.join(', ') : 'none'}
-                    </p>
-                    <ul>
-                      <li>Has Docker: {summary?.has_docker ? 'yes' : 'no'}</li>
-                      <li>Has CI: {summary?.has_ci ? 'yes' : 'no'}</li>
-                      <li>Has tests: {summary?.has_tests ? 'yes' : 'no'}</li>
-                      <li>Has env example: {summary?.has_env_example ? 'yes' : 'no'}</li>
-                    </ul>
-                    <p>
-                      <strong>Risk flags:</strong>
-                    </p>
+                  <>
+                    <dl className="aos-kv">
+                      <dt>Primary languages</dt>
+                      <dd className="aos-mono">{primaryLanguages.length > 0 ? primaryLanguages.join(', ') : 'none'}</dd>
+                      <dt>Package managers</dt>
+                      <dd className="aos-mono">{dna.package_managers.length > 0 ? dna.package_managers.join(', ') : 'none'}</dd>
+                      <dt>Confidence</dt>
+                      <dd className="aos-mono">{dna.confidence}</dd>
+                    </dl>
+                    <h3>Signals</h3>
+                    <div className="aos-pills">
+                      <span className={`aos-pill ${summary?.has_docker ? 'good' : ''}`}>Docker: {summary?.has_docker ? 'yes' : 'no'}</span>
+                      <span className={`aos-pill ${summary?.has_ci ? 'good' : ''}`}>CI: {summary?.has_ci ? 'yes' : 'no'}</span>
+                      <span className={`aos-pill ${summary?.has_tests ? 'good' : ''}`}>Tests: {summary?.has_tests ? 'yes' : 'no'}</span>
+                      <span className={`aos-pill ${summary?.has_env_example ? 'good' : ''}`}>Env example: {summary?.has_env_example ? 'yes' : 'no'}</span>
+                    </div>
+                    <h3>Risk flags</h3>
                     {dna.risk_flags.length > 0 ? (
-                      <ul>
+                      <div className="aos-pills">
                         {dna.risk_flags.map((flag, index) => (
-                          <li key={index}>{flag}</li>
+                          <span key={index} className="aos-pill risk">{flag}</span>
                         ))}
-                      </ul>
+                      </div>
                     ) : (
-                      <p>No risk flags.</p>
+                      <p className="aos-muted" style={{ margin: 0 }}>No risk flags.</p>
                     )}
-                    <p>
-                      <strong>Confidence:</strong> {dna.confidence}
-                    </p>
-                  </div>
+                  </>
                 ) : null}
-              </section>
+              </div>
             ) : null}
           </div>
         );

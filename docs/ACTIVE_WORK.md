@@ -42,9 +42,16 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Verification Status: Orchestrator-verified independently (builder ≠ verifier) — build clean, 9/9 web e2e, a live 200 round-trip against the transfer endpoint with the results path proven; Guardian PASS, all 8 CI checks green.
 - Required Next Verifier: None — merged and reconciled.
 
-### AOS-UI-003 — Control Tower rail shell + state-based view routing
+### AOS-UI-004 — Restyle Overview + Repositories onto the ops-deck (per-view restyle arc)
 
 - Status: In Progress
+- Owner: Chief Architect / Orchestrator (this cloud session)
+- Branch: `claude/aos-ui-004-restyle-entry` (fresh from `origin/main`)
+- Summary: First increment of the per-view restyle arc AOS-UI-003 set up. Restyles the **Overview** and **Repositories** views from their transitional `.aos-legacy` light panels onto native dark ops-deck `.aos-*` — runtime health as good/risk pills; the repositories data table + register form as HUD panels (mono table, cyan link/buttons, dark inputs); the scan summary as a stat grid + signal/risk pills. Adds a reusable view-restyle vocabulary to `tokens.css` (`.aos-view`, `.aos-card`, `.aos-pill`, `.aos-kv`, `.aos-table`, `.aos-linkbtn`, …) that the remaining views (Architecture, Council & Decisions, Knowledge, Digest, Scheduling) reuse in the next increments. Every e2e selector preserved. Also carries the AOS-UI-003 (#82) reconciliation. Orchestrator-verified: build clean, full Playwright 15/15, both views screenshotted.
+
+### AOS-UI-003 — Control Tower rail shell + state-based view routing
+
+- Status: Merged (PR #82)
 - Owner: Chief Architect / Orchestrator (this cloud session; built by an Opus builder subagent, Orchestrator-verified)
 - Branch: `claude/aos-ui-003-rail-shell` (fresh from `origin/main`)
 - Summary: Turns the Control Tower from one stacked scroll-page into an ops-deck **rail shell** — left nav + topbar + workspace with **state-based view routing** (`activeView`, no router dep). The 11 stacked sections become 8 routed views (Overview / Repositories / Architecture / Council & Decisions / Knowledge / Reuse / Digest / Scheduling); the active-project selector moves into the rail foot. New `apps/web/src/shell/Shell.tsx`; `main.tsx` restructured (state/handlers unchanged, JSX relocated into a `renderView()` switch); `tokens.css` gains shell/nav classes + `.aos-legacy` (a light panel that quarantines un-restyled sections legibly on the dark deck). Reuse renders native `.aos-*`; all other views are legacy-wrapped pending per-view restyle (AOS-UI-004+). All e2e specs navigate via the rail (`nav-<id>` testids). **Whole-file restructure of `main.tsx` — claimed by the cloud session with operator OK; laptop pauses `main.tsx` edits until merge.** Orchestrator-verified: build clean, full Playwright suite 15/15. Spec: `.archetype/work/AOS-UI-003.md`.

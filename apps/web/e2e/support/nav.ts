@@ -1,8 +1,11 @@
 import { type Page } from '@playwright/test';
+import { modeForView } from '../../src/shell/workspaces';
 
 // AOS-UI-003 — the Control Tower is a rail shell with state-based view routing.
-// Each section is now a routed view reached by clicking its rail nav button
-// (`data-testid="nav-<id>"`). Specs navigate to a view before interacting.
+// AOS-UI-007 — views are now grouped under workspace modes: a view's nav button
+// only renders when its mode is the active mode. `navTo` therefore selects the
+// owning mode first (revealing that mode's surface list), then clicks the view's
+// `data-testid="nav-<id>"` button. The `nav-<id>` contract is unchanged.
 export type ViewId =
   | 'overview'
   | 'repositories'
@@ -14,5 +17,6 @@ export type ViewId =
   | 'scheduling';
 
 export async function navTo(page: Page, view: ViewId): Promise<void> {
+  await page.getByTestId(`mode-${modeForView(view)}`).click();
   await page.getByTestId(`nav-${view}`).click();
 }

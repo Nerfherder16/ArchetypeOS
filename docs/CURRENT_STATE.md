@@ -82,7 +82,7 @@ Every new engineering session should read this before planning or implementation
 
 ## Active Branch
 
-- `claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8296cfc` after the PR #59 merge)
+- `claude/aos-ui-008-neon-palette` (restarted from `main` after the PR #93 merge). **AOS-UI-007 (workspace-mode shell + resolution-adaptive layout) merged as PR #93**; the Control Tower rail now groups the 8 views under 6 workspace modes (Operations/Council/Architect/Research/Executive/Builder) with disabled "soon" surfaces and four responsive tiers (Command Wall/Desktop/Tablet/Phone). **In review: AOS-UI-008** — the neon command-deck palette migration (black→neon-red dark theme, cyan accent retained). Next: AOS-UI-009 — the orb Operations-home.
 
 ## CI Status
 

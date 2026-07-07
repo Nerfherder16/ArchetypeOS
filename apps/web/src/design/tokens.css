@@ -27,34 +27,49 @@
   --mono: ui-monospace, 'SF Mono', 'JetBrains Mono', 'Cascadia Code', Menlo, monospace;
   --sans: ui-sans-serif, system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 
-  --ground: #060b18;
-  --ground-2: #030710;
-  --panel: #0a1120;
-  --panel-2: #0e1728;
-  --glass: rgba(11, 20, 38, 0.5);
-  --frame: #1b2e4e;
-  --frame-bright: #29456f;
-  --ink: #dce7f7;
-  --ink-2: #8da0be;
-  --ink-3: #55688a;
+  --ground: #0a0406;
+  --ground-2: #050304;
+  --panel: #120a0d;
+  --panel-2: #1a0f13;
+  --glass: rgba(18, 10, 13, 0.5);
+  --frame: #3a2029;
+  --frame-bright: #5e3340;
+  --ink: #f0e6ea;
+  --ink-2: #b39aa4;
+  --ink-3: #7a6470;
 
-  --red: #ff4757;
-  --red-deep: #c81e2b;
-  --red-wash: #2a0b0e;
+  --red: #ff2f4d;
+  --red-deep: #c8112e;
+  --red-wash: #2a0810;
   --signal: #2fd3e8;
   --signal-bright: #63ecfb;
   --signal-deep: #0fa6bc;
   --signal-wash: #07222b;
   --lex: #5b8df0;
-  --lex-wash: #101e3a;
+  --lex-wash: #141026;
 
   --glow: 0 0 20px rgba(47, 211, 232, 0.45);
   --glow-soft: 0 0 12px rgba(47, 211, 232, 0.28);
-  --elev: 0 14px 30px rgba(0, 0, 0, 0.55);
-  --elev-lo: 0 5px 14px rgba(0, 0, 0, 0.42);
+  --glow-red: 0 0 22px rgba(255, 47, 77, 0.42);
+  --elev: 0 18px 40px rgba(0, 0, 0, 0.72);
+  --elev-lo: 0 6px 16px rgba(0, 0, 0, 0.55);
 
-  --neu-up: -2px -2px 4px rgba(96, 140, 205, 0.16), 2px 2px 6px rgba(0, 0, 0, 0.62);
-  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.62), inset -2px -2px 4px rgba(96, 140, 205, 0.13);
+  --neu-up: -2px -2px 4px rgba(200, 120, 145, 0.10), 2px 2px 6px rgba(0, 0, 0, 0.72);
+  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.72), inset -2px -2px 4px rgba(200, 120, 145, 0.08);
+
+  --agent-librarian: #35d0f0;
+  --agent-cartographer: #4f7cf7;
+  --agent-fitness: #7b5cf5;
+  --agent-scout: #b45cf0;
+  --agent-guardian: #ff3d68;
+  --agent-security: #ff2f3f;
+
+  /* Dark command-deck field: black ground + neon-red glow (AOS-UI-008).
+     Light themes reset this to `none` so they keep a flat light ground. */
+  --shell-glow:
+    radial-gradient(1500px 900px at 50% 116%, rgba(255, 28, 66, 0.2), transparent 60%),
+    radial-gradient(1100px 700px at 100% -6%, rgba(255, 44, 84, 0.1), transparent 54%),
+    radial-gradient(880px 780px at 0% 106%, rgba(180, 92, 240, 0.08), transparent 58%);
 
   --cut: 12px;
 
@@ -93,11 +108,15 @@
 
     --glow: 0 0 0 rgba(0, 0, 0, 0);
     --glow-soft: 0 0 0 rgba(0, 0, 0, 0);
+    --glow-red: 0 0 0 rgba(0, 0, 0, 0);
     --elev: 0 14px 30px rgba(23, 38, 64, 0.16);
     --elev-lo: 0 5px 14px rgba(23, 38, 64, 0.11);
 
     --neu-up: -2px -2px 4px rgba(255, 255, 255, 0.95), 2px 2px 6px rgba(23, 38, 64, 0.16);
     --neu-down: inset 2px 2px 5px rgba(23, 38, 64, 0.16), inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+
+    /* Flat light ground — no neon-red field. */
+    --shell-glow: none;
   }
 }
 
@@ -124,38 +143,51 @@
   --lex-wash: #e4eaf8;
   --glow: 0 0 0 rgba(0, 0, 0, 0);
   --glow-soft: 0 0 0 rgba(0, 0, 0, 0);
+  --glow-red: 0 0 0 rgba(0, 0, 0, 0);
   --elev: 0 14px 30px rgba(23, 38, 64, 0.16);
   --elev-lo: 0 5px 14px rgba(23, 38, 64, 0.11);
   --neu-up: -2px -2px 4px rgba(255, 255, 255, 0.95), 2px 2px 6px rgba(23, 38, 64, 0.16);
   --neu-down: inset 2px 2px 5px rgba(23, 38, 64, 0.16), inset -2px -2px 4px rgba(255, 255, 255, 0.9);
+  --shell-glow: none;
 }
 
 :root[data-theme='dark'] .aos-surface {
-  --ground: #060b18;
-  --ground-2: #030710;
-  --panel: #0a1120;
-  --panel-2: #0e1728;
-  --glass: rgba(11, 20, 38, 0.5);
-  --frame: #1b2e4e;
-  --frame-bright: #29456f;
-  --ink: #dce7f7;
-  --ink-2: #8da0be;
-  --ink-3: #55688a;
-  --red: #ff4757;
-  --red-deep: #c81e2b;
-  --red-wash: #2a0b0e;
+  --ground: #0a0406;
+  --ground-2: #050304;
+  --panel: #120a0d;
+  --panel-2: #1a0f13;
+  --glass: rgba(18, 10, 13, 0.5);
+  --frame: #3a2029;
+  --frame-bright: #5e3340;
+  --ink: #f0e6ea;
+  --ink-2: #b39aa4;
+  --ink-3: #7a6470;
+  --red: #ff2f4d;
+  --red-deep: #c8112e;
+  --red-wash: #2a0810;
   --signal: #2fd3e8;
   --signal-bright: #63ecfb;
   --signal-deep: #0fa6bc;
   --signal-wash: #07222b;
   --lex: #5b8df0;
-  --lex-wash: #101e3a;
+  --lex-wash: #141026;
   --glow: 0 0 20px rgba(47, 211, 232, 0.45);
   --glow-soft: 0 0 12px rgba(47, 211, 232, 0.28);
-  --elev: 0 14px 30px rgba(0, 0, 0, 0.55);
-  --elev-lo: 0 5px 14px rgba(0, 0, 0, 0.42);
-  --neu-up: -2px -2px 4px rgba(96, 140, 205, 0.16), 2px 2px 6px rgba(0, 0, 0, 0.62);
-  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.62), inset -2px -2px 4px rgba(96, 140, 205, 0.13);
+  --glow-red: 0 0 22px rgba(255, 47, 77, 0.42);
+  --elev: 0 18px 40px rgba(0, 0, 0, 0.72);
+  --elev-lo: 0 6px 16px rgba(0, 0, 0, 0.55);
+  --neu-up: -2px -2px 4px rgba(200, 120, 145, 0.1), 2px 2px 6px rgba(0, 0, 0, 0.72);
+  --neu-down: inset 2px 2px 5px rgba(0, 0, 0, 0.72), inset -2px -2px 4px rgba(200, 120, 145, 0.08);
+  --agent-librarian: #35d0f0;
+  --agent-cartographer: #4f7cf7;
+  --agent-fitness: #7b5cf5;
+  --agent-scout: #b45cf0;
+  --agent-guardian: #ff3d68;
+  --agent-security: #ff2f3f;
+  --shell-glow:
+    radial-gradient(1500px 900px at 50% 116%, rgba(255, 28, 66, 0.2), transparent 60%),
+    radial-gradient(1100px 700px at 100% -6%, rgba(255, 44, 84, 0.1), transparent 54%),
+    radial-gradient(880px 780px at 0% 106%, rgba(180, 92, 240, 0.08), transparent 58%);
 }
 
 .aos-surface *,
@@ -384,6 +416,12 @@
   display: flex;
   min-height: 100vh;
   width: 100%;
+  /* Neon command-deck field (AOS-UI-008): black ground + fixed, non-interactive
+     red glow in dark; `--shell-glow` resolves to `none` under light themes. */
+  background-color: var(--ground-2);
+  background-image: var(--shell-glow, none);
+  background-attachment: fixed;
+  background-repeat: no-repeat;
 }
 
 .aos-rail {
@@ -451,6 +489,106 @@
   border-left-color: var(--signal);
 }
 
+/* ---- Mode switcher (AOS-UI-007): segmented control of the 6 workspace modes.
+ * Active mode reuses the `--signal` active treatment consistent with
+ * `.aos-nav-item.active`. Kept in the blue+red palette. ---- */
+.aos-modebar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--frame);
+}
+.aos-mode {
+  flex: 1 1 auto;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: inherit;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  background: transparent;
+  padding: 6px 8px;
+  border-radius: 7px;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.aos-mode:hover {
+  color: var(--ink);
+  background: var(--panel-2);
+}
+.aos-mode.active {
+  color: var(--signal);
+  background: var(--signal-wash);
+  border-color: color-mix(in srgb, var(--signal) 35%, var(--frame));
+}
+
+/* Disabled "soon" surface: a muted nav item carrying a framed chip. */
+.aos-nav-item.aos-nav-disabled {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--ink-3);
+  cursor: default;
+  opacity: 0.75;
+}
+.aos-nav-item.aos-nav-disabled:hover {
+  background: transparent;
+  color: var(--ink-3);
+}
+.aos-nav-soon {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border: 1px solid var(--frame);
+  border-radius: 5px;
+  padding: 1px 6px;
+  flex: 0 0 auto;
+}
+
+/* Coming-soon empty state for a mode with no live surface (Builder). */
+.aos-empty {
+  max-width: 560px;
+  margin: 40px auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 12px;
+  padding: 36px 32px;
+  border: 1px solid var(--frame);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--elev-lo);
+}
+.aos-empty h2 {
+  font-size: 30px;
+  color: var(--ink);
+  margin: 0;
+}
+.aos-empty-list {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.aos-empty-list > li {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-2);
+  border: 1px solid var(--frame);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+
 .aos-rail-foot,
 .aos-rail-projects {
   margin-top: auto;
@@ -485,6 +623,13 @@
 }
 .aos-crumb-sep {
   color: var(--ink-3);
+}
+.aos-crumb-mode {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-2);
 }
 .aos-crumb-view {
   font-family: var(--display);
@@ -544,15 +689,159 @@
   color: #0b57d0;
 }
 
-@media (max-width: 720px) {
+/* ---- Resolution-adaptive layout (AOS-UI-007): four tiers over the same shell.
+ * Base rules above are the Desktop tier (1180–2199px, rail 250px). The media
+ * queries below add Command Wall, Tablet and Phone. No tier is allowed to cause
+ * horizontal body scroll — inner scrollers own their own overflow. ---- */
+
+/* Command Wall — ≥2200px (e.g. G9 57" 32:9). Widen the rail, relax the
+ * workspace cap so views use the ultrawide, and enlarge the modebar. Inner
+ * views keep their own readable caps; they are centered with generous gutters. */
+@media (min-width: 2200px) {
+  .aos-rail {
+    flex: 0 0 300px;
+    width: 300px;
+    padding: 24px 20px;
+  }
+  .aos-mode {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .aos-workspace {
+    padding: 32px 40px;
+    max-width: none;
+  }
+  .aos-view {
+    margin: 0 auto;
+  }
+}
+
+/* Tablet — 720–1179px. The rail becomes a horizontal top bar: brand at the
+ * left, mode switcher + surface chips in a horizontally-scrollable row, project
+ * foot inline at the right. Workspace takes the full width below it. */
+@media (min-width: 720px) and (max-width: 1179px) {
   .aos-shell {
     flex-direction: column;
   }
   .aos-rail {
-    flex-basis: auto;
+    flex: 0 0 auto;
     width: 100%;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
     border-right: 0;
     border-bottom: 1px solid var(--frame);
+    overflow-x: auto;
+  }
+  .aos-rail-brand {
+    flex: 0 0 auto;
+    padding: 0 8px 0 0;
+    border-bottom: 0;
+    border-right: 1px solid var(--frame);
+    align-self: stretch;
+  }
+  .aos-modebar {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    padding: 0;
+    border-bottom: 0;
+    overflow-x: auto;
+  }
+  .aos-mode {
+    flex: 0 0 auto;
+  }
+  .aos-nav {
+    flex-direction: row;
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 6px;
+    overflow-x: auto;
+  }
+  .aos-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .aos-nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--signal);
+  }
+  .aos-rail-foot,
+  .aos-rail-projects {
+    margin-top: 0;
+  }
+  .aos-rail-foot {
+    flex: 0 0 auto;
+    padding-top: 0;
+    padding-left: 12px;
+    border-top: 0;
+    border-left: 1px solid var(--frame);
+    max-width: 260px;
+  }
+}
+
+/* Phone — <720px. Modes render as a FIXED bottom tab bar (distinct from the
+ * desktop left rail). The surface list is a horizontally-scrollable strip under
+ * the top bar; the workspace is full-bleed with bottom padding to clear the tab
+ * bar. Single-column, voice/console-friendly. */
+@media (max-width: 719px) {
+  .aos-shell {
+    flex-direction: column;
+  }
+  .aos-rail {
+    flex: 0 0 auto;
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px 12px 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--frame);
+  }
+  .aos-rail-brand {
+    padding-bottom: 8px;
+  }
+  .aos-nav {
+    flex-direction: row;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .aos-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .aos-nav-item.active {
+    border-left-color: transparent;
+    border-bottom-color: var(--signal);
+  }
+  .aos-rail-foot {
+    padding-top: 10px;
+  }
+  /* The mode switcher detaches from the rail flow and pins to the bottom. */
+  .aos-modebar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    flex-wrap: nowrap;
+    gap: 2px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: var(--ground-2);
+    border-top: 1px solid var(--frame);
+    border-bottom: 0;
+    overflow-x: auto;
+  }
+  .aos-mode {
+    flex: 1 0 auto;
+    text-align: center;
+  }
+  .aos-workspace {
+    padding: 18px 14px calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }
 

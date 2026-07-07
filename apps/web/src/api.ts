@@ -112,6 +112,7 @@ export type CouncilAgentOutput = {
   evidence: unknown[];
   concerns: unknown[];
   confidence: number;
+  agent_model?: string | null;
 };
 
 export type CouncilReview = {

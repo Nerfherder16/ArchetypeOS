@@ -18,3 +18,6 @@ data/artifacts/
 
 # Machine-generated doc-staleness reconciliation drafts (AOS-SELFHEAL-001)
 .archetype/reconciliation/
+
+# Machine-generated conflict digests (AOS-SELFHEAL-003)
+.archetype/conflicts/

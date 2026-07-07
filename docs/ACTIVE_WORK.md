@@ -25,6 +25,13 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Branch: `laptop/aos-selfheal-reconcile-nightly` (fresh, from `origin/main`)
 - Summary: Wires the doc-staleness *correction* into a nightly routine so drift reconciles itself overnight. A deterministic gate (`scripts/nightly/reconcile_state.sh`: sync `main` → `tools/doc_staleness.py --fix` → act only on real drift) then wakes a headless `claude` following `scripts/nightly/reconcile_state.prompt.md` to apply the narrative reconciliation, re-verify FRESH, run the guardian, and **open a PR for review — never merges**. Scope is conservative (union-safe `RECENT_CHANGES.md` append + `CURRENT_STATE.md` watermark; never the "Current sprint" line or `HANDOFF.md`). Registered as a `/schedule` cloud routine or a local crontab entry (runbook `docs/runbooks/nightly-routines.md`). Merging its PR is the merge that auto-closes the AOS-SELFHEAL-002 tracking issue — the loop closes on itself. Spec: `.archetype/work/AOS-SELFHEAL-002b.md`.
 - Verification Status: Level 2 — `bash -n` clean; dirty-tree guard exits 0 without touching branches (exercised); gate keys on `PENDING.md` like the CI workflow; runtime artifacts (`PENDING.md`, `nightly.log`) confirmed gitignored; `--fix` drift/FRESH semantics covered by `test_doc_staleness.py`.
+### AOS-SELFHEAL-003 — Conflict self-learn nightly (harvest → distill lessons)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-selfheal-conflict-learn` (fresh, from `origin/main`)
+- Summary: Makes the repo learn from its own **merge friction** (operator idea; NIGHTLY_SELF_LEARNING_LOOP "detect repeated pain points"). Deterministic floor `tools/conflict_digest.py` harvests the day's conflicts from `git rerere` (marker conflicts) + `git reflog` (rebase/merge/reset friction — catches the union-auto-resolved doc conflicts rerere misses) into `.archetype/conflicts/<date>.md`. A nightly routine (`scripts/nightly/conflict_learn.{sh,prompt.md}`) gates on that signal, then wakes a headless `claude` to distill **recurring** patterns into `LES-L##` draft lessons and **open a PR for review** — one-off noise produces nothing (Article XII). `scripts/install-hooks.sh` enables `rerere`. New skill `skills/ci_devops/conflict_distill.md`. Validated live: today's tree had 0 rerere conflicts but the reflog showed 2 rebases / 3 merges / 3 resets. Spec: `.archetype/work/AOS-SELFHEAL-003.md`.
+- Verification Status: TDD (RED→GREEN) — 9 hermetic tests in `test_conflict_digest.py`; ruff clean; `bash -n` clean; live CLI smoke (`signal=true` from the real reflog); `.archetype/conflicts/` gitignored.
 
 ### AOS-SELFHEAL-002 — CI-on-main doc-staleness self-heal (surface + draft)
 

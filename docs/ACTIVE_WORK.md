@@ -18,6 +18,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-CI-AUTOREBASE-001 — Auto-update open PRs when main advances (LES-L03)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-ci-autorebase` (fresh, from `origin/main`)
+- Summary: Kills the "second PR goes red every time I merge the first" toil. Root cause (LES-L03): `.gitattributes merge=union` is honored only by **local** git — GitHub's server merge never runs custom drivers, so serialized PRs touching the union-marked coordination logs re-flag CONFLICTING after every merge. New workflow `.github/workflows/auto-rebase-prs.yml` (on `push: main`) **merges main into each open same-repo non-draft PR branch in a runner** (where the union driver DOES apply) and pushes — a normal fast-forwarding push, not a force-push. Union-file reds self-heal in ~30s with no hand-rebase; genuine non-union conflicts (e.g. `CAPABILITY_MAP.md`) get an auto-comment for manual fix. Spec: `.archetype/work/AOS-CI-AUTOREBASE-001.md`; lesson: `LES-L03`.
+- Verification Status: Level 2 — workflow YAML parses (1 job `update`); no LES-027 inline-colon trap; `ci.yml` untouched. Dogfoods on merge (Level 3): the next open-PR set auto-updates.
+
 ### AOS-SELFHEAL-002b — Reconcile nightly routine (the "correct" half, headless)
 
 - Status: In Review

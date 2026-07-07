@@ -352,6 +352,10 @@ class CouncilAgentOutput(AuditMixin, Base):
     evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     concerns: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    # Which model produced this agent's output — the diversity signal for a
+    # multi-model council (AOS-LLM-EVAL-001). Nullable: legacy rows + single-model
+    # councils may leave it empty.
+    agent_model: Mapped[str | None] = mapped_column(String(128))
 
     review: Mapped["CouncilReview"] = relationship(back_populates="agent_outputs")
 

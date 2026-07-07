@@ -9,9 +9,8 @@ from aos_core.models import Job
 from aos_core.services.jobs import QUEUE
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
-from aos_core.services.council import run_council
+from aos_core.services.council import council_provider, run_council
 from aos_core.services.usage import make_ledger_sink
-from aos_core.llm import get_provider
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("archetypeos.worker")
@@ -65,10 +64,13 @@ def run_job(job_id: str) -> None:
             mark_job(job_id, "completed", result={"digest_id": digest.id, "summary": digest.summary})
         elif job_type == "council_review":
             question = (job.payload or {}).get("question", "")
-            # AOS-USAGE-001: instrument so each non-deterministic council agent call
-            # records a usage event (deterministic CI provider is skipped by the
+            # Multi-model when enabled + pool ready (AOS-LLM-EVAL-001), AND
+            # instrumented so each non-deterministic agent call records a usage
+            # event (AOS-USAGE-001; deterministic CI provider skipped by the
             # wrapper → hermetic path unchanged). Ledger writes use a fresh session.
-            provider = get_provider(settings, sink=make_ledger_sink(SessionLocal, settings, context="council"))
+            provider = council_provider(
+                settings, sink=make_ledger_sink(SessionLocal, settings, context="council")
+            )
             review = run_council(db, project_id=project_id, question=question, provider=provider)
             review.job_id = job_id
             db.add(review)

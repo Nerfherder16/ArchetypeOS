@@ -21,6 +21,7 @@ import json
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+from ..llm import InstrumentedProvider, get_provider
 from ..models import (
     ArchitectureNode,
     CouncilAgentOutput,
@@ -32,6 +33,7 @@ from ..models import (
     ResearchNote,
     Repository,
 )
+from .llm_pool import free_pool_provider
 
 # Final Judge abstention floors (RFC-0005 Open Question 3 — conservative,
 # documented, tunable later behind an Arbiter/AuthorityGrant config).
@@ -391,6 +393,30 @@ def synthesize_verdict(outputs: list[CouncilAgentOutput]) -> dict:
     }
 
 
+def council_provider(settings, sink=None):
+    """Pick the council's provider.
+
+    When multi-model is enabled (``council_multi_model``) and the free pool has
+    >=2 members, return the rotation pool — each agent then draws a DIFFERENT
+    model from it (genuine diversity; RFC-0005) with per-member failover. Claude
+    stays the Final Judge (the deterministic synthesis here; a real-model Final
+    Judge is opt-in via ``llm_provider``/``llm_claude_enabled``). Otherwise fall
+    back to the single configured provider. The privacy guardrail lives in the
+    router; the council must only be invoked with non-private evidence when the
+    pool is in use.
+
+    When a usage ``sink`` is supplied (AOS-USAGE-001) the chosen provider is
+    instrumented so each agent call records a usage event: the single-provider
+    path defers to ``get_provider(settings, sink=...)`` (which wraps), and the
+    multi-model pool is wrapped here in :class:`InstrumentedProvider`.
+    """
+    if getattr(settings, "council_multi_model", False):
+        pool = free_pool_provider()
+        if pool is not None and len(pool) >= 2:
+            return InstrumentedProvider(pool, sink) if sink is not None else pool
+    return get_provider(settings, sink=sink)
+
+
 def run_council(db: Session, *, project_id: str, question: str, provider, agents=DEFAULT_AGENTS) -> CouncilReview:
     """Run the council over a project and persist an auditable review.
 
@@ -408,7 +434,6 @@ def run_council(db: Session, *, project_id: str, question: str, provider, agents
         evidence_items = agent["evidence_selector"](db, project_id)
         prompt = _build_prompt(agent, question, evidence_items)
         result = provider.generate(system=agent["system_prompt"], prompt=prompt)
-        provider_name = result.provider or provider_name
         parsed = _parse_agent_output(result.text)
         outputs.append(
             CouncilAgentOutput(
@@ -420,6 +445,9 @@ def run_council(db: Session, *, project_id: str, question: str, provider, agents
                 evidence=parsed["evidence"],
                 concerns=parsed["concerns"],
                 confidence=parsed["confidence"],
+                # The model that produced THIS agent's output — a multi-model
+                # council (a rotating pool) records a different model per agent.
+                agent_model=getattr(result, "model", None),
             )
         )
 
@@ -447,6 +475,7 @@ __all__ = [
     "MIN_EVIDENCE",
     "VERDICTS",
     "DEFAULT_AGENTS",
+    "council_provider",
     "run_council",
     "synthesize_verdict",
 ]

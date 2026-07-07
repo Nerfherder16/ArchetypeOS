@@ -104,6 +104,70 @@ def test_run_council(db):
     assert review.provider == "deterministic"
 
 
+class _SpreadFake:
+    """A fake multi-model provider: a different model per call (like the pool)."""
+
+    name = "rotating"
+
+    def __init__(self, models):
+        self._models = models
+        self._i = 0
+
+    def generate(self, *, system, prompt, max_tokens=1024, response_format=None):
+        model = self._models[self._i % len(self._models)]
+        self._i += 1
+        text = json.dumps({
+            "summary": f"assessed via {model}", "findings": [f"finding-{model}"],
+            "evidence": ["e"], "concerns": [], "confidence": 0.7, "status": "Complete",
+        })
+        return types.SimpleNamespace(
+            text=text, provider="openai_compatible", model=model, finish_reason="stop"
+        )
+
+
+def test_run_council_records_per_agent_model(db):
+    # AOS-LLM-EVAL-001: a multi-model council records WHICH model each agent used.
+    project_id = _seed_rich_project(db, risk_flags=["x"])
+    provider = _SpreadFake(["groq-70b", "gemini-flash", "cerebras-120b", "mistral-large"])
+
+    review = run_council(db, project_id=project_id, question="Q?", provider=provider)
+
+    outputs = db.query(CouncilAgentOutput).filter(CouncilAgentOutput.review_id == review.id).all()
+    models = [o.agent_model for o in outputs]
+    assert all(models), "every agent output records its model"
+    assert len(set(models)) == 4, "four agents -> four distinct models (genuine diversity)"
+    assert review.provider == "rotating"  # top-level provider name, not the per-call backend
+
+
+def test_council_provider_single_when_multimodel_off():
+    from aos_core.services.council import council_provider
+
+    s = types.SimpleNamespace(llm_provider="deterministic", council_multi_model=False)
+    assert type(council_provider(s)).__name__ == "DeterministicProvider"
+
+
+def test_council_provider_uses_pool_when_enabled(monkeypatch):
+    import aos_core.services.council as council_mod
+
+    class _Pool:
+        name = "rotating"
+
+        def __len__(self):
+            return 2
+
+    monkeypatch.setattr(council_mod, "free_pool_provider", lambda: _Pool())
+    s = types.SimpleNamespace(llm_provider="deterministic", council_multi_model=True)
+    assert council_mod.council_provider(s).name == "rotating"
+
+
+def test_council_provider_falls_back_when_pool_too_small(monkeypatch):
+    import aos_core.services.council as council_mod
+
+    monkeypatch.setattr(council_mod, "free_pool_provider", lambda: None)
+    s = types.SimpleNamespace(llm_provider="deterministic", council_multi_model=True)
+    assert type(council_mod.council_provider(s)).__name__ == "DeterministicProvider"
+
+
 def test_council_surfaces_disagreement(db):
     # Security sees a risk flag (unfavorable); the other agents see clean signals
     # (favorable) -> the Final Judge must surface the split.

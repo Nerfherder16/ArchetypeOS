@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-LOCAL-002: provider User-Agent (Tier-2 unblock) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-LOCAL-002 — send a User-Agent (unblocks Tier-2 hosted APIs; slice 1 of AOS-LLM-EVAL-001).** Cloudflare-fronted free hosted endpoints (Groq et al.) return HTTP 403 / CF error 1010 to `urllib`'s default `Python-urllib/x.y` UA, so `OpenAICompatibleProvider` could reach local Ollama but **not any Tier-2 API**. Fix: send an explicit `User-Agent` header (`ArchetypeOS/1.0`). +1 test (suite 27). **Live-validated Tier-2 end-to-end** against Groq `llama-3.3-70b-versatile`: `generate()` → `TIER2 OK` in 0.34s, and the per-category reviewer produced **12 real findings in 0.9s** on a **synthetic** bug diff (privacy tiering — no real repo code to a free tier). First proof of the routed reasoned tier's Tier-2; the key lives outside the repo (a `chmod 600` file; the Infisical vault path is deferred — its UI login is currently locked). Next: the router + free-API rotation pool (AOS-LLM-EVAL-001 slices 2–3).
+
 ## 2026-07-07 — AOS-LLM-REVIEW-001 + ADR-0001: routed reasoned tier & local reviewer (laptop session — in review)
 
 ### In Review (tandem laptop session, on PR #92)

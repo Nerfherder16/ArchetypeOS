@@ -40,6 +40,7 @@ dependencies emit a framework; unknown dependencies are ignored (no guessing).
 from __future__ import annotations
 import json
 import os
+import posixpath
 import re
 import tomllib
 from collections import Counter
@@ -159,6 +160,7 @@ LANGUAGE_CLASS = {
 MAX_FILES = 20000
 MAX_FOLDER_STRUCTURE = 500
 MAX_COMPOSE_SERVICES = 200
+MAX_LOCAL_DEP_EDGES = 200
 
 # --- Framework detection (curated, conservative — AOS-DISTILL-003) ------------
 # Bounded read of manifest BODIES: at most this many manifests, each capped to
@@ -315,6 +317,112 @@ _FRAMEWORK_PARSERS = {
     "requirements.txt": _frameworks_from_requirements,
     "pyproject.toml": _frameworks_from_pyproject,
     "go.mod": _frameworks_from_gomod,
+}
+
+
+# --- Manifest-derived local path dependency detection (AOS-ARCH-EDGES-001) ---
+
+_REQ_EDITABLE_RE = re.compile(r"^-e\s+(?:file:)?(?P<path>\.\.?/[^\s#]*)", re.IGNORECASE)
+_REQ_BARE_LOCAL_RE = re.compile(r"^(?P<path>\.\.?/[\S]*)")
+_GO_LOCAL_REPLACE_RE = re.compile(r"=>\s+(?P<path>\.\.?/[\S]*)")
+
+
+def _local_deps_requirements(body: str) -> list[str]:
+    """Return local dep paths from a requirements.txt body (-e and bare ./ ../  forms)."""
+    paths: list[str] = []
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        m = _REQ_EDITABLE_RE.match(stripped)
+        if m:
+            paths.append(m.group("path"))
+            continue
+        if stripped.startswith("-"):
+            continue
+        m = _REQ_BARE_LOCAL_RE.match(stripped)
+        if m:
+            paths.append(m.group("path"))
+    return paths
+
+
+def _local_deps_pyproject(body: str) -> list[str]:
+    """Return local dep paths from a pyproject.toml body (poetry + uv-style sources)."""
+    try:
+        data = tomllib.loads(body)
+    except Exception:  # noqa: BLE001
+        return []
+    paths: list[str] = []
+    tool = data.get("tool") if isinstance(data, dict) else None
+    if isinstance(tool, dict):
+        poetry = tool.get("poetry")
+        if isinstance(poetry, dict):
+            deps = poetry.get("dependencies")
+            if isinstance(deps, dict):
+                for spec in deps.values():
+                    if isinstance(spec, dict):
+                        p = spec.get("path")
+                        if isinstance(p, str) and p.startswith(("./", "../")):
+                            paths.append(p)
+        uv = tool.get("uv")
+        if isinstance(uv, dict):
+            sources = uv.get("sources")
+            if isinstance(sources, dict):
+                for spec in sources.values():
+                    if isinstance(spec, dict):
+                        p = spec.get("path")
+                        if isinstance(p, str) and p.startswith(("./", "../")):
+                            paths.append(p)
+    return paths
+
+
+def _local_deps_package_json(body: str) -> list[str]:
+    """Return local dep paths from a package.json body (file:/link: protocols)."""
+    try:
+        data = json.loads(body)
+    except Exception:  # noqa: BLE001
+        return []
+    if not isinstance(data, dict):
+        return []
+    paths: list[str] = []
+    for key in ("dependencies", "devDependencies"):
+        deps = data.get(key)
+        if isinstance(deps, dict):
+            for version in deps.values():
+                if isinstance(version, str):
+                    for prefix in ("file:", "link:"):
+                        if version.startswith(prefix):
+                            p = version[len(prefix):]
+                            if p.startswith(("./", "../")):
+                                paths.append(p)
+                            break
+    return paths
+
+
+def _local_deps_gomod(body: str) -> list[str]:
+    """Return local dep paths from a go.mod body (replace directives with ./ or ../ targets)."""
+    paths: list[str] = []
+    in_replace_block = False
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped == "replace (":
+            in_replace_block = True
+            continue
+        if in_replace_block and stripped == ")":
+            in_replace_block = False
+            continue
+        if stripped.startswith("replace ") or in_replace_block:
+            m = _GO_LOCAL_REPLACE_RE.search(stripped)
+            if m:
+                paths.append(m.group("path"))
+    return paths
+
+
+_LOCAL_DEP_PARSERS = {
+    "requirements.txt": _local_deps_requirements,
+    "pyproject.toml": _local_deps_pyproject,
+    "package.json": _local_deps_package_json,
+    "go.mod": _local_deps_gomod,
 }
 
 
@@ -663,6 +771,62 @@ def scan_repository(path: Path, max_files: int = MAX_FILES) -> dict:
             break
     if service_truncated:
         notes.append(f"compose services truncated at {MAX_COMPOSE_SERVICES}")
+
+    # Emit manifest-derived depends_on edges (AOS-ARCH-EDGES-001 / LES-014).
+    # Wires _LOCAL_DEP_PARSERS (already defined, previously unused) to produce
+    # top-level-directory-granularity depends_on edges from local path deps.
+    existing_labels: set[str] = {node["label"] for node in nodes}
+    seen_edge_keys: set[tuple[str, str, str]] = {
+        (e["from"], e["to"], e["type"]) for e in edges
+    }
+    manifest_edge_count = 0
+    manifest_dep_truncated = False
+    repo_label = path.name
+    for rel, name, _suffix in files:
+        if manifest_dep_truncated:
+            break
+        if name not in _LOCAL_DEP_PARSERS:
+            continue
+        body = _read_capped(path / rel)
+        if body is None:
+            continue
+        try:
+            deps = _LOCAL_DEP_PARSERS[name](body)
+        except Exception:  # noqa: BLE001 - tolerant, never raise out of a scan
+            continue
+        manifest_dir = posixpath.dirname(rel)
+        parts = rel.split("/")
+        source_top = parts[0] if len(parts) > 1 else repo_label
+        for dep in deps:
+            try:
+                target = posixpath.normpath(posixpath.join(manifest_dir, dep))
+            except Exception:  # noqa: BLE001
+                continue
+            if target.startswith(".."):
+                continue  # escapes the repo root
+            target_first = target.split("/")[0]
+            target_top = target_first if target_first not in (".", "") else repo_label
+            if source_top == target_top:
+                continue  # no self-loops
+            if source_top not in existing_labels or target_top not in existing_labels:
+                continue  # skip unresolved endpoints
+            edge_key = (source_top, target_top, "depends_on")
+            if edge_key in seen_edge_keys:
+                continue  # dedup
+            if manifest_edge_count >= MAX_LOCAL_DEP_EDGES:
+                manifest_dep_truncated = True
+                break
+            edges.append({
+                "from": source_top,
+                "to": target_top,
+                "type": "depends_on",
+                "confidence": 0.6,
+                "evidence": [f"{rel} local dependency -> {target}"],
+            })
+            seen_edge_keys.add(edge_key)
+            manifest_edge_count += 1
+    if manifest_dep_truncated:
+        notes.append(f"manifest dependency edges truncated at {MAX_LOCAL_DEP_EDGES}")
 
     frameworks = _detect_frameworks(path, files)
 

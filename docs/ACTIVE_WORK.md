@@ -18,6 +18,14 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-LLM-LOCAL-001 — Local / free LLM provider (OpenAI-compatible)
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Branch: `laptop/aos-llm-local` (fresh, from `origin/main`)
+- Summary: Run ArchetypeOS's reasoned tiers off Claude to save subscription tokens. New `OpenAICompatibleProvider` on the existing `llm_provider` seam — one config-driven adapter for **any** OpenAI-compatible `/chat/completions`, covering both a **local** model on teevee's RTX 3070 (Ollama, `http://localhost:11434/v1`) and a **free hosted API** (Groq/Cerebras/OpenRouter from the `free-llm-api-resources` catalog) with the same code; only `LLM_BASE_URL`/`LLM_MODEL`/`LLM_API_KEY` differ. Stdlib `urllib` (no new dep; CI stays hermetic — deterministic remains the default, never selected in CI). Isolation (LES-021) is inherent (HTTP sends only system+prompt). Runbook `docs/runbooks/llm-provider.md` + `.env.example` profiles. Spec: `.archetype/work/AOS-LLM-LOCAL-001.md`.
+- Verification Status: TDD (RED→GREEN) — 6 hermetic tests in `test_council.py` (request shape, bearer-when-keyed, no-auth-local, HTTP-error, missing-content, get_provider); ruff clean; full council suite 19/19; **live smoke against the homelab Ollama (qwen3:14b) returned `'ready'`** (finish `stop`).
+
 ### AOS-CI-AUTOREBASE-001 — Auto-update open PRs when main advances (LES-L03)
 
 - Status: In Review

@@ -17,6 +17,15 @@ class Settings(BaseSettings):
     knowledge_root: Path = Path("./knowledge")
     cors_origins: str = "http://localhost:5173"
     llm_provider: str = "deterministic"
+    # AOS-LLM-LOCAL-001: the "openai_compatible" provider runs ArchetypeOS's
+    # reasoned tiers off a local model (Ollama/vLLM/LM Studio — e.g. teevee's
+    # RTX 3070 at http://localhost:11434/v1) OR a free hosted API (Groq/Cerebras/
+    # OpenRouter from the free-llm-api-resources catalog) with the same code —
+    # only these three differ. ``llm_api_key`` is read from the env (LLM_API_KEY),
+    # never committed; empty = no auth (the local Ollama case).
+    llm_base_url: str = "http://localhost:11434/v1"
+    llm_model: str = "qwen2.5-coder:7b"
+    llm_api_key: str = ""
     # RFC-0010 embedding tier. Default "deterministic" → the hermetic no-op
     # embedder (embed()→None → lexical fallback); the real "fastembed" (ONNX) tier
     # lands in AOS-EMBED-002. ``embedding_model`` names the fastembed model that

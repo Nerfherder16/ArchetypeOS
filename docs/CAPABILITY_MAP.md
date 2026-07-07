@@ -158,7 +158,7 @@ Capabilities:
 - Final Judge synthesis (deterministic, rule-based verdict + abstention over agent outputs)
 - Decision loop (AOS-COUNCIL-PHASEC: a `CouncilReview` drafts a governed `Decision` linked back to the review as evidence; a named human approves/rejects it with an `ApprovalRecord` audit trail; an abstained-review draft is `needs_evidence` and cannot be approved until re-drafted — LES-019 operationalized; pending drafts surface in the digest)
 - Decision → Knowledge ADR export (AOS-COUNCIL-PHASEC2A: an approved `Decision` renders into a repo-vault ADR under `knowledge/wiki/decisions/` and projects as a re-syncable `KnowledgePage`; a separate explicit approved-only step — local-first write, `409` (not `500`) on a `:ro` vault, never mutating approval state; `POST /decisions/{decision_id}/adr`)
-- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018; **`ClaudeCodeProvider` context-isolated — LES-021**: `claude -p` runs in a fresh empty cwd with `--disallowedTools` + `--strict-mcp-config`, so an agent reasons only from the supplied evidence, not the host repo's `CLAUDE.md`/files)
+- LLM provider abstraction (swappable reasoning backend; deterministic default + Claude Code subscription backend; parse seam hardened for live-model Markdown-fenced JSON — LES-018; **`ClaudeCodeProvider` context-isolated — LES-021**: `claude -p` runs in a fresh empty cwd with `--disallowedTools` + `--strict-mcp-config`, so an agent reasons only from the supplied evidence, not the host repo's `CLAUDE.md`/files. **`OpenAICompatibleProvider` — AOS-LLM-LOCAL-001**: one config-driven adapter for any OpenAI-compatible `/chat/completions` covering both a **local** model (Ollama/vLLM on the node — teevee's RTX 3070 at `localhost:11434/v1`) and a **free hosted API** (Groq/Cerebras/OpenRouter from the `free-llm-api-resources` catalog), selected by `LLM_BASE_URL`/`LLM_MODEL`/`LLM_API_KEY`; stdlib `urllib` (no new dep), deterministic stays the CI default so the suite stays hermetic, isolation inherent (HTTP sends only system+prompt). Runs the reasoned tiers off Claude to save subscription tokens; runbook `docs/runbooks/llm-provider.md`)
 
 Primary artifacts:
 
@@ -173,7 +173,7 @@ Primary artifacts:
 - docs/COUNCIL_REALRUN_PYDANTIC_AI.md (first real Council run — reality test + honest gaps)
 - docs/LLM_PROVIDER_ABSTRACTION.md
 - docs/ARBITER_FINAL_JUDGE.md (verdict set + abstention rule the Final Judge encodes)
-- packages/aos_core/aos_core/llm/ (Provider protocol + DeterministicProvider + ClaudeCodeProvider)
+- packages/aos_core/aos_core/llm/ (Provider protocol + DeterministicProvider + ClaudeCodeProvider + OpenAICompatibleProvider); docs/runbooks/llm-provider.md
 - packages/aos_core/aos_core/services/council.py (run_council + synthesize_verdict; the four agent personas)
 - packages/aos_core/aos_core/services/decisions.py (Council → Decision loop: draft_decision_from_review + approve_decision + reject_decision; abstention blocks approval — LES-019)
 - packages/aos_core/aos_core/services/adr.py (render_adr_markdown + export_decision_adr; approved decision → repo-vault ADR + re-syncable KnowledgePage — AOS-COUNCIL-PHASEC2A)

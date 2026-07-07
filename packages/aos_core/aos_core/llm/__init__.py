@@ -25,6 +25,8 @@ from __future__ import annotations
 import json
 import subprocess
 import tempfile
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
@@ -254,18 +256,117 @@ class ClaudeCodeProvider:
         )
 
 
+def _extract_openai_text(payload: dict) -> str:
+    """Map an OpenAI ``/chat/completions`` response to the model's text.
+
+    Raises a clear ``RuntimeError`` (not a bare KeyError) when the shape is wrong,
+    so a misconfigured endpoint surfaces a legible error instead of a stack trace.
+    """
+    try:
+        return str(payload["choices"][0]["message"]["content"])
+    except (KeyError, IndexError, TypeError) as exc:
+        raise RuntimeError(
+            f"LLM response missing choices[0].message.content: {json.dumps(payload)[:300]}"
+        ) from exc
+
+
+class OpenAICompatibleProvider:
+    """Real backend: any OpenAI-compatible ``/chat/completions`` endpoint.
+
+    One adapter covers a **local** model (Ollama / vLLM / LM Studio on the node —
+    e.g. teevee's RTX 3070 at ``http://localhost:11434/v1``) AND a **free hosted
+    API** (Groq / Cerebras / OpenRouter from the free-llm-api-resources catalog)
+    with the same code — only ``base_url``, ``model``, and an optional bearer key
+    differ. This lets ArchetypeOS run its reasoned tiers (distillation, council,
+    research) off the operator's Claude subscription to save tokens
+    (AOS-LLM-LOCAL-001).
+
+    Isolation (LES-021) is inherent: an HTTP provider transmits only ``system`` +
+    ``prompt`` — there is no working directory or ambient ``CLAUDE.md`` to absorb.
+    Stdlib-only (``urllib``), so no new dependency and CI stays hermetic (CI never
+    selects this backend; it selects ``deterministic``).
+    """
+
+    name = "openai_compatible"
+
+    def __init__(
+        self, *, base_url: str, model: str, api_key: str = "", timeout: float = 120.0
+    ) -> None:
+        self.base_url = base_url.rstrip("/")
+        self.model = model
+        self.api_key = api_key
+        self.timeout = timeout
+
+    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024) -> ProviderResult:
+        body = json.dumps(
+            {
+                "model": self.model,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": prompt},
+                ],
+                "max_tokens": max_tokens,
+                "temperature": 0,
+                "stream": False,
+            }
+        ).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        request = urllib.request.Request(
+            f"{self.base_url}/chat/completions", data=body, headers=headers, method="POST"
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            detail = ""
+            try:
+                detail = exc.read().decode("utf-8", "replace")[:500]
+            except Exception:
+                pass
+            raise RuntimeError(
+                f"LLM endpoint {self.base_url} returned HTTP {exc.code}: {detail}"
+            ) from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(
+                f"LLM endpoint {self.base_url} unreachable: {exc.reason} "
+                "— set llm_provider=deterministic to run offline"
+            ) from exc
+
+        choice = (payload.get("choices") or [{}])[0] if isinstance(payload, dict) else {}
+        return ProviderResult(
+            text=_extract_openai_text(payload),
+            provider=self.name,
+            model=(payload.get("model") if isinstance(payload, dict) else None) or self.model,
+            finish_reason=choice.get("finish_reason") or "stop",
+        )
+
+
 def get_provider(settings) -> Provider:
     """Select a provider from ``settings.llm_provider``.
 
     ``deterministic`` → :class:`DeterministicProvider`;
-    ``claude_code`` → :class:`ClaudeCodeProvider`; anything else → ``ValueError``.
+    ``claude_code`` → :class:`ClaudeCodeProvider`;
+    ``openai_compatible`` → :class:`OpenAICompatibleProvider` (local Ollama or a
+    free hosted API, from ``llm_base_url`` / ``llm_model`` / ``llm_api_key``);
+    anything else → ``ValueError``.
     """
     name = getattr(settings, "llm_provider", "deterministic")
     if name == "deterministic":
         return DeterministicProvider()
     if name == "claude_code":
         return ClaudeCodeProvider()
-    raise ValueError(f"Unknown llm_provider: {name!r} (expected 'deterministic' or 'claude_code')")
+    if name == "openai_compatible":
+        return OpenAICompatibleProvider(
+            base_url=getattr(settings, "llm_base_url", "http://localhost:11434/v1"),
+            model=getattr(settings, "llm_model", "qwen2.5-coder:7b"),
+            api_key=getattr(settings, "llm_api_key", ""),
+        )
+    raise ValueError(
+        f"Unknown llm_provider: {name!r} "
+        "(expected 'deterministic', 'claude_code', or 'openai_compatible')"
+    )
 
 
 __all__ = [
@@ -273,5 +374,6 @@ __all__ = [
     "Provider",
     "DeterministicProvider",
     "ClaudeCodeProvider",
+    "OpenAICompatibleProvider",
     "get_provider",
 ]

@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-LLM-LOCAL-001: local / free LLM provider (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-LLM-LOCAL-001 — run the reasoned tiers off Claude to save tokens.** Operator running low on Claude subscription tokens for the week; this lets ArchetypeOS's reasoned tiers (distillation, council, research) run on a local model or a free hosted API instead. New `OpenAICompatibleProvider` on the existing `llm_provider` seam (whose docstring already anticipated "Ollama / vLLM on the GPU node; a hosted fallback") — **one config-driven adapter** for any OpenAI-compatible `/chat/completions`, covering both a **local** model on teevee's RTX 3070 (Ollama at `http://localhost:11434/v1`) and a **free hosted API** (Groq/Cerebras/OpenRouter from the `free-llm-api-resources` catalog ArchetypeOS already scanned) with the same code; only `LLM_BASE_URL`/`LLM_MODEL`/`LLM_API_KEY` differ. Stdlib `urllib` only — **no new dependency**, and CI stays hermetic (deterministic remains the default and is never selected in CI). Isolation (LES-021) is inherent since an HTTP provider transmits only system+prompt. Callers unchanged (`get_provider(get_settings())`). TDD (RED→GREEN): 6 hermetic tests (request shape, bearer-when-keyed, no-auth-local, HTTP-error, missing-content, get_provider selection); ruff clean; full council suite 19/19. **Live-validated: a real `generate()` against the homelab Ollama (qwen3:14b) returned `'ready'` (finish `stop`)** — the teevee-local path is identical code, a different base_url. Runbook `docs/runbooks/llm-provider.md` (local + free-API profiles) + `.env.example`. Spec: `.archetype/work/AOS-LLM-LOCAL-001.md`. Plane AOS-47.
+
 ## 2026-07-07 — AOS-UI-005: 4 read views restyled (merged) + AOS-UI-006: Council & Decisions (in review — restyle arc complete)
 
 ### Merged

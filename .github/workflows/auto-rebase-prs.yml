@@ -1,0 +1,84 @@
+name: Auto-update open PRs
+
+# AOS-CI-AUTOREBASE-001 (LES-L03). When main advances, GitHub re-flags every open
+# PR that touches the union-merged coordination logs as CONFLICTING — because
+# GitHub's server merge does NOT run our `.gitattributes merge=union` driver (it
+# only applies to local git). This workflow does what a human otherwise does by
+# hand: in a real runner (where the union driver DOES apply), it merges the new
+# main into each open PR branch and pushes. Union-file conflicts self-heal within
+# ~30s; genuine (non-union) conflicts can't be auto-resolved, so it leaves a
+# comment for manual resolution and moves on.
+#
+# Safety: merges main INTO the PR branch (a normal fast-forwarding push, NOT a
+# force-push), same-repo PRs only, drafts skipped. Pushing a PR branch does not
+# re-trigger this workflow (it fires on push:main only), so there is no loop.
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: auto-rebase-prs
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    name: Merge main into open PR branches (union-aware)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge main into each open PR branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "aos-autorebase[bot]"
+          git config user.email "aos-autorebase@users.noreply.github.com"
+
+          # Open, non-draft, same-repo PRs targeting main.
+          prs="$(gh pr list --base main --state open --json number,headRefName,isCrossRepository,isDraft \
+            --jq '.[] | select(.isCrossRepository == false and .isDraft == false) | "\(.number) \(.headRefName)"')"
+
+          if [ -z "$prs" ]; then
+            echo "No open PRs to update."
+            exit 0
+          fi
+
+          echo "$prs" | while read -r number branch; do
+            [ -n "$branch" ] || continue
+            echo "::group::PR #$number ($branch)"
+            git fetch --quiet origin "$branch"
+            git checkout --quiet -B "_pr_${number}" "origin/${branch}"
+
+            if git merge-base --is-ancestor origin/main "origin/${branch}"; then
+              echo "PR #$number already contains main — nothing to do."
+              git checkout --quiet main
+              echo "::endgroup::"
+              continue
+            fi
+
+            if git merge --no-edit origin/main; then
+              git push --quiet origin "HEAD:${branch}"
+              echo "PR #$number: merged main in and pushed (union-resolved if needed)."
+            else
+              # A real, non-union conflict the driver can't auto-resolve.
+              conflicts="$(git diff --name-only --diff-filter=U | tr '\n' ' ')"
+              git merge --abort
+              echo "PR #$number: genuine conflict in: $conflicts"
+              gh pr comment "$number" --body \
+                "🤖 Auto-update could not merge \`main\` cleanly — genuine conflict in: \`${conflicts}\`. These files are not union-merged, so they need a manual rebase. (The union-merged coordination logs auto-resolve; this is a real content conflict.)" \
+                || true
+            fi
+
+            git checkout --quiet main
+            echo "::endgroup::"
+          done

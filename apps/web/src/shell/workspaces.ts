@@ -54,7 +54,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
       { id: 'council', label: 'Council & Decisions', status: 'live', view: 'council' },
       { id: 'final-judge', label: 'Final Judge', status: 'soon' },
       { id: 'pr-guardian-gate', label: 'PR Guardian Gate', status: 'soon' },
-      { id: 'approvals-authority', label: 'Approvals & Authority', status: 'soon' },
+      { id: 'approvals-authority', label: 'Awaiting You', status: 'live', view: 'approvals' },
       { id: 'work-packages', label: 'Work Packages', status: 'soon' },
       { id: 'orchestration', label: 'Orchestration', status: 'soon' },
     ],

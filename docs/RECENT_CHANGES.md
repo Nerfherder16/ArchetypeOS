@@ -6,6 +6,13 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-06 — Manifest-derived architecture edges (AOS-ARCH-EDGES-001, laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-ARCH-EDGES-001 — closes LES-014** (the manifest/dependency half; the compose/service half shipped in AOS-ARCH-SEMANTICS-001). The scanner had four `_local_deps_*` parsers (`-e ./`/`file:`/`link:`/poetry+uv `path`/go.mod `replace => ./`) **defined but never called** — dead groundwork. This wires them (via `_LOCAL_DEP_PARSERS`) into the architecture graph: each intra-repo local path dependency is resolved relative to its manifest's directory, mapped to top-level segments, and emitted as a `depends_on` edge between the existing top-level `directory`/`repository` nodes (reuses the type; provenance is in the `evidence` string). Deduped (against compose edges too), self-loops/repo-escaping targets/unresolved endpoints skipped, bounded at `MAX_LOCAL_DEP_EDGES=200` with a truncation note, fully tolerant (never raises out of a scan). Scanner-only (`repository_scanner.py` + `test_scanner.py`); `scan.py` persistence unchanged (generic label→node edge path). Source `import`-graph edges remain a separate follow-up. TDD RED→GREEN by a python builder, Orchestrator-verified independently: 25 scanner tests pass, ruff full CI scope clean; self-scan of this repo yields 0 manifest-derived edges (no committed local path deps here — no misfire). A prior session's spec draft (untracked) was reconciled: it assumed new parsers needed writing; they already existed, so the package shrank to wiring. Spec: `.archetype/work/AOS-ARCH-EDGES-001.md`.
+
+## 2026-07-06 — Scanner precision (AOS-SCAN-PRECISION-001, laptop session — in review)
 ## 2026-07-07 — AOS-UI-001: Control Tower design system + live Reuse view (merged)
 
 ### Merged

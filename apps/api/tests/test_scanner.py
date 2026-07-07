@@ -411,6 +411,94 @@ def test_scan_detects_dotnet_jvm_rust_ecosystems(tmp_path: Path):
     assert any(s["code"] == "MULTIPLE_ECOSYSTEMS" for s in result["risk_signals"])
 
 
+# --- AOS-ARCH-EDGES-001 / LES-014: manifest-derived depends_on edges -----------
+
+
+def test_scan_emits_manifest_dependency_edges(tmp_path: Path):
+    # Fixture: monorepo with five top-level dirs, each contributing a local-dep edge.
+    # apps/api/requirements.txt  ->  -e ../../packages/aos_core   (apps -> packages)
+    # web/package.json           ->  "shared": "file:../shared"   (web -> shared)
+    # svc/go.mod                 ->  replace ... => ../shared      (svc -> shared)
+    apps_api = tmp_path / "apps" / "api"
+    apps_api.mkdir(parents=True)
+    (apps_api / "requirements.txt").write_text(
+        "-e ../../packages/aos_core\nfastapi==0.115.0\n", encoding="utf-8"
+    )
+    (apps_api / "app.py").write_text("x = 1\n", encoding="utf-8")
+
+    pkg = tmp_path / "packages" / "aos_core"
+    pkg.mkdir(parents=True)
+    (pkg / "pyproject.toml").write_text('[project]\nname = "aos_core"\n', encoding="utf-8")
+    (pkg / "__init__.py").write_text("", encoding="utf-8")
+
+    web = tmp_path / "web"
+    web.mkdir()
+    (web / "package.json").write_text(
+        '{"dependencies": {"shared": "file:../shared", "react": "^18.0.0"}}',
+        encoding="utf-8",
+    )
+
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    (shared / "index.js").write_text("module.exports = {}\n", encoding="utf-8")
+
+    svc = tmp_path / "svc"
+    svc.mkdir()
+    (svc / "go.mod").write_text(
+        "module example.com/svc\n\ngo 1.22\n\nreplace example/shared => ../shared\n",
+        encoding="utf-8",
+    )
+
+    result = scan_repository(tmp_path)
+
+    dep_edges = {
+        (e["from"], e["to"])
+        for e in result["architecture_edges"]
+        if e["type"] == "depends_on"
+    }
+    assert ("apps", "packages") in dep_edges, f"Missing apps->packages in {dep_edges}"
+    assert ("web", "shared") in dep_edges, f"Missing web->shared in {dep_edges}"
+    assert ("svc", "shared") in dep_edges, f"Missing svc->shared in {dep_edges}"
+
+    # No self-loops
+    for from_label, to_label in dep_edges:
+        assert from_label != to_label, f"Self-loop detected: {from_label}"
+
+    # No duplicate edges in the raw list
+    raw_dep_edges = [
+        (e["from"], e["to"])
+        for e in result["architecture_edges"]
+        if e["type"] == "depends_on"
+    ]
+    assert len(raw_dep_edges) == len(set(raw_dep_edges)), "Duplicate depends_on edges emitted"
+
+
+def test_manifest_dependency_edges_tolerant(tmp_path: Path):
+    # Repo A: a dep path that escapes the repo root must be silently skipped.
+    repo_a = tmp_path / "repo_a"
+    repo_a.mkdir()
+    (repo_a / "pkg").mkdir()
+    (repo_a / "pkg" / "requirements.txt").write_text(
+        "# normal dep\nfastapi==0.115.0\n-e ../../outside_the_repo\n",
+        encoding="utf-8",
+    )
+    # "outside_the_repo" is not a node in this tree
+    result_a = scan_repository(repo_a)  # must not raise
+    dep_edges_a = [e for e in result_a["architecture_edges"] if e["type"] == "depends_on"]
+    assert dep_edges_a == [], f"Expected no dep edges for escaping path, got {dep_edges_a}"
+
+    # Repo B: plain requirements.txt with no local deps emits no depends_on edges.
+    repo_b = tmp_path / "repo_b"
+    repo_b.mkdir()
+    (repo_b / "requirements.txt").write_text(
+        "fastapi==0.115.0\nrequests>=2.28\npydantic>=2.0\n", encoding="utf-8"
+    )
+    (repo_b / "app.py").write_text("x = 1\n", encoding="utf-8")
+    result_b = scan_repository(repo_b)
+    dep_edges_b = [e for e in result_b["architecture_edges"] if e["type"] == "depends_on"]
+    assert dep_edges_b == [], f"Expected no dep edges for plain repo, got {dep_edges_b}"
+
+
 def test_secret_like_filename_fixture_aware(tmp_path: Path):
     # First sub-scan: only the testdata cert; message must NOT appear in risk_flags.
     (tmp_path / "testdata").mkdir()

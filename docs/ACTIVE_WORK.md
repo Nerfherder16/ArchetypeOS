@@ -26,10 +26,30 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - Summary: Operator-corrected gap (Article XX / LES-L01): AOS-20 *detected* doc drift but remediation was manual and deferred every time (a smoke alarm with no sprinkler). This closes the loop. `tools/doc_staleness.py --fix` generates a **deterministic reconciliation draft** from `git log` (the merged PRs beyond what the state docs reference, with provenance) into `.archetype/reconciliation/PENDING.md` — it never edits prose and never games the alarm (Article XII); the HARD finding stands until the docs are actually reconciled. A `post-merge` git hook (`scripts/hooks/post-merge` + `scripts/install-hooks.sh`, `core.hooksPath`) regenerates the draft when `main` advances; the `/reconcile-state` skill (`skills/ci_devops/reconcile_state.md`) applies the narrative half for approval. Follow-ups: Stop hook + CI-on-main auto-reconciliation PR + nightly-loop wiring. Spec: `.archetype/work/AOS-SELFHEAL-001.md`.
 - Verification Status: TDD (RED→GREEN) — 17 doc-staleness tests (4 new: draft lists un-referenced PRs, none-when-current, none-without-merges, `--fix` writes the draft and never edits prose); ruff clean; live-validated on this repo (real #76-vs-#71 drift → an accurate draft listing PRs #72–#76 with branches); installer + hook exercised end to end.
 - Required Next Verifier: GitHub CI then Manual Merge Gate.
+### AOS-UI-001 — Control Tower design system + live Reuse view
+
+- Status: Merged (PR #76)
+- Owner: Chief Architect / Orchestrator (this remote session; built by an Opus builder subagent, Orchestrator-verified)
+- Branch: `claude/aos-runtime-002-scanner-1egyjw`
+- Summary: The first increment of the Control Tower's ops-deck visual language + its first real view. A new **scoped `.aos-*` design-system layer** (`apps/web/src/design/tokens.css`) — blue+red tokens, self-hosted Bebas Neue, angular HUD frame / neumorphic chips / signal-meter primitives, both themes, **scoped under `.aos-surface`** so it is inert against the existing page (nothing else re-styled). A new `apps/web/src/features/reuse/ReuseView.tsx` wired to the **live `POST /projects/{id}/transfer`** endpoint (RFC-0009 Knowledge Transfer Engine) — ranked, evidence-backed reuse cards with a signal-strength confidence meter, matched-term chips, expandable reason / evidence / required-changes / risks, and provenance. `api.ts` gains `TransferRecommendation` + `fetchReuseRecommendations`; `main.tsx` imports the tokens + mounts `ReuseView`; new real-API `apps/web/e2e/reuse.spec.ts`. The **WebGL radar instrument (AOS-UI-002)** and the **full rail-shell migration (AOS-UI-003)** are intentionally deferred follow-ups — each a strict superset (nothing throwaway). Spec: `.archetype/work/AOS-UI-001.md`.
+- Verification Status: Orchestrator-verified independently (builder ≠ verifier) — build clean, 9/9 web e2e, a live 200 round-trip against the transfer endpoint with the results path proven; Guardian PASS, all 8 CI checks green.
+- Required Next Verifier: None — merged and reconciled.
+
+### AOS-UI-002 — WebGL radar instrument (react-three-fiber, fed by real reuse candidates)
+
+- Status: Proposed
+- Owner: unassigned
+- Summary: A react-three-fiber radar instrument on the `.aos-*` design system that plots real reuse candidates from the Transfer Engine — distance-from-center = reuse strength (the calibrated need-coverage confidence), so the operator reads portfolio reuse at a glance. Strict superset of AOS-UI-001 (consumes the same `fetchReuseRecommendations` data, adds an instrument surface). The first WebGL surface in the Control Tower.
+
+### AOS-UI-003 — Control Tower rail shell + view routing
+
+- Status: Proposed
+- Owner: unassigned
+- Summary: Migrate the existing stacked Control Tower sections (Knowledge, Agent Council, Decision Loop, Scheduling, Reuse, …) onto the `.aos-*` design system behind a rail shell with view routing — the full-page adoption of the ops-deck language AOS-UI-001 seeded in a scoped/inert layer. Strict superset (the scoped layer becomes the page shell); each existing section becomes a routed view.
 
 ### AOS-SCAN-PRECISION-001 — Scanner precision (manifest breadth + secret-signal fixture awareness)
 
-- Status: In Review
+- Status: Merged (PR #75)
 - Owner: laptop session (parallel Orchestrator) — scanner claimed with operator OK (remote is on the Reuse view; `repository_scanner.py` was untouched since AOS-DISTILL-003)
 - Branch: `laptop/aos-scanner-precision` (cut from `origin/main` @ `5317dcf`)
 - Summary: Closes **LES-016** and **LES-017**. LES-016: broaden manifest/ecosystem detection beyond python/node/go — JVM basenames (`pom.xml`/`build.gradle`/`build.gradle.kts` → `jvm`/maven+gradle), .NET **suffix** manifests (`.csproj`/`.sln` → `dotnet`), and `dotnet`/`jvm` added to `ECOSYSTEM_KINDS` (rust `Cargo.toml` already covered). LES-017: `SECRET_LIKE_FILENAME` is now test-fixture-aware — downgraded to `severity="info"` (dropped from `risk_flags`/DNA) for paths under `testdata`/`tests`/`fixtures`/… so legit test certs stop false-flagging; still emitted, just non-warning. Scanner-only (`repository_scanner.py` + `test_scanner.py`); the guardian's separate overridable secret-block is intentionally unchanged (never-weaken). Guardian `SCANNER_MANIFEST_BASENAMES` mirror parity noted as follow-up. Spec: `.archetype/work/AOS-SCAN-PRECISION-001.md`.
@@ -38,7 +58,7 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ### AOS-COUNCIL-002 — Agent Council dashboard (Control Tower read surface)
 
-- Status: In Review
+- Status: Merged (PR #74)
 - Owner: laptop session (parallel Orchestrator)
 - Branch: `laptop/aos-council-002-dashboard` (cut from `origin/main` @ `0624bf0`)
 - Summary: Surface the full Agent Council reasoning the API already returns but the UI discarded (today only `{verdict} — confidence {n} — {question}` shows). New project-scoped "Agent Council" Control Tower section: verdict badge (abstention "Insufficient evidence" distinct), confidence, question, provider; expand a review → Final Judge panel (agreements/disagreements/unsupported claims/follow-up) + per-agent cards (summary/findings/evidence/concerns/status/confidence). Read-focused (enqueue stays in the Decision Loop). Frontend-only: `api.ts` council types enriched + `fetchCouncilReview(id)`; no backend/schema/migration change. Spec: `.archetype/work/AOS-COUNCIL-002.md`.

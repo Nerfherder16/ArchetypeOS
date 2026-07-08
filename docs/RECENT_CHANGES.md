@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-VOICE-PROJECT-001: project-scoped CommandDeck turns (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-VOICE-PROJECT-001 — voice/command turns respect the selected project.** Phase 1 of the consolidation plan. `CommandDeck` now receives `projectId`/`projectName` (via a ref, since `submit()` is created once in the mount effect) and passes the id into `postVoiceTurn(q, 'command-deck', projectId)`, so a spoken/typed command in a selected project produces a project-linked Voice Inbox item that promotes correctly (closes the AOS-VOICE-002 gap the eval flagged as Finding 4, which silently weakened AOS-VOICE-005). A `command-scope` indicator labels "capture scoped to <project>" vs "global capture". `tsc`+build clean; new Playwright spec proves the POST body carries `project_id` after selecting a project + the global/scoped indicator; command regressions green (6 e2e).
+
 ## 2026-07-08 — AOS-STATE-RECON-001: canonical state + drift assurance (laptop session — in review)
 
 ### In Review (tandem laptop session)

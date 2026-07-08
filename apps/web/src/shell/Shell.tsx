@@ -20,7 +20,8 @@ export type ViewId =
   | 'scheduling'
   | 'providers'
   | 'approvals'
-  | 'activity';
+  | 'activity'
+  | 'research';
 
 type Theme = 'dark' | 'light';
 

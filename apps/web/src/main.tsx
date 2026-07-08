@@ -50,6 +50,7 @@ import { ReuseView } from './features/reuse/ReuseView';
 import { ProvidersView } from './features/providers/ProvidersView';
 import { ApprovalsView } from './features/approvals/ApprovalsView';
 import { ActivityView } from './features/activity/ActivityView';
+import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { WORKSPACE_MODES } from './shell/workspaces';
@@ -1056,6 +1057,9 @@ function App() {
 
       case 'activity':
         return <ActivityView />;
+
+      case 'research':
+        return <ResearchInboxView />;
 
       case 'repositories':
         if (!selectedProjectId) {

@@ -642,3 +642,28 @@ export type NodeInfo = {
 export async function fetchNodes(): Promise<NodeInfo[]> {
   return request<NodeInfo[]>('/nodes');
 }
+
+// Connector registry (AOS-CONNECTOR-001). Read-only governance surface.
+export type Connector = {
+  id: string;
+  name: string;
+  connector_type: string;
+  tier: string;
+  enabled: boolean;
+  configured: boolean;
+  privacy_class: string;
+  egress_allowed: boolean;
+  browser_exposed: boolean;
+  quota_policy: string;
+  last_health_status: string;
+  last_error: string | null;
+  last_checked_at: string | null;
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchConnectors(): Promise<Connector[]> {
+  return request<Connector[]>('/connectors');
+}

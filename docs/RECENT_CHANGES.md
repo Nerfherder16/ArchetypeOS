@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-CONNECTOR-001 (UI): Connectors tab under Providers & Model Routing (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-CONNECTOR-001 (UI half) — connector governance becomes visible.** Completes AOS-CONNECTOR-001 (backend registry #130) and closes Phase 2. The Operations -> Providers & Model Routing surface now has two tabs — **Usage** (the existing LLM ledger) and **Connectors** — exactly the IA the eval named (Finding 9). New read-only `features/connectors/ConnectorsView.tsx` renders every connector as a card: health pill (or `unconfigured`), `connector_type · tier`, **privacy class** (private-ok vs public-only), **egress** (local vs external), and a red **browser-exposed** label where a token ships to the browser (e.g. `sotto_stt`/VITE_SOTTO_TOKEN). Unconfigured connectors stay visible (dimmed, labeled) without erroring; a `configured/total` count summarizes the fleet; graceful loading/empty/error states. Wired via `api.ts` (`Connector` type + `fetchConnectors()`, typed to the backend `ConnectorRead` schema) and a lightweight `panel` tab-switch in `ProvidersView.tsx` (kept the connector logic in its own file so ProvidersView stays under the size limit at 383 lines). `tsc`+build clean; new Playwright spec `connectors-view.spec.ts` (2 cases: renders governance posture/health/unconfigured, registry error) green; existing `providers-view.spec.ts` still green (no usage-panel regression). The operator can now audit where data goes in one place.
+
 ## 2026-07-08 — AOS-CONNECTOR-001 (backend): connector registry + policy center (laptop session — in review)
 
 ### In Review (tandem laptop session)

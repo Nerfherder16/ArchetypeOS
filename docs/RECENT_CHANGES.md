@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-VOICE-003: Voice Inbox dashboard surface (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-VOICE-003 — the captured work gets a review queue.** A new **Voice Inbox** view under Operations (rail surface next to Command) lists every CommandDeck turn as a review-first card (intent chip, confidence, project, suggested action, spoken reply, source, state). Pending items get Approve / Dismiss via a new `PATCH /voice/inbox/{item_id}` that transitions `review_state`. Review-first is intact: approving records intent only — promoting an approved draft into its concrete action (research task, decision, guardian review) is AOS-VOICE-005. Graceful loading/empty/error states; `updateVoiceInboxItem()` in the api client; wired through `Shell.tsx` + `workspaces.ts` + `main.tsx`. 5 new API tests; full API suite 298 passed; `tsc`+build clean; 12 e2e passed (2 new Voice Inbox specs + command/shell preserved); route inventory 53→54. This completes the operator-facing loop: speak/type → transcribe → reply → review. Remaining: AOS-VOICE-005 (per-intent agent drafts).
+
 ## 2026-07-08 — AOS-VOICE-004: Groq Orpheus TTS for spoken replies (laptop session — in review)
 
 ### In Review (tandem laptop session)

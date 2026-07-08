@@ -18,9 +18,16 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-VOICE-004 — Groq Orpheus TTS for spoken replies
+### AOS-VOICE-003 — Voice Inbox dashboard surface
 
 - Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: The review-first surface for the Voice Command Center. A new **Voice Inbox** view under the Operations mode (rail surface next to Command) lists every captured turn (typed or Sotto-spoken) as a card: intent chip, confidence, detected project, suggested action, spoken reply, source device, and review state. Pending items get **Approve / Dismiss**; a new `PATCH /voice/inbox/{item_id}` transitions `review_state` (pending/approved/dismissed). Review-first is preserved: approving records intent only — promoting an approved draft into its concrete action (research task, decision, guardian review) is AOS-VOICE-005. `updateVoiceInboxItem()` in the api client; graceful degradation when the API is unreachable (loading/empty/error states). Wires into the shell via `Shell.tsx` ViewId + `workspaces.ts` Operations surface + `main.tsx` render case.
+- Verification Status: 5 new hermetic API tests (PATCH approve/dismiss persist, 404 unknown, 422 bad state); full API suite 298 passed / 3 skipped; ruff clean; `tsc && vite build` clean; 2 new Playwright specs (list renders + Approve transitions via mocked PATCH with zero console errors; empty state) + command/shell specs preserved (12 e2e passed); frozen route inventory 53→54.
+
+### AOS-VOICE-004 — Groq Orpheus TTS for spoken replies
+
+- Status: Merged (#112)
 - Owner: laptop session (parallel Orchestrator)
 - Summary: PR 4 of the Voice Command Center arc. Gives the orb a real voice: a server-side TTS proxy (`services/tts.py`) calls Groq's OpenAI-compatible `/audio/speech` with Canopy Labs **Orpheus** (`canopylabs/orpheus-v1-english`, voice `austin`, `response_format=wav`) — lowest round-trip in the free pool, no local GPU contention, and the Groq key **never reaches the browser**. New `POST /voice/speak` returns WAV, or **204** when TTS is unconfigured / synthesis fails, so the CommandDeck `speak()` falls back to browser `speechSynthesis` (fail-open — a reply is never blocked on TTS). Orpheus caps input at 200 chars (enforced server-side). `docker-compose.yml` api service forwards `TTS_API_KEY: ${GROQ_API_KEY:-}` (reuses the existing free key; empty → browser fallback). Piper was dropped (operator hit issues + CPU latency). Note: this PR is the TTS slice; the "deeper per-intent agent drafts" originally bundled here is split to a follow-up (AOS-VOICE-005) to keep the PR focused.
 - Verification Status: TDD (8 hermetic TTS tests: configured-gating, unconfigured→None, POST body/headers/bearer/UA, 200-char truncation, fail-open on error; route: 204 unconfigured, 200 WAV when mocked, empty-text 422). Full API suite 294 passed / 3 skipped; ruff clean; `tsc && vite build` clean; command e2e 5 passed (typed round-trip now also mocks `/voice/speak`→204 and asserts graceful fallback with zero console errors); frozen route inventory 52→53. Live Groq voice verified at deploy time (needs the key in the api container).

@@ -16,7 +16,7 @@ from aos_core.models import Project, VoiceInboxItem
 from aos_core.services.tts import synthesize_speech
 from aos_core.services.voice import process_voice_turn, voice_provider
 
-from ..schemas import VoiceInboxItemRead, VoiceSpeakRequest, VoiceTurnCreate
+from ..schemas import VoiceInboxItemRead, VoiceInboxUpdate, VoiceSpeakRequest, VoiceTurnCreate
 
 settings = get_settings()
 router = APIRouter()
@@ -43,6 +43,25 @@ def list_voice_inbox(db: Session = Depends(get_db)) -> list[VoiceInboxItem]:
         .limit(50)
         .all()
     )
+
+
+@router.patch("/voice/inbox/{item_id}", response_model=VoiceInboxItemRead)
+def update_voice_inbox(
+    item_id: str, payload: VoiceInboxUpdate, db: Session = Depends(get_db)
+) -> VoiceInboxItem:
+    """Approve / dismiss / re-open a review-first Voice Inbox draft.
+
+    Review-first: this only transitions the item's ``review_state``. Promoting an
+    approved draft into its concrete action (research task, decision, etc.) is
+    AOS-VOICE-005 — approving here never executes anything on its own.
+    """
+    item = db.get(VoiceInboxItem, item_id)
+    if item is None:
+        raise HTTPException(status_code=404, detail="Voice inbox item not found")
+    item.review_state = payload.review_state
+    db.commit()
+    db.refresh(item)
+    return item
 
 
 @router.post("/voice/speak")

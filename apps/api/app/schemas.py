@@ -436,6 +436,19 @@ class VoiceSpeakRequest(BaseModel):
         return value.strip()
 
 
+class VoiceInboxUpdate(BaseModel):
+    review_state: str
+
+    @field_validator("review_state")
+    @classmethod
+    def _valid_review_state(cls, value: str) -> str:
+        allowed = {"pending", "approved", "dismissed"}
+        candidate = (value or "").strip().lower()
+        if candidate not in allowed:
+            raise ValueError(f"review_state must be one of {sorted(allowed)}")
+        return candidate
+
+
 class VoiceInboxItemRead(BaseModel):
     id: str
     project_id: str | None = None

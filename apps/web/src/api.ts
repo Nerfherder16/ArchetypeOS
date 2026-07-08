@@ -559,6 +559,22 @@ export async function fetchVoiceInbox(): Promise<VoiceInboxItem[]> {
   return request<VoiceInboxItem[]>('/voice/inbox');
 }
 
+// Approve / dismiss / re-open a review-first Voice Inbox draft (AOS-VOICE-003).
+// Review-first: this only transitions review_state; promoting an approved draft
+// into its concrete action is a later slice (AOS-VOICE-005).
+export type VoiceReviewState = 'pending' | 'approved' | 'dismissed';
+
+export async function updateVoiceInboxItem(
+  id: string,
+  reviewState: VoiceReviewState,
+): Promise<VoiceInboxItem> {
+  return request<VoiceInboxItem>(`/voice/inbox/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ review_state: reviewState }),
+  });
+}
+
 // Server-side TTS (Groq Orpheus, AOS-VOICE-004). Returns the WAV blob to play, or
 // null when TTS is unconfigured (204) or the request fails — the caller then falls
 // back to the browser's speechSynthesis. The Groq key stays server-side. Never

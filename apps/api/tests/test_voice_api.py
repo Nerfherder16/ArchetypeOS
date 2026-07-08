@@ -66,3 +66,41 @@ def test_post_voice_turn_unknown_project_404(client, monkeypatch):
         json={"transcript": "capture an idea", "project_id": "00000000-0000-0000-0000-000000000000"},
     )
     assert resp.status_code == 404
+
+
+def _make_item(client, monkeypatch) -> str:
+    _patch_provider(monkeypatch, "not json")
+    resp = client.post("/voice/turns", json={"transcript": "capture an idea about caching"})
+    assert resp.status_code == 200
+    return resp.json()["id"]
+
+
+def test_patch_voice_inbox_approves(client, monkeypatch):
+    item_id = _make_item(client, monkeypatch)
+    resp = client.patch(f"/voice/inbox/{item_id}", json={"review_state": "approved"})
+    assert resp.status_code == 200
+    assert resp.json()["review_state"] == "approved"
+    # Persisted.
+    listing = client.get("/voice/inbox").json()
+    assert next(r for r in listing if r["id"] == item_id)["review_state"] == "approved"
+
+
+def test_patch_voice_inbox_dismisses(client, monkeypatch):
+    item_id = _make_item(client, monkeypatch)
+    resp = client.patch(f"/voice/inbox/{item_id}", json={"review_state": "dismissed"})
+    assert resp.status_code == 200
+    assert resp.json()["review_state"] == "dismissed"
+
+
+def test_patch_voice_inbox_unknown_404(client):
+    resp = client.patch(
+        "/voice/inbox/00000000-0000-0000-0000-000000000000",
+        json={"review_state": "approved"},
+    )
+    assert resp.status_code == 404
+
+
+def test_patch_voice_inbox_invalid_state_422(client, monkeypatch):
+    item_id = _make_item(client, monkeypatch)
+    resp = client.patch(f"/voice/inbox/{item_id}", json={"review_state": "banana"})
+    assert resp.status_code == 422

@@ -37,6 +37,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
     focus: 'Command home — live ops.',
     surfaces: [
       { id: 'command', label: 'Command', status: 'live', view: 'command' },
+      { id: 'voice-inbox', label: 'Voice Inbox', status: 'live', view: 'voice-inbox' },
       { id: 'observatory', label: 'Observatory', status: 'soon' },
       { id: 'live-activity', label: 'Live Activity', status: 'live', view: 'activity' },
       { id: 'digest', label: 'Digest', status: 'live', view: 'digest' },

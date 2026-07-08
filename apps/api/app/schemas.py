@@ -133,11 +133,16 @@ class RepositoryScanRead(BaseModel):
 
 class RepositoryDnaRead(BaseModel):
     repository_id: str
+    purpose: str | None
+    maturity: str | None
     language_mix: dict
     package_managers: list
+    frameworks: list
+    runtime_services: list
     deployment_files: list
     risk_flags: list
     scan_summary: dict
+    evidence: list
     confidence: float
     status: str
     version: int

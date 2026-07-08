@@ -35,10 +35,17 @@ export type Repository = {
 
 export type RepositoryDna = {
   repository_id: string;
+  // AOS-CONTRACT-001: the reasoned evidence the backend computes, no longer dropped
+  // at the API seam.
+  purpose: string | null;
+  maturity: string | null;
   language_mix: Record<string, number>;
   package_managers: string[];
+  frameworks: string[];
+  runtime_services: string[];
   deployment_files: string[];
   risk_flags: string[];
+  evidence: unknown[];
   scan_summary: {
     summary?: {
       primary_language_hints?: string[];
@@ -68,6 +75,12 @@ export type ArchitectureNode = {
 export type ArchitectureEdge = {
   id: string;
   type: string;
+  // AOS-CONTRACT-001: full edge evidence the backend already exposes.
+  from_node_id: string;
+  to_node_id: string;
+  confidence: number;
+  evidence: unknown[];
+  manual_correction: string | null;
 };
 
 export type ArchitectureGraph = {
@@ -131,9 +144,15 @@ export type CouncilReview = {
 
 export type ResearchNote = {
   id: string;
+  project_id?: string;
   title: string;
+  question?: string | null;
   summary?: string | null;
+  // AOS-CONTRACT-001: the sources/findings/status the backend records.
+  sources: string[];
+  findings: string[];
   freshness?: string | null;
+  status?: string;
   confidence: number;
 };
 

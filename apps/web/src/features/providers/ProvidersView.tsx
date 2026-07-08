@@ -5,6 +5,11 @@ import {
   type UsageSummary,
   type UsageWindow,
 } from '../../api';
+import { ConnectorsView } from '../connectors/ConnectorsView';
+
+// The two panels of the Providers & Model Routing surface: LLM usage (the ledger)
+// and the connector registry (AOS-CONNECTOR-001 governance, eval Finding 9).
+type ProvidersPanel = 'usage' | 'connectors';
 
 const errorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : 'Request failed';
@@ -153,6 +158,7 @@ function TierRow({ bucket, tier, totalTokens }: {
 }
 
 export function ProvidersView() {
+  const [panel, setPanel] = useState<ProvidersPanel>('usage');
   const [usageWindow, setUsageWindow] = useState<UsageWindow>('7d');
   const [summary, setSummary] = useState<UsageSummary | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,6 +198,34 @@ export function ProvidersView() {
         <h2>LLM usage across your tiers</h2>
       </div>
 
+      {/* Panel tabs: LLM usage ledger vs the connector governance registry. */}
+      <div className="aos-form-row" role="tablist" aria-label="Providers panel" style={{ marginTop: 0 }}>
+        <button
+          type="button"
+          role="tab"
+          className={panel === 'usage' ? 'aos-mchip on' : 'aos-mchip'}
+          data-testid="providers-tab-usage"
+          aria-selected={panel === 'usage'}
+          onClick={() => setPanel('usage')}
+        >
+          Usage
+        </button>
+        <button
+          type="button"
+          role="tab"
+          className={panel === 'connectors' ? 'aos-mchip on' : 'aos-mchip'}
+          data-testid="providers-tab-connectors"
+          aria-selected={panel === 'connectors'}
+          onClick={() => setPanel('connectors')}
+        >
+          Connectors
+        </button>
+      </div>
+
+      {panel === 'connectors' ? (
+        <ConnectorsView />
+      ) : (
+      <>
       {/* Window selector — always present so the view mounts with its controls
           even when the API is absent. Switching re-fetches. */}
       <div className="aos-form-row" role="group" aria-label="Usage window" style={{ marginTop: 0 }}>
@@ -342,6 +376,8 @@ export function ProvidersView() {
           </div>
         </>
       ) : null}
+      </>
+      )}
     </section>
   );
 }

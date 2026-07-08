@@ -38,7 +38,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
     surfaces: [
       { id: 'command', label: 'Command', status: 'live', view: 'command' },
       { id: 'observatory', label: 'Observatory', status: 'soon' },
-      { id: 'live-activity', label: 'Live Activity', status: 'soon' },
+      { id: 'live-activity', label: 'Live Activity', status: 'live', view: 'activity' },
       { id: 'digest', label: 'Digest', status: 'live', view: 'digest' },
       { id: 'scheduling', label: 'Scheduling', status: 'live', view: 'scheduling' },
       { id: 'nodes-runtime', label: 'Nodes / Runtime', status: 'soon' },

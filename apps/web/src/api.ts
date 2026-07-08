@@ -195,6 +195,13 @@ export type Job = {
   job_type: string;
   status: string;
   queued_at: string;
+  // Optional lifecycle timestamps + failure reason (all exposed by `JobRead`).
+  // Older/queued jobs leave `started_at`/`finished_at` null; `error` is set only
+  // on failure. The Live Activity feed (AOS-OPS-002) reads these for its time
+  // ordering and failed-row snippet, so they are surfaced on the frontend type.
+  started_at?: string | null;
+  finished_at?: string | null;
+  error?: string | null;
   attempts: number;
   project_id: string | null;
   repository_id: string | null;

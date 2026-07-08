@@ -1,15 +1,14 @@
 name: Refresh canonical state
 
-# AOS-STATE-RECON-001 (LES-L09). The assurance layer against CURRENT_STATE.md
-# drift: the two machine-owned fields in its AOS-CANONICAL block — Watermark PR
-# and Active Branch — are AUTO-DERIVED from git on every merge to main, so a human
-# never maintains them and they cannot go stale (the exact drift the AOS-REVIEW-001
-# eval found: watermark frozen ~45 PRs back, a merged branch still named "active").
+# AOS-STATE-RECON-001 (LES-L09). Assurance layer against CURRENT_STATE.md drift:
+# the machine-owned AOS-CANONICAL fields (Watermark PR, Active Branch) are
+# auto-derived from git on every merge to main, so a human never maintains them
+# and they cannot go stale.
 #
-# The commit is made with [skip ci] so it does not re-trigger any workflow (no
-# loop). Only the derived lines change; the human fields (Objective/Next) are never
-# touched. Detection of residual drift lives in tools/doc_staleness.py (the nightly
-# reconcile); this workflow is the prevention half.
+# ArchetypeOS is the FIRST CONSUMER of the reusable `state-hygiene` composite
+# action (dogfood) — any managed repo adopts the same logic via
+# `uses: Nerfherder16/ArchetypeOS/.github/actions/state-hygiene@main`. Logic lives
+# once; there is nothing per-repo to drift.
 
 on:
   push:
@@ -27,28 +26,15 @@ jobs:
   refresh:
     name: Auto-derive CURRENT_STATE canonical fields
     runs-on: ubuntu-latest
-    # Do not act on the bot's own refresh commit (belt-and-suspenders with [skip ci]).
-    if: ${{ !contains(github.event.head_commit.message, 'state(canonical)') }}
+    # Do not act on the action's own refresh commit (belt-and-suspenders with [skip ci]).
+    if: ${{ !contains(github.event.head_commit.message, 'chore(state)') }}
     steps:
       - name: Checkout main (full history for accurate watermark)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - uses: actions/setup-python@v5
+      - name: Run the reusable state-hygiene action (local dogfood)
+        uses: ./.github/actions/state-hygiene
         with:
-          python-version: '3.12'
-
-      - name: Refresh canonical block and push if changed
-        run: |
-          set -euo pipefail
-          python3 tools/doc_staleness.py --refresh-canonical
-          if git diff --quiet -- docs/CURRENT_STATE.md; then
-            echo "Canonical block already current — nothing to push."
-            exit 0
-          fi
-          git config user.name "aos-state[bot]"
-          git config user.email "aos-state@users.noreply.github.com"
-          git add -- docs/CURRENT_STATE.md
-          git commit -m "chore(state): refresh CURRENT_STATE canonical fields [skip ci]"
-          git push origin HEAD:main
+          doc: docs/CURRENT_STATE.md
+          marker: AOS-CANONICAL

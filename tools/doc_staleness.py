@@ -52,8 +52,11 @@ _SQUASH_PR = re.compile(r"\(#(\d+)\)")
 _CANONICAL_BLOCK = re.compile(
     r"<!-- AOS-CANONICAL:START -->(.*?)<!-- AOS-CANONICAL:END -->", re.DOTALL
 )
-_WATERMARK_LINE = re.compile(r"(?im)^\s*-\s*Watermark PR:\s*#?(\d+)")
-_ACTIVE_BRANCH_LINE = re.compile(r"(?im)^\s*-\s*Active Branch:\s*(.+?)\s*$")
+# [ \t]* not \s* for the leading indent: \s matches newlines and (?m)^ matches at
+# string position 0, so \s* would swallow the line's leading newline during .sub
+# and fuse it onto the previous line (LES-L09 addendum).
+_WATERMARK_LINE = re.compile(r"(?im)^[ \t]*-[ \t]*Watermark PR:[ \t]*#?(\d+)")
+_ACTIVE_BRANCH_LINE = re.compile(r"(?im)^[ \t]*-[ \t]*Active Branch:[ \t]*(.+?)[ \t]*$")
 _NOT_A_BRANCH = ("none", "main", "n/a", "-")
 
 # Lag beyond this many PRs between git and the state docs is HARD; within it, SOFT.

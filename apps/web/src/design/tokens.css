@@ -926,6 +926,24 @@
 .aos-rows .aos-subrows > li { border: 0; padding: 3px 0; }
 .aos-rowmeta { color: var(--ink-3); font-family: var(--mono); font-size: 11.5px; }
 
+/* AOS-OPS-002 — Live Activity feed. Dense, mono, feed-like rows with a subtle
+   slide-in (disabled under prefers-reduced-motion via the global block below). */
+.aos-activity-feed > li { font-size: 12.5px; }
+.aos-activity-row { animation: aos-activity-in 220ms ease-out both; }
+.aos-activity-time { flex: 0 0 auto; min-width: 62px; }
+.aos-activity-error {
+  flex: 1 1 100%;
+  color: color-mix(in srgb, var(--red) 82%, var(--ink-2));
+  font-size: 11.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@keyframes aos-activity-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .aos-surface *,
   .aos-surface *::before,

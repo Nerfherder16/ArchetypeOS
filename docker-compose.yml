@@ -95,6 +95,17 @@ services:
       CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      # Research Engine web tier (RFC-0012 / AOS-RESEARCH-002). All default
+      # empty/false → build_web_source() returns None → the engine stays on the
+      # hermetic LocalCorpusSource, so the CI/no-network path is unchanged when
+      # unset. Set RESEARCH_WEB_ENABLED=true + the hosts/key (and start the
+      # `research` compose profile below) to activate the web tier. Values come
+      # from the host .env — never hard-code the EXA_API_KEY secret value here.
+      RESEARCH_WEB_ENABLED: ${RESEARCH_WEB_ENABLED:-false}
+      EXA_API_KEY: ${EXA_API_KEY:-}
+      CRAWL4AI_URL: ${CRAWL4AI_URL:-}
+      SEARXNG_URL: ${SEARXNG_URL:-}
+      FIRECRAWL_URL: ${FIRECRAWL_URL:-}
     depends_on:
       api:
         condition: service_healthy
@@ -139,7 +150,44 @@ services:
     ports:
       - "${WEB_PORT:-5173}:5173"
 
+  # --- Research Engine web tier (RFC-0012 / AOS-RESEARCH-002) -----------------
+  # crawl4ai (fetch: URL → LLM-ready markdown) and SearXNG (discovery: quota-free
+  # meta-search) are the self-hosted workhorses that carry the fetch/discovery
+  # volume so the metered Exa API is reserved for high-value discovery. Both are
+  # gated behind the `research` compose profile so they DO NOT start by default
+  # (`docker compose up` is unchanged); the operator starts them with
+  # `docker compose --profile research up` after setting RESEARCH_WEB_ENABLED +
+  # the worker's CRAWL4AI_URL/SEARXNG_URL. No GPU required.
+  crawl4ai:
+    image: unclecode/crawl4ai:latest
+    profiles: ["research"]
+    environment:
+      # crawl4ai serves its HTTP API (markdown fetch) on 11235.
+      CRAWL4AI_PORT: "11235"
+    shm_size: "1gb"  # Playwright/Chromium needs shared memory for page rendering.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:11235/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "${CRAWL4AI_PORT:-11235}:11235"
+
+  searxng:
+    image: searxng/searxng:latest
+    profiles: ["research"]
+    environment:
+      # SearXNG needs its public base URL and must expose the JSON output format
+      # (the SearxngSource adapter requests ?format=json).
+      SEARXNG_BASE_URL: ${SEARXNG_BASE_URL:-http://localhost:8080/}
+      SEARXNG_SETTINGS_PATH: /etc/searxng/settings.yml
+    volumes:
+      - searxng_data:/etc/searxng
+    ports:
+      - "${SEARXNG_PORT:-8080}:8080"
+
 volumes:
   postgres_data:
   redis_data:
   archetype_data:
+  searxng_data:

@@ -18,7 +18,7 @@
  *     gracefully and never throws when the Web Speech APIs are absent.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { postVoiceTurn } from '../../api';
+import { fetchSpeech, postVoiceTurn } from '../../api';
 import { AGENTS, CORE_RGB, SHELL_RGB, fib, hexToRgb, routeForTask, type Point3 } from './orb';
 import { sottoConfigured, startDictation, type DictationController } from './sottoDictation';
 
@@ -427,7 +427,7 @@ export function CommandDeck() {
     };
 
     // --- Voice (graceful, non-throwing) ---
-    const speak = (txt: string, idx: number) => {
+    const browserSpeak = (txt: string) => {
       try {
         if (!synth || typeof window.SpeechSynthesisUtterance !== 'function') {
           return;
@@ -449,6 +449,38 @@ export function CommandDeck() {
       } catch {
         // TTS blocked — the amplitude envelope already runs from beginSpeak.
       }
+    };
+
+    // Server-side TTS first (Groq Orpheus, AOS-VOICE-004) for a natural voice;
+    // fall back to the browser's speechSynthesis when TTS is unconfigured (204)
+    // or audio playback fails. The amplitude envelope already runs from beginSpeak,
+    // so a TTS miss never leaves the orb silent-looking.
+    let ttsAudio: HTMLAudioElement | null = null;
+    const speak = (txt: string, _idx: number) => {
+      fetchSpeech(txt)
+        .then((blob) => {
+          if (!blob) {
+            browserSpeak(txt);
+            return;
+          }
+          try {
+            const url = URL.createObjectURL(blob);
+            ttsAudio = new Audio(url);
+            ttsAudio.onended = () => {
+              endSpeak();
+              URL.revokeObjectURL(url);
+              ttsAudio = null;
+            };
+            void ttsAudio.play().catch(() => {
+              URL.revokeObjectURL(url);
+              ttsAudio = null;
+              browserSpeak(txt);
+            });
+          } catch {
+            browserSpeak(txt);
+          }
+        })
+        .catch(() => browserSpeak(txt));
     };
 
     const submit = (raw: string) => {
@@ -567,6 +599,11 @@ export function CommandDeck() {
       window.removeEventListener('mousemove', onMouseMove);
       try {
         dictation?.cancel();
+      } catch {
+        /* ignore */
+      }
+      try {
+        ttsAudio?.pause();
       } catch {
         /* ignore */
       }

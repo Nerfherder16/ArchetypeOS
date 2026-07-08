@@ -558,3 +558,21 @@ export async function postVoiceTurn(
 export async function fetchVoiceInbox(): Promise<VoiceInboxItem[]> {
   return request<VoiceInboxItem[]>('/voice/inbox');
 }
+
+// Server-side TTS (Groq Orpheus, AOS-VOICE-004). Returns the WAV blob to play, or
+// null when TTS is unconfigured (204) or the request fails — the caller then falls
+// back to the browser's speechSynthesis. The Groq key stays server-side. Never
+// throws: a spoken reply must not be blocked on TTS.
+export async function fetchSpeech(text: string): Promise<Blob | null> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/voice/speak`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (response.status === 204 || !response.ok) return null;
+    return await response.blob();
+  } catch {
+    return null;
+  }
+}

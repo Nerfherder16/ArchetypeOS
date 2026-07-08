@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-VOICE-004: Groq Orpheus TTS for spoken replies (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-VOICE-004 — the orb speaks with a real voice.** Server-side TTS proxy (`services/tts.py`) calls Groq's OpenAI-compatible `/audio/speech` with Canopy Labs **Orpheus** (`canopylabs/orpheus-v1-english`, `wav`) — lowest round-trip in the free pool, no GPU contention, and the Groq key **stays server-side**. New `POST /voice/speak` returns WAV or **204** (unconfigured / fail-open), so the CommandDeck `speak()` tries Groq first and falls back to browser `speechSynthesis` — a reply is never blocked on TTS. Orpheus's 200-char input cap is enforced server-side. `docker-compose.yml` api service forwards `TTS_API_KEY: ${GROQ_API_KEY:-}` (reuses the existing free key). Piper dropped (operator hit issues + CPU latency). 8 hermetic TTS tests; full API suite 294 passed; `tsc`+build clean; command e2e 5 passed; route inventory 52→53. The "deeper per-intent agent drafts" is split to AOS-VOICE-005 to keep this focused. Next surfaces: PR 3 the Voice Inbox dashboard; AOS-VOICE-005 the per-intent drafts.
+
 ## 2026-07-08 — AOS-VOICE-002: Sotto STT + real mic in the CommandDeck (laptop session — in review)
 
 ### In Review (tandem laptop session)

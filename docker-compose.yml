@@ -51,6 +51,10 @@ services:
       # activate the real fastembed/ONNX embedder — pair with the pre-download
       # build arg above for a fully offline node.
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-deterministic}
+      # AOS-VOICE-004: server-side TTS for spoken replies (Groq Orpheus). Reuses
+      # the free Groq key; empty → POST /voice/speak returns 204 and the browser
+      # falls back to speechSynthesis. Never hard-code the secret value here.
+      TTS_API_KEY: ${GROQ_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

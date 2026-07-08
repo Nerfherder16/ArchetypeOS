@@ -12,4 +12,5 @@
 # discipline (the reconciliation owner flips status), so union covers the rest.
 docs/ACTIVE_WORK.md              merge=union
 docs/RECENT_CHANGES.md           merge=union
+docs/CAPABILITY_MAP.md           merge=union
 knowledge/wiki/lessons/index.md  merge=union

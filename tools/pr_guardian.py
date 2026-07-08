@@ -110,7 +110,10 @@ SCANNER_MANIFEST_BASENAMES = {
 }
 
 ACCEPTED_WARNINGS_PATH = Path(__file__).resolve().parent.parent / ".archetype" / "guardian" / "accepted_warnings.json"
-LESSON_ID_PATTERN = re.compile(r"LES-\d+")
+# Accept both the cloud numeric band (LES-021) and the laptop session band
+# (LES-L08) — the latter was previously unmatchable, so citing a laptop lesson
+# never satisfied the override gate (LES-L08).
+LESSON_ID_PATTERN = re.compile(r"LES-L?\d+")
 
 
 class GuardianError(RuntimeError):
@@ -156,8 +159,25 @@ def read_body(path: Path | None) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+# An override is ACTIVATED only as a line-start directive (optionally bulleted),
+# e.g. `PR_GUARDIAN_OVERRIDE_TESTS: <rationale>`. A mere prose MENTION of the token
+# (a doc/skill/lesson that names it, even to forbid it) is NOT an override — the
+# old naive `substring in body` both false-positive-BLOCKed such bodies on the
+# lesson-citation check AND, worse, let a sentence silently disable a real gate
+# (LES-L08). Match the token at the start of a line so use and mention are distinct.
+_OVERRIDE_DIRECTIVE = re.compile(r"(?im)^\s*(?:[-*]\s*)?PR_GUARDIAN_OVERRIDE_([A-Z_]+)\b")
+
+
+def active_overrides(body: str) -> set[str]:
+    """The override KEYS activated as line-start directives in the body."""
+    return {match.group(1) for match in _OVERRIDE_DIRECTIVE.finditer(body)}
+
+
 def has_override(body: str, key: str) -> bool:
-    return f"PR_GUARDIAN_OVERRIDE_{key}" in body
+    """True when ``key`` is activated as a line-start directive (not a prose mention)."""
+    return bool(
+        re.search(rf"(?im)^\s*(?:[-*]\s*)?PR_GUARDIAN_OVERRIDE_{re.escape(key)}\b", body)
+    )
 
 
 def any_path(paths: Iterable[str], prefixes: tuple[str, ...]) -> bool:
@@ -485,7 +505,9 @@ def check_guardian_change_lesson(files: list[str], body: str) -> list[Finding]:
 
 def check_override_lesson_citation(body: str) -> list[Finding]:
     findings: list[Finding] = []
-    if "PR_GUARDIAN_OVERRIDE_" in body and not LESSON_ID_PATTERN.search(body):
+    # Only a genuinely ACTIVATED override (line-start directive) requires a lesson
+    # cite; a prose mention of the token does not (LES-L08).
+    if active_overrides(body) and not LESSON_ID_PATTERN.search(body):
         findings.append(
             Finding(
                 "block",

@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-SELFHEAL-GUARDIAN: fix the override substring false-positive (LES-L08) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SELFHEAL-GUARDIAN — the self-learn loop fixes its own tooling.** The toil nightly's `aos-ship-pr` PR (#120) hit a Guardian **false positive** and recorded LES-L08: `check_override_lesson_citation` / `has_override` used a naive `"PR_GUARDIAN_OVERRIDE_" in body` substring test, so a PR body that merely *mentions* the token (a doc/skill/lesson naming it, even to forbid it) tripped the lesson-citation BLOCK — and, worse, a prose mention could silently ACTIVATE a gate override (disabling a real check). Fix: an override now counts only as a **line-start directive** (`^\s*(?:[-*]\s*)?PR_GUARDIAN_OVERRIDE_<KEY>`), distinguishing use from mention. Also fixed a sibling gap LES-L08 flagged: `LESSON_ID_PATTERN` (`LES-\d+`) never matched the laptop `LES-L##` band, so citing a laptop lesson didn't satisfy the gate — now `LES-L?\d+`. Both fixes carry tests (`test_guardian_evolution.py`, 23 pass). Closes the bug class, not just the instance. This is the self-learn loop improving the very gate that governs it.
+
 ## 2026-07-08 — AOS-SELFHEAL-004: toil probe (recurring ritual → skill/script) (laptop session — in review)
 
 ### In Review (tandem laptop session)

@@ -72,6 +72,8 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/council-reviews"),
         ("GET", "/projects/{project_id}/council-reviews"),
         ("GET", "/council-reviews/{review_id}"),
+        # research engine (AOS-RESEARCH-001 — RFC-0011 ranked evidence dossiers)
+        ("POST", "/projects/{project_id}/research"),
         # knowledge (AOS-KNOW-002 — global, not project-scoped)
         ("POST", "/knowledge/sync"),
         ("GET", "/knowledge/pages"),
@@ -116,6 +118,7 @@ def test_route_inventory_count() -> None:
     # plus the AOS-TRANSFER-001 knowledge-transfer route (POST
     # /projects/{project_id}/transfer) = 48, plus the AOS-USAGE-001 usage-ledger
     # route (GET /usage/summary) = 49, plus the AOS-VOICE-001 Voice Command Center
-    # routes (POST /voice/turns, GET /voice/inbox) = 51.
-    assert len(EXPECTED_ROUTES) == 51
-    assert len(_actual_routes()) == 51
+    # routes (POST /voice/turns, GET /voice/inbox) = 51, plus the AOS-RESEARCH-001
+    # research-engine route (POST /projects/{project_id}/research) = 52.
+    assert len(EXPECTED_ROUTES) == 52
+    assert len(_actual_routes()) == 52

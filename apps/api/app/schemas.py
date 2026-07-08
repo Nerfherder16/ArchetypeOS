@@ -264,6 +264,11 @@ class ResearchNoteRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ResearchRequest(BaseModel):
+    question: str
+    sensitivity: str = "public"
+
+
 class RecommendationCreate(BaseModel):
     title: str
     recommendation: str

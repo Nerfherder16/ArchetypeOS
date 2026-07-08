@@ -94,6 +94,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/nodes/{node_id}/heartbeat"),
         ("GET", "/nodes"),
         ("GET", "/nodes/{node_id}"),
+        ("GET", "/connectors"),
+        ("GET", "/connectors/{name}"),
+        ("POST", "/connectors/{name}/health"),
     }
 )
 
@@ -132,6 +135,8 @@ def test_route_inventory_count() -> None:
     # AOS-VOICE-004 TTS route (POST /voice/speak) = 53, plus the AOS-VOICE-003
     # inbox-review route (PATCH /voice/inbox/{item_id}) = 54, plus the AOS-NODE-001
     # node-registry routes (POST /nodes/register, POST /nodes/{node_id}/heartbeat,
-    # GET /nodes, GET /nodes/{node_id}) = 58.
-    assert len(EXPECTED_ROUTES) == 58
-    assert len(_actual_routes()) == 58
+    # GET /nodes, GET /nodes/{node_id}) = 58, plus the AOS-CONNECTOR-001 connector
+    # -registry routes (GET /connectors, GET /connectors/{name}, POST
+    # /connectors/{name}/health) = 61.
+    assert len(EXPECTED_ROUTES) == 61
+    assert len(_actual_routes()) == 61

@@ -537,3 +537,30 @@ class NodeHeartbeatRead(BaseModel):
     metrics: dict
 
     model_config = {"from_attributes": True}
+
+
+class ConnectorRead(BaseModel):
+    id: str
+    name: str
+    connector_type: str
+    tier: str
+    enabled: bool
+    configured: bool
+    privacy_class: str
+    egress_allowed: bool
+    browser_exposed: bool
+    quota_policy: str
+    last_health_status: str
+    last_error: str | None = None
+    last_checked_at: datetime | None = None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ConnectorHealthUpdate(BaseModel):
+    status: str = "healthy"
+    error: str | None = None

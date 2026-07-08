@@ -388,6 +388,7 @@ Primary artifacts:
 - docs/DISTRIBUTED_RUNTIME.md
 - docs/LOCAL_LLM_GPU_NODE.md
 - docs/CLAUDE_CODE_BRIDGE.md
+- docs/CONNECTOR_POLICY.md (AOS-CONNECTOR-001: connector registry governance — privacy class, egress, browser-exposed, health)
 - docs/DATABASE_MIGRATIONS.md
 - docker-compose.yml
 - .env.example

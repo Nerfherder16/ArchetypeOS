@@ -10,6 +10,8 @@ from aos_core.services.jobs import QUEUE
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
 from aos_core.services.council import council_provider, run_council
+from aos_core.services.llm_router import Sensitivity
+from aos_core.services.research import research
 from aos_core.services.usage import make_ledger_sink
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -76,6 +78,12 @@ def run_job(job_id: str) -> None:
             db.add(review)
             db.commit()
             mark_job(job_id, "completed", result={"review_id": review.id, "verdict": review.verdict})
+        elif job_type == "research":
+            payload = job.payload or {}
+            question = payload.get("question", "")
+            sensitivity = Sensitivity(payload.get("sensitivity", "public"))
+            note = research(db, project_id=project_id, question=question, sensitivity=sensitivity)
+            mark_job(job_id, "completed", result={"note_id": note.id})
         else:
             result = {
                 "message": "test job completed",

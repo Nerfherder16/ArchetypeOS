@@ -14,7 +14,7 @@ os.environ["REDIS_URL"] = "redis://localhost:9999/0"
 import app.worker as worker  # noqa: E402
 from aos_core.config import get_settings  # noqa: E402
 from aos_core.database import Base  # noqa: E402
-from aos_core.models import Artifact, CouncilReview, Job, NightlyDigest, Project, Repository, RepositoryDNA  # noqa: E402
+from aos_core.models import Artifact, CouncilReview, Job, KnowledgePage, NightlyDigest, Project, Repository, RepositoryDNA, ResearchNote  # noqa: E402
 
 
 def test_worker_queue_name_is_stable():
@@ -221,6 +221,47 @@ def test_council_review_multi_model_records_agent_models(worker_db, monkeypatch)
         assert all(models), "each agent output records its model through the worker"
         assert len(set(models)) == 4, "four agents ran on four distinct models"
         assert review.provider == "rotating"
+
+
+def test_research_dispatch(worker_db):
+    # The worker runs the research engine (deterministic, hermetic) over the
+    # project's local corpus and completes the job with {note_id}, persisting the
+    # ResearchNote (RFC-0011 slice-1).
+    with worker_db() as db:
+        project = Project(name="Research", slug="research-worker")
+        db.add(project)
+        db.flush()
+        db.add(
+            KnowledgePage(
+                project_id=project.id,
+                title="asyncpg postgres connection pooling",
+                vault_path="vault/repos/asyncpg.md",
+                page_type="repository",
+            )
+        )
+        job = Job(
+            job_type="research",
+            status="queued",
+            project_id=project.id,
+            payload={"question": "Should we adopt asyncpg for postgres pooling?", "sensitivity": "public"},
+        )
+        db.add(job)
+        db.commit()
+        job_id = job.id
+        project_id = project.id
+
+    worker.run_job(job_id)
+
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        assert job.status == "completed"
+        note_id = job.result["note_id"]
+        assert note_id
+        note = db.get(ResearchNote, note_id)
+        assert note is not None
+        assert note.project_id == project_id
+        assert note.sources  # the corpus page was gathered, scored, and ranked
+        assert note.confidence > 0.0
 
 
 def test_test_job_backward_compat(worker_db):

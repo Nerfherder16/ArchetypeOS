@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-SELFHEAL-CAPMAP: union-mark CAPABILITY_MAP.md (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SELFHEAL-CAPMAP — closes the LES-L07 / LES-L03 recurrence.** The conflict self-learn nightly (AOS-SELFHEAL-003) opened LES-L07 (#116, merged) identifying `docs/CAPABILITY_MAP.md` as the last Guardian-mandated shared doc left un-union-marked — every doc-adding PR is forced to append to it, but `.gitattributes` unioned only ACTIVE_WORK / RECENT_CHANGES / lessons index, so the LES-L03 auto-rebase runner dropped its conflicts to a manual PR comment every time. This applies the mechanical fix the lesson deferred: add `docs/CAPABILITY_MAP.md merge=union` (its per-layer sections are additive bullet lists, so union keeps both sides). The auto-rebase Action now self-heals CAPABILITY_MAP.md conflicts in ~30s like the other three. Config-only, one line; the single-writer caveat (two sides editing the same existing line) is unchanged and covered by reconciliation-owner discipline.
+
 ## 2026-07-08 — AOS-VOICE-005: per-intent agent drafts, promote on approval (laptop session — in review)
 
 ### In Review (tandem laptop session)

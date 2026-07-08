@@ -58,6 +58,8 @@ Primary artifacts:
 - docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
 - docs/EXTERNAL_REVIEW_TRIAGE_2026_07_04.md
 - agents/UNIVERSAL_AGENT_CONTRACT.md
+- knowledge/wiki/reviews/2026-07-08-archetypeos-system-evaluation.md (AOS-REVIEW-001 system evaluation)
+- docs/CONSOLIDATION_PLAN.md (AOS-REVIEW-001 phased execution plan / consolidation roadmap)
 
 ## Layer 1: Knowledge and Memory
 

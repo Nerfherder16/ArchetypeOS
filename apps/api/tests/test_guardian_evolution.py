@@ -18,6 +18,7 @@ from tools.pr_guardian import (  # noqa: E402
     check_override_lesson_citation,
     check_tests_for_code_changes,
     check_verification_metadata,
+    has_override,
     load_accepted_warnings,
 )
 
@@ -161,3 +162,29 @@ def test_override_requires_lesson_citation() -> None:
 
     no_override = check_override_lesson_citation("Just a normal body mentioning LES-006 or not.")
     assert no_override == []
+
+
+def test_override_prose_mention_is_not_an_override() -> None:
+    # LES-L08: a body that merely MENTIONS an override token in prose (e.g. a skill
+    # or doc that forbids overrides) must NOT trip the lesson-citation block, and
+    # must NOT silently activate a gate override.
+    prose = "This skill never uses PR_GUARDIAN_OVERRIDE_TESTS tokens to bypass a gate."
+    assert check_override_lesson_citation(prose) == []
+    assert has_override(prose, "TESTS") is False
+
+    # A real line-start directive still activates (and still needs a lesson cite).
+    directive = "PR_GUARDIAN_OVERRIDE_TESTS: intentional, see rationale"
+    assert has_override(directive, "TESTS") is True
+    assert [f.code for f in check_override_lesson_citation(directive)] == [
+        "override-without-lesson-citation"
+    ]
+
+    # Bulleted directive form is also honored.
+    assert has_override("- PR_GUARDIAN_OVERRIDE_DOCS: docs-only change", "DOCS") is True
+
+    # LES-L08: the laptop LES-L## band now satisfies the lesson-citation gate too
+    # (previously only the numeric LES-NNN form matched).
+    cited_laptop = check_override_lesson_citation(
+        "PR_GUARDIAN_OVERRIDE_TESTS: intentional, see LES-L08"
+    )
+    assert cited_laptop == []

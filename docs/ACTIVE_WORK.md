@@ -18,6 +18,13 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-OPS-DEPLOY-001 — Live cloud-to-teevee auto-deploy + compose-native council env
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: Cloud-session merges to `main` now appear on the teevee dashboard automatically. A host-side poller (`~/aos-autodeploy.sh`, `*/2 * * * *` cron, `flock`-guarded) does `git fetch origin main`; on a new commit it `git pull --ff-only` then `docker compose up -d --build` and logs a health check. Pull-based because a webhook/Action cannot reach the tailnet-only host. This change also forwards the multi-model Council env (`COUNCIL_MULTI_MODEL` + the four free-tier `*_API_KEY` vars, all `${VAR:-default}`, no secret values) in the tracked `docker-compose.yml` worker service, so deploys no longer depend on the untracked `docker-compose.override.yml`. Dashboard: `http://100.123.29.114:5173` (web built with `VITE_API_BASE_URL=http://100.123.29.114:8000` so a remote viewer hits the box, not their own localhost). Lesson: LES-L04.
+- Verification Status: compose YAML validated (all five worker vars are env interpolations, zero hard-coded secrets); auto-deploy proven end-to-end against a real cloud commit (#106 fetched, ff-pulled, rebuilt, `health: 200`). Deterministic CI path unchanged (every new var defaults empty/false).
+
 ### AOS-LLM-REVIEW-001 — Local code reviewer tier (advisory, on the Guardian)
 
 - Status: In Review (rides on the AOS-LLM-LOCAL-001 branch/PR #92)

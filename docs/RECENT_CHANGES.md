@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-CONNECTOR-001 (backend): connector registry + policy center (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-CONNECTOR-001 (backend) — connectors become first-class, governed assets.** Phase 2 (eval Finding 9: providers existed, connectors were not governed; keys/URLs sprawled across `config.py`, `docker-compose.yml`, env, and `VITE_*`). New `Connector` model + Alembic `0011` recording each connection's governance posture: `connector_type`/`tier`/`privacy_class` (private_ok vs public_only)/`egress_allowed`/`browser_exposed`/`quota_policy`, a settings-derived `configured` flag, and recorded health (`last_health_status`/`last_error`/`last_checked_at`). The source of truth is a declarative `CONNECTOR_CATALOG` (10 known connectors: Claude, local LLM, free pool, Groq TTS, Sotto STT, Exa, SearXNG, crawl4ai, Firecrawl, GitHub); `sync_connectors` reconciles it into the registry and **recomputes `configured` from settings on every read**, so the "is it wired up?" bit can never drift. `sotto_stt` is flagged `browser_exposed=true` (VITE_SOTTO_TOKEN ships to the browser by design). Routes: `GET /connectors` (reconcile-on-read; disabled/unconfigured connectors visible without errors), `GET /connectors/{name}`, `POST /connectors/{name}/health` (records a probe result, mirroring the Node heartbeat pattern). New `docs/CONNECTOR_POLICY.md` encodes the governance rules (public_only never receives private data; browser-exposed tokens treated as public; egress explicit; no raw upstream error bodies). 7 hermetic tests (catalog seed idempotent, configured-from-settings, browser-exposed + privacy posture, list-without-errors, health rollup, unknown 404s); shared `db_session` conftest fixture added for service-level tests; full API suite 352 passed; alembic head 0011 (upgrade/downgrade verified on sqlite); route inventory 58->61; ruff clean. Follow-up: the Operations -> Providers & Model Routing -> Connectors dashboard tab (UI PR).
+
 ## 2026-07-08 — AOS-NODE-001 (UI): Operations → Nodes / Runtime dashboard (laptop session — in review)
 
 ### In Review (tandem laptop session)

@@ -473,6 +473,37 @@ class NodeHeartbeat(AuditMixin, Base):
     metrics: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
 
 
+class Connector(AuditMixin, Base):
+    """A governed external connection in the connector registry (AOS-CONNECTOR-001).
+
+    Connectors define where data goes, so ArchetypeOS governs them as first-class
+    assets (eval Finding 9). The static governance attributes (type/tier/privacy
+    class/egress/browser-exposed/quota) come from a declarative catalog; ``configured``
+    is recomputed from settings on each sync (never hand-maintained), and health is
+    recorded by a probe into ``last_health_status``/``last_error``.
+    """
+
+    __tablename__ = "connectors"
+
+    name: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
+    connector_type: Mapped[str] = mapped_column(String(64), default="llm", nullable=False)
+    tier: Mapped[str] = mapped_column(String(64), default="external", nullable=False)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # Derived from settings on every sync: does this connector have its config?
+    configured: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # "private_ok" (may receive private data) vs "public_only" (must not).
+    privacy_class: Mapped[str] = mapped_column(String(32), default="public_only", nullable=False)
+    # Does data leave the local/tailnet network for this connector?
+    egress_allowed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # Is a credential/URL for this connector shipped to the browser (e.g. VITE_*)?
+    browser_exposed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    quota_policy: Mapped[str] = mapped_column(String(128), default="unmetered", nullable=False)
+    # Operational health, distinct from AuditMixin.status (record lifecycle).
+    last_health_status: Mapped[str] = mapped_column(String(32), default="unknown", nullable=False, index=True)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class ApprovalRecord(AuditMixin, Base):
     __tablename__ = "approval_records"
 

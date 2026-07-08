@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 # Pin runtime settings before any app import so the suite is hermetic when a
 # local .env exists (its docker-network hostnames are unreachable from the
@@ -50,3 +51,25 @@ def client(tmp_path) -> Generator[TestClient, None, None]:
     finally:
         app.dependency_overrides.clear()
         Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture()
+def db_session() -> Generator[Session, None, None]:
+    """A bare in-memory session for service-level tests (no HTTP layer)."""
+    import aos_core.models  # noqa: F401 — register every table on Base.metadata
+    from aos_core.database import Base
+
+    engine = create_engine(
+        "sqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    session_local = sessionmaker(bind=engine, autoflush=False, autocommit=False, expire_on_commit=False)
+    Base.metadata.create_all(bind=engine)
+    session = session_local()
+    try:
+        yield session
+    finally:
+        session.close()
+        Base.metadata.drop_all(bind=engine)
+        engine.dispose()

@@ -47,7 +47,7 @@ test('shell modes: a planned surface renders as a disabled "soon" item', async (
 
   await page.getByTestId('mode-research').click();
 
-  const soon = page.getByTestId('soon-research-inbox');
+  const soon = page.getByTestId('soon-signals-ecosystem-watch');
   await expect(soon).toBeVisible();
   await expect(soon).toBeDisabled();
   await expect(soon).toHaveAttribute('aria-disabled', 'true');

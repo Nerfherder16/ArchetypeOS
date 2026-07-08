@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-WORKER-ROUTER-001: job handler registry (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WORKER-ROUTER-001 — worker dispatch is a registry, not an if/elif.** Phase 2 (eval Finding 11). The worker's hardcoded `if/elif` job dispatch is replaced by a self-registering `JOB_HANDLERS` registry of `HandlerSpec(job_type, capability, sensitivity, run)`. Each handler (repository_scan/project_digest/council_review/research/test) declares a **capability** + **sensitivity** — the metadata a capability-aware Node router (AOS-NODE-001) will match on. `run_job` looks up the handler and logs its identity; an **unknown job type now fails clearly** with a legible error (previously it was silently completed as a 'test' job). Behavior-preserving for the five known types (council's monkeypatch seam intact). 11 worker tests pass (2 new: registry declares capabilities; unknown-type fails); ruff clean.
+
 ## 2026-07-08 — AOS-CONTRACT-001: surface rich backend evidence at the API/web seam (laptop session — in review)
 
 ### In Review (tandem laptop session)

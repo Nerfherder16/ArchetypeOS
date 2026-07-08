@@ -311,3 +311,31 @@ def test_queue_is_single_sourced_from_core():
     from aos_core.services.jobs import QUEUE as CORE_QUEUE
 
     assert worker.QUEUE is CORE_QUEUE
+
+
+def test_handler_registry_declares_capabilities():
+    # AOS-WORKER-ROUTER-001: dispatch is a self-registering handler registry;
+    # each handler declares capability + sensitivity (ready for NodeCapability
+    # matching), not a hardcoded if/elif chain.
+    registry = worker.JOB_HANDLERS
+    assert {"repository_scan", "project_digest", "council_review", "research", "test"} <= set(registry)
+    for spec in registry.values():
+        assert spec.capability, "each handler declares a capability"
+        assert spec.sensitivity in {"public", "private"}
+
+
+def test_unknown_job_type_fails_clearly(worker_db):
+    # AOS-WORKER-ROUTER-001: an unknown job type fails with a legible error
+    # (previously it silently completed as a 'test' job).
+    with worker_db() as db:
+        job = Job(job_type="totally-unknown-kind", status="queued")
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+    worker.run_job(job_id)
+
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        assert job.status == "failed"
+        assert "totally-unknown-kind" in (job.error or "")

@@ -18,6 +18,26 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-STATE-RECON-001 — Canonical state + drift assurance
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: Fixes AOS-REVIEW-001 Finding 1 and closes the drift class (LES-L09). `CURRENT_STATE.md` rewritten to a small canonical form with a delimited `AOS-CANONICAL` block; the saga moved to RECENT_CHANGES. The two machine-owned fields (Watermark PR, Active Branch) are **auto-derived on every merge** by `state-canonical-refresh.yml` (push:main, `[skip ci]`), so they cannot drift. `tools/doc_staleness.py` gains `check_canonical_state` (scoped to CURRENT_STATE's own block — fixes the union-masking bug) and squash-merge-aware PR extraction (fixes the `_MERGED_PR` blind spot); plus `derive_canonical`/`refresh_canonical_block` and a `--refresh-canonical` CLI.
+- Verification Status: 7 hermetic canonical tests + squash-PR extraction; ruff clean; tool now reports FRESH on the rewritten doc and STALE on a frozen block (proven in tests). The push:main auto-derive validates on the next merge. Answer to "how to assuredly stop drift": auto-derive the derivable, minimize the human surface, scope the detector.
+
+### AOS-REVIEW-001 backlog (Proposed — from the 2026-07-08 system evaluation)
+
+- **P0 AOS-VOICE-PROJECT-001** — CommandDeck passes `selectedProjectId` into `postVoiceTurn`; project-scoped vs global capture in the UI; unblocks AOS-VOICE-005 promotion from the deck.
+- **P0 AOS-CONTRACT-001** — surface rich backend evidence at the API/web seam (RepositoryDNA purpose/frameworks/runtime_services; full ArchitectureEdge fields; ResearchNote sources/findings); TS types match backend schemas.
+- **P1 AOS-NODE-001** — Node + Capability + Heartbeat models, register/heartbeat/list routes, Operations→Nodes surface; default write-access false.
+- **P1 AOS-CONNECTOR-001** — connector registry + policy center (configured/enabled/health/privacy/browser-exposed; Sotto token policy explicit).
+- **P1 AOS-WORKER-ROUTER-001** — replace the hardcoded worker `if/elif` with a self-registering handler registry (capability/sensitivity/retry declared).
+- **P1 AOS-ARCH-STUDIO-001** — editable architecture corrections (node/edge drawer, persist `manual_correction`, survive rescan, feed Council).
+- **P2 AOS-UX-IA-001** — global operator status strip, Planned drawer replacing most "soon" chips, Now/Next/Blocked per workspace, command palette.
+- **P2 AOS-AUTHORITY-001** — authority action policy enforced as infrastructure (action classes, policy evaluator, no write path bypasses it).
+- **P2 AOS-RESEARCH-003** — multi-phase research loop (persisted plan; search/fetch/verify/synthesize recorded; open questions → follow-ups).
+- **AOS-WEB-SPINE-001** (enabler) — split `main.tsx` into app bootstrap + per-view modules; project context provider; query/cache layer; URL routing. Prereq/booster for AOS-VOICE-PROJECT-001 and the UX-IA work.
+
 ### AOS-VOICE-005 — Per-intent agent drafts (promote on approval)
 
 - Status: In Review

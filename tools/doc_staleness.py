@@ -40,6 +40,21 @@ COMPLETION_MARKERS = re.compile(r"v0\.\d+\s+complete|post-v0\.\d+|sprint\s+[1-9]
 
 _PR_REF = re.compile(r"#(\d+)")
 _MERGED_PR = re.compile(r"Merge pull request #(\d+)")
+# Squash merges (this repo's default) put the PR number as "Title (#123)" in the
+# commit subject — the traditional _MERGED_PR pattern misses those entirely, which
+# is why the lag check under-detected (LES-L09).
+_SQUASH_PR = re.compile(r"\(#(\d+)\)")
+
+# The machine-owned canonical block in CURRENT_STATE.md and its two auto-derived
+# fields. Scoping the watermark check to THIS block (not the union of all state
+# docs) is the fix for the masking bug: keeping RECENT_CHANGES current used to hide
+# CURRENT_STATE's own staleness (LES-L09).
+_CANONICAL_BLOCK = re.compile(
+    r"<!-- AOS-CANONICAL:START -->(.*?)<!-- AOS-CANONICAL:END -->", re.DOTALL
+)
+_WATERMARK_LINE = re.compile(r"(?im)^\s*-\s*Watermark PR:\s*#?(\d+)")
+_ACTIVE_BRANCH_LINE = re.compile(r"(?im)^\s*-\s*Active Branch:\s*(.+?)\s*$")
+_NOT_A_BRANCH = ("none", "main", "n/a", "-")
 
 # Lag beyond this many PRs between git and the state docs is HARD; within it, SOFT.
 DEFAULT_HARD_THRESHOLD = 3
@@ -73,7 +88,107 @@ def extract_pr_numbers(text: str) -> set[int]:
 
 
 def extract_merged_prs(git_log_text: str) -> list[int]:
-    return [int(n) for n in _MERGED_PR.findall(git_log_text)]
+    """PR numbers from both traditional merge commits and squash-merge subjects."""
+    nums = {int(n) for n in _MERGED_PR.findall(git_log_text)}
+    nums |= {int(n) for n in _SQUASH_PR.findall(git_log_text)}
+    return sorted(nums)
+
+
+# --- canonical state block (AOS-STATE-RECON-001) ----------------------------
+
+
+@dataclass(frozen=True)
+class Canonical:
+    watermark: int | None
+    active_branch: str | None
+
+
+def parse_canonical(current_state_text: str) -> Canonical:
+    """Parse the AOS-CANONICAL block's watermark + active branch."""
+    match = _CANONICAL_BLOCK.search(current_state_text)
+    block = match.group(1) if match else current_state_text
+    wm = _WATERMARK_LINE.search(block)
+    ab = _ACTIVE_BRANCH_LINE.search(block)
+    return Canonical(
+        watermark=int(wm.group(1)) if wm else None,
+        active_branch=ab.group(1).strip() if ab else None,
+    )
+
+
+def _branch_is_stale(active_branch: str | None, origin_branches: set[str]) -> bool:
+    """True when the named active branch is not an open branch on origin."""
+    if not active_branch or not origin_branches:
+        return False
+    lowered = active_branch.lower().lstrip("`").strip()
+    if lowered.startswith(_NOT_A_BRANCH):
+        return False
+    token = active_branch.strip().strip("`").split()[0].strip("`")
+    return token not in origin_branches
+
+
+def derive_canonical(git_log_text: str, current_branch: str | None) -> dict:
+    """The auto-derived canonical fields: watermark from git, branch from HEAD."""
+    merged = extract_merged_prs(git_log_text)
+    active = (
+        "none (on main)"
+        if current_branch in ("main", "", None)
+        else f"`{current_branch}`"
+    )
+    return {"watermark": max(merged) if merged else None, "active_branch": active}
+
+
+def refresh_canonical_block(text: str, derived: dict) -> tuple[str, bool]:
+    """Rewrite the auto-derived lines inside the canonical block. Returns (text, changed)."""
+    match = _CANONICAL_BLOCK.search(text)
+    if not match:
+        return text, False
+    block = match.group(1)
+    new_block = block
+    if derived.get("watermark") is not None:
+        new_block = _WATERMARK_LINE.sub(
+            lambda _m: f"- Watermark PR: #{derived['watermark']}", new_block, count=1
+        )
+    if derived.get("active_branch"):
+        new_block = _ACTIVE_BRANCH_LINE.sub(
+            lambda _m: f"- Active Branch: {derived['active_branch']}", new_block, count=1
+        )
+    if new_block == block:
+        return text, False
+    return text[: match.start(1)] + new_block + text[match.end(1) :], True
+
+
+def check_canonical_state(
+    current_state_text: str,
+    git_log_text: str,
+    origin_branches: set[str],
+    hard_threshold: int = DEFAULT_HARD_THRESHOLD,
+) -> list[Finding]:
+    """Signal 3: CURRENT_STATE's OWN canonical block vs git (not the union of docs)."""
+    findings: list[Finding] = []
+    canonical = parse_canonical(current_state_text)
+    merged = extract_merged_prs(git_log_text)
+    newest = max(merged) if merged else 0
+    if canonical.watermark is not None and newest:
+        lag = newest - canonical.watermark
+        if lag > hard_threshold:
+            findings.append(
+                Finding(
+                    "canonical-watermark-lag",
+                    HARD,
+                    f"CURRENT_STATE watermark #{canonical.watermark} is {lag} PRs behind git (#{newest}).",
+                    f"canonical watermark #{canonical.watermark}; newest merged #{newest}",
+                )
+            )
+    if _branch_is_stale(canonical.active_branch, origin_branches):
+        findings.append(
+            Finding(
+                "canonical-active-branch-stale",
+                HARD,
+                f"CURRENT_STATE names active branch '{canonical.active_branch}', not an open branch on origin.",
+                f"active branch '{canonical.active_branch}' absent from origin branches",
+            )
+        )
+    return findings
 
 
 # --- signals ----------------------------------------------------------------
@@ -148,12 +263,18 @@ def run_checks(
     current_state_text: str,
     recent_changes_text: str,
     git_log_text: str,
+    origin_branches: set[str] | None = None,
     hard_threshold: int = DEFAULT_HARD_THRESHOLD,
 ) -> list[Finding]:
     findings: list[Finding] = []
     findings.extend(check_roadmap_phase(roadmap_text, current_state_text))
     findings.extend(
         check_state_pr_lag(git_log_text, current_state_text, recent_changes_text, hard_threshold)
+    )
+    findings.extend(
+        check_canonical_state(
+            current_state_text, git_log_text, origin_branches or set(), hard_threshold
+        )
     )
     return findings
 
@@ -232,6 +353,33 @@ def _git_log(repo_root: Path, limit: int = 60) -> str:
         return ""
 
 
+def _origin_branches(repo_root: Path) -> set[str]:
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(repo_root), "branch", "-r", "--format=%(refname:short)"],
+            capture_output=True, text=True, check=False, timeout=15,
+        ).stdout
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    branches: set[str] = set()
+    for line in out.splitlines():
+        name = line.strip()
+        if not name or "->" in name:
+            continue
+        branches.add(name.split("/", 1)[1] if name.startswith("origin/") else name)
+    return branches
+
+
+def _current_branch(repo_root: Path) -> str:
+    try:
+        return subprocess.run(
+            ["git", "-C", str(repo_root), "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, check=False, timeout=15,
+        ).stdout.strip() or "main"
+    except (OSError, subprocess.SubprocessError):
+        return "main"
+
+
 def evaluate(repo_root: Path = REPO_ROOT, hard_threshold: int = DEFAULT_HARD_THRESHOLD) -> list[Finding]:
     """Gather real inputs from the working tree and run every signal."""
     return run_checks(
@@ -239,6 +387,7 @@ def evaluate(repo_root: Path = REPO_ROOT, hard_threshold: int = DEFAULT_HARD_THR
         current_state_text=_read(repo_root / "docs" / "CURRENT_STATE.md"),
         recent_changes_text=_read(repo_root / "docs" / "RECENT_CHANGES.md"),
         git_log_text=_git_log(repo_root),
+        origin_branches=_origin_branches(repo_root),
         hard_threshold=hard_threshold,
     )
 
@@ -253,7 +402,26 @@ def main(argv: list[str] | None = None) -> int:
         help="Write a deterministic reconciliation DRAFT to .archetype/reconciliation/PENDING.md "
         "(never edits the state docs; apply via /reconcile-state).",
     )
+    parser.add_argument(
+        "--refresh-canonical",
+        action="store_true",
+        help="Rewrite the auto-derived CURRENT_STATE canonical fields (watermark PR, "
+        "active branch) from git. Machine-owned; run on every merge so they cannot drift.",
+    )
     args = parser.parse_args(argv)
+
+    if args.refresh_canonical:
+        cs_path = args.repo_root / "docs" / "CURRENT_STATE.md"
+        text = _read(cs_path)
+        derived = derive_canonical(_git_log(args.repo_root), _current_branch(args.repo_root))
+        new_text, changed = refresh_canonical_block(text, derived)
+        if changed:
+            cs_path.write_text(new_text, encoding="utf-8")
+            print(f"Refreshed canonical block: watermark #{derived['watermark']}, "
+                  f"active branch {derived['active_branch']}")
+        else:
+            print("Canonical block already current (no change).")
+        return 0
 
     if args.fix:
         draft = build_reconciliation_draft(

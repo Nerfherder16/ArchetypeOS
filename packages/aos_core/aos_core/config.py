@@ -75,6 +75,24 @@ class Settings(BaseSettings):
     usage_cost_claude_output_per_mtok: float = 15.0
     usage_cost_local_per_mtok: float = 0.0
     usage_cost_free_per_mtok: float = 0.0
+    # RFC-0012 / AOS-RESEARCH-002: the Research Engine web tier. Default OFF →
+    # build_web_source() returns None → research() uses the hermetic
+    # LocalCorpusSource (no network, CI-safe). Enabling it requires operator infra
+    # (an Exa key and/or the self-hosted crawl4ai/searxng/firecrawl services on the
+    # docker network). A backend is "in the pool" iff its host/key is configured —
+    # adding one is just setting its env var (mirrors the free-LLM pool). Secrets
+    # come from the env (EXA_API_KEY, ...) and are never committed or logged.
+    research_web_enabled: bool = False
+    exa_api_key: str = ""
+    crawl4ai_url: str = ""
+    searxng_url: str = ""
+    firecrawl_url: str = ""
+    # Per-request timeout (seconds); max results to fetch through the fetch pool;
+    # retry budget (max fraction of pool attempts that may be rate-limited retries
+    # before same-backend retries are disabled — "keep Exa, don't get rate-limited").
+    research_http_timeout: float = 10.0
+    research_max_fetch: int = 8
+    research_retry_budget: float = 0.15
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

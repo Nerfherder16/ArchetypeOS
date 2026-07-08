@@ -443,7 +443,21 @@ def research(
     # deterministic floor — slice-3's reasoned synthesis will consume it).
     route("research", sensitivity, get_settings())
 
-    src = source if source is not None else LocalCorpusSource()
+    # Source resolution (RFC-0012 slice-2): an explicit ``source`` always wins. For
+    # the default, PUBLIC research may reach the web tier (build_web_source, which
+    # is None unless configured → LocalCorpusSource); a PRIVATE question NEVER
+    # constructs a web source — its text must not egress to a third-party search
+    # API or an arbitrary host — so it is forced to the hermetic local corpus.
+    if source is not None:
+        src: ResearchSource = source
+    elif sensitivity is Sensitivity.PRIVATE:
+        src = LocalCorpusSource()
+    else:
+        # Lazy import avoids a research <-> research_web import cycle (research_web
+        # imports SourceDoc/tiers from this module).
+        from .research_web import build_web_source
+
+        src = build_web_source(get_settings()) or LocalCorpusSource()
 
     try:
         gathered = src.gather(

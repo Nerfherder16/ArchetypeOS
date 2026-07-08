@@ -1,0 +1,45 @@
+name: AOS State Hygiene
+description: >
+  Auto-derive the machine-owned canonical-state fields (Watermark PR, Active
+  Branch) from git and commit them, so a repo's CURRENT_STATE doc cannot drift.
+  Run on push to the default branch. Any ArchetypeOS-managed repo adopts this with
+  a tiny workflow stub (see README). AOS-STATE-RECON-001 / LES-L09.
+
+inputs:
+  doc:
+    description: Path to the canonical state doc containing the marker block.
+    required: false
+    default: docs/CURRENT_STATE.md
+  marker:
+    description: Canonical block marker base (delimiters are <!-- MARKER:START/END -->).
+    required: false
+    default: AOS-CANONICAL
+  commit-name:
+    description: Git author name for the refresh commit.
+    required: false
+    default: aos-state[bot]
+  commit-email:
+    description: Git author email for the refresh commit.
+    required: false
+    default: aos-state@users.noreply.github.com
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - name: Refresh canonical block and push if changed
+      shell: bash
+      run: |
+        set -euo pipefail
+        python3 "${GITHUB_ACTION_PATH}/state_hygiene.py" --doc "${{ inputs.doc }}" --marker "${{ inputs.marker }}"
+        if git diff --quiet -- "${{ inputs.doc }}"; then
+          echo "state-hygiene: nothing to push."
+          exit 0
+        fi
+        git config user.name "${{ inputs.commit-name }}"
+        git config user.email "${{ inputs.commit-email }}"
+        git add -- "${{ inputs.doc }}"
+        git commit -m "chore(state): refresh canonical fields [skip ci]"
+        git push origin "HEAD:${GITHUB_REF_NAME}"

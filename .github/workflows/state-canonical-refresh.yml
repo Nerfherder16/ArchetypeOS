@@ -1,0 +1,40 @@
+name: Refresh canonical state
+
+# AOS-STATE-RECON-001 (LES-L09). Assurance layer against CURRENT_STATE.md drift:
+# the machine-owned AOS-CANONICAL fields (Watermark PR, Active Branch) are
+# auto-derived from git on every merge to main, so a human never maintains them
+# and they cannot go stale.
+#
+# ArchetypeOS is the FIRST CONSUMER of the reusable `state-hygiene` composite
+# action (dogfood) — any managed repo adopts the same logic via
+# `uses: Nerfherder16/ArchetypeOS/.github/actions/state-hygiene@main`. Logic lives
+# once; there is nothing per-repo to drift.
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: state-canonical-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    name: Auto-derive CURRENT_STATE canonical fields
+    runs-on: ubuntu-latest
+    # Do not act on the action's own refresh commit (belt-and-suspenders with [skip ci]).
+    if: ${{ !contains(github.event.head_commit.message, 'chore(state)') }}
+    steps:
+      - name: Checkout main (full history for accurate watermark)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run the reusable state-hygiene action (local dogfood)
+        uses: ./.github/actions/state-hygiene
+        with:
+          doc: docs/CURRENT_STATE.md
+          marker: AOS-CANONICAL

@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-STATE-RECON-001: canonical state + drift assurance (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-STATE-RECON-001 — the state docs stop drifting, by construction.** AOS-REVIEW-001 Finding 1 found `CURRENT_STATE.md` ~45 PRs stale while `doc_staleness.py` said FRESH (LES-L09: it unioned CURRENT_STATE with the always-current RECENT_CHANGES, and `_MERGED_PR` missed squash merges). Fix, in three layers: (1) **minimize** — rewrote `CURRENT_STATE.md` to a small canonical form with a delimited `AOS-CANONICAL` block; saga history lives here in RECENT_CHANGES. (2) **auto-derive (assurance)** — `state-canonical-refresh.yml` runs on push:main and rewrites the machine-owned `Watermark PR` + `Active Branch` from git, committing `[skip ci]` (no loop) — a human never maintains them, so they cannot drift. (3) **detect (backstop)** — `check_canonical_state` scopes the freshness check to CURRENT_STATE's own block, and `extract_merged_prs` now recognizes squash `(#N)` merges; wired into the nightly. 7 hermetic tests; ruff clean. Also ticketed the AOS-REVIEW-001 P0/P1/P2 backlog into `ACTIVE_WORK.md`. Answer to "stop-hook or after-merge rule": after-merge auto-derivation is the assurance; a stop-hook can't cover the cloud session. **Generalized to a reusable capability**: the mechanism is now a central composite action (`.github/actions/state-hygiene` + self-contained `state_hygiene.py`) so any ArchetypeOS-built or -onboarded repo inherits the same drift assurance from one versioned source (an ~8-line workflow stub; see the action README). ArchetypeOS is the first consumer (dogfood) via `state-canonical-refresh.yml`. 5 more portable-refresher tests (29 total across the state slice).
+
 ## 2026-07-08 — AOS-SELFHEAL-GUARDIAN: fix the override substring false-positive (LES-L08) (laptop session — in review)
 
 ### In Review (tandem laptop session)

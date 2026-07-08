@@ -13,7 +13,7 @@ fixed; see LES-L09).
      `state-canonical-refresh` workflow (tools/doc_staleness.py --refresh-canonical).
      Do NOT hand-edit those two lines — they cannot drift because a human never owns
      them. The other fields are human-authored and kept short. -->
-- Watermark PR: #125
+- Watermark PR: #126
 - Active Branch: none (on main)
 - Current Phase: post-v0.1 consolidation (per the AOS-REVIEW-001 system evaluation)
 - Current Objective: Consolidate integration coherence before adding more surface — canonical state (AOS-STATE-RECON-001), project-scoped CommandDeck turns (AOS-VOICE-PROJECT-001), and surfacing rich backend evidence in the API/web contracts (AOS-CONTRACT-001), then the node/connector registries that make the distributed-agent vision first-class.

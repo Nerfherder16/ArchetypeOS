@@ -89,6 +89,11 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("PATCH", "/voice/inbox/{item_id}"),
         # voice TTS (AOS-VOICE-004 — Groq Orpheus spoken replies)
         ("POST", "/voice/speak"),
+        # node registry (AOS-NODE-001 — distributed runtime)
+        ("POST", "/nodes/register"),
+        ("POST", "/nodes/{node_id}/heartbeat"),
+        ("GET", "/nodes"),
+        ("GET", "/nodes/{node_id}"),
     }
 )
 
@@ -125,6 +130,8 @@ def test_route_inventory_count() -> None:
     # routes (POST /voice/turns, GET /voice/inbox) = 51, plus the AOS-RESEARCH-001
     # research-engine route (POST /projects/{project_id}/research) = 52, plus the
     # AOS-VOICE-004 TTS route (POST /voice/speak) = 53, plus the AOS-VOICE-003
-    # inbox-review route (PATCH /voice/inbox/{item_id}) = 54.
-    assert len(EXPECTED_ROUTES) == 54
-    assert len(_actual_routes()) == 54
+    # inbox-review route (PATCH /voice/inbox/{item_id}) = 54, plus the AOS-NODE-001
+    # node-registry routes (POST /nodes/register, POST /nodes/{node_id}/heartbeat,
+    # GET /nodes, GET /nodes/{node_id}) = 58.
+    assert len(EXPECTED_ROUTES) == 58
+    assert len(_actual_routes()) == 58

@@ -428,6 +428,51 @@ class VoiceInboxItem(AuditMixin, Base):
     promoted_id: Mapped[str | None] = mapped_column(GUID())
 
 
+class Node(AuditMixin, Base):
+    """A registered execution node in the distributed runtime (AOS-NODE-001).
+
+    The control plane routes capability-declared work to eligible nodes. Nodes are
+    read-only by default (``write_access=False``) and carry a ``max_sensitivity``
+    ceiling so private work is never routed to a node that should not see it.
+    """
+
+    __tablename__ = "nodes"
+
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    node_type: Mapped[str] = mapped_column(String(64), default="worker", nullable=False)
+    endpoint: Mapped[str | None] = mapped_column(Text)
+    # Operational health, distinct from AuditMixin.status (record lifecycle).
+    node_status: Mapped[str] = mapped_column(String(32), default="unknown", nullable=False, index=True)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    max_sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
+    write_access: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    capabilities: Mapped[list["NodeCapability"]] = relationship(
+        back_populates="node", cascade="all, delete-orphan"
+    )
+
+
+class NodeCapability(AuditMixin, Base):
+    __tablename__ = "node_capabilities"
+
+    node_id: Mapped[str] = mapped_column(GUID(), ForeignKey("nodes.id"), nullable=False, index=True)
+    capability: Mapped[str] = mapped_column(String(128), nullable=False)
+    capability_version: Mapped[str | None] = mapped_column(String(64))
+    capability_status: Mapped[str] = mapped_column(String(32), default="active", nullable=False)
+    limits: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+
+    node: Mapped["Node"] = relationship(back_populates="capabilities")
+
+
+class NodeHeartbeat(AuditMixin, Base):
+    __tablename__ = "node_heartbeats"
+
+    node_id: Mapped[str] = mapped_column(GUID(), ForeignKey("nodes.id"), nullable=False, index=True)
+    health: Mapped[str] = mapped_column(String(32), default="healthy", nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    metrics: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+
+
 class ApprovalRecord(AuditMixin, Base):
     __tablename__ = "approval_records"
 

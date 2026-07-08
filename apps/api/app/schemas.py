@@ -472,3 +472,68 @@ class VoiceInboxItemRead(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class NodeCapabilityInput(BaseModel):
+    capability: str
+    version: str | None = None
+    limits: dict = {}
+
+
+class NodeRegister(BaseModel):
+    name: str
+    node_type: str = "worker"
+    endpoint: str | None = None
+    max_sensitivity: str = "public"
+    write_access: bool = False
+    capabilities: list[NodeCapabilityInput] = []
+
+    @field_validator("name")
+    @classmethod
+    def _name_not_empty(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("name must not be empty")
+        return value.strip()
+
+
+class NodeCapabilityRead(BaseModel):
+    id: str
+    capability: str
+    capability_version: str | None = None
+    capability_status: str
+    limits: dict
+
+    model_config = {"from_attributes": True}
+
+
+class NodeRead(BaseModel):
+    id: str
+    name: str
+    node_type: str
+    endpoint: str | None = None
+    node_status: str
+    last_seen_at: datetime | None = None
+    max_sensitivity: str
+    write_access: bool
+    capabilities: list[NodeCapabilityRead] = []
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class NodeHeartbeatCreate(BaseModel):
+    health: str = "healthy"
+    metrics: dict = {}
+
+
+class NodeHeartbeatRead(BaseModel):
+    id: str
+    node_id: str
+    health: str
+    observed_at: datetime
+    metrics: dict
+
+    model_config = {"from_attributes": True}

@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-NODE-001 (backend): node + capability + heartbeat registry (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-NODE-001 (backend half) — the distributed runtime becomes first-class.** Phase 2 (eval Finding 8, the 4/10 maturity gap). New models `Node` (+`node_type`/`endpoint`/`node_status`/`last_seen_at`/`max_sensitivity`/`write_access` — **read-only by default**), `NodeCapability` (declared capability/version/limits for capability-aware routing), `NodeHeartbeat` (health + metrics over time), with Alembic `0010`. Routes: `POST /nodes/register` (idempotent by name, replaces the capability set), `POST /nodes/{id}/heartbeat` (rolls health + last_seen onto the node), `GET /nodes`, `GET /nodes/{id}`. `services/nodes.py` holds the logic. 6 node API tests + route inventory 54→58; full API suite 345 passed; alembic head 0010; ruff clean. The capability/sensitivity declared here is exactly what AOS-WORKER-ROUTER-001's HandlerSpec will match on. Follow-up: the Operations→Nodes dashboard surface (UI PR).
+
 ## 2026-07-08 — AOS-WORKER-ROUTER-001: job handler registry (laptop session — in review)
 
 ### In Review (tandem laptop session)

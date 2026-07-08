@@ -18,9 +18,16 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-VOICE-003 — Voice Inbox dashboard surface
+### AOS-VOICE-005 — Per-intent agent drafts (promote on approval)
 
 - Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: Closes the Voice Command Center loop: approving a Voice Inbox item now **promotes** it into a concrete review-first draft entity. `promote_inbox_item()` maps intent → entity: `research_request` → a `ResearchNote` (draft), `decision_draft` → a `Decision` (draft). The `PATCH /voice/inbox/{item_id}` approve path calls it — idempotent, and a no-op when the item has no resolved project or its intent has no mapping (approving still records intent, it just does not fabricate an artifact). New `promoted_kind` + `promoted_id` columns (Alembic `0009`) link the item to what it produced; the dashboard card shows a "→ research note / decision" badge. Nice cross-feature effect: a promoted `Decision` (status `draft`) surfaces in the existing Council → Awaiting You approvals queue. Other intents (todo, idea_capture, risk_note, design_note, experiment_request, repo/guardian review requests) have no draftable mapping yet — a future slice.
+- Verification Status: TDD (5 new promotion tests: research_request→ResearchNote, decision_draft→Decision, no-project no-promote, unmapped-intent no-promote, idempotent re-approve); full API suite 303 passed / 3 skipped; ruff clean; alembic single head 0009 (full chain applies); `tsc && vite build` clean; Voice Inbox e2e updated to assert the promotion badge (2 specs pass). Self-found: the card's optimistic update dropped the server-computed `promoted_kind` — the e2e caught it pre-commit; fixed by merging the full PATCH response (LES-L06).
+
+### AOS-VOICE-003 — Voice Inbox dashboard surface
+
+- Status: Merged (#113)
 - Owner: laptop session (parallel Orchestrator)
 - Summary: The review-first surface for the Voice Command Center. A new **Voice Inbox** view under the Operations mode (rail surface next to Command) lists every captured turn (typed or Sotto-spoken) as a card: intent chip, confidence, detected project, suggested action, spoken reply, source device, and review state. Pending items get **Approve / Dismiss**; a new `PATCH /voice/inbox/{item_id}` transitions `review_state` (pending/approved/dismissed). Review-first is preserved: approving records intent only — promoting an approved draft into its concrete action (research task, decision, guardian review) is AOS-VOICE-005. `updateVoiceInboxItem()` in the api client; graceful degradation when the API is unreachable (loading/empty/error states). Wires into the shell via `Shell.tsx` ViewId + `workspaces.ts` Operations surface + `main.tsx` render case.
 - Verification Status: 5 new hermetic API tests (PATCH approve/dismiss persist, 404 unknown, 422 bad state); full API suite 298 passed / 3 skipped; ruff clean; `tsc && vite build` clean; 2 new Playwright specs (list renders + Approve transitions via mocked PATCH with zero console errors; empty state) + command/shell specs preserved (12 e2e passed); frozen route inventory 53→54.

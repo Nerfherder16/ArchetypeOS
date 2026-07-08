@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-VOICE-005: per-intent agent drafts, promote on approval (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-VOICE-005 — approving a voice item now produces a real artifact.** Closes the Voice Command Center loop. `promote_inbox_item()` maps intent → draft entity on approval: `research_request` → a draft `ResearchNote`, `decision_draft` → a draft `Decision`. Wired into `PATCH /voice/inbox/{item_id}` (approve): idempotent, and a no-op when there is no resolved project or no mapping (approving still records intent). New `promoted_kind` + `promoted_id` columns (Alembic `0009`) link the item to what it produced; the dashboard card shows a "→ research note / decision" badge. A promoted `Decision` (status `draft`) flows straight into the existing Council → Awaiting You approvals queue. 5 new promotion tests; full API suite 303 passed; alembic head 0009; `tsc`+build clean; Voice Inbox e2e asserts the badge. Self-found (LES-L06): the card's optimistic update dropped the server-computed `promoted_kind` until it merged the full PATCH response — caught by the e2e pre-commit. Remaining intents (todo, idea_capture, risk_note, etc.) have no draftable mapping yet.
+
 ## 2026-07-08 — AOS-VOICE-003: Voice Inbox dashboard surface (laptop session — in review)
 
 ### In Review (tandem laptop session)

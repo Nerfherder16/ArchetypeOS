@@ -21,7 +21,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 from ..llm import Provider, get_provider
-from ..models import Project, VoiceInboxItem
+from ..models import Decision, Project, ResearchNote, VoiceInboxItem
 
 if TYPE_CHECKING:  # pragma: no cover
     from sqlalchemy.orm import Session
@@ -249,6 +249,53 @@ def process_voice_turn(
     db.commit()
     db.refresh(item)
     return item
+
+
+def _draft_title(item: VoiceInboxItem) -> str:
+    """A concise title for a promoted draft, from the summary or transcript."""
+    text = (item.summary or item.transcript or "").strip()
+    if not text:
+        return "Voice-captured draft"
+    return text if len(text) <= 200 else text[:197].rstrip() + "..."
+
+
+def promote_inbox_item(db: "Session", item: VoiceInboxItem) -> None:
+    """Promote an approved item into a concrete draft entity (AOS-VOICE-005).
+
+    Idempotent (a re-approve does nothing once ``promoted_id`` is set) and a no-op
+    when the item has no resolved project or its intent has no draftable mapping —
+    approving still records intent; it just does not fabricate an artifact. The
+    created entity carries ``status="draft"`` so it enters its own review flow (a
+    promoted decision surfaces in the Approvals queue). Flushes to obtain the id;
+    the caller owns the commit.
+    """
+    if item.promoted_id or not item.project_id:
+        return
+    if item.detected_intent == "research_request":
+        note = ResearchNote(
+            project_id=item.project_id,
+            title=_draft_title(item),
+            question=item.transcript,
+            summary=item.summary or None,
+            confidence=item.confidence,
+            status="draft",
+        )
+        db.add(note)
+        db.flush()
+        item.promoted_kind = "research_note"
+        item.promoted_id = note.id
+    elif item.detected_intent == "decision_draft":
+        decision = Decision(
+            project_id=item.project_id,
+            title=_draft_title(item),
+            context=item.transcript,
+            confidence=item.confidence,
+            status="draft",
+        )
+        db.add(decision)
+        db.flush()
+        item.promoted_kind = "decision"
+        item.promoted_id = decision.id
 
 
 def voice_provider(settings, sink=None) -> Provider:

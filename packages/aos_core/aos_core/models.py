@@ -421,6 +421,11 @@ class VoiceInboxItem(AuditMixin, Base):
     review_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
     source_device: Mapped[str] = mapped_column(String(128), default="unknown", nullable=False)
     reply_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    # AOS-VOICE-005: when an item is approved, its intent may promote it into a
+    # concrete draft entity (research_note / decision). These record that linkage;
+    # NULL until a mapped intent is approved on an item with a resolved project.
+    promoted_kind: Mapped[str | None] = mapped_column(String(64))
+    promoted_id: Mapped[str | None] = mapped_column(GUID())
 
 
 class ApprovalRecord(AuditMixin, Base):

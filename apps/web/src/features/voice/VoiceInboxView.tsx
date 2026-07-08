@@ -24,7 +24,7 @@ function IntentChip({ intent }: { intent: string }) {
 
 type InboxCardProps = {
   item: VoiceInboxItem;
-  onResolved: (id: string, state: VoiceReviewState) => void;
+  onResolved: (updated: VoiceInboxItem) => void;
 };
 
 function InboxCard({ item, onResolved }: InboxCardProps) {
@@ -37,8 +37,9 @@ function InboxCard({ item, onResolved }: InboxCardProps) {
       setBusy(state);
       setError(null);
       try {
-        await updateVoiceInboxItem(item.id, state);
-        onResolved(item.id, state);
+        // The PATCH returns the updated item (including any promotion linkage),
+        // so the card reflects the promoted-to badge without a refetch.
+        onResolved(await updateVoiceInboxItem(item.id, state));
       } catch (err) {
         setError(errorMessage(err));
         setBusy(null);
@@ -58,6 +59,11 @@ function InboxCard({ item, onResolved }: InboxCardProps) {
         {!pending ? (
           <span className="aos-pill" data-testid="voice-inbox-state">
             {item.review_state}
+          </span>
+        ) : null}
+        {item.promoted_kind ? (
+          <span className="aos-pill info" data-testid="voice-inbox-promoted">
+            &rarr; {item.promoted_kind.replace(/_/g, ' ')}
           </span>
         ) : null}
       </div>
@@ -134,8 +140,8 @@ export function VoiceInboxView() {
     void load();
   }, [load]);
 
-  const handleResolved = useCallback((id: string, state: VoiceReviewState) => {
-    setItems((prev) => (prev ? prev.map((it) => (it.id === id ? { ...it, review_state: state } : it)) : prev));
+  const handleResolved = useCallback((updated: VoiceInboxItem) => {
+    setItems((prev) => (prev ? prev.map((it) => (it.id === updated.id ? updated : it)) : prev));
   }, []);
 
   const sorted = items

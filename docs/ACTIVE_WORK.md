@@ -18,6 +18,13 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-VOICE-001 — Voice Command Center backend spine
+
+- Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: PR 1 of 4 for the Voice Command Center (VOICE_COMMAND_CENTER.md). The text-in spine: a transcript is classified into one of the 10 intents, persisted as a **review-first** `VoiceInboxItem` draft (transcript, summary, detected intent/project, suggested action, confidence, required_review, source_device, spoken reply), and answered with a short reply. `POST /voice/turns` + `GET /voice/inbox`. Reply/classify brain is Claude via a new `voice_llm_provider` (default `claude_code`), reached through `voice_provider(settings)`; both classification and reply are **fail-open** to a deterministic keyword classifier + templated reply, so a turn is never lost and CI stays hermetic. Voice mode captures and prepares work only — it never performs destructive actions (every turn is a draft for dashboard approval). Model `VoiceInboxItem` + Alembic `0008` (single head). STT (Sotto) client + mic wiring is PR 2 (AOS-VOICE-002); Voice Inbox dashboard is PR 3; Piper TTS + per-intent agent drafts is PR 4.
+- Verification Status: TDD (9 hermetic voice tests: LLM-JSON classify, keyword fallback, invalid-intent fallback, prose-vs-json reply, review-first persistence, project link; + route: reply/persist, empty-transcript 422, unknown-project 404). Full API suite 279 passed / 3 skipped; ruff clean; alembic single head 0008; frozen route inventory updated (49→51). Self-found: forgot the frozen route-inventory bump — the governance test caught it pre-commit (LES-L05).
+
 ### AOS-OPS-DEPLOY-001 — Live cloud-to-teevee auto-deploy + compose-native council env
 
 - Status: In Review

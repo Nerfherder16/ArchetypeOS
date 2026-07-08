@@ -399,6 +399,30 @@ class UsageEvent(AuditMixin, Base):
     context: Mapped[str | None] = mapped_column(String(128))
 
 
+class VoiceInboxItem(AuditMixin, Base):
+    """A review-first draft produced by a Voice Command Center turn (AOS-VOICE-001).
+
+    Voice mode captures and prepares work; it never performs destructive actions
+    directly (VOICE_COMMAND_CENTER.md). Every voice turn lands here as a draft for
+    later review/approval in the dashboard. ``project_id`` links a resolved project
+    (nullable — a turn may not name one); ``detected_project`` keeps the raw guess.
+    """
+
+    __tablename__ = "voice_inbox_items"
+
+    project_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("projects.id"), index=True)
+    transcript: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    detected_intent: Mapped[str] = mapped_column(String(64), default="idea_capture", nullable=False, index=True)
+    detected_project: Mapped[str | None] = mapped_column(String(255))
+    suggested_action: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    required_review: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    review_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
+    source_device: Mapped[str] = mapped_column(String(128), default="unknown", nullable=False)
+    reply_text: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+
 class ApprovalRecord(AuditMixin, Base):
     __tablename__ = "approval_records"
 

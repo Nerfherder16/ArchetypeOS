@@ -38,6 +38,17 @@ class Settings(BaseSettings):
     # AOS-LLM-EVAL-001 flagship: when on (and the free pool has >=2 members), the
     # Agent Council runs each agent on a different free model (RFC-0005 diversity).
     council_multi_model: bool = False
+    # AOS-VOICE-001: the provider that answers Voice Command Center turns (intent
+    # classification + spoken reply). Default "claude_code" (Claude as Final Judge,
+    # per the operator's choice); "deterministic" keeps CI hermetic. Distinct from
+    # the reviewer's llm_provider so voice can use Claude while the reviewer stays
+    # local. Falls through to the deterministic keyword classifier when the
+    # provider errors or returns junk, so a turn is never lost.
+    voice_llm_provider: str = "claude_code"
+    # Sotto STT WebSocket endpoint (faster-whisper on the whisper-gpu box, tailnet
+    # only). The browser client streams 16 kHz PCM16 here; the token is supplied
+    # separately and never logged. Empty → the CommandDeck shows "voice unavailable".
+    voice_stt_ws_url: str = ""
     # RFC-0010 embedding tier. Default "deterministic" → the hermetic no-op
     # embedder (embed()→None → lexical fallback); the real "fastembed" (ONNX) tier
     # lands in AOS-EMBED-002. ``embedding_model`` names the fastembed model that

@@ -405,3 +405,34 @@ class CouncilReviewRead(BaseModel):
     agent_outputs: list[CouncilAgentOutputRead] = []
 
     model_config = {"from_attributes": True}
+
+
+class VoiceTurnCreate(BaseModel):
+    transcript: str
+    source_device: str = "unknown"
+    project_id: str | None = None
+
+    @field_validator("transcript")
+    @classmethod
+    def _transcript_not_empty(cls, value: str) -> str:
+        if not value or not value.strip():
+            raise ValueError("transcript must not be empty")
+        return value.strip()
+
+
+class VoiceInboxItemRead(BaseModel):
+    id: str
+    project_id: str | None = None
+    transcript: str
+    summary: str
+    detected_intent: str
+    detected_project: str | None = None
+    suggested_action: str
+    confidence: float
+    required_review: bool
+    review_state: str
+    source_device: str
+    reply_text: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

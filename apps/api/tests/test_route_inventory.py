@@ -80,6 +80,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/transfer"),
         # usage ledger (AOS-USAGE-001 — LLM token/cost summary per tier)
         ("GET", "/usage/summary"),
+        # voice command center (AOS-VOICE-001 — review-first voice turns + inbox)
+        ("POST", "/voice/turns"),
+        ("GET", "/voice/inbox"),
     }
 )
 
@@ -112,6 +115,7 @@ def test_route_inventory_count() -> None:
     # distillation route (POST /repositories/{repository_id}/distill) = 47,
     # plus the AOS-TRANSFER-001 knowledge-transfer route (POST
     # /projects/{project_id}/transfer) = 48, plus the AOS-USAGE-001 usage-ledger
-    # route (GET /usage/summary) = 49.
-    assert len(EXPECTED_ROUTES) == 49
-    assert len(_actual_routes()) == 49
+    # route (GET /usage/summary) = 49, plus the AOS-VOICE-001 Voice Command Center
+    # routes (POST /voice/turns, GET /voice/inbox) = 51.
+    assert len(EXPECTED_ROUTES) == 51
+    assert len(_actual_routes()) == 51

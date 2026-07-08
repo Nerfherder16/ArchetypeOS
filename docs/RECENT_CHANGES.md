@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-VOICE-001: Voice Command Center backend spine (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-VOICE-001 — the Voice Command Center starts talking back.** PR 1 of 4. The text-in spine that turns a spoken transcript into a review-first draft: intent classification (10 intents from VOICE_COMMAND_CENTER.md), a persisted `VoiceInboxItem` (transcript/summary/detected intent+project/suggested action/confidence/required_review/source_device/reply), and a short spoken reply. `POST /voice/turns` + `GET /voice/inbox`. Reply brain is **Claude** (operator's choice) via a new `voice_llm_provider` (default `claude_code`) resolved by `voice_provider(settings)`; classification and reply are **fail-open** to a deterministic keyword classifier + templated reply, so a turn is never lost and CI (deterministic provider) stays hermetic. Core principle enforced: voice **captures and prepares** work, never performs destructive actions — every turn is a draft awaiting dashboard approval. Model `VoiceInboxItem` + Alembic `0008` (single head). 9 hermetic voice tests; full API suite 279 passed; ruff clean; frozen route inventory 49→51. Next: PR 2 wires **Sotto** (self-hosted faster-whisper STT over WebSocket) + real mic capture in the CommandDeck orb, replacing the current fake/browser loop. Lesson LES-L05.
+
 ## 2026-07-07 — AOS-OPS-DEPLOY-001: live cloud-to-teevee auto-deploy + compose-native council env (laptop session — in review)
 
 ### In Review (tandem laptop session)

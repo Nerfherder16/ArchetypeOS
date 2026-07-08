@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-07 — AOS-OPS-DEPLOY-001: live cloud-to-teevee auto-deploy + compose-native council env (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-OPS-DEPLOY-001 — the tandem loop closes: cloud merges deploy themselves.** The teevee stack now redeploys automatically when the cloud session merges to `main`. A host-side poller (`~/aos-autodeploy.sh`, `*/2` cron, `flock`-guarded, lives outside the repo so `git pull` never clobbers it) fetches `origin/main`; on a new commit it `pull --ff-only` then `docker compose up -d --build` and logs a `/health` check. Pull-based on purpose: a GitHub webhook/Action can't reach a tailnet-only host. Proven end-to-end while wiring it — the cloud session's #106 (AOS-OPS-002) was fetched, ff-pulled, rebuilt, `health: 200`, zero human action. This PR also forwards the multi-model Council env (`COUNCIL_MULTI_MODEL` + the four free-tier `*_API_KEY` vars, all `${VAR:-default}`, no secret values) in the **tracked** `docker-compose.yml` worker service, retiring the untracked `docker-compose.override.yml` a `git pull` deploy never recreated. Dashboard: `http://100.123.29.114:5173` (web baked with the box's tailnet API URL so remote viewers don't hit their own localhost). Lesson LES-L04. Deterministic CI path unchanged (new vars default empty/false).
+
 ## 2026-07-07 — AOS-LLM-EVAL-001: multi-model Council wired into the run_council route (laptop session — in review)
 
 ### In Review (tandem laptop session)

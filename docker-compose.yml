@@ -82,6 +82,15 @@ services:
       # Set EMBEDDING_PROVIDER=fastembed (matching the api service) to activate the
       # real embedder for distillation-time vectors. Default stays deterministic.
       EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-deterministic}
+      # Multi-model Council (AOS-LLM-EVAL-001): forward the enable flag and the
+      # free-tier pool keys so council_provider can build the rotating pool. All
+      # default empty/false, so the deterministic CI path is unchanged when unset.
+      # Values come from the host .env — never hard-code secret values here.
+      COUNCIL_MULTI_MODEL: ${COUNCIL_MULTI_MODEL:-false}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
     depends_on:
       api:
         condition: service_healthy

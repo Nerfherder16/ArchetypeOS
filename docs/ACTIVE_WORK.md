@@ -18,9 +18,16 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-VOICE-001 — Voice Command Center backend spine
+### AOS-VOICE-002 — Sotto STT client + real mic in the CommandDeck
 
 - Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: PR 2 of 4. Replaces the CommandDeck orb's fake local router + browser `webkitSpeechRecognition` with real communication. `sottoDictation.ts` streams 16 kHz mono PCM16 from the mic to the self-hosted **Sotto** server (faster-whisper over WebSocket, tailnet only) — ported from Sotto's own web client, parameterised for a different host via `VITE_SOTTO_WS_URL` + `VITE_SOTTO_TOKEN`. Both typed and spoken input now funnel through the same backend: `submit()` POSTs to `/voice/turns` (AOS-VOICE-001) and speaks back the returned reply; the orb routing/speaking visuals still fire synchronously so a backend hiccup never breaks the animation (failure is silent — degrades to a local acknowledgement). Mic degrades to type-only when Sotto is unconfigured or the mic is denied. TTS stays browser `speechSynthesis` for now (Groq PlayAI TTS lands in PR 4). `docker-compose.yml` web service forwards the two `VITE_SOTTO_*` vars (default empty; token never committed).
+- Verification Status: `tsc && vite build` clean; 2 new Playwright specs (typed round-trip through mocked `/voice/turns` shows the reply + routes to LIBRARIAN with zero console errors; mic reports "voice unavailable" when Sotto unset). e2e `serve-api.sh` pins `VOICE_LLM_PROVIDER=deterministic` so the real turn stays hermetic (no `claude` subprocess). Existing command specs preserved (routing/speaking visuals unchanged). Live mic→Sotto streaming verified at deploy time against the running Sotto server.
+
+### AOS-VOICE-001 — Voice Command Center backend spine
+
+- Status: Merged (#110)
 - Owner: laptop session (parallel Orchestrator)
 - Summary: PR 1 of 4 for the Voice Command Center (VOICE_COMMAND_CENTER.md). The text-in spine: a transcript is classified into one of the 10 intents, persisted as a **review-first** `VoiceInboxItem` draft (transcript, summary, detected intent/project, suggested action, confidence, required_review, source_device, spoken reply), and answered with a short reply. `POST /voice/turns` + `GET /voice/inbox`. Reply/classify brain is Claude via a new `voice_llm_provider` (default `claude_code`), reached through `voice_provider(settings)`; both classification and reply are **fail-open** to a deterministic keyword classifier + templated reply, so a turn is never lost and CI stays hermetic. Voice mode captures and prepares work only — it never performs destructive actions (every turn is a draft for dashboard approval). Model `VoiceInboxItem` + Alembic `0008` (single head). STT (Sotto) client + mic wiring is PR 2 (AOS-VOICE-002); Voice Inbox dashboard is PR 3; Piper TTS + per-intent agent drafts is PR 4.
 - Verification Status: TDD (9 hermetic voice tests: LLM-JSON classify, keyword fallback, invalid-intent fallback, prose-vs-json reply, review-first persistence, project link; + route: reply/persist, empty-transcript 422, unknown-project 404). Full API suite 279 passed / 3 skipped; ruff clean; alembic single head 0008; frozen route inventory updated (49→51). Self-found: forgot the frozen route-inventory bump — the governance test caught it pre-commit (LES-L05).

@@ -18,7 +18,9 @@
  *     gracefully and never throws when the Web Speech APIs are absent.
  */
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { postVoiceTurn } from '../../api';
 import { AGENTS, CORE_RGB, SHELL_RGB, fib, hexToRgb, routeForTask, type Point3 } from './orb';
+import { sottoConfigured, startDictation, type DictationController } from './sottoDictation';
 
 function prefersReducedMotion(): boolean {
   return (
@@ -42,18 +44,6 @@ type Sat = {
 };
 
 type Packet = { idx: number; t: number; col: Rgb };
-
-// Minimal structural type for the Web Speech recognition object (not in lib.dom
-// for all TS targets); kept local so we never depend on vendor globals typing.
-type Recognition = {
-  lang: string;
-  interimResults: boolean;
-  onstart: (() => void) | null;
-  onend: (() => void) | null;
-  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }> & { isFinal: boolean }> }) => void) | null;
-  start: () => void;
-  stop: () => void;
-};
 
 type EngineHandle = {
   submit: (text: string) => void;
@@ -467,67 +457,74 @@ export function CommandDeck() {
         return;
       }
       const idx = routeForTask(q);
-      const agent = AGENTS[idx];
       selectedIdx = idx;
+      // Orb visuals fire synchronously (routeForTask picks the agent) so routing
+      // always animates regardless of the backend round-trip.
       fireHandoff(idx);
-      const r = `Routing to ${agent.label}. ${agent.role} task accepted.`;
-      setReply(`${agent.label} ▸ ${r}`);
-      // Drive the speaking envelope directly (independent of TTS firing).
-      beginSpeak(idx, r.length);
-      speak(r, idx);
+      setReply('routing…');
+      beginSpeak(idx, 28);
       if (reduced) {
         // No loop is running; paint one frame that reflects the routed state.
         amp = 0.5;
         present(amp);
       }
+      // Route the turn through the Voice Command Center backend (AOS-VOICE-001):
+      // typed or Sotto-spoken both land here → intent + review-first inbox draft
+      // + spoken reply. Failure is silent (the orb already animated), so the
+      // console stays clean and the deck degrades to a local acknowledgement.
+      postVoiceTurn(q, 'command-deck')
+        .then((item) => {
+          const text = item.reply_text || `${AGENTS[idx].label} acknowledged.`;
+          setReply(`${AGENTS[idx].label} ▸ ${text}`);
+          speak(text, idx);
+        })
+        .catch(() => {
+          setReply(`${AGENTS[idx].label} ▸ captured for review`);
+          speak('captured for review', idx);
+        });
     };
 
-    // --- Speech recognition (STT) ---
-    const SR: (new () => Recognition) | undefined =
-      (typeof window !== 'undefined' &&
-        ((window as unknown as { SpeechRecognition?: new () => Recognition }).SpeechRecognition ||
-          (window as unknown as { webkitSpeechRecognition?: new () => Recognition })
-            .webkitSpeechRecognition)) ||
-      undefined;
-    let rec: Recognition | null = null;
-    let isListening = false;
+    // --- Speech to text via Sotto (AOS-VOICE-002) ---
+    // Push-to-talk: first tap opens the Sotto stream (16 kHz PCM16 over WS), a
+    // second tap finalizes → onFinal delivers the transcript, which is submitted
+    // through the same backend path as a typed command. Degrades to type-only
+    // when Sotto is not configured or the mic is denied.
+    let dictation: DictationController | null = null;
     const toggleMic = () => {
-      if (!SR) {
-        setVoiceNote('voice input unavailable — type instead');
+      if (dictation) {
+        dictation.stop();
+        dictation = null;
         return;
       }
-      if (isListening) {
-        rec?.stop();
+      if (!sottoConfigured()) {
+        setVoiceNote('voice unavailable — type instead');
         return;
       }
-      try {
-        rec = new SR();
-        rec.lang = 'en-US';
-        rec.interimResults = true;
-        rec.onstart = () => {
-          isListening = true;
-          setListening(true);
-          setVoiceNote('listening…');
-        };
-        rec.onend = () => {
-          isListening = false;
+      setVoiceNote('listening…');
+      setListening(true);
+      startDictation({
+        onPartial: (text) => setInputValue(text),
+        onFinal: (text) => {
+          dictation = null;
           setListening(false);
-        };
-        rec.onresult = (event) => {
-          let s = '';
-          for (let i = 0; i < event.results.length; i += 1) {
-            s += event.results[i][0].transcript;
-          }
-          setInputValue(s);
-          const last = event.results[event.results.length - 1];
-          if (last && last.isFinal) {
-            submit(s);
-          }
-        };
-        rec.start();
-      } catch {
-        setVoiceNote('voice input unavailable — type instead');
-      }
+          setVoiceNote(null);
+          setInputValue('');
+          submit(text);
+        },
+        onError: (msg) => {
+          dictation = null;
+          setListening(false);
+          setVoiceNote(msg);
+        },
+      })
+        .then((ctrl) => {
+          dictation = ctrl;
+        })
+        .catch(() => {
+          // onError already surfaced the reason (not configured / mic denied).
+          dictation = null;
+          setListening(false);
+        });
     };
 
     engineRef.current = { submit, toggleMic };
@@ -569,7 +566,7 @@ export function CommandDeck() {
       ro.disconnect();
       window.removeEventListener('mousemove', onMouseMove);
       try {
-        rec?.stop();
+        dictation?.cancel();
       } catch {
         /* ignore */
       }

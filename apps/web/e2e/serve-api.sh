@@ -44,6 +44,11 @@ mkdir -p "${KNOWLEDGE_DIR}"
 cp -a "${REPO_ROOT}/knowledge/." "${KNOWLEDGE_DIR}/"
 export KNOWLEDGE_ROOT="${KNOWLEDGE_DIR}"
 export REDIS_URL="redis://localhost:9999/0"
+# AOS-VOICE-002: the CommandDeck now routes typed/spoken commands through
+# POST /voice/turns. Pin the voice brain to the deterministic provider so e2e
+# never shells out to a (absent) `claude` CLI — the turn resolves instantly via
+# the keyword classifier + templated reply, keeping specs fast and hermetic.
+export VOICE_LLM_PROVIDER="deterministic"
 
 # Ephemeral Redis for the job queue. --save '' + --appendonly no keep it purely
 # in-memory (no dump.rdb/AOF files). If binding 9999 fails because a prior stack

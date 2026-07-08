@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-VOICE-002: Sotto STT + real mic in the CommandDeck (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-VOICE-002 — the orb actually listens now.** PR 2 of 4. The CommandDeck's fake local router + browser `webkitSpeechRecognition` are replaced with real communication: `sottoDictation.ts` streams 16 kHz PCM16 from the mic to the self-hosted **Sotto** faster-whisper server over WebSocket (tailnet only), ported from Sotto's own web client and parameterised for a remote host via `VITE_SOTTO_WS_URL` + `VITE_SOTTO_TOKEN`. Typed and spoken input now share one path — `submit()` POSTs to `/voice/turns` and speaks the returned reply — while the orb routing/speaking visuals fire synchronously so a backend hiccup never stalls the animation (failure is silent). Graceful degradation: mic → type-only when Sotto is unconfigured or denied; TTS stays browser `speechSynthesis` until Groq PlayAI TTS (PR 4). `docker-compose.yml` web service forwards the two `VITE_SOTTO_*` vars (default empty, token never committed); e2e `serve-api.sh` pins the deterministic voice provider. `tsc`+build clean; 2 new Playwright specs; existing command specs preserved. Next: PR 3 the Voice Inbox dashboard surface.
+
 ## 2026-07-08 — AOS-VOICE-001: Voice Command Center backend spine (laptop session — in review)
 
 ### In Review (tandem laptop session)

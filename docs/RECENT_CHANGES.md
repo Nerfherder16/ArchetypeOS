@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-NODE-001 (UI): Operations → Nodes / Runtime dashboard (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-NODE-001 (UI half) — the runtime fleet becomes visible.** Completes AOS-NODE-001: the backend node registry (#128) now has an operator surface. New read-only feature view `features/nodes/NodesView.tsx` under **Operations -> Nodes / Runtime** (the surface flipped from `soon` to `live`). Each registered node renders as a card showing health (`node_status` pill: healthy/degraded/offline/unknown), safety posture (**read-only vs read-write** and the **max-sensitivity ceiling**), endpoint + last-seen, and its declared **capabilities** (the exact metadata AOS-WORKER-ROUTER-001's `HandlerSpec` matches on), or a "No declared capabilities" note. Graceful loading / empty / error states. Wired through `api.ts` (`NodeInfo`/`NodeCapability` types + `fetchNodes()`, typed to the backend `NodeRead` schema exactly), `Shell.tsx` + `workspaces.ts` + `main.tsx` + e2e `nav.ts`. `tsc`+build clean; new Playwright spec (`nodes-view.spec.ts`, 3 cases: renders health/posture/capabilities, empty state, registry error) green. The operator can now see the fleet the control plane routes work to.
+
 ## 2026-07-08 — AOS-NODE-001 (backend): node + capability + heartbeat registry (laptop session — in review)
 
 ### In Review (tandem laptop session)

@@ -613,3 +613,32 @@ export async function fetchSpeech(text: string): Promise<Blob | null> {
     return null;
   }
 }
+
+// Node registry (AOS-NODE-001). Read-only surface for Operations → Nodes.
+export type NodeCapability = {
+  id: string;
+  capability: string;
+  capability_version: string | null;
+  capability_status: string;
+  limits: Record<string, unknown>;
+};
+
+export type NodeInfo = {
+  id: string;
+  name: string;
+  node_type: string;
+  endpoint: string | null;
+  node_status: string;
+  last_seen_at: string | null;
+  max_sensitivity: string;
+  write_access: boolean;
+  capabilities: NodeCapability[];
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchNodes(): Promise<NodeInfo[]> {
+  return request<NodeInfo[]>('/nodes');
+}

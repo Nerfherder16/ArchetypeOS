@@ -22,7 +22,8 @@ export type ViewId =
   | 'approvals'
   | 'activity'
   | 'research'
-  | 'voice-inbox';
+  | 'voice-inbox'
+  | 'nodes';
 
 type Theme = 'dark' | 'light';
 

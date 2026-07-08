@@ -88,6 +88,8 @@ test('research view: aggregates research notes across projects ranked by confide
         id: 'n-high', title: 'Streaming ingestion', confidence: 0.9,
         freshness: 'fresh',
         summary: 'Backpressure-aware pipeline evaluated against three brokers.',
+        findings: ['Kafka wins on throughput', 'NATS wins on latency'],
+        sources: ['https://kafka.apache.org', 'https://nats.io'],
       },
       {
         id: 'n-low', title: 'Legacy queue migration', confidence: 0.4,
@@ -134,4 +136,8 @@ test('research view: aggregates research notes across projects ranked by confide
   // The highest-confidence note carries its freshness pill and summary.
   await expect(rows.nth(0).locator('.aos-pill.info')).toBeVisible();
   await expect(rows.nth(0)).toContainText('Backpressure-aware pipeline');
+
+  // AOS-CONTRACT-001: findings + sources the backend records now render.
+  await expect(rows.nth(0).getByTestId('research-note-findings')).toContainText('Kafka wins on throughput');
+  await expect(rows.nth(0).getByTestId('research-note-sources')).toContainText('2 sources');
 });

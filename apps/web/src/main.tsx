@@ -1156,8 +1156,25 @@ function App() {
                 {dna ? (
                   <>
                     <dl className="aos-kv">
+                      {/* AOS-CONTRACT-001: surface the reasoned DNA evidence the backend computes. */}
+                      {dna.purpose ? (
+                        <>
+                          <dt>Purpose</dt>
+                          <dd>{dna.purpose}</dd>
+                        </>
+                      ) : null}
+                      {dna.maturity ? (
+                        <>
+                          <dt>Maturity</dt>
+                          <dd className="aos-mono">{dna.maturity}</dd>
+                        </>
+                      ) : null}
                       <dt>Primary languages</dt>
                       <dd className="aos-mono">{primaryLanguages.length > 0 ? primaryLanguages.join(', ') : 'none'}</dd>
+                      <dt>Frameworks</dt>
+                      <dd className="aos-mono" data-testid="dna-frameworks">{dna.frameworks.length > 0 ? dna.frameworks.join(', ') : 'none'}</dd>
+                      <dt>Runtime services</dt>
+                      <dd className="aos-mono" data-testid="dna-runtime-services">{dna.runtime_services.length > 0 ? dna.runtime_services.join(', ') : 'none'}</dd>
                       <dt>Package managers</dt>
                       <dd className="aos-mono">{dna.package_managers.length > 0 ? dna.package_managers.join(', ') : 'none'}</dd>
                       <dt>Confidence</dt>

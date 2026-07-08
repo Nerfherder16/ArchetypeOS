@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-CONTRACT-001: surface rich backend evidence at the API/web seam (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-CONTRACT-001 — stop dropping intelligence at the seam.** Phase 1 of the consolidation plan (eval Finding 6, "invisible capability"). `RepositoryDnaRead` now exposes `purpose`, `maturity`, `frameworks`, `runtime_services`, `evidence` (the model computed them; the API dropped them). The frontend types are aligned to the backend Read schemas: `RepositoryDna` (+purpose/maturity/frameworks/runtime_services/evidence), `ArchitectureEdge` (was `{id,type}` → now +from/to_node_id/confidence/evidence/manual_correction), `ResearchNote` (+project_id/question/sources/findings/status). Rendering added where the entity is shown: the Repository DNA panel lists purpose/frameworks/runtime services, and Research Inbox cards show findings + source count. Full API suite 339 passed; `tsc`+build clean; research e2e green. TS types now match backend schemas — the dashboard shows the intelligence the backend already knows.
+
 ## 2026-07-08 — AOS-VOICE-PROJECT-001: project-scoped CommandDeck turns (laptop session — in review)
 
 ### In Review (tandem laptop session)

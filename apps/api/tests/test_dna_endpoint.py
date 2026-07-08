@@ -57,6 +57,12 @@ def test_dna_endpoint_returns_stored_scan_results(client: TestClient) -> None:
     assert "summary" in body["scan_summary"]
     assert body["scan_summary"]["summary"]["has_ci"] is True
     assert body["confidence"] == 0.65
+    # AOS-CONTRACT-001: the richer evidence the backend computes is no longer
+    # dropped at the API seam — these keys are present in the contract.
+    for field in ("purpose", "maturity", "frameworks", "runtime_services", "evidence"):
+        assert field in body, f"RepositoryDnaRead must expose {field}"
+    assert isinstance(body["frameworks"], list)
+    assert isinstance(body["runtime_services"], list)
 
 
 def test_dna_endpoint_404_for_never_scanned_repository(client: TestClient) -> None:

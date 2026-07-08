@@ -95,6 +95,20 @@ function ResearchNoteCard({ item }: { item: InboxItem }) {
           {item.summary}
         </p>
       ) : null}
+      {/* AOS-CONTRACT-001: surface the findings + sources the backend records. */}
+      {item.findings && item.findings.length > 0 ? (
+        <ul className="aos-muted" data-testid="research-note-findings" style={{ margin: '8px 0 0', paddingLeft: 18, fontSize: 12.5 }}>
+          {item.findings.slice(0, 4).map((finding, i) => (
+            <li key={i}>{finding}</li>
+          ))}
+        </ul>
+      ) : null}
+      {item.sources && item.sources.length > 0 ? (
+        <div className="aos-mono aos-muted" data-testid="research-note-sources" style={{ margin: '8px 0 0', fontSize: 11 }}>
+          {item.sources.length} source{item.sources.length === 1 ? '' : 's'}: {item.sources.slice(0, 3).join(', ')}
+          {item.sources.length > 3 ? ' …' : ''}
+        </div>
+      ) : null}
     </li>
   );
 }

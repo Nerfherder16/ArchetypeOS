@@ -518,3 +518,43 @@ export async function fetchReuseRecommendations(
 export async function fetchUsageSummary(window: UsageWindow): Promise<UsageSummary> {
   return request<UsageSummary>(`/usage/summary?window=${encodeURIComponent(window)}`);
 }
+
+// Voice Command Center (AOS-VOICE-001/002). A typed or spoken command is one
+// "turn": the backend classifies the intent, persists a review-first inbox draft,
+// and returns a short spoken reply. The CommandDeck funnels both typed and
+// Sotto-transcribed input through here, so the pipeline is identical either way.
+export type VoiceInboxItem = {
+  id: string;
+  project_id: string | null;
+  transcript: string;
+  summary: string;
+  detected_intent: string;
+  detected_project: string | null;
+  suggested_action: string;
+  confidence: number;
+  required_review: boolean;
+  review_state: string;
+  source_device: string;
+  reply_text: string;
+  created_at: string;
+};
+
+export async function postVoiceTurn(
+  transcript: string,
+  sourceDevice = 'web',
+  projectId?: string,
+): Promise<VoiceInboxItem> {
+  return request<VoiceInboxItem>('/voice/turns', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      transcript,
+      source_device: sourceDevice,
+      project_id: projectId ?? null,
+    }),
+  });
+}
+
+export async function fetchVoiceInbox(): Promise<VoiceInboxItem[]> {
+  return request<VoiceInboxItem[]>('/voice/inbox');
+}

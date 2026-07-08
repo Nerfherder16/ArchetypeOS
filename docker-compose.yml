@@ -123,6 +123,12 @@ services:
       context: ./apps/web
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+      # AOS-VOICE-002: Sotto STT endpoint (faster-whisper over WebSocket, tailnet
+      # only) + its token. The browser streams 16 kHz PCM16 here for voice input.
+      # Both default empty — unset → the CommandDeck mic degrades to type-only.
+      # The token value comes from the host .env; never hard-code a secret here.
+      VITE_SOTTO_WS_URL: ${VITE_SOTTO_WS_URL:-}
+      VITE_SOTTO_TOKEN: ${VITE_SOTTO_TOKEN:-}
     depends_on:
       api:
         condition: service_healthy

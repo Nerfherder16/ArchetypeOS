@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-SELFHEAL-004: toil probe (recurring ritual → skill/script) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SELFHEAL-004 — the self-learn loop grows a second probe: toil.** Sibling of the conflict probe. `tools/toil_digest.py` harvests the day's `git reflog` into an action sequence and detects the dominant **recurring ritual** (smallest repeating cycle, >=3 reps) — e.g. the ship-a-PR loop `checkout -> pull -> checkout -> commit`. When it fires, `scripts/nightly/toil_learn.sh` wakes headless `claude` (prompt `toil_learn.prompt.md`) to propose a **skill** (`.claude/skills/`) or **script** (`scripts/`) that captures the whole ritual as one command, and opens a review-first PR — never merges, Article XII gate (writes nothing for one-off noise). Same deterministic-harvester → gate → reasoned-distiller → PR frame as conflict-learn; this is the "multi-probe" direction (a full probe-framework refactor is a later follow-up once there are >2 probes to generalize). 10 hermetic harvester tests; validated on real reflog (detected the ship-PR ritual x6). Output types now span lessons (conflict) + skills/scripts (toil). Enable via a local cron mirroring conflict-learn.
+
 ## 2026-07-08 — AOS-SELFHEAL-CAPMAP: union-mark CAPABILITY_MAP.md (laptop session — in review)
 
 ### In Review (tandem laptop session)

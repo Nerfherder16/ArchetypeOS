@@ -58,11 +58,23 @@ const QUICK_ACTIONS: { label: string; task: string }[] = [
   { label: '◇ Security', task: 'threat model the exposed api surface' },
 ];
 
-export function CommandDeck() {
+type CommandDeckProps = {
+  projectId?: string | null;
+  projectName?: string | null;
+};
+
+export function CommandDeck({ projectId = null, projectName = null }: CommandDeckProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<EngineHandle | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // submit() is created once in the mount effect below, so it reads the CURRENT
+  // project through this ref rather than a stale closure over the first render
+  // (AOS-VOICE-PROJECT-001).
+  const projectRef = useRef<{ id: string | null; name: string | null }>({ id: projectId, name: projectName });
+  useEffect(() => {
+    projectRef.current = { id: projectId, name: projectName };
+  }, [projectId, projectName]);
 
   const [routing, setRouting] = useState('STANDBY');
   const [speakingOn, setSpeakingOn] = useState(false);
@@ -504,7 +516,7 @@ export function CommandDeck() {
       // typed or Sotto-spoken both land here → intent + review-first inbox draft
       // + spoken reply. Failure is silent (the orb already animated), so the
       // console stays clean and the deck degrades to a local acknowledgement.
-      postVoiceTurn(q, 'command-deck')
+      postVoiceTurn(q, 'command-deck', projectRef.current.id ?? undefined)
         .then((item) => {
           const text = item.reply_text || `${AGENTS[idx].label} acknowledged.`;
           setReply(`${AGENTS[idx].label} ▸ ${text}`);
@@ -670,6 +682,7 @@ export function CommandDeck() {
         .cmd-reply{font-family:var(--mono,monospace);font-size:11px;color:var(--signal-bright);
           opacity:.9;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px}
         .cmd-note{font-family:var(--mono,monospace);font-size:10px;color:var(--ink-3)}
+        .cmd-scope{font-size:11px;letter-spacing:.03em;color:var(--ink-2);opacity:.9}
       `}</style>
 
       <div className="cmd-stage" ref={stageRef}>
@@ -692,6 +705,18 @@ export function CommandDeck() {
       </div>
 
       <div className="cmd-console">
+        <div className="cmd-scope aos-mono" data-testid="command-scope">
+          {projectName ? (
+            <>
+              <span aria-hidden="true" style={{ color: 'var(--signal)' }}>&#9679;</span> capture scoped to{' '}
+              <span className="aos-strong">{projectName}</span>
+            </>
+          ) : (
+            <>
+              <span aria-hidden="true" style={{ color: 'var(--ink-3)' }}>&#9675;</span> global capture (no project selected)
+            </>
+          )}
+        </div>
         <div className="cmd-chips" role="group" aria-label="Quick actions">
           {QUICK_ACTIONS.map((qa) => (
             <button

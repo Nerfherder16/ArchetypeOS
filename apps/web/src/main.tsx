@@ -936,7 +936,7 @@ function App() {
   const renderView = (): React.ReactNode => {
     switch (activeView) {
       case 'command':
-        return <CommandDeck />;
+        return <CommandDeck projectId={selectedProjectId} projectName={selectedProject?.name ?? null} />;
 
       case 'overview':
         return (

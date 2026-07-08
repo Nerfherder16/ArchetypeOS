@@ -536,6 +536,8 @@ export type VoiceInboxItem = {
   review_state: string;
   source_device: string;
   reply_text: string;
+  promoted_kind: string | null;
+  promoted_id: string | null;
   created_at: string;
 };
 

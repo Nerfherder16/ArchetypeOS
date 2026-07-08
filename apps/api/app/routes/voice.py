@@ -14,7 +14,7 @@ from aos_core.config import get_settings
 from aos_core.database import get_db
 from aos_core.models import Project, VoiceInboxItem
 from aos_core.services.tts import synthesize_speech
-from aos_core.services.voice import process_voice_turn, voice_provider
+from aos_core.services.voice import process_voice_turn, promote_inbox_item, voice_provider
 
 from ..schemas import VoiceInboxItemRead, VoiceInboxUpdate, VoiceSpeakRequest, VoiceTurnCreate
 
@@ -59,6 +59,10 @@ def update_voice_inbox(
     if item is None:
         raise HTTPException(status_code=404, detail="Voice inbox item not found")
     item.review_state = payload.review_state
+    # Approving a mapped intent promotes it into a concrete draft (idempotent,
+    # no-op without a project/mapping) — AOS-VOICE-005.
+    if payload.review_state == "approved":
+        promote_inbox_item(db, item)
     db.commit()
     db.refresh(item)
     return item

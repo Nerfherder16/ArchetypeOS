@@ -462,6 +462,8 @@ class VoiceInboxItemRead(BaseModel):
     review_state: str
     source_device: str
     reply_text: str
+    promoted_kind: str | None = None
+    promoted_id: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -19,6 +19,8 @@ const ITEM = {
   review_state: 'pending',
   source_device: 'command-deck',
   reply_text: 'On it, drafting a research task for review.',
+  promoted_kind: null,
+  promoted_id: null,
   created_at: '2026-07-08T00:00:00Z',
 };
 
@@ -32,11 +34,11 @@ test('voice inbox: renders captured turns and approves a pending item', async ({
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([ITEM]) });
   });
   await page.route('**/voice/inbox/vi-e2e-1', async (route) => {
-    // PATCH → return the item flipped to approved.
+    // PATCH → the item flipped to approved and promoted to a research note.
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ...ITEM, review_state: 'approved' }),
+      body: JSON.stringify({ ...ITEM, review_state: 'approved', promoted_kind: 'research_note', promoted_id: 'rn-1' }),
     });
   });
 
@@ -52,8 +54,9 @@ test('voice inbox: renders captured turns and approves a pending item', async ({
   await expect(card).toContainText('research request');
 
   await page.getByTestId('voice-inbox-approve').click();
-  // Approve resolves the card to the approved state (buttons removed, state pill shown).
+  // Approve resolves the card to the approved state and shows the promotion badge.
   await expect(page.getByTestId('voice-inbox-state')).toHaveText('approved');
+  await expect(page.getByTestId('voice-inbox-promoted')).toContainText('research note');
 
   expect(consoleErrors).toEqual([]);
 });

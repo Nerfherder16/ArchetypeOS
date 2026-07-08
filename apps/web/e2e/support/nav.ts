@@ -19,7 +19,8 @@ export type ViewId =
   | 'providers'
   | 'approvals'
   | 'activity'
-  | 'research';
+  | 'research'
+  | 'voice-inbox';
 
 export async function navTo(page: Page, view: ViewId): Promise<void> {
   await page.getByTestId(`mode-${modeForView(view)}`).click();

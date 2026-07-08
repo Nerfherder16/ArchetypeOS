@@ -50,6 +50,7 @@ import { ReuseView } from './features/reuse/ReuseView';
 import { ProvidersView } from './features/providers/ProvidersView';
 import { ApprovalsView } from './features/approvals/ApprovalsView';
 import { ActivityView } from './features/activity/ActivityView';
+import { VoiceInboxView } from './features/voice/VoiceInboxView';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
@@ -1060,6 +1061,9 @@ function App() {
 
       case 'research':
         return <ResearchInboxView />;
+
+      case 'voice-inbox':
+        return <VoiceInboxView />;
 
       case 'repositories':
         if (!selectedProjectId) {

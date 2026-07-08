@@ -21,7 +21,8 @@ export type ViewId =
   | 'providers'
   | 'approvals'
   | 'activity'
-  | 'research';
+  | 'research'
+  | 'voice-inbox';
 
 type Theme = 'dark' | 'light';
 

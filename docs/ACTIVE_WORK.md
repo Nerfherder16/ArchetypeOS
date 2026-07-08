@@ -18,9 +18,16 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
-### AOS-VOICE-002 — Sotto STT client + real mic in the CommandDeck
+### AOS-VOICE-004 — Groq Orpheus TTS for spoken replies
 
 - Status: In Review
+- Owner: laptop session (parallel Orchestrator)
+- Summary: PR 4 of the Voice Command Center arc. Gives the orb a real voice: a server-side TTS proxy (`services/tts.py`) calls Groq's OpenAI-compatible `/audio/speech` with Canopy Labs **Orpheus** (`canopylabs/orpheus-v1-english`, voice `austin`, `response_format=wav`) — lowest round-trip in the free pool, no local GPU contention, and the Groq key **never reaches the browser**. New `POST /voice/speak` returns WAV, or **204** when TTS is unconfigured / synthesis fails, so the CommandDeck `speak()` falls back to browser `speechSynthesis` (fail-open — a reply is never blocked on TTS). Orpheus caps input at 200 chars (enforced server-side). `docker-compose.yml` api service forwards `TTS_API_KEY: ${GROQ_API_KEY:-}` (reuses the existing free key; empty → browser fallback). Piper was dropped (operator hit issues + CPU latency). Note: this PR is the TTS slice; the "deeper per-intent agent drafts" originally bundled here is split to a follow-up (AOS-VOICE-005) to keep the PR focused.
+- Verification Status: TDD (8 hermetic TTS tests: configured-gating, unconfigured→None, POST body/headers/bearer/UA, 200-char truncation, fail-open on error; route: 204 unconfigured, 200 WAV when mocked, empty-text 422). Full API suite 294 passed / 3 skipped; ruff clean; `tsc && vite build` clean; command e2e 5 passed (typed round-trip now also mocks `/voice/speak`→204 and asserts graceful fallback with zero console errors); frozen route inventory 52→53. Live Groq voice verified at deploy time (needs the key in the api container).
+
+### AOS-VOICE-002 — Sotto STT client + real mic in the CommandDeck
+
+- Status: Merged (#111)
 - Owner: laptop session (parallel Orchestrator)
 - Summary: PR 2 of 4. Replaces the CommandDeck orb's fake local router + browser `webkitSpeechRecognition` with real communication. `sottoDictation.ts` streams 16 kHz mono PCM16 from the mic to the self-hosted **Sotto** server (faster-whisper over WebSocket, tailnet only) — ported from Sotto's own web client, parameterised for a different host via `VITE_SOTTO_WS_URL` + `VITE_SOTTO_TOKEN`. Both typed and spoken input now funnel through the same backend: `submit()` POSTs to `/voice/turns` (AOS-VOICE-001) and speaks back the returned reply; the orb routing/speaking visuals still fire synchronously so a backend hiccup never breaks the animation (failure is silent — degrades to a local acknowledgement). Mic degrades to type-only when Sotto is unconfigured or the mic is denied. TTS stays browser `speechSynthesis` for now (Groq PlayAI TTS lands in PR 4). `docker-compose.yml` web service forwards the two `VITE_SOTTO_*` vars (default empty; token never committed).
 - Verification Status: `tsc && vite build` clean; 2 new Playwright specs (typed round-trip through mocked `/voice/turns` shows the reply + routes to LIBRARIAN with zero console errors; mic reports "voice unavailable" when Sotto unset). e2e `serve-api.sh` pins `VOICE_LLM_PROVIDER=deterministic` so the real turn stays hermetic (no `claude` subprocess). Existing command specs preserved (routing/speaking visuals unchanged). Live mic→Sotto streaming verified at deploy time against the running Sotto server.

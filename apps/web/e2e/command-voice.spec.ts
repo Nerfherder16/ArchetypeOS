@@ -16,6 +16,13 @@ test('command deck: a typed command routes through /voice/turns and shows the re
     if (msg.type() === 'error') consoleErrors.push(msg.text());
   });
 
+  // TTS is unconfigured in e2e → /voice/speak answers 204 and the deck falls
+  // back to browser speech. Mocked so the fallback path is deterministic and
+  // asserts no console error (AOS-VOICE-004).
+  await page.route('**/voice/speak', async (route) => {
+    await route.fulfill({ status: 204, body: '' });
+  });
+
   await page.route('**/voice/turns', async (route) => {
     await route.fulfill({
       status: 200,

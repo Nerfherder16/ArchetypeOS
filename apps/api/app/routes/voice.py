@@ -7,15 +7,16 @@ lists recent drafts for the dashboard. The provider is built per-request via
 to Claude; classification/reply are fail-open so a turn is never lost.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from aos_core.config import get_settings
 from aos_core.database import get_db
 from aos_core.models import Project, VoiceInboxItem
+from aos_core.services.tts import synthesize_speech
 from aos_core.services.voice import process_voice_turn, voice_provider
 
-from ..schemas import VoiceInboxItemRead, VoiceTurnCreate
+from ..schemas import VoiceInboxItemRead, VoiceSpeakRequest, VoiceTurnCreate
 
 settings = get_settings()
 router = APIRouter()
@@ -42,3 +43,17 @@ def list_voice_inbox(db: Session = Depends(get_db)) -> list[VoiceInboxItem]:
         .limit(50)
         .all()
     )
+
+
+@router.post("/voice/speak")
+def speak(payload: VoiceSpeakRequest) -> Response:
+    """Synthesize a spoken reply server-side (Groq Orpheus) and return WAV.
+
+    Returns 204 when TTS is unconfigured or synthesis fails (fail-open) so the
+    CommandDeck falls back to the browser's speechSynthesis. The Groq key never
+    leaves the server.
+    """
+    audio = synthesize_speech(payload.text, settings)
+    if not audio:
+        return Response(status_code=204)
+    return Response(content=audio, media_type="audio/wav")

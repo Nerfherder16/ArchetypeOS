@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     # only). The browser client streams 16 kHz PCM16 here; the token is supplied
     # separately and never logged. Empty → the CommandDeck shows "voice unavailable".
     voice_stt_ws_url: str = ""
+    # AOS-VOICE-004: server-side TTS for spoken replies. Groq Orpheus (Canopy Labs)
+    # over the OpenAI-compatible /audio/speech endpoint — lowest round-trip in the
+    # free pool, no GPU contention. The key stays server-side (never in the
+    # browser); TTS is "configured" iff tts_api_key is set (else the CommandDeck
+    # falls back to the browser's speechSynthesis). Orpheus caps input at 200 chars.
+    tts_base_url: str = "https://api.groq.com/openai/v1"
+    tts_model: str = "canopylabs/orpheus-v1-english"
+    tts_voice: str = "austin"
+    tts_api_key: str = ""
+    tts_max_chars: int = 200
     # RFC-0010 embedding tier. Default "deterministic" → the hermetic no-op
     # embedder (embed()→None → lexical fallback); the real "fastembed" (ONNX) tier
     # lands in AOS-EMBED-002. ``embedding_model`` names the fastembed model that

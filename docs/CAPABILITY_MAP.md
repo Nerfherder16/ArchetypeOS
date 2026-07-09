@@ -80,6 +80,7 @@ Capabilities:
 - Knowledge read path (AOS-KNOW-002: vault lessons synced to `KnowledgePage`, a DB read projection with a global read API; open lessons surface in the digest)
 - Knowledge dashboard (AOS-KNOW-003: the global Control Tower Knowledge view — Sync-from-vault, lesson list with open-lesson emphasis, All/Open filter; compose `./knowledge:ro` vault mount so in-container sync works)
 - Decision ADR projection (AOS-COUNCIL-PHASEC2A: approved decisions export to an ADR under `knowledge/wiki/decisions/` and project as re-syncable `KnowledgePage` `page_type="decision"`; `sync_knowledge` re-derives decision pages from the vault so a DB reset loses nothing)
+- External repository evaluation register — "keep pile" (AOS-59..62: `knowledge/wiki/repositories/index.md` + one page per externally-evaluated repo records verdict, borrow candidates, and links to the full teardown in `docs/repo-research/<repo>.md` and the Plane "External Repo Evaluation & Adoption Pipeline" tracking item. Distinct from the Distillation Engine — that extracts content from *onboarded* repos, this records *evaluation judgment* on candidate repos — but they share the `wiki/repositories/` directory, so `sync_knowledge` derives register entries as `page_type="repository"` too. Verdict vocabulary: adopt / partial-borrow / reject / monitor.)
 
 Primary artifacts:
 
@@ -94,6 +95,7 @@ Primary artifacts:
 - docs/REPOSITORY_KNOWLEDGE_STANDARD.md
 - packages/aos_core/aos_core/services/knowledge.py (parse_lessons_index + sync_knowledge; vault → KnowledgePage upsert, repo stays source of truth)
 - apps/api/app/routes/knowledge.py (POST /knowledge/sync, GET /knowledge/pages, GET /knowledge/pages/{id})
+- knowledge/wiki/repositories/index.md (external repo evaluation register / keep pile) + docs/repo-research/<repo>.md (full teardowns) + docs/PLANE_PROJECT_BLUEPRINT.md (Board ID Registry: External Repo Evaluation & Adoption Pipeline module, AOS-59..62)
 - apps/web/src/main.tsx (global "Knowledge" Control Tower section: sync + lesson list + open badge + All/Open filter) with apps/web/e2e/knowledge.spec.ts; docker-compose.yml api service `${HOST_KNOWLEDGE_ROOT:-./knowledge}:/knowledge:ro` mount + `KNOWLEDGE_ROOT`
 
 ## Layer 2: Research and Evidence

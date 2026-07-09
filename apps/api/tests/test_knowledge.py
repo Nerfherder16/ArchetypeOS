@@ -88,16 +88,22 @@ def test_parse_lessons_index() -> None:
 def test_sync_knowledge(db) -> None:
     result = sync_knowledge(db, KNOWLEDGE_ROOT)
 
-    assert result["synced"] == N_LESSONS
-    assert result["created"] == N_LESSONS
+    # Count-agnostic (LES-012): `synced` folds in lessons plus any derived
+    # decision and repository pages (RFC-0008). Assert self-consistency and the
+    # lesson-specific facts, never a pinned total — the vault grows (e.g. new
+    # repository distillations under wiki/repositories/).
+    assert result["synced"] >= N_LESSONS
+    assert result["created"] == result["synced"]
     assert result["updated"] == 0
     assert result["open_lessons"] == N_OPEN
 
     pages = db.query(KnowledgePage).all()
-    assert len(pages) == N_LESSONS
-    assert all(page.page_type == "lesson" for page in pages)
+    assert len(pages) == result["synced"]
     assert all(page.project_id is None for page in pages)
-    assert all(page.vault_path.startswith("wiki/lessons/LES-") for page in pages)
+
+    lesson_pages = [page for page in pages if page.page_type == "lesson"]
+    assert len(lesson_pages) == N_LESSONS
+    assert all(page.vault_path.startswith("wiki/lessons/LES-") for page in lesson_pages)
 
     open_pages = db.query(KnowledgePage).filter(KnowledgePage.validation_state == "open").all()
     assert len(open_pages) == N_OPEN
@@ -105,11 +111,11 @@ def test_sync_knowledge(db) -> None:
 
     # Idempotent re-sync: update in place, no dupes
     rerun = sync_knowledge(db, KNOWLEDGE_ROOT)
-    assert rerun["synced"] == N_LESSONS
+    assert rerun["synced"] == result["synced"]
     assert rerun["created"] == 0
-    assert rerun["updated"] == N_LESSONS
+    assert rerun["updated"] == result["synced"]
     assert rerun["open_lessons"] == N_OPEN
-    assert db.query(KnowledgePage).count() == N_LESSONS
+    assert db.query(KnowledgePage).count() == result["synced"]
 
 
 def test_sync_knowledge_missing_dir(db, tmp_path) -> None:
@@ -189,7 +195,12 @@ def test_knowledge_api(client: TestClient) -> None:
     synced = client.post("/knowledge/sync")
     assert synced.status_code == 200, synced.text
     counts = synced.json()
-    assert counts == {"synced": N_LESSONS, "created": N_LESSONS, "updated": 0, "open_lessons": N_OPEN}
+    # Count-agnostic (LES-012): first sync creates every page; totals fold in
+    # derived decision/repository pages, so assert self-consistency, not a pin.
+    assert counts["updated"] == 0
+    assert counts["created"] == counts["synced"]
+    assert counts["synced"] >= N_LESSONS
+    assert counts["open_lessons"] == N_OPEN
 
     listing = client.get("/knowledge/pages", params={"page_type": "lesson"})
     assert listing.status_code == 200, listing.text

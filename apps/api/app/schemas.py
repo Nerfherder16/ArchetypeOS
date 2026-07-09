@@ -564,3 +564,42 @@ class ConnectorRead(BaseModel):
 class ConnectorHealthUpdate(BaseModel):
     status: str = "healthy"
     error: str | None = None
+
+
+class ActionClassRead(BaseModel):
+    name: str
+    level: int
+    always_requires_approval: bool
+    description: str
+
+
+class AuthorityEvaluateRequest(BaseModel):
+    action_type: str
+    target: str | None = None
+    sensitivity: str = "public"
+    capability: str | None = None
+
+
+class AuthorityDecisionRead(BaseModel):
+    action_type: str
+    action_level: int
+    requires_approval: bool
+    sensitivity: str
+    reason: str
+
+
+class ApprovalRecordRead(BaseModel):
+    id: str
+    project_id: str | None = None
+    actor: str | None = None
+    agent: str | None = None
+    tool: str | None = None
+    action_level: int
+    requested_capability: str | None = None
+    target: str | None = None
+    reason: str | None = None
+    approval_status: str
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}

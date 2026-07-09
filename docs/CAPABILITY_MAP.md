@@ -43,6 +43,7 @@ Capabilities:
 - Arbiter and Final Judge rules
 - decision lifecycle
 - human approval model
+- authority action policy (AOS-AUTHORITY-001: enforced action-class policy — no write/destructive path bypasses `requires_approval`)
 - safety model
 - agent contract
 - agent hierarchy
@@ -55,6 +56,7 @@ Primary artifacts:
 - docs/RFC_PROCESS.md
 - docs/ARBITER_FINAL_JUDGE.md
 - docs/DECISION_LIFECYCLE.md
+- docs/AUTHORITY_POLICY.md (AOS-AUTHORITY-001: action classes + central requires_approval evaluator; GET /authority/action-classes, POST /authority/evaluate, GET /authority/pending)
 - docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
 - docs/EXTERNAL_REVIEW_TRIAGE_2026_07_04.md
 - agents/UNIVERSAL_AGENT_CONTRACT.md

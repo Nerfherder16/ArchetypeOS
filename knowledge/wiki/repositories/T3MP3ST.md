@@ -58,4 +58,5 @@ partial-borrow (patterns only) / monitor — **do not integrate any code.** The 
 ## Linked Decisions / Projects
 
 - Plane AOS-63 — "Evaluate: T3MP3ST" (Done) — in the External Repo Evaluation & Adoption Pipeline module
-- No borrow item created — pattern borrows and the external-service recon option are candidates pending operator greenlight (each needs a scope/authorization + AGPL-isolation decision)
+- Plane AOS-64 — "T3MP3ST recon as AGPL-isolated external security service (EES sub-score)" (Todo / open, RFC-first) — greenlit 2026-07-09
+- The clean-room pattern borrows (risk-tiered tool catalog, human-veto approval gate, decomposition orchestrator, egress scope containment) remain candidates, not greenlit

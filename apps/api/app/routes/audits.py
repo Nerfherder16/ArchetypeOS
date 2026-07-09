@@ -40,6 +40,7 @@ def post_heartbeat(
         day=payload.day,
         pr_url=payload.pr_url,
         detail=payload.detail,
+        project_id=payload.project_id,
     )
 
 

@@ -8,11 +8,18 @@ class ProjectCreate(BaseModel):
     description: str | None = None
 
 
+class ProjectUpdate(BaseModel):
+    # Partial update — only the fields provided are changed. MVP surface: the
+    # per-project nightly-audit toggle.
+    audits_enabled: bool | None = None
+
+
 class ProjectRead(BaseModel):
     id: str
     name: str
     slug: str
     description: str | None
+    audits_enabled: bool
     status: str
     version: int
     created_at: datetime
@@ -325,11 +332,13 @@ class AuditHeartbeatCreate(BaseModel):
     day: str
     pr_url: str | None = None
     detail: str | None = None
+    project_id: str | None = None
 
 
 class AuditHeartbeatRead(BaseModel):
     id: str
     routine: str
+    project_id: str | None
     heartbeat_status: str
     day: str
     pr_url: str | None

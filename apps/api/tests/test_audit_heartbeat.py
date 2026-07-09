@@ -52,6 +52,34 @@ def test_record_heartbeat_creates_then_upserts(db):
     assert db.query(AuditHeartbeat).filter(AuditHeartbeat.routine == "coherence").count() == 1
 
 
+def test_record_heartbeat_scoped_per_project(db):
+    # The same routine for two different projects is two independent rows; a
+    # global heartbeat (project_id=None, the ArchetypeOS self-audit) is a third.
+    a = record_heartbeat(db, routine="coherence", status="clean", day="2026-07-09", project_id="p1")
+    b = record_heartbeat(db, routine="coherence", status="findings", day="2026-07-09", project_id="p2")
+    g = record_heartbeat(db, routine="coherence", status="clean", day="2026-07-09")
+    assert len({a.id, b.id, g.id}) == 3
+    assert db.query(AuditHeartbeat).filter(AuditHeartbeat.routine == "coherence").count() == 3
+
+    # Upsert stays scoped: re-posting for p1 updates p1's row, not p2's or global.
+    a2 = record_heartbeat(db, routine="coherence", status="failed", day="2026-07-10", project_id="p1")
+    assert a2.id == a.id
+    assert a2.heartbeat_status == "failed"
+    assert db.query(AuditHeartbeat).filter(AuditHeartbeat.routine == "coherence").count() == 3
+
+
+def test_post_heartbeat_carries_project_id(client):
+    resp = client.post(
+        "/audits/heartbeat",
+        json={"routine": "coherence", "status": "findings", "day": "2026-07-09", "project_id": "proj-xyz", "pr_url": "http://pr/9"},
+    )
+    assert resp.status_code == 201
+    assert resp.json()["project_id"] == "proj-xyz"
+
+    listing = client.get("/audits/heartbeats").json()
+    assert any(r["routine"] == "coherence" and r["project_id"] == "proj-xyz" for r in listing)
+
+
 def test_list_heartbeats_returns_latest_per_routine(db):
     record_heartbeat(db, routine="coherence", status="clean", day="2026-07-09")
     record_heartbeat(db, routine="session-pain", status="findings", day="2026-07-09", pr_url="http://pr/2")

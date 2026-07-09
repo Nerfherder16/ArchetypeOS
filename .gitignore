@@ -8,7 +8,10 @@ dist/
 coverage/
 test-results/
 playwright-report/
-repositories/
+# Root-level repo-clone workspace dir (the scanner clones into ./repositories).
+# Anchored to root so it does not also ignore source dirs like
+# apps/web/src/features/repositories/.
+/repositories/
 archetypeos_dev.db
 .DS_Store
 

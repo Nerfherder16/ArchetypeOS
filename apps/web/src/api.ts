@@ -796,6 +796,25 @@ export type ResearchRun = {
   updated_at: string;
 };
 
+// AOS-SELFHEAL observability — one heartbeat row per nightly self-learn routine
+// (conflict / toil / coherence / session-pain). Mirrors AuditHeartbeatRead.
+export type AuditHeartbeat = {
+  id: string;
+  routine: string;
+  heartbeat_status: string;
+  day: string;
+  pr_url: string | null;
+  detail: string | null;
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchAuditHeartbeats(): Promise<AuditHeartbeat[]> {
+  return request<AuditHeartbeat[]>('/audits/heartbeats');
+}
+
 export async function createResearchPlan(
   projectId: string,
   question: string,

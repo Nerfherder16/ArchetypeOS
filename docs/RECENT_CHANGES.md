@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-RESEARCH-003 (backend PR1): persisted research plans (planning phase) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-RESEARCH-003 (backend PR 1 of 2) — the planning phase of the multi-phase research loop.** Phase 4, the FINAL consolidation-plan package (eval Finding 15: mature research from a single-shot ranked dossier to a repeatable investigation). Lands acceptance criterion 1 — a research plan is built and PERSISTED before any source is fetched. New `ResearchPlan` model (question/sensitivity/plan_status [named to avoid the AuditMixin.status clash]/required_source_types/search_queries/verification_steps/synthesis_policy under AuditMixin) + Alembic `0012_research_plans` (off head 0011, dialect-agnostic GUID/JSONField). New `services/research_plan.py`: `build_plan_spec(question, sensitivity)` derives the plan facets deterministically (question seeds the first search query + fixed analytical angles; fixed source-type ladder + verification checklist; a synthesis policy committing to cite_sources + record_open_questions), `create_research_plan()` persists it plan_status='planned'. Routes (`app/routes/research_plans.py`, registered in main.py): POST /projects/{id}/research-plans (build+persist, 201; 404 unknown project, 422 empty question/unknown sensitivity), GET /projects/{id}/research-plans (list), GET /research-plans/{id} (detail); ResearchPlanCreate/Read schemas (from_attributes). Route inventory bumped 64→67. Purely additive (no existing model/route/service touched; the run executor will REUSE services/research.py's ranking/synthesis in PR2, not replace it). 10 new tests green (3 unit + 5 API + 2 route-inventory); full API suite 370 passed / 3 skipped; ruff clean. PR2 adds the ResearchRun model + executor (search→fetch→verify→synthesize; sources accept/reject with reason; visible conflicts; cited synthesis + open-questions→follow-ups) + worker handler, satisfying criteria 2-5; then a UI PR surfaces plans under the Research workspace.
+
 ## 2026-07-09 — AOS-UX-IA-001 (deliverable 4, COMPLETES the package): per-workspace Now/Next/Blocked (laptop session — in review)
 
 ### In Review (tandem laptop session)

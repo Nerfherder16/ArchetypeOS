@@ -158,6 +158,28 @@ class ResearchNote(AuditMixin, Base):
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
 
+class ResearchPlan(AuditMixin, Base):
+    """A persisted, multi-phase research plan (AOS-RESEARCH-003, Finding 15).
+
+    The plan is recorded BEFORE any source is fetched: it captures the question,
+    its sensitivity, the source types the investigation requires, the search
+    queries to run, the verification steps to apply, and the synthesis policy.
+    A ResearchRun (later slice) executes a plan and records what it found. Note:
+    ``plan_status`` (not ``status``) avoids clashing with AuditMixin.status.
+    """
+
+    __tablename__ = "research_plans"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
+    plan_status: Mapped[str] = mapped_column(String(32), default="planned", nullable=False)
+    required_source_types: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    search_queries: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    verification_steps: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    synthesis_policy: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+
+
 class Recommendation(AuditMixin, Base):
     __tablename__ = "recommendations"
 

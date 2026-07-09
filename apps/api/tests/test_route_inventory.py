@@ -74,6 +74,10 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/council-reviews/{review_id}"),
         # research engine (AOS-RESEARCH-001 — RFC-0011 ranked evidence dossiers)
         ("POST", "/projects/{project_id}/research"),
+        # multi-phase research plans (AOS-RESEARCH-003 — Finding 15)
+        ("POST", "/projects/{project_id}/research-plans"),
+        ("GET", "/projects/{project_id}/research-plans"),
+        ("GET", "/research-plans/{plan_id}"),
         # knowledge (AOS-KNOW-002 — global, not project-scoped)
         ("POST", "/knowledge/sync"),
         ("GET", "/knowledge/pages"),
@@ -142,6 +146,8 @@ def test_route_inventory_count() -> None:
     # -registry routes (GET /connectors, GET /connectors/{name}, POST
     # /connectors/{name}/health) = 61, plus the AOS-AUTHORITY-001 authority-policy
     # routes (GET /authority/action-classes, POST /authority/evaluate, GET
-    # /authority/pending) = 64.
-    assert len(EXPECTED_ROUTES) == 64
-    assert len(_actual_routes()) == 64
+    # /authority/pending) = 64, plus the AOS-RESEARCH-003 research-plan routes
+    # (POST /projects/{project_id}/research-plans, GET /projects/{project_id}/
+    # research-plans, GET /research-plans/{plan_id}) = 67.
+    assert len(EXPECTED_ROUTES) == 67
+    assert len(_actual_routes()) == 67

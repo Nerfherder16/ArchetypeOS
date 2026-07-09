@@ -20,6 +20,7 @@ import { SchedulingView } from './features/scheduling/SchedulingView';
 import { CouncilView } from './features/council/CouncilView';
 import { CommandPalette } from './features/palette/CommandPalette';
 import { PlannedDrawer } from './features/planned/PlannedDrawer';
+import { OperatorStatusStrip } from './features/statusstrip/OperatorStatusStrip';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
@@ -386,6 +387,7 @@ function App() {
       modes={WORKSPACE_MODES}
       projectSelector={projectSelector}
       health={healthPip}
+      statusStrip={<OperatorStatusStrip />}
       onPlannedSelect={setPlannedSurface}
     >
       {renderView()}

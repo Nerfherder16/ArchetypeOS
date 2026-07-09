@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3a): repository-scoped data loaders moved into a provider (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 3a of the enabler) — the selected repo's DNA + architecture leave App.** Phase 4. Slice 2 (#137) moved project/repository selection into `ProjectProvider`; this slice moves the repository-scoped async data (the selected repo's DNA scan + architecture graph) out of the ~1900-line `App` so the Repositories and Architecture views can each move into their own module next. New `shell/RepositoryDataContext.tsx`: `RepositoryDataProvider` owns `dna`/`dnaError`/`dnaLoading` + `architecture`/`architectureError`, the loaders `loadDna`/`loadArchitecture`, and the co-load effect (fetch both when a repo is selected, clear both when none is, keyed on `selectedRepositoryId`). It consumes `useProjectContext()` so it mounts inside `ProjectProvider` (`<ProjectProvider><RepositoryDataProvider><App/></RepositoryDataProvider></ProjectProvider>`); `useRepositoryData()` throws if used outside it. `App` destructures the fields (same identifiers), so the repo/architecture render, `handleScan`, and `handleSelectRepository` are unchanged; `setDnaError` is exposed because `handleScan` surfaces scan failures in the DNA panel. Net on `main.tsx`: five `useState` + two loaders + one effect removed for one destructure; two now-redundant `setDna(null)`/`setArchitecture(null)` lines dropped from the project-change reset effect (the co-load effect already clears both when `selectedRepositoryId` nulls — proven a no-op by the suite); two unused type imports and two unused fetch imports dropped. Verified behavior-preserving: clean-main baseline 54 pass / 4 worker-scheduler env flakes captured first (LES-L11); post-change identical (54 pass / same 4), with every DNA/architecture/nav spec (architecture-studio, decisions, reuse, repositories, project-context, control-tower, shell-modes, hash-routing) green. Extended `project-context.spec.ts` with a case locking the new contract (select repo → DNA co-loads → scan-summary panel renders). `tsc`+build clean. Next: slice 3b extracts `features/repositories/RepositoriesView.tsx`.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 2): project context provider extracted from main.tsx (laptop session — in review)
 
 ### In Review (tandem laptop session)

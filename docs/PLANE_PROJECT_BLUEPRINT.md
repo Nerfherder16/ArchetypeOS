@@ -159,6 +159,10 @@ Work items:
 | AOS-65 | Evaluate: notebooklm-py (Done) | `knowledge/wiki/repositories/notebooklm-py.md` | `e862176e-ab45-4646-bce7-481852b168fc` |
 | AOS-66 | Evaluate: memtrace-public (Done) | `knowledge/wiki/repositories/memtrace-public.md` | `c6fa2654-b32c-49ac-ae0d-2a310349d1c6` |
 | AOS-67 | Bi-temporal symbol memory (memtrace Option B) — deferred blueprint, build with Evolution Engine (Backlog) | `knowledge/wiki/repositories/memtrace-public.md` | `d5ea7743-86d3-4037-aab4-317c1315d22f` |
+| AOS-68 | Evaluate: obsidian-skills (Done) | `knowledge/wiki/repositories/obsidian-skills.md` | `5c0c52ed-d7aa-4d17-8bc0-dd4a631b2948` |
+| AOS-69 | JSON Canvas emitter for Architecture Studio (from obsidian-skills) | `knowledge/wiki/repositories/obsidian-skills.md` (RFC-first) | `545db6b7-95d2-4c14-81af-882f561b73fd` |
+| AOS-70 | Vendor obsidian-markdown skill into AOS .claude/skills | `knowledge/wiki/repositories/obsidian-skills.md` | `0ca2b6ce-2769-4c0d-a7b5-475e50631f29` |
+| AOS-71 | Propagate obsidian-skills skill-authoring patterns to AOS skills | `knowledge/wiki/repositories/obsidian-skills.md` | `51303bef-ce63-4dcd-bb48-88d2b13b48d8` |
 
 Modules (epics): Foundation Runtime `b317c890-f4f2-4727-9822-18cd5f9672e4`; CI/Verification/PR Guardian `70e4eb8e-9d30-4b46-82d6-e06ab35760d7`; Orchestration Engine `437f8047-4ce4-473c-be45-dc4b88fa141d`; Agent Communication Bus `9ad33657-48cd-4d79-a328-dfccd8569232`; Repository Intelligence `05555846-09af-416e-9aa6-1d0b5e8a4209`; Knowledge Vault `1a2b4283-eab9-44c1-a770-441da89892e4`; App Creation Loop `c36805ee-c8eb-48bc-b285-392c3eee86fd`; Dashboard/Operator Console `a0ca9524-38e5-43e1-bff9-e5ad3f79b04d`; Plane Integration `5eb27dc4-5922-4757-8f83-5df0e4fabab5`; Local Agent Runtime/Worktrees `3ae85f73-5f95-4a4f-bc59-e64465bfc804`; External Repo Evaluation & Adoption Pipeline `c8c0dadf-1922-4a37-8742-55df5fd7bf5e`.
 

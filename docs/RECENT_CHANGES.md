@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 1): URL-hash routing for the active view (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 1 of the enabler) — views become deep-linkable.** Phase 4. The monolithic `apps/web/src/main.tsx` (~1934 lines) held the active view in bare component state, so views were not linkable/bookmarkable and browser back/forward did nothing. First incremental, behavior-preserving slice: a self-contained `shell/useHashRoute.ts` hook backs the active view with the URL hash (`#/<view>`). In-app navigation updates React state synchronously (identical instant behavior to the old `setActiveView`) then syncs the hash; a `hashchange` listener drives external changes (back/forward, manual edits); an unknown/empty hash falls back to the same `overview` default. `main.tsx` change is one line (`const [activeView, setActiveView] = useHashRoute()`), so the 94 project-selection call sites are untouched. Verified behavior-preserving against the full Playwright suite (48 passing; the 4 real-worker/scheduler specs fail identically on clean main — a local-harness env limitation, not a regression, confirmed by stashing the change). New `hash-routing.spec.ts` (4 cases: deep-link mounts the view, unknown hash falls back, nav writes the hash, a hash change drives the view + back button). Caught + fixed one self-inflicted race: an earlier draft made nav async via the hashchange event, breaking specs that read the DOM immediately after `navTo` (LES-L11). The remaining WEB-SPINE slices (project context provider, per-view module split, query/cache layer) follow incrementally.
+
 ## 2026-07-08 — AOS-AUTHORITY-001 (UI): pending authority actions on the Awaiting You surface (laptop session — in review)
 
 ### In Review (tandem laptop session)

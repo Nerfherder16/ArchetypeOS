@@ -104,7 +104,10 @@ test('repository data: selecting a repository loads and renders its DNA', async 
   // Select the repository -> ProjectContext.selectedRepositoryId changes ->
   // RepositoryDataProvider co-loads DNA -> the scan-summary panel renders it.
   await page.getByRole('button', { name: 'recall-core' }).click();
-  await expect(page.getByText('Scan summary')).toBeVisible();
+  // exact:true so this heading does not also match the "Loading scan summary…"
+  // placeholder (getByText is case-insensitive substring by default) — that
+  // race passed locally but tripped a strict-mode violation in CI (LES-L12).
+  await expect(page.getByText('Scan summary', { exact: true })).toBeVisible();
   await expect(page.getByTestId('dna-frameworks')).toHaveText('FastAPI');
   await expect.poll(() => dnaRequests.length).toBeGreaterThan(0);
   expect(dnaRequests.every((url) => url.includes(`/repositories/${REPO.id}/dna`))).toBe(true);

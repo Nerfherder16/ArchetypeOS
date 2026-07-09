@@ -23,6 +23,8 @@ cd "$REPO_ROOT"
 LOG=".archetype/toil/nightly.log"
 mkdir -p "$(dirname "$LOG")"
 log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG" >&2; }
+# AOS-SELFHEAL observability: post a heartbeat so a missed run is visible.
+source "$(dirname "${BASH_SOURCE[0]}")/heartbeat.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits}"
@@ -48,6 +50,7 @@ SIGNAL="$(python3 tools/toil_digest.py --since "$SINCE" --min-count "$MIN_COUNT"
   --json ".archetype/toil/${DAY}.json" 2>>"$LOG" | sed -n 's/^signal=//p')"
 if [ "$SIGNAL" != "true" ]; then
   log "QUIET: no recurring ritual today — nothing to automate."
+  aos_heartbeat toil clean "$DAY"
   exit 0
 fi
 log "SIGNAL: recurring ritual(s) recorded — digest at $OUT."

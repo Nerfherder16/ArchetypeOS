@@ -21,6 +21,8 @@ cd "$REPO_ROOT"
 LOG=".archetype/coherence/nightly.log"
 mkdir -p "$(dirname "$LOG")"
 log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG" >&2; }
+# AOS-SELFHEAL observability: post a heartbeat so a missed run is visible.
+source "$(dirname "${BASH_SOURCE[0]}")/heartbeat.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits}"
@@ -44,6 +46,7 @@ SIGNAL="$(python3 tools/coherence_probe.py --out "$OUT" \
   --json ".archetype/coherence/${DAY}.json" 2>>"$LOG" | sed -n 's/^signal=//p')"
 if [ "$SIGNAL" != "true" ]; then
   log "QUIET: every mirrored frontend type covers its backend schema — no drift."
+  aos_heartbeat coherence clean "$DAY"
   exit 0
 fi
 log "SIGNAL: contract-lag recorded — digest at $OUT."

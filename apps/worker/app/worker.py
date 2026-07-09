@@ -15,6 +15,8 @@ from aos_core.services.digest import build_digest
 from aos_core.services.council import council_provider, run_council
 from aos_core.services.llm_router import Sensitivity
 from aos_core.services.research import research
+from aos_core.services.research_run import execute_research_run
+from aos_core.models import ResearchPlan
 from aos_core.services.usage import make_ledger_sink
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -98,6 +100,16 @@ def _run_research(job: Job, db: Session) -> dict:
     return {"note_id": note.id}
 
 
+def _run_research_run(job: Job, db: Session) -> dict:
+    # Execute a persisted research plan through its phases (AOS-RESEARCH-003).
+    plan_id = (job.payload or {}).get("plan_id", "")
+    plan = db.get(ResearchPlan, plan_id)
+    if plan is None:
+        raise ValueError(f"research plan {plan_id!r} not found")
+    run = execute_research_run(db, plan, job_id=job.id)
+    return {"run_id": run.id, "confidence": run.confidence, "open_questions": len(run.open_questions)}
+
+
 def _run_test(job: Job, db: Session) -> dict:
     return {
         "message": "test job completed",
@@ -110,6 +122,7 @@ register_handler(HandlerSpec("repository_scan", "scan", "public", _run_repositor
 register_handler(HandlerSpec("project_digest", "digest", "public", _run_project_digest))
 register_handler(HandlerSpec("council_review", "council", "public", _run_council_review))
 register_handler(HandlerSpec("research", "research", "public", _run_research))
+register_handler(HandlerSpec("research_run", "research", "public", _run_research_run))
 register_handler(HandlerSpec("test", "noop", "public", _run_test))
 
 

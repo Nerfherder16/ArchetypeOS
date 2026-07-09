@@ -293,6 +293,31 @@ class ResearchPlanRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class ResearchRunRead(BaseModel):
+    id: str
+    plan_id: str
+    project_id: str
+    job_id: str | None
+    run_status: str
+    phases: list
+    sources: list
+    findings: list
+    conflicts: list
+    open_questions: list
+    confidence: float
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class SourceDecisionRequest(BaseModel):
+    accepted: bool
+    reason: str
+
+
 class ResearchRequest(BaseModel):
     question: str
     sensitivity: str = "public"

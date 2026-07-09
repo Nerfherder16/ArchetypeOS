@@ -78,6 +78,11 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/research-plans"),
         ("GET", "/projects/{project_id}/research-plans"),
         ("GET", "/research-plans/{plan_id}"),
+        # research runs (AOS-RESEARCH-003 executor — criteria 2-5)
+        ("POST", "/research-plans/{plan_id}/run"),
+        ("GET", "/research-plans/{plan_id}/runs"),
+        ("GET", "/research-runs/{run_id}"),
+        ("POST", "/research-runs/{run_id}/sources/{source_ref:path}/decision"),
         # knowledge (AOS-KNOW-002 — global, not project-scoped)
         ("POST", "/knowledge/sync"),
         ("GET", "/knowledge/pages"),
@@ -148,6 +153,9 @@ def test_route_inventory_count() -> None:
     # routes (GET /authority/action-classes, POST /authority/evaluate, GET
     # /authority/pending) = 64, plus the AOS-RESEARCH-003 research-plan routes
     # (POST /projects/{project_id}/research-plans, GET /projects/{project_id}/
-    # research-plans, GET /research-plans/{plan_id}) = 67.
-    assert len(EXPECTED_ROUTES) == 67
-    assert len(_actual_routes()) == 67
+    # research-plans, GET /research-plans/{plan_id}) = 67, plus the AOS-RESEARCH-003
+    # research-run routes (POST /research-plans/{plan_id}/run, GET /research-plans/
+    # {plan_id}/runs, GET /research-runs/{run_id}, POST /research-runs/{run_id}/
+    # sources/{source_ref}/decision) = 71.
+    assert len(EXPECTED_ROUTES) == 71
+    assert len(_actual_routes()) == 71

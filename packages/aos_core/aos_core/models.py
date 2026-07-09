@@ -180,6 +180,31 @@ class ResearchPlan(AuditMixin, Base):
     synthesis_policy: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
 
 
+class ResearchRun(AuditMixin, Base):
+    """One execution of a :class:`ResearchPlan` (AOS-RESEARCH-003, criteria 2-5).
+
+    Records the phases it ran (plan → search → fetch → verify → synthesize), every
+    source it considered with an accept/reject decision AND a reason, the findings
+    (each citing an accepted source), the conflicting evidence kept visible (not
+    flattened), a calibrated confidence, and the open questions the run could not
+    resolve (which the executor turns into follow-up plans). ``run_status`` (not
+    ``status``) avoids the AuditMixin.status clash; ``job_id`` links the async job.
+    """
+
+    __tablename__ = "research_runs"
+
+    plan_id: Mapped[str] = mapped_column(GUID(), ForeignKey("research_plans.id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
+    run_status: Mapped[str] = mapped_column(String(32), default="completed", nullable=False)
+    phases: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    sources: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    findings: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    conflicts: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    open_questions: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+
+
 class Recommendation(AuditMixin, Base):
     __tablename__ = "recommendations"
 

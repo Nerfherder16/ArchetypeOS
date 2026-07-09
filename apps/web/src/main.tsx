@@ -42,13 +42,13 @@ import { ApprovalsView } from './features/approvals/ApprovalsView';
 import { ActivityView } from './features/activity/ActivityView';
 import { VoiceInboxView } from './features/voice/VoiceInboxView';
 import { NodesView } from './features/nodes/NodesView';
-import { ArchitectureStudio } from './features/architecture/ArchitectureStudio';
+import { ArchitectureView } from './features/architecture/ArchitectureView';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { useHashRoute } from './shell/useHashRoute';
 import { ProjectProvider, useProjectContext } from './shell/ProjectContext';
-import { RepositoryDataProvider, useRepositoryData } from './shell/RepositoryDataContext';
+import { RepositoryDataProvider } from './shell/RepositoryDataContext';
 import { SelectProjectNotice } from './shell/SelectProjectNotice';
 import { RepositoriesView } from './features/repositories/RepositoriesView';
 import { errorMessage } from './shell/errorMessage';
@@ -142,12 +142,6 @@ function App() {
   } = useProjectContext();
   const [newProjectName, setNewProjectName] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
-
-
-  // AOS-WEB-SPINE-001 (slice 3a/3b): the selected repository's architecture graph
-  // lives in RepositoryDataProvider; the Architecture case below reads it. The
-  // DNA half is consumed directly by RepositoriesView (slice 3b).
-  const { architecture, architectureError, loadArchitecture } = useRepositoryData();
 
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [researchNotes, setResearchNotes] = useState<ResearchNote[]>([]);
@@ -953,41 +947,7 @@ function App() {
         return <RepositoriesView />;
 
       case 'architecture':
-        if (!selectedProjectId) {
-          return <SelectProjectNotice />;
-        }
-        if (!selectedRepositoryId) {
-          return (
-            <div className="aos-view">
-              <div className="aos-view-head">
-                <span className="aos-eyebrow">System map</span>
-                <h2>Architecture</h2>
-              </div>
-              <div className="aos-hud glass aos-card">
-                <p className="aos-muted" style={{ margin: 0 }}>
-                  Select a repository in the Repositories view and run a scan to load its architecture.
-                </p>
-              </div>
-            </div>
-          );
-        }
-        return (
-          <div className="aos-view">
-            <div className="aos-view-head">
-              <span className="aos-eyebrow">System map</span>
-              <h2>Architecture</h2>
-            </div>
-            <ArchitectureStudio
-              graph={architecture}
-              error={architectureError}
-              onCorrected={() => {
-                if (selectedProjectId && selectedRepositoryId) {
-                  void loadArchitecture(selectedProjectId, selectedRepositoryId);
-                }
-              }}
-            />
-          </div>
-        );
+        return <ArchitectureView />;
 
       case 'council':
         if (!selectedProjectId) {

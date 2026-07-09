@@ -1,0 +1,47 @@
+# Repositories Index
+
+## Aliases
+
+- keep pile
+- external repo register
+- repo evaluation register
+- repo adoption board
+
+## Status
+
+active
+
+## Owner
+
+Chief Architect / Orchestrator
+
+## Evidence
+
+- `docs/ARCHETYPEOS_CONTEXT.md` — knowledge strategy: GitHub stores source, Postgres stores runtime data, the graph stores relationships, Obsidian stores human-readable research/decision notes
+- Full teardowns live in `docs/repo-research/<repo>.md`; this register holds the distilled verdict and the borrow candidates
+
+## Linked Decisions / Projects
+
+- [[../decisions/|decisions]] — a borrow that gets committed to graduates into a decision card or RFC
+- [[../lessons/index|lessons]] — evaluation misses feed the learning loop
+- Plane module "External Repo Evaluation & Adoption Pipeline" (`c8c0dadf-1922-4a37-8742-55df5fd7bf5e`) tracks the actionable adoption work
+
+## Content
+
+Single register for every external repository evaluated for ArchetypeOS. Each row is a candidate, not a commitment. The heavy evidence stays in `docs/repo-research/`; this table is the queryable, graph-linked judgment layer so current and future repos are compared on the same axes.
+
+Lifecycle: `evaluated` → `queued` → `borrowing` → `borrowed` / `rejected` / `monitor`. A borrow only becomes real work when it graduates into a `decisions/` card, an RFC, or a Plane work item (cite what consumed it). On conflict between a repo page and this table, this table wins.
+
+### Verdict vocabulary
+
+- `adopt` — vendor / install largely as-is
+- `partial-borrow` — take specific artifacts, reject the whole
+- `reject` — nothing additive over what AOS already has
+- `monitor` — not now, re-check later
+
+## Register
+
+| Repo | Verdict | Borrow candidates | AOS engines | Status | Report |
+|------|---------|-------------------|-------------|--------|--------|
+| [[claude-obsidian]] | partial-borrow | BM25/cosine retrieval scripts (RFC-0010); `think` skill frontmatter + 10-principle framework (ADR) | Knowledge Graph, Research Engine, Decision Intelligence | evaluated | [[../../../docs/repo-research/claude-obsidian\|report]] |
+| [[claude-video]] | partial-borrow | video-ingestion capability: URL → download+frames+transcription → structured breakdown (greenlit AOS-62) | Research Engine, Knowledge Vault | borrowing | [[../../../docs/repo-research/claude-video\|report]] |

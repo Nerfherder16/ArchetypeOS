@@ -598,6 +598,34 @@
   border-top: 1px solid var(--frame);
 }
 
+/* AOS-UX-IA-001 (d4): per-workspace Now/Next/Blocked summary in the rail. */
+.aos-wsstatus {
+  margin: 12px 0 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--frame);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+.aos-wsstatus-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+.aos-wsstatus-row dt {
+  flex: 0 0 44px;
+  color: var(--ink-2);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 10px;
+}
+.aos-wsstatus-row dd {
+  margin: 0;
+  min-width: 0;
+  color: var(--ink);
+}
+
 .aos-main {
   flex: 1 1 auto;
   min-width: 0;
@@ -798,9 +826,11 @@
   .aos-shell {
     flex-direction: column;
   }
-  /* AOS-UX-IA-001 (d3): the operator status strip is a wide-screen topbar nicety;
-     hide it on phones so the tight topbar never overflows horizontally. */
-  .aos-status-strip {
+  /* AOS-UX-IA-001 (d3/d4): the operator status strip and per-workspace
+     Now/Next/Blocked summary are wide-screen niceties; hide them on phones so the
+     tight topbar/rail never overflow. */
+  .aos-status-strip,
+  .aos-wsstatus {
     display: none;
   }
   .aos-rail {

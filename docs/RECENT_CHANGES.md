@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-UX-IA-001 (deliverable 4, COMPLETES the package): per-workspace Now/Next/Blocked (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-UX-IA-001 (deliverable 4 of 4 — package COMPLETE) — per-workspace Now/Next/Blocked lands.** Phase 4 ('control room → control tower', Findings 2/3/12). New `features/workspacestatus/WorkspaceStatus.tsx` renders a compact rail summary scoped to the active workspace mode: Now = the active surface label; Next = the mode's first planned ('soon') surface; Blocked = pending approvals (`GET /authority/pending` count, on mount + 30s poll, graceful), shown only when >0. `Shell.tsx` already computes currentMode + the active surface label, so it renders `<WorkspaceStatus mode={currentMode} activeSurfaceLabel={activeViewLabel}/>` in the rail between the surface list and the project selector (Now/Next need no fetch); no backend change. Layout in a `.aos-wsstatus` CSS class + hidden below 720px alongside the status strip (LES-L13: keep the phone rail from overflowing; shell-modes overflow guard stays green). New `e2e/workspace-status.spec.ts` (Executive default → Now 'Overview'/Next 'Portfolio Intelligence'; switch Architect → Now 'Repositories'/Next 'Digital Twin'; mock 3 pending → Blocked '3 awaiting approval'; Blocked absent when clear) green. `tsc`+build clean; full suite otherwise the canonical worker/scheduler flakes only. Honest minimal version given data limits (jobs are project-scoped); Blocked is an operator-wide signal shown per-workspace. **AOS-UX-IA-001 is now complete: command palette + Planned drawer + operator status strip + Now/Next/Blocked all shipped.** Next package: AOS-RESEARCH-003 (multi-phase research loop).
+
 ## 2026-07-09 — AOS-UX-IA-001 (deliverable 3): global operator status strip (laptop session — in review)
 
 ### In Review (tandem laptop session)

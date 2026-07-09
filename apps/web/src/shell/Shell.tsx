@@ -38,6 +38,8 @@ type ShellProps = {
   // AOS-UX-IA-001 (deliverable 2): clicking a planned "soon" surface opens the
   // Planned drawer instead of being a dead control.
   onPlannedSelect?: (surface: Surface) => void;
+  // AOS-UX-IA-001 (deliverable 3): a compact operator status strip in the topbar.
+  statusStrip?: React.ReactNode;
 };
 
 // The ops-deck chrome: left rail (brand + mode switcher + active mode's surface
@@ -53,6 +55,7 @@ export function Shell({
   health,
   children,
   onPlannedSelect,
+  statusStrip,
 }: ShellProps) {
   // The design tokens resolve themes via `:root[data-theme="…"]`; the toggle
   // stamps that attribute. Default the deck to dark (the ops-deck intent).
@@ -179,6 +182,7 @@ export function Shell({
             ) : null}
           </div>
           <div className="aos-topbar-actions">
+            {statusStrip}
             {health}
             <button
               type="button"

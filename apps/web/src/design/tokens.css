@@ -645,6 +645,14 @@
   flex: 0 0 auto;
 }
 
+/* AOS-UX-IA-001 (d3): operator status strip. Layout lives here (not inline) so
+   the phone media query can hide it — the topbar is too tight on phones. */
+.aos-status-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .aos-workspace {
   flex: 1 1 auto;
   min-width: 0;
@@ -789,6 +797,11 @@
 @media (max-width: 719px) {
   .aos-shell {
     flex-direction: column;
+  }
+  /* AOS-UX-IA-001 (d3): the operator status strip is a wide-screen topbar nicety;
+     hide it on phones so the tight topbar never overflows horizontally. */
+  .aos-status-strip {
+    display: none;
   }
   .aos-rail {
     flex: 0 0 auto;

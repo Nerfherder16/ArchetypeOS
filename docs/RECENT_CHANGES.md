@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-UX-IA-001 (deliverable 3): global operator status strip (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-UX-IA-001 (deliverable 3 of 4) — a global operator status strip lands in the topbar.** Phase 4 ('control room → control tower', Findings 2/3/12). New `features/statusstrip/OperatorStatusStrip.tsx` fetches two project-independent operator signals on mount + a 30s light poll: pending approvals (`GET /authority/pending` count) and node health (`GET /nodes` → healthy/total where healthy = node_status==='healthy', matching the Nodes view), rendered as two compact pills (`N awaiting`, `H/T nodes`) with a warn tint when approvals pend or a node is unhealthy. `Shell.tsx` gains an optional `statusStrip?: React.ReactNode` prop rendered in the topbar actions before the health pip; `main.tsx` passes `<OperatorStatusStrip/>`. Deliberately non-blocking: each read is independent + wrapped, so a failing endpoint degrades only its own pill to `—` and never affects the other pill or the shell. No backend change. New `e2e/operator-status-strip.spec.ts` (mock /authority/pending=2 + /nodes=3/2-healthy → strip shows '2 awaiting' + '2/3 nodes'; a /nodes 500 → nodes pill '— nodes', strip survives) green. `tsc`+build clean; full suite otherwise unchanged (only canonical worker/scheduler flakes fail locally; nav/palette/drawer specs green). Jobs count omitted (GET /jobs is project-scoped, no global endpoint). Last UX-IA deliverable: Now/Next/Blocked per workspace.
+
 ## 2026-07-09 — AOS-UX-IA-001 (deliverable 2): Planned drawer replaces dead "soon" chips (laptop session — in review)
 
 ### In Review (tandem laptop session)

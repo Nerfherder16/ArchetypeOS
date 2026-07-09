@@ -6,6 +6,7 @@ import {
   type WorkspaceMode,
   type WorkspaceModeId,
 } from './workspaces';
+import { WorkspaceStatus } from '../features/workspacestatus/WorkspaceStatus';
 
 // State-based view routing ids (no router dependency, no URL change). The rail
 // nav swaps `activeView`; only the active view is mounted in the workspace.
@@ -160,6 +161,8 @@ export function Shell({
             );
           })}
         </ul>
+
+        <WorkspaceStatus mode={currentMode} activeSurfaceLabel={activeViewLabel} />
 
         <div className="aos-rail-foot">{projectSelector}</div>
       </nav>

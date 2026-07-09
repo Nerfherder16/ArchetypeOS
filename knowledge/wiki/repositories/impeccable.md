@@ -65,5 +65,7 @@ partial-borrow — genuinely additive, not redundant. Apache-2.0, ~45k stars, co
 
 ## Linked Decisions / Projects
 
-- Plane AOS-72 — "Evaluate: impeccable" (Done) — in the External Repo Evaluation & Adoption Pipeline module
-- No borrow item created yet — Option B (vendor rules into AOS design-system skill) is the strongest AOS-native candidate; Option A (plugin install) is a Tim-environment action. Pending operator greenlight.
+- Plane AOS-72 — "Evaluate: impeccable" (Done)
+- Plane AOS-73 — "Vendor impeccable design rules into AOS design-system skill" (Todo) — greenlit 2026-07-09
+- Plane AOS-74 — "Install impeccable as a Claude Code plugin (design work)" (Todo) — greenlit 2026-07-09
+- Plane AOS-75 — "Design-lint for apps/web from impeccable rules" (Todo, RFC-first) — greenlit 2026-07-09

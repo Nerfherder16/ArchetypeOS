@@ -23,11 +23,21 @@ def record_heartbeat(
     day: str,
     pr_url: str | None = None,
     detail: str | None = None,
+    project_id: str | None = None,
 ) -> AuditHeartbeat:
-    """Upsert the latest heartbeat for a routine (one row per routine)."""
-    row = db.query(AuditHeartbeat).filter(AuditHeartbeat.routine == routine).one_or_none()
+    """Upsert the latest heartbeat for a (routine, project) pair.
+
+    A global routine (the ArchetypeOS self-audit) passes ``project_id=None``; a
+    per-project audit scopes the same routine to a project so their heartbeats are
+    upserted independently. ``filter_by(project_id=None)`` resolves to ``IS NULL``.
+    """
+    row = (
+        db.query(AuditHeartbeat)
+        .filter_by(routine=routine, project_id=project_id)
+        .one_or_none()
+    )
     if row is None:
-        row = AuditHeartbeat(routine=routine)
+        row = AuditHeartbeat(routine=routine, project_id=project_id)
         db.add(row)
     row.heartbeat_status = status
     row.day = day

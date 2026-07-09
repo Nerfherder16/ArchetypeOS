@@ -6,6 +6,7 @@ import {
   rejectDecision,
   type Decision,
 } from '../../api';
+import { AuthorityQueue } from '../authority/AuthorityQueue';
 
 const errorMessage = (err: unknown): string =>
   err instanceof Error ? err.message : 'Request failed';
@@ -279,12 +280,14 @@ export function ApprovalsView() {
         </ul>
       ) : null}
 
-      {/* Non-goal footnote (AOS-GOV-001): this is the decisions-approval slice.
-          The broader authority model is deferred. */}
+      {/* AOS-AUTHORITY-001: the enforced authority action queue. High-impact
+          actions (write/destructive/sensitive egress) land here for a human
+          decision before they run — review-first as infrastructure. */}
+      <AuthorityQueue />
+
       <p className="aos-mono aos-muted" style={{ margin: '16px 0 0', fontSize: 11.5 }}>
-        This is the decisions-approval slice. Broader authority controls — action-level authority
-        levels, temporary grants, audit search, and Emergency Stop — plus PR Guardian gates and risk
-        signals in the queue are coming soon.
+        Decisions approve/reject above; high-impact authority actions await approval below. Temporary
+        grants, audit search, and Emergency Stop are still coming.
       </p>
     </section>
   );

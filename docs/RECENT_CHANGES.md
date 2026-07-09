@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-SELFHEAL-005: contract-coherence probe (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SELFHEAL-005 — the contract-coherence probe (the plan's optional cross-cutting item).** The self-learn loop grows a third probe (sibling of conflict_digest.py + toil_digest.py) that flags contract-lag automatically: a frontend TS type thinner than the backend Pydantic schema it mirrors — the exact class of gap the eval found by hand (the API dropped DNA purpose/maturity because the frontend type never surfaced them). New `tools/coherence_probe.py` (deterministic + hermetic: parses `*Read` schemas from apps/api/app/schemas.py + `export type` shapes from apps/web/src/api.ts, pairs XRead↔X, reports frontend types missing domain fields; excludes the AuditMixin envelope so the signal is domain/relationship drift not boilerplate; emits markdown digest + JSON + signal line like its siblings). New `scripts/nightly/coherence_learn.sh` + `coherence_learn.prompt.md` (self-learn nightly wiring mirroring toil_learn.sh: gate on signal → fresh branch/day → headless reasoned tier widens the drifted frontend type to match + opens a PR, NEVER merges, never edits a dirty tree, writes nothing for intentional omissions per Article XII). gitignore ignores `.archetype/coherence/`. The probe already earns its keep — run on the repo it flags REAL drift: Recommendation drops rationale/alternatives/pros/cons/risk/effort/dependencies/acceptance_criteria; Decision drops alternatives/consequences/context/tradeoffs; Job drops payload/priority/result. 8 probe tests green; full API suite green; ruff clean; nightly script `bash -n` clean. Contract-lag only by design (state-drift is already covered by the doc-staleness/state-refresh workflows). This ships the probe; closing the seams it found is the review-first work the nightly now proposes.
+
 ## 2026-07-09 — AOS-RESEARCH-003 (UI): Research Plans surface — COMPLETES the package + the consolidation plan (laptop session — in review)
 
 ### In Review (tandem laptop session)

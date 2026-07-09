@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 2): project context provider extracted from main.tsx (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 2 of the enabler) — project selection leaves App's local scope.** Phase 4. Slice 1 (#136) made views URL-routable; this slice extracts the project/repository selection state out of the ~1900-line `App` so later slices can move project-scoped views into their own modules without reaching back into `App`. New self-contained `shell/ProjectContext.tsx`: `ProjectProvider` owns `projects`/`projectsError`/`selectedProjectId`, `repositories`/`repositoriesError`/`selectedRepositoryId`, and the two self-contained loaders `loadProjects`/`loadRepositories` (each touches only its own setters, so nothing else moved with them); `useProjectContext()` exposes the value and throws if used outside the provider; `<App/>` is wrapped in `<ProjectProvider>`. `App` destructures those fields at the top, keeping the **exact same identifiers** in scope, so the ~90 downstream `selectedProjectId`/`setSelectedProjectId`/`loadRepositories` call sites are **unchanged** — an extraction, not a rewrite. The shared 2-line `errorMessage` helper was lifted into `shell/errorMessage.ts` (DRY, one copy for App + provider). Net on `main.tsx`: six `useState` + two `useCallback` loaders removed for one destructure; two unused type imports and two unused fetch imports dropped. Verified behavior-preserving against the full Playwright suite: clean-main baseline 49 pass / 8 env flakes captured first (LES-L11); post-change 53 pass / 4 fail, the 4 a strict subset of the baseline (worker/scheduler specs the local API stub can't serve, green in CI docker), with every routing/nav/selection spec (repositories, reuse, decisions, architecture-studio, nodes-view, shell-modes, hash-routing, control-tower) passing. `tsc`+build clean. Remaining WEB-SPINE slices: per-view module split of `main.tsx`, query/cache layer.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 1): URL-hash routing for the active view (laptop session — in review)
 
 ### In Review (tandem laptop session)

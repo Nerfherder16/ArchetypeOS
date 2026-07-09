@@ -6,6 +6,8 @@ __pycache__/
 node_modules/
 dist/
 coverage/
+test-results/
+playwright-report/
 repositories/
 archetypeos_dev.db
 .DS_Store

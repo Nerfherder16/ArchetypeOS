@@ -20,9 +20,7 @@ import {
   fetchHealth,
   fetchJobs,
   fetchKnowledgePages,
-  fetchProjects,
   fetchRecommendations,
-  fetchRepositories,
   fetchResearchNotes,
   fetchSchedules,
   registerRepository,
@@ -39,9 +37,7 @@ import {
   type Job,
   type KnowledgePage,
   type NightlyDigest,
-  type Project,
   type Recommendation,
-  type Repository,
   type RepositoryDna,
   type ResearchNote,
   type Schedule,
@@ -57,11 +53,10 @@ import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { useHashRoute } from './shell/useHashRoute';
+import { ProjectProvider, useProjectContext } from './shell/ProjectContext';
+import { errorMessage } from './shell/errorMessage';
 import { WORKSPACE_MODES } from './shell/workspaces';
 import './design/tokens.css';
-
-const errorMessage = (err: unknown): string =>
-  err instanceof Error ? err.message : 'Request failed';
 
 // Palette for the decision-loop status badge; unknown statuses fall back to grey.
 // Ops-deck `.aos-pill` tier per decision status (blue+red palette):
@@ -142,15 +137,28 @@ function App() {
   const [knowledgeSyncing, setKnowledgeSyncing] = useState(false);
   const [knowledgeSyncSummary, setKnowledgeSyncSummary] = useState<string | null>(null);
 
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [projectsError, setProjectsError] = useState<string | null>(null);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  // AOS-WEB-SPINE-001 (slice 2): project/repository selection + its two catalogs
+  // and self-contained loaders live in ProjectProvider. Destructured here so the
+  // project-scoped callbacks below keep their exact call signatures.
+  const {
+    projects,
+    setProjects,
+    projectsError,
+    setProjectsError,
+    selectedProjectId,
+    setSelectedProjectId,
+    repositories,
+    setRepositories,
+    repositoriesError,
+    setRepositoriesError,
+    selectedRepositoryId,
+    setSelectedRepositoryId,
+    loadProjects,
+    loadRepositories,
+  } = useProjectContext();
   const [newProjectName, setNewProjectName] = useState('');
   const [creatingProject, setCreatingProject] = useState(false);
 
-  const [repositories, setRepositories] = useState<Repository[]>([]);
-  const [repositoriesError, setRepositoriesError] = useState<string | null>(null);
-  const [selectedRepositoryId, setSelectedRepositoryId] = useState<string | null>(null);
   const [newRepoName, setNewRepoName] = useState('');
   const [newRepoPath, setNewRepoPath] = useState('');
   const [registeringRepo, setRegisteringRepo] = useState(false);
@@ -228,25 +236,6 @@ function App() {
     } catch (err) {
       setKnowledgePages([]);
       setKnowledgeError(errorMessage(err));
-    }
-  }, []);
-
-  const loadProjects = useCallback(async () => {
-    setProjectsError(null);
-    try {
-      setProjects(await fetchProjects());
-    } catch (err) {
-      setProjectsError(errorMessage(err));
-    }
-  }, []);
-
-  const loadRepositories = useCallback(async (projectId: string) => {
-    setRepositoriesError(null);
-    try {
-      setRepositories(await fetchRepositories(projectId));
-    } catch (err) {
-      setRepositories([]);
-      setRepositoriesError(errorMessage(err));
     }
   }, []);
 
@@ -1934,4 +1923,8 @@ function App() {
   );
 }
 
-createRoot(document.getElementById('root')!).render(<App />);
+createRoot(document.getElementById('root')!).render(
+  <ProjectProvider>
+    <App />
+  </ProjectProvider>,
+);

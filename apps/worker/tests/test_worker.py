@@ -264,6 +264,53 @@ def test_research_dispatch(worker_db):
         assert note.confidence > 0.0
 
 
+def test_research_run_dispatch(worker_db):
+    # AOS-RESEARCH-003: the worker executes a persisted research plan through its
+    # phases and completes the job with {run_id}, persisting the ResearchRun.
+    from aos_core.models import ResearchRun
+    from aos_core.services.llm_router import Sensitivity
+    from aos_core.services.research_plan import create_research_plan
+
+    with worker_db() as db:
+        project = Project(name="Research Run", slug="research-run-worker")
+        db.add(project)
+        db.flush()
+        db.add(
+            KnowledgePage(
+                project_id=project.id,
+                title="qdrant vector database sharding guide",
+                vault_path="vault/repos/qdrant.md",
+                page_type="repository",
+            )
+        )
+        db.commit()
+        plan = create_research_plan(
+            db, project_id=project.id, question="qdrant vector database sharding", sensitivity=Sensitivity.PUBLIC
+        )
+        job = Job(
+            job_type="research_run",
+            status="queued",
+            project_id=project.id,
+            payload={"plan_id": plan.id},
+        )
+        db.add(job)
+        db.commit()
+        job_id = job.id
+        plan_id = plan.id
+
+    worker.run_job(job_id)
+
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        assert job.status == "completed"
+        run_id = job.result["run_id"]
+        run = db.get(ResearchRun, run_id)
+        assert run is not None
+        assert run.plan_id == plan_id
+        assert run.job_id == job_id
+        assert [p["phase"] for p in run.phases] == ["plan", "search", "fetch", "verify", "synthesize"]
+
+
 def test_test_job_backward_compat(worker_db):
     with worker_db() as db:
         job = Job(job_type="test", status="queued")

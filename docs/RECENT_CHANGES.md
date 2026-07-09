@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-RESEARCH-003 (backend PR2): the research-run executor (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-RESEARCH-003 (backend PR 2 of 2) — the run executor; satisfies acceptance criteria 2-5.** Phase 4, final package (eval Finding 15). Builds on PR1's persisted ResearchPlan to actually run an investigation. New `ResearchRun` model (plan_id/project_id/job_id FKs, run_status [avoids status clash], phases, sources [each with accepted+reason], findings, conflicts, open_questions, confidence) + Alembic `0013_research_runs` off head 0012. New `services/research_run.py`: `execute_research_run(db, plan, job_id=None)` runs phases plan→search→fetch→verify→synthesize REUSING the existing research engine (LocalCorpusSource.gather → _rank → synthesize_dossier, not reimplemented); records every considered source with an accept/reject decision + reason (top-N accepted; below-cut and zero-relevance rejected with distinct reasons — criterion 2); keeps conflicts as their own visible field (criterion 3); findings cite accepted sources (criterion 4); creates a follow-up ResearchPlan (plan_status='follow_up') per open question (criterion 5). Routes (extend research_plans.py): POST /research-plans/{id}/run (enqueue research_run job, mirrors council), GET /research-plans/{id}/runs, GET /research-runs/{id}, POST /research-runs/{id}/sources/{source_ref:path}/decision (operator override accept/reject with a REQUIRED reason, 422 without). ResearchRunRead/SourceDecisionRequest schemas. Worker handler `_run_research_run` registered (job_type 'research_run', capability 'research'). Route inventory 67→71. Additive (existing research engine reused, not modified); deterministic + hermetic. 20 new tests green (6 run-unit + 6 run-api + 1 worker-dispatch + route-inventory); full API suite green; worker 12/12; ruff clean. Next: a UI PR surfaces plans/runs under the Research workspace — completing AOS-RESEARCH-003 and the entire 10-package consolidation plan.
+
 ## 2026-07-09 — AOS-RESEARCH-003 (backend PR1): persisted research plans (planning phase) (laptop session — in review)
 
 ### In Review (tandem laptop session)

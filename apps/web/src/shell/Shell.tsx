@@ -24,6 +24,7 @@ export type ViewId =
   | 'approvals'
   | 'activity'
   | 'research'
+  | 'research-plans'
   | 'voice-inbox'
   | 'nodes';
 

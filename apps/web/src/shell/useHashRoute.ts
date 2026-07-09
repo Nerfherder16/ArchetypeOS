@@ -24,6 +24,7 @@ export const VIEW_IDS: readonly ViewId[] = [
   'approvals',
   'activity',
   'research',
+  'research-plans',
   'voice-inbox',
   'nodes',
 ] as const;

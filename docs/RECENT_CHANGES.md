@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3b): Repositories view extracted into its own module (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 3b of the enabler) — the first view module actually leaves main.tsx.** Phase 4, the payoff of slices 2+3a. With project selection (`useProjectContext`, #137) and repository-scoped data (`useRepositoryData`, #138) both in providers, the Repositories surface becomes a self-contained component reaching its data through hooks instead of App's local scope. New `features/repositories/RepositoriesView.tsx` renders the repo list + registration form + scan action + DNA scan-summary panel (moved verbatim from App's `case 'repositories'`), owning only its own UI state (`newRepoName`/`newRepoPath`/`registeringRepo`/`scanningRepoId`) and handlers (`handleRegisterRepository`/`handleScan`); the derived `summary`/`primaryLanguages` move with it. The shared `SelectProjectNotice` empty state (used by five project-scoped views) moved to `shell/SelectProjectNotice.tsx`. `main.tsx`'s case is now `return <RepositoriesView/>`; removed the ~136-line inline view, both handlers, four `useState`s, the derived values, the local notice, the now-orphaned context destructures (dna/dnaError/setDnaError/dnaLoading/loadDna; repositoriesError/setRepositoriesError; the pre-existing-dead setProjects), and unused `registerRepository`/`scanRepository` imports — **main.tsx drops 1937 → 1683 lines (−254).** Behavior-preserving (markup/handlers/derived values moved character-for-character, now reading the same values from hooks): clean-main baseline 55 pass / 4 worker-scheduler env flakes captured first (LES-L11); post-change identical, with project-context (select project→repos, select repo→DNA), reuse, decisions, shell-modes, control-tower, hash-routing all green. `tsc`+build clean. Next: Architecture-wrapper micro-slice, then the larger Council/Digest/Scheduling views and the query/cache layer.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3a): repository-scoped data loaders moved into a provider (laptop session — in review)
 
 ### In Review (tandem laptop session)

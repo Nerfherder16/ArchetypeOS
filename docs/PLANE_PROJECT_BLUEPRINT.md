@@ -154,6 +154,7 @@ Work items:
 | AOS-60 | Borrow BM25 retrieval scripts → RFC-0010 | `knowledge/wiki/repositories/claude-obsidian.md` | `8b17cd5f-1c77-4ba6-8b1e-c34a75f8b5f9` |
 | AOS-61 | Evaluate: claude-video (Done) | `knowledge/wiki/repositories/claude-video.md` | `23ef7c9a-809b-4fde-9b63-e36ae86414ac` |
 | AOS-62 | Adopt claude-video pipeline as AOS video-ingestion capability | `knowledge/wiki/repositories/claude-video.md` (RFC-first) | `0eebbdec-3b87-4a70-9633-7024bb2ac1a2` |
+| AOS-63 | Evaluate: T3MP3ST (Done) | `knowledge/wiki/repositories/T3MP3ST.md` | `221efb2a-fa76-405e-a12c-04e43a4e28b3` |
 
 Modules (epics): Foundation Runtime `b317c890-f4f2-4727-9822-18cd5f9672e4`; CI/Verification/PR Guardian `70e4eb8e-9d30-4b46-82d6-e06ab35760d7`; Orchestration Engine `437f8047-4ce4-473c-be45-dc4b88fa141d`; Agent Communication Bus `9ad33657-48cd-4d79-a328-dfccd8569232`; Repository Intelligence `05555846-09af-416e-9aa6-1d0b5e8a4209`; Knowledge Vault `1a2b4283-eab9-44c1-a770-441da89892e4`; App Creation Loop `c36805ee-c8eb-48bc-b285-392c3eee86fd`; Dashboard/Operator Console `a0ca9524-38e5-43e1-bff9-e5ad3f79b04d`; Plane Integration `5eb27dc4-5922-4757-8f83-5df0e4fabab5`; Local Agent Runtime/Worktrees `3ae85f73-5f95-4a4f-bc59-e64465bfc804`; External Repo Evaluation & Adoption Pipeline `c8c0dadf-1922-4a37-8742-55df5fd7bf5e`.
 

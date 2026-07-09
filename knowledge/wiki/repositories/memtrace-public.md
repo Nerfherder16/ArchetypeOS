@@ -41,6 +41,15 @@ partial-borrow / monitor — genuinely additive capability, but **do not adopt a
 2. **Borrow the bi-temporal schema design (Option B, recommended)** — clean-room implement `valid_from`/`valid_to` per symbol + temporal scoring + cochange in AOS's own scanner + Neo4j, using memtrace's documented architecture as a blueprint. ~3-6 weeks. No license restriction on design ideas; no vendor dependency; fully local; aligns with AOS principles.
 3. **Monitor** — track maturity/license; revisit if it open-sources or drops the competing-product clause.
 
+## Decision (2026-07-09): defer Option B, capture as Evolution Engine blueprint
+
+Operator decision: **do not build Option B now; keep it as a captured blueprint, memtrace stays `monitor`.** Rationale (evidence over YAGNI):
+
+- AOS + jcodemunch already cover the symbol-level **static** half memtrace advertises (blast radius, call hierarchy, churn, dead code, coupling, symbol importance). Re-building that is redundant.
+- The only genuinely novel delta is the **bi-temporal history layer** — point-in-time graph replay, cochange detection, temporal scoring. Its natural consumer is the **Evolution Engine** ("evolve systems over time"), which is roadmap, not built. With no live driver, a 3-6 week build now is YAGNI.
+- This page + the full teardown (`docs/repo-research/memtrace-public.md`) ARE the blueprint. When the Evolution Engine is scheduled, promote **Plane AOS-67** to an RFC and build the bi-temporal layer clean-room in AOS's scanner + Neo4j then.
+- The one slice with a live driver today (cochange → PR Guardian blast-radius) was explicitly NOT started as part of this decision; it can be picked up separately if that becomes a priority.
+
 ## Risks
 
 - **Proprietary EULA + closed engine (critical):** binary-only; no audit/modify/fork/redistribute; Section 2(e) prohibits building a competing product — **mandatory legal review** before any adoption of the binary. No source path to self-host the core.
@@ -56,5 +65,6 @@ partial-borrow / monitor — genuinely additive capability, but **do not adopt a
 
 ## Linked Decisions / Projects
 
-- Plane AOS-66 — "Evaluate: memtrace-public" (Done) — in the External Repo Evaluation & Adoption Pipeline module
-- No borrow item created yet — Option B (clean-room bi-temporal schema borrow) is the recommended candidate; Option A (MCP) needs legal review. Pending operator greenlight.
+- Plane AOS-66 — "Evaluate: memtrace-public" (Done)
+- Plane AOS-67 — "Bi-temporal symbol memory (memtrace Option B) — deferred blueprint, build with Evolution Engine" (Backlog) — the parked anchor; this page is its blueprint
+- Option A (run as MCP) remains gated on legal review + heartbeat acceptance — not pursued

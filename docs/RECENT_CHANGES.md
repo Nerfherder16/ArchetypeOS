@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3e): Scheduling & Jobs view extracted (self-contained) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 3e of the enabler) — the Scheduling & Jobs surface leaves main.tsx; biggest single-slice cut yet.** Phase 4. Schedules/jobs are used by no other view, so `features/scheduling/SchedulingView.tsx` is fully self-contained: it owns nine `useState`s (schedules/jobs/schedulingError/schedulingBusy/newScheduleName/newScheduleJobType/newScheduleInterval/creatingSchedule/scanJobRepoId), the `loadScheduling`+`loadJobs` loaders, and six handlers (create/run/toggle/delete schedule, enqueue digest/scan job), loading on selected-project change via `useProjectContext` (which also supplies the shared `repositories` for the scan-job dropdown). `main.tsx`'s case becomes `return <SchedulingView/>`; removed the ~150-line inline view, nine state hooks, two loaders, six handlers, the four scheduling resets + `loadScheduling` call/dep in the project-change effect, and nine unused api imports (createSchedule/deleteSchedule/enqueueJob/fetchJobs/fetchSchedules/runSchedule/setScheduleEnabled/type Job/type Schedule) — **main.tsx 1555 → 1231 lines (−324).** Behavior-preserving (markup/loaders/handlers moved character-for-character; lazy load-on-mount like Digest, view-exclusive data). `scheduling.spec.ts` (create schedule → run now → job history) is a real-worker spec gated in CI's docker stack (a canonical local flake); locally build clean + post-change failures are only the canonical worker/scheduler flakes, all mock-based view/nav specs green. Next: the large tangled Council/Decision-loop/Approvals cluster (~450 lines), then the query/cache layer.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3d): Nightly Digest view extracted (self-contained) (laptop session — in review)
 
 ### In Review (tandem laptop session)

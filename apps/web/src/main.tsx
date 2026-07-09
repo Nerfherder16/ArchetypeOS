@@ -14,7 +14,6 @@ import {
   fetchCouncilReview,
   fetchCouncilReviews,
   fetchDecisions,
-  fetchDigests,
   fetchHealth,
   fetchJobs,
   fetchKnowledgePages,
@@ -22,7 +21,6 @@ import {
   fetchResearchNotes,
   fetchSchedules,
   rejectDecision,
-  runDigest,
   runSchedule,
   setScheduleEnabled,
   syncKnowledge,
@@ -31,7 +29,6 @@ import {
   type Health,
   type Job,
   type KnowledgePage,
-  type NightlyDigest,
   type Recommendation,
   type ResearchNote,
   type Schedule,
@@ -43,6 +40,7 @@ import { ActivityView } from './features/activity/ActivityView';
 import { VoiceInboxView } from './features/voice/VoiceInboxView';
 import { NodesView } from './features/nodes/NodesView';
 import { ArchitectureView } from './features/architecture/ArchitectureView';
+import { DigestView } from './features/digest/DigestView';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
@@ -168,10 +166,6 @@ function App() {
   const [decisionErrors, setDecisionErrors] = useState<Record<string, string>>({});
   const [adrResults, setAdrResults] = useState<Record<string, string>>({});
 
-  const [digests, setDigests] = useState<NightlyDigest[]>([]);
-  const [digestsError, setDigestsError] = useState<string | null>(null);
-  const [runningDigest, setRunningDigest] = useState(false);
-
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [schedulingError, setSchedulingError] = useState<string | null>(null);
@@ -240,16 +234,6 @@ function App() {
     }
   }, []);
 
-  const loadDigests = useCallback(async (projectId: string) => {
-    setDigestsError(null);
-    try {
-      setDigests(await fetchDigests(projectId));
-    } catch (err) {
-      setDigests([]);
-      setDigestsError(errorMessage(err));
-    }
-  }, []);
-
   const loadScheduling = useCallback(async (projectId: string) => {
     setSchedulingError(null);
     try {
@@ -303,8 +287,6 @@ function App() {
     setApproverInputs({});
     setDecisionErrors({});
     setAdrResults({});
-    setDigests([]);
-    setDigestsError(null);
     setSchedules([]);
     setJobs([]);
     setSchedulingError(null);
@@ -319,7 +301,6 @@ function App() {
       void loadRepositories(selectedProjectId);
       void loadArtifacts(selectedProjectId);
       void loadCouncilReviews(selectedProjectId);
-      void loadDigests(selectedProjectId);
       void loadScheduling(selectedProjectId);
     }
   }, [
@@ -327,7 +308,6 @@ function App() {
     loadRepositories,
     loadArtifacts,
     loadCouncilReviews,
-    loadDigests,
     loadScheduling,
   ]);
 
@@ -591,22 +571,6 @@ function App() {
     },
     [selectedProjectId, loadArtifacts],
   );
-
-  const handleRunDigest = useCallback(async () => {
-    if (!selectedProjectId) {
-      return;
-    }
-    setRunningDigest(true);
-    setDigestsError(null);
-    try {
-      await runDigest(selectedProjectId);
-      await loadDigests(selectedProjectId);
-    } catch (err) {
-      setDigestsError(errorMessage(err));
-    } finally {
-      setRunningDigest(false);
-    }
-  }, [selectedProjectId, loadDigests]);
 
   const handleCreateSchedule = useCallback(
     async (event: React.FormEvent) => {
@@ -1409,59 +1373,7 @@ function App() {
         );
 
       case 'digest':
-        if (!selectedProjectId) {
-          return <SelectProjectNotice />;
-        }
-        return (
-          <div className="aos-view">
-            <div className="aos-view-head">
-              <span className="aos-eyebrow">Automation</span>
-              <h2>Nightly Digest</h2>
-            </div>
-            <div className="aos-hud glass aos-card">
-              <span className="aos-eyebrow">Digest runs</span>
-              {digestsError ? (
-                <p role="alert" className="aos-error">
-                  {digestsError}
-                </p>
-              ) : null}
-              <div className="aos-form-row" style={{ marginTop: 0 }}>
-                <button
-                  type="button"
-                  className="aos-btn aos-btn-sm"
-                  disabled={runningDigest}
-                  onClick={() => void handleRunDigest()}
-                >
-                  {runningDigest ? 'Running...' : 'Run digest'}
-                </button>
-              </div>
-              {digests.length === 0 ? (
-                <p className="aos-muted" style={{ margin: '12px 0 0' }}>No digests yet.</p>
-              ) : (
-                <ul className="aos-rows" style={{ marginTop: 12 }}>
-                  {digests.map((digest, index) => (
-                    <li key={digest.id}>
-                      <span className="aos-rowmeta">
-                        {new Date(digest.digest_date).toLocaleDateString()}
-                      </span>{' '}
-                      <span>{digest.summary ?? 'no summary'}</span>
-                      {index === 0 && digest.recommendations.length > 0 ? (
-                        <ul className="aos-subrows">
-                          {digest.recommendations.map((recommendation, recIndex) => (
-                            <li key={recIndex}>
-                              <span className="aos-strong">{recommendation.title ?? 'Untitled'}</span> —{' '}
-                              {recommendation.reason ?? ''}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : null}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        );
+        return <DigestView />;
 
       case 'scheduling':
         if (!selectedProjectId) {

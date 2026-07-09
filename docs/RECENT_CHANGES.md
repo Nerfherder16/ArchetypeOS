@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3d): Nightly Digest view extracted (self-contained) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 3d of the enabler) — the Nightly Digest surface leaves main.tsx, fully self-contained.** Phase 4. Digest data is used by no other view, so unlike the Repositories/Architecture slices (which read shared data from providers), `features/digest/DigestView.tsx` owns its own state (`digests`/`digestsError`/`runningDigest`), its `loadDigests` loader, and its `handleRunDigest` handler, and loads on selected-project change via a `useEffect` keyed on `useProjectContext().selectedProjectId`. `main.tsx`'s case becomes `return <DigestView/>`; removed the ~50-line inline view, three `useState`s, the loader, the handler, the two digest resets + `loadDigests` call/dep in the project-change effect, and unused `fetchDigests`/`runDigest`/`NightlyDigest` imports — **main.tsx 1643 → 1555 lines (−88).** Behavior-preserving (markup/loader/handler moved character-for-character); the one deliberate change is that digests now load lazily when the view mounts for the selected project instead of eagerly in App's project-change effect — same data, same `GET /projects/{id}/digests`, same result, since the data was view-exclusive and `renderView` only mounts the active view. Characterized by `digest.spec.ts` (create project → scan no-tests repo → run digest → assert summary + missing-tests recommendation), green post-change; only the canonical worker/scheduler env flakes fail locally (LES-L11). `tsc`+build clean. Next: Scheduling, then the Council/Decision-loop cluster, then the query/cache layer.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3c): Architecture view wrapper extracted into its own module (laptop session — in review)
 
 ### In Review (tandem laptop session)

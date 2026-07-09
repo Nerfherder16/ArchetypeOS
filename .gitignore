@@ -29,6 +29,9 @@ data/artifacts/
 .archetype/toil/
 .archetype/coherence/
 .archetype/session-pain/
+# Per-session PR-body scratch (never committed; left this untracked used to make
+# the working tree "dirty" and skip the nightly self-learn cron — AOS-SELFHEAL).
+.archetype/work/
 
 # Local-LLM eval spike log (AOS-LLM-LOCAL-001)
 .archetype/eval/

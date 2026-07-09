@@ -83,6 +83,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/research-plans/{plan_id}/runs"),
         ("GET", "/research-runs/{run_id}"),
         ("POST", "/research-runs/{run_id}/sources/{source_ref:path}/decision"),
+        # nightly-probe heartbeats (AOS-SELFHEAL observability)
+        ("POST", "/audits/heartbeat"),
+        ("GET", "/audits/heartbeats"),
         # knowledge (AOS-KNOW-002 — global, not project-scoped)
         ("POST", "/knowledge/sync"),
         ("GET", "/knowledge/pages"),
@@ -156,6 +159,7 @@ def test_route_inventory_count() -> None:
     # research-plans, GET /research-plans/{plan_id}) = 67, plus the AOS-RESEARCH-003
     # research-run routes (POST /research-plans/{plan_id}/run, GET /research-plans/
     # {plan_id}/runs, GET /research-runs/{run_id}, POST /research-runs/{run_id}/
-    # sources/{source_ref}/decision) = 71.
-    assert len(EXPECTED_ROUTES) == 71
-    assert len(_actual_routes()) == 71
+    # sources/{source_ref}/decision) = 71, plus the AOS-SELFHEAL heartbeat routes
+    # (POST /audits/heartbeat, GET /audits/heartbeats) = 73.
+    assert len(EXPECTED_ROUTES) == 73
+    assert len(_actual_routes()) == 73

@@ -28,6 +28,7 @@ data/artifacts/
 .archetype/conflicts/
 .archetype/toil/
 .archetype/coherence/
+.archetype/session-pain/
 
 # Local-LLM eval spike log (AOS-LLM-LOCAL-001)
 .archetype/eval/

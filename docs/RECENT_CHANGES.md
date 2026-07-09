@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-SELFHEAL-006: session-pain probe (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-SELFHEAL-006 — the session-pain probe (the nightly learns from the day's conversations).** A fourth self-learn probe (sibling of conflict/toil/coherence) whose source is the Claude Code session transcripts rather than git. New `tools/session_pain_digest.py` (deterministic + hermetic — harvest fns take parsed records): four signals — tool errors (`tool_result` is_error, clustered by the failing tool via the tool_use id map, with sample+count), file thrash (same file Edit/Write ≥ min_edits), command-retry loops (same Bash command ≥ min_retries), and user corrections (/wrong, "that's wrong", ... in genuine short user turns; a length + system-marker guard excludes markers inside compaction summaries / hook context). Emits markdown digest + JSON + signal line like its siblings. New `scripts/nightly/session_pain_learn.sh` + `session_pain_learn.prompt.md` wire the self-learn nightly (gate on signal → branch/day → headless reasoned tier turns a GENUINE recurring pain into a lesson/skill/fix + opens a PR, never merges, never over a dirty tree, writes nothing for one-off noise or a deliberate refactor per Article XII; the prompt distinguishes real thrash from a planned large refactor). gitignore `.archetype/session-pain/`. It already earns its keep — on the real transcripts it flags Edit-stale-read ×37 ("File has been modified since read"), Bash-blocked-sleep ×31, read-before-write — real capturable lessons; building it surfaced+fixed the noise mode (a short-turn guard drops /wrong markers found inside compaction summaries: real-repo corrections 2→0, all summary artifacts, genuine tool-error signal retained). 9 probe tests green; full API suite green; ruff clean; nightly `bash -n` clean. Local-only by construction (transcripts never leave the box); complementary to Recall (memory) — this builds a friction digest.
+
 ## 2026-07-09 — AOS-SELFHEAL-005: contract-coherence probe (laptop session — in review)
 
 ### In Review (tandem laptop session)

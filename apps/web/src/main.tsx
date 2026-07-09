@@ -11,12 +11,10 @@ import {
   enqueueCouncilReview,
   enqueueJob,
   exportDecisionAdr,
-  fetchArchitecture,
   fetchCouncilReview,
   fetchCouncilReviews,
   fetchDecisions,
   fetchDigests,
-  fetchDna,
   fetchHealth,
   fetchJobs,
   fetchKnowledgePages,
@@ -30,7 +28,6 @@ import {
   scanRepository,
   setScheduleEnabled,
   syncKnowledge,
-  type ArchitectureGraph,
   type CouncilReview,
   type Decision,
   type Health,
@@ -38,7 +35,6 @@ import {
   type KnowledgePage,
   type NightlyDigest,
   type Recommendation,
-  type RepositoryDna,
   type ResearchNote,
   type Schedule,
 } from './api';
@@ -54,6 +50,7 @@ import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { useHashRoute } from './shell/useHashRoute';
 import { ProjectProvider, useProjectContext } from './shell/ProjectContext';
+import { RepositoryDataProvider, useRepositoryData } from './shell/RepositoryDataContext';
 import { errorMessage } from './shell/errorMessage';
 import { WORKSPACE_MODES } from './shell/workspaces';
 import './design/tokens.css';
@@ -164,12 +161,20 @@ function App() {
   const [registeringRepo, setRegisteringRepo] = useState(false);
   const [scanningRepoId, setScanningRepoId] = useState<string | null>(null);
 
-  const [dna, setDna] = useState<RepositoryDna | null>(null);
-  const [dnaError, setDnaError] = useState<string | null>(null);
-  const [dnaLoading, setDnaLoading] = useState(false);
-
-  const [architecture, setArchitecture] = useState<ArchitectureGraph | null>(null);
-  const [architectureError, setArchitectureError] = useState<string | null>(null);
+  // AOS-WEB-SPINE-001 (slice 3a): the selected repository's DNA + architecture
+  // graph and their co-load lifecycle live in RepositoryDataProvider. Same
+  // identifiers in scope, so the repo/architecture render + handlers below are
+  // unchanged.
+  const {
+    dna,
+    dnaError,
+    setDnaError,
+    dnaLoading,
+    loadDna,
+    architecture,
+    architectureError,
+    loadArchitecture,
+  } = useRepositoryData();
 
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [researchNotes, setResearchNotes] = useState<ResearchNote[]>([]);
@@ -236,29 +241,6 @@ function App() {
     } catch (err) {
       setKnowledgePages([]);
       setKnowledgeError(errorMessage(err));
-    }
-  }, []);
-
-  const loadDna = useCallback(async (repositoryId: string) => {
-    setDnaError(null);
-    setDnaLoading(true);
-    try {
-      setDna(await fetchDna(repositoryId));
-    } catch (err) {
-      setDna(null);
-      setDnaError(errorMessage(err));
-    } finally {
-      setDnaLoading(false);
-    }
-  }, []);
-
-  const loadArchitecture = useCallback(async (projectId: string, repositoryId: string) => {
-    setArchitectureError(null);
-    try {
-      setArchitecture(await fetchArchitecture(projectId, repositoryId));
-    } catch (err) {
-      setArchitecture(null);
-      setArchitectureError(errorMessage(err));
     }
   }, []);
 
@@ -341,8 +323,8 @@ function App() {
   useEffect(() => {
     setSelectedRepositoryId(null);
     setRepositories([]);
-    setDna(null);
-    setArchitecture(null);
+    // dna + architecture are cleared by RepositoryDataProvider's co-load effect
+    // when selectedRepositoryId nulls above (slice 3a).
     setDecisions([]);
     setResearchNotes([]);
     setRecommendations([]);
@@ -381,16 +363,6 @@ function App() {
     loadDigests,
     loadScheduling,
   ]);
-
-  useEffect(() => {
-    if (selectedProjectId && selectedRepositoryId) {
-      void loadDna(selectedRepositoryId);
-      void loadArchitecture(selectedProjectId, selectedRepositoryId);
-    } else {
-      setDna(null);
-      setArchitecture(null);
-    }
-  }, [selectedProjectId, selectedRepositoryId, loadDna, loadArchitecture]);
 
   const handleSyncKnowledge = useCallback(async () => {
     setKnowledgeSyncing(true);
@@ -1925,6 +1897,8 @@ function App() {
 
 createRoot(document.getElementById('root')!).render(
   <ProjectProvider>
-    <App />
+    <RepositoryDataProvider>
+      <App />
+    </RepositoryDataProvider>
   </ProjectProvider>,
 );

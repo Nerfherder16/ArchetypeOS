@@ -695,3 +695,24 @@ export type Connector = {
 export async function fetchConnectors(): Promise<Connector[]> {
   return request<Connector[]>('/connectors');
 }
+
+// Authority action policy (AOS-AUTHORITY-001). The queue of high-impact actions
+// awaiting a human decision (ApprovalRecord rows with approval_status "pending").
+export type PendingAuthorityAction = {
+  id: string;
+  project_id: string | null;
+  actor: string | null;
+  agent: string | null;
+  tool: string | null;
+  action_level: number;
+  requested_capability: string | null;
+  target: string | null;
+  reason: string | null;
+  approval_status: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function fetchPendingAuthorityActions(): Promise<PendingAuthorityAction[]> {
+  return request<PendingAuthorityAction[]>('/authority/pending');
+}

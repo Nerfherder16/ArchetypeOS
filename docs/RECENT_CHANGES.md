@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-AUTHORITY-001 (UI): pending authority actions on the Awaiting You surface (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-AUTHORITY-001 (UI half) — the enforced authority queue is visible.** Completes AOS-AUTHORITY-001 (backend #134) and closes Phase 3. The "Awaiting You" surface (`ApprovalsView`) previously ended with a footnote promising "action-level authority levels ... coming soon"; that queue now exists. New self-contained `features/authority/AuthorityQueue.tsx` fetches `GET /authority/pending` (via `api.ts` `fetchPendingAuthorityActions()` + `PendingAuthorityAction` type) and renders each `ApprovalRecord` awaiting a human decision as a card: risk-tinted **action level** pill (warn at >=4, risk at >=6), requested capability, target, requester (actor/agent/tool), status, and reason. Graceful loading/empty/error states; a `count` pending badge. Slotted into `ApprovalsView` below the decisions queue (kept in its own file so the view stays under the size limit), and the footnote updated. `tsc`+build clean; new Playwright spec `authority-queue.spec.ts` (3 cases: renders capability+level, empty state, error) green; existing `approvals-view.spec.ts` still green. With #134, all four Finding 10 criteria are met, and the operator sees write/destructive actions queued for approval before they run.
+
 ## 2026-07-08 — AOS-AUTHORITY-001 (backend): authority action policy as enforced infrastructure (laptop session — in review)
 
 ### In Review (tandem laptop session)

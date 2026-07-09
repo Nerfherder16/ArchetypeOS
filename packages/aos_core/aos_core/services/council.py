@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 
 from ..llm import InstrumentedProvider, get_provider
 from ..models import (
+    ArchitectureEdge,
     ArchitectureNode,
     CouncilAgentOutput,
     CouncilReview,
@@ -114,15 +115,61 @@ def _select_research_librarian(db: Session, project_id: str) -> list[dict]:
 
 
 def _select_architecture(db: Session, project_id: str) -> list[dict]:
+    # AOS-ARCH-STUDIO-001 (Finding 7): the Council reasons over the operator's
+    # CORRECTED architecture, not just the raw scanner output. Every corrected node
+    # is always included (corrections are the operator's explicit signal) alongside
+    # the most recent nodes, and the correction text is surfaced in the detail so a
+    # persona can cite it. Corrected edges are cited too.
     items: list[dict] = []
-    for node in (
+    recent_nodes = (
         db.query(ArchitectureNode)
         .filter(ArchitectureNode.project_id == project_id)
         .order_by(ArchitectureNode.created_at.desc(), ArchitectureNode.id)
         .limit(20)
         .all()
+    )
+    corrected_nodes = (
+        db.query(ArchitectureNode)
+        .filter(ArchitectureNode.project_id == project_id, ArchitectureNode.manual_correction.isnot(None))
+        .order_by(ArchitectureNode.id)
+        .all()
+    )
+    seen: set[str] = set()
+    for node in [*corrected_nodes, *recent_nodes]:
+        if node.id in seen:
+            continue
+        seen.add(node.id)
+        detail = f"{node.type}: {node.label}"
+        item = {"kind": "architecture_node", "detail": detail, "ref": f"node:{node.id}"}
+        if node.manual_correction:
+            item["detail"] = f"{detail} (operator correction: {node.manual_correction})"
+            item["corrected"] = True
+        items.append(item)
+
+    node_labels = {node.id: node.label for node in [*corrected_nodes, *recent_nodes]}
+
+    def _label(node_id: str) -> str:
+        if node_id in node_labels:
+            return node_labels[node_id]
+        node = db.get(ArchitectureNode, node_id)
+        return node.label if node else node_id
+
+    for edge in (
+        db.query(ArchitectureEdge)
+        .filter(ArchitectureEdge.project_id == project_id, ArchitectureEdge.manual_correction.isnot(None))
+        .order_by(ArchitectureEdge.id)
+        .all()
     ):
-        items.append({"kind": "architecture_node", "detail": f"{node.type}: {node.label}", "ref": f"node:{node.id}"})
+        src, dst = _label(edge.from_node_id), _label(edge.to_node_id)
+        items.append(
+            {
+                "kind": "architecture_edge",
+                "detail": f"{src} -> {dst} ({edge.type}) - operator correction: {edge.manual_correction}",
+                "ref": f"edge:{edge.id}",
+                "corrected": True,
+            }
+        )
+
     for dna in _project_dna(db, project_id):
         for framework in dna.frameworks or []:
             items.append({"kind": "framework", "detail": str(framework), "ref": f"dna:{dna.id}"})

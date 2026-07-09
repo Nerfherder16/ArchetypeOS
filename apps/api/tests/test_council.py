@@ -104,6 +104,61 @@ def test_run_council(db):
     assert review.provider == "deterministic"
 
 
+def test_select_architecture_cites_operator_corrections(db):
+    """AOS-ARCH-STUDIO-001 (Finding 7 criterion 4): the Council must cite the
+    operator's corrected architecture, not only the raw scanner labels — otherwise
+    a correction the operator makes on the dashboard never reaches the reasoning."""
+    from aos_core.models import ArchitectureEdge
+    from aos_core.services.council import _select_architecture
+
+    project = Project(name="Corrected", slug="corrected")
+    db.add(project)
+    db.flush()
+    repo = Repository(project_id=project.id, name="svc", local_path="svc")
+    db.add(repo)
+    db.flush()
+    corrected_node = ArchitectureNode(
+        project_id=project.id,
+        repository_id=repo.id,
+        label="service",
+        type="directory",
+        confidence=0.4,
+        manual_correction="actually the auth gateway",
+    )
+    plain_node = ArchitectureNode(
+        project_id=project.id, repository_id=repo.id, label="db", type="datastore", confidence=0.6
+    )
+    db.add_all([corrected_node, plain_node])
+    db.flush()
+    edge = ArchitectureEdge(
+        project_id=project.id,
+        repository_id=repo.id,
+        from_node_id=corrected_node.id,
+        to_node_id=plain_node.id,
+        type="depends_on",
+        confidence=0.3,
+        manual_correction="operator: read-replica access only",
+    )
+    db.add(edge)
+    db.commit()
+
+    items = _select_architecture(db, project.id)
+
+    corrected = [i for i in items if i["ref"] == f"node:{corrected_node.id}"]
+    assert corrected, items
+    assert "auth gateway" in corrected[0]["detail"], "the correction text must reach the Council"
+    assert corrected[0].get("corrected") is True
+
+    plain = [i for i in items if i["ref"] == f"node:{plain_node.id}"]
+    assert plain, items
+    assert not plain[0].get("corrected"), "an uncorrected node is not flagged corrected"
+
+    edge_items = [i for i in items if i["ref"] == f"edge:{edge.id}"]
+    assert edge_items, "a corrected edge is citable as architecture evidence"
+    assert "read-replica" in edge_items[0]["detail"]
+    assert edge_items[0].get("corrected") is True
+
+
 class _SpreadFake:
     """A fake multi-model provider: a different model per call (like the pool)."""
 

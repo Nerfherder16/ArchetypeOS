@@ -24,6 +24,8 @@ cd "$REPO_ROOT"
 LOG=".archetype/conflicts/nightly.log"
 mkdir -p "$(dirname "$LOG")"
 log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG" >&2; }
+# AOS-SELFHEAL observability: post a heartbeat so a missed run is visible.
+source "$(dirname "${BASH_SOURCE[0]}")/heartbeat.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
 CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits}"
@@ -48,6 +50,7 @@ SIGNAL="$(python3 tools/conflict_digest.py --since "$SINCE" --out "$OUT" \
   --json ".archetype/conflicts/${DAY}.json" 2>>"$LOG" | sed -n 's/^signal=//p')"
 if [ "$SIGNAL" != "true" ]; then
   log "QUIET: no conflict or merge friction today — nothing to distill."
+  aos_heartbeat conflict clean "$DAY"
   exit 0
 fi
 log "SIGNAL: friction recorded — digest at $OUT."

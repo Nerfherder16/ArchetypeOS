@@ -63,3 +63,12 @@ lesson/rule/skill, write nothing and exit.
 Turning the day's friction into a durable lesson is the repo learning from its own
 pain — the "detect repeated pain points" mandate of
 `docs/NIGHTLY_SELF_LEARNING_LOOP.md`, applied to the session transcript itself.
+
+## Heartbeat — always, as your LAST action
+
+Post the run heartbeat so a missed run is distinguishable from a clean one (feeds the Nightly Audits board, `GET /audits/heartbeats`). Use `findings` with the PR url if you opened one, or `failed` (omit `pr_url`) if you could not complete — the shell already posts `clean` when there is no signal, so you only report `findings`/`failed`. A heartbeat failure must never change the outcome:
+
+    curl -s --max-time 15 -X POST "${AOS_API_URL:-http://localhost:8000}/audits/heartbeat" \
+      -H "Content-Type: application/json" \
+      ${AOS_TELEMETRY_TOKEN:+-H "x-telemetry-token: $AOS_TELEMETRY_TOKEN"} \
+      -d '{"routine":"session-pain","status":"findings","day":"<DATE>","pr_url":"<PR_URL>"}'

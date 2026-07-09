@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-SELFHEAL: nightly probes post heartbeats (producer side) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **Wire the four local self-learn nightlies to post heartbeats (AOS-SELFHEAL observability, producer side).** Follow-up to the #154 heartbeat endpoint. New `scripts/nightly/heartbeat.sh` (sourceable `aos_heartbeat <routine> <status> <day> [pr_url]` → POST ${AOS_API_URL:-http://localhost:8000}/audits/heartbeat, optional x-telemetry-token; best-effort, a failed post only logs and never changes the probe's exit code). The four `*_learn.sh` (conflict/toil/coherence/session-pain) source it and post `clean` on the no-signal path (the "ran vs missed" distinction). The four `*_learn.prompt.md` gain a final "Heartbeat — always, as your LAST action" step: the reasoned tier posts `findings`+pr_url on PR-open or `failed` on error, mirroring the operator's nightly-docs-tokens-audit prompt. Additive (digest/gate/branch/PR logic untouched); bash -n clean on all 5 scripts. Cloud routines (B) run outside the tailnet and will point AOS_API_URL at a public archetypeos.streamy.tube endpoint (separate infra).
+
 ## 2026-07-09 — AOS-SELFHEAL: nightly-probe heartbeat endpoint + cron unblock (laptop session — in review)
 
 ### In Review (tandem laptop session)

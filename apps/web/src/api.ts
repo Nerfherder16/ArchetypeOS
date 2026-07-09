@@ -66,8 +66,11 @@ export type RepositoryDna = {
 
 export type ArchitectureNode = {
   id: string;
+  project_id: string;
+  repository_id: string | null;
   label: string;
   type: string;
+  parent_id: string | null;
   confidence: number;
   // AOS-CONTRACT-001 / AOS-ARCH-STUDIO-001: evidence + risks the backend already
   // exposes, surfaced in the node detail drawer alongside the correction state.
@@ -78,6 +81,8 @@ export type ArchitectureNode = {
 
 export type ArchitectureEdge = {
   id: string;
+  project_id: string;
+  repository_id: string | null;
   type: string;
   // AOS-CONTRACT-001: full edge evidence the backend already exposes.
   from_node_id: string;
@@ -109,13 +114,18 @@ export type EvidenceEntry = {
 
 export type Decision = {
   id: string;
+  project_id: string;
   title: string;
-  decision?: string | null;
+  context: string | null;
+  decision: string | null;
+  alternatives: unknown[];
+  tradeoffs: unknown[];
+  consequences: unknown[];
   confidence: number;
   evidence: EvidenceEntry[];
   status: string;
-  approved_by?: string | null;
-  approved_at?: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
 };
 
 export type CouncilAgentOutput = {
@@ -134,16 +144,18 @@ export type CouncilAgentOutput = {
 
 export type CouncilReview = {
   id: string;
-  question?: string | null;
+  project_id: string;
+  question: string | null;
   verdict: string;
   confidence: number;
-  provider?: string | null;
-  status?: string;
-  agreements?: unknown[];
-  disagreements?: unknown[];
-  unsupported_claims?: unknown[];
-  follow_up?: unknown[];
-  agent_outputs?: CouncilAgentOutput[];
+  provider: string | null;
+  job_id: string | null;
+  status: string;
+  agreements: unknown[];
+  disagreements: unknown[];
+  unsupported_claims: unknown[];
+  follow_up: unknown[];
+  agent_outputs: CouncilAgentOutput[];
 };
 
 export type ResearchNote = {
@@ -162,7 +174,17 @@ export type ResearchNote = {
 
 export type Recommendation = {
   id: string;
+  project_id: string;
   title: string;
+  recommendation: string | null;
+  rationale: string | null;
+  alternatives: unknown[];
+  pros: unknown[];
+  cons: unknown[];
+  risk: string | null;
+  effort: string | null;
+  dependencies: unknown[];
+  acceptance_criteria: unknown[];
   confidence: number;
   evidence: EvidenceEntry[];
 };
@@ -195,6 +217,7 @@ export type DigestRecommendation = {
 
 export type NightlyDigest = {
   id: string;
+  project_id: string;
   digest_date: string;
   summary: string | null;
   changes: unknown[];
@@ -217,14 +240,17 @@ export type Job = {
   id: string;
   job_type: string;
   status: string;
+  priority: number;
+  payload: Record<string, unknown>;
+  result: Record<string, unknown> | null;
   queued_at: string;
   // Optional lifecycle timestamps + failure reason (all exposed by `JobRead`).
   // Older/queued jobs leave `started_at`/`finished_at` null; `error` is set only
   // on failure. The Live Activity feed (AOS-OPS-002) reads these for its time
   // ordering and failed-row snippet, so they are surfaced on the frontend type.
-  started_at?: string | null;
-  finished_at?: string | null;
-  error?: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
   attempts: number;
   project_id: string | null;
   repository_id: string | null;

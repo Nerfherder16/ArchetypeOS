@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-ARCH-STUDIO-001 (backend): the Council cites operator architecture corrections (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-ARCH-STUDIO-001 (backend) — corrections become a digital twin, not just a note.** Phase 3 (eval Finding 7). Recon found criteria 1-3 already met and tested: PATCH `/architecture/nodes|edges/{id}` set `manual_correction`, corrections are visible after reload, and rescan preserves them (`run_scan` upserts by match, only refreshing confidence/evidence — `test_rescan_preserves_node_ids_and_corrections` locks it). The one open gap was **criterion 4: Council/research can cite corrected architecture evidence.** `_select_architecture` was sending the Council the raw scanner label (`f"{type}: {label}"`) and ignoring `manual_correction` entirely, so an operator's correction never reached the reasoning. Fix: the architecture evidence selector now always includes every corrected node (corrections are the operator's explicit signal, so they are never dropped by the recent-20 limit), surfaces the correction text in the evidence `detail`, flags it `corrected: true`, and cites **corrected edges** too (resolving endpoint labels). New `test_select_architecture_cites_operator_corrections`; full API suite 353 passed; ruff clean. The architecture_cartographer persona now reasons over the corrected graph. Follow-up: the node/edge detail drawer with inline correction editing (UI PR) so corrections can be made from the dashboard, not only the API.
+
 ## 2026-07-08 — AOS-CONNECTOR-001 (UI): Connectors tab under Providers & Model Routing (laptop session — in review)
 
 ### In Review (tandem laptop session)

@@ -21,6 +21,7 @@ export type ViewId =
   | 'activity'
   | 'research'
   | 'voice-inbox'
+  | 'audits'
   | 'nodes';
 
 export async function navTo(page: Page, view: ViewId): Promise<void> {

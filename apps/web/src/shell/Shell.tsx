@@ -26,6 +26,7 @@ export type ViewId =
   | 'research'
   | 'research-plans'
   | 'voice-inbox'
+  | 'audits'
   | 'nodes';
 
 type Theme = 'dark' | 'light';

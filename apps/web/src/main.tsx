@@ -23,6 +23,7 @@ import { PlannedDrawer } from './features/planned/PlannedDrawer';
 import { OperatorStatusStrip } from './features/statusstrip/OperatorStatusStrip';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { ResearchPlansView } from './features/research-plans/ResearchPlansView';
+import { AuditsView } from './features/audits/AuditsView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
 import { useHashRoute } from './shell/useHashRoute';
@@ -359,6 +360,9 @@ function App() {
 
       case 'voice-inbox':
         return <VoiceInboxView />;
+
+      case 'audits':
+        return <AuditsView />;
 
       case 'nodes':
         return <NodesView />;

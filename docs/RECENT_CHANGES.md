@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3c): Architecture view wrapper extracted into its own module (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-WEB-SPINE-001 (slice 3c of the enabler) — the Architecture case wrapper leaves main.tsx.** Phase 4, a small follow-on to 3b. The graph rendering + operator corrections already lived in `<ArchitectureStudio>`; this moves the thin `case 'architecture'` wrapper (project/repository guards + the `onCorrected` reload) into `features/architecture/ArchitectureView.tsx`, reading selection from `useProjectContext` and the graph from `useRepositoryData` (no local state). `main.tsx`'s case becomes `return <ArchitectureView/>`. This was the LAST consumer of `useRepositoryData` inside App, so the hook destructure (architecture/architectureError/loadArchitecture) and the direct `ArchitectureStudio` import are removed from `main.tsx` (the `RepositoryDataProvider` render-root wrapper stays) — **main.tsx 1683 → 1643 lines.** Behavior-preserving (wrapper/guards/onCorrected moved character-for-character, now reading the same values from hooks; `<ArchitectureStudio>` untouched): clean-main baseline captured first (LES-L11); post-change identical, with architecture-studio (graph render, detail drawer, inline correction, error path), shell-modes, hash-routing, control-tower all green. No new spec — pure move already covered end-to-end by `architecture-studio.spec.ts`. `tsc`+build clean. Next: the larger Council/Decision-loop/Digest/Scheduling views, then the query/cache layer.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3b): Repositories view extracted into its own module (laptop session — in review)
 
 ### In Review (tandem laptop session)

@@ -69,6 +69,10 @@ export type ArchitectureNode = {
   label: string;
   type: string;
   confidence: number;
+  // AOS-CONTRACT-001 / AOS-ARCH-STUDIO-001: evidence + risks the backend already
+  // exposes, surfaced in the node detail drawer alongside the correction state.
+  evidence: unknown[];
+  risks: unknown[];
   manual_correction: string | null;
 };
 
@@ -347,6 +351,30 @@ export async function fetchArchitecture(
 ): Promise<ArchitectureGraph> {
   const query = repositoryId ? `?repository_id=${encodeURIComponent(repositoryId)}` : '';
   return request<ArchitectureGraph>(`/projects/${projectId}/architecture${query}`);
+}
+
+// AOS-ARCH-STUDIO-001: set/clear an operator correction on a node or edge. A null
+// or empty string clears it. The corrected graph feeds Council context (backend).
+export async function correctArchitectureNode(
+  nodeId: string,
+  manualCorrection: string | null,
+): Promise<ArchitectureNode> {
+  return request<ArchitectureNode>(`/architecture/nodes/${nodeId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ manual_correction: manualCorrection || null }),
+  });
+}
+
+export async function correctArchitectureEdge(
+  edgeId: string,
+  manualCorrection: string | null,
+): Promise<ArchitectureEdge> {
+  return request<ArchitectureEdge>(`/architecture/edges/${edgeId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ manual_correction: manualCorrection || null }),
+  });
 }
 
 export async function fetchDecisions(projectId: string): Promise<Decision[]> {

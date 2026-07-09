@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-ARCH-STUDIO-001 (UI): editable architecture — node/edge detail drawer + inline corrections (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-ARCH-STUDIO-001 (UI half) — the architecture graph becomes correctable from the dashboard.** Completes AOS-ARCH-STUDIO-001 (backend #132) and closes Finding 7's criterion 1 end to end. The Architecture view was a bare node-label list inside the monolithic `main.tsx`; it is now a self-contained `features/architecture/ArchitectureStudio.tsx` (255 lines) that renders **nodes and edges** (edges resolve endpoint labels) and, on click, opens a **detail drawer** showing evidence, confidence, and risks with an input to **set or clear an operator correction**. Saving PATCHes `/architecture/nodes|edges/{id}` via new `api.ts` `correctArchitectureNode`/`correctArchitectureEdge` helpers, then refreshes — so the correction persists, survives rescan (backend), and feeds Council context (the corrected graph the cartographer now reasons over, #132). A `corrected` badge marks corrected nodes/edges. `main.tsx` keeps the data source and passes `graph`/`error`/`onCorrected`, so the monolith shrinks rather than grows (eases the future WEB-SPINE split). The `ArchitectureNode` web type gained `evidence`/`risks` (AOS-CONTRACT-001 alignment; the backend already exposed them). `tsc`+build clean; new Playwright spec `architecture-studio.spec.ts` (2 cases: drawer edits a correction + marks it corrected via mocked PATCH; graph error degrades gracefully) green.
+
 ## 2026-07-08 — AOS-ARCH-STUDIO-001 (backend): the Council cites operator architecture corrections (laptop session — in review)
 
 ### In Review (tandem laptop session)

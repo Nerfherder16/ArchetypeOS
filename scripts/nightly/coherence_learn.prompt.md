@@ -60,3 +60,12 @@ frontend_type → missing_fields), confirm the drift is real, not intentional:
 Closing these seams is the repo learning to keep its own contracts coherent — the
 "catch the class of gap the eval found by hand, automatically" mandate of
 `docs/NIGHTLY_SELF_LEARNING_LOOP.md`, applied to frontend/backend contract drift.
+
+## Heartbeat — always, as your LAST action
+
+Post the run heartbeat so a missed run is distinguishable from a clean one (feeds the Nightly Audits board, `GET /audits/heartbeats`). Use `findings` with the PR url if you opened one, or `failed` (omit `pr_url`) if you could not complete — the shell already posts `clean` when there is no signal, so you only report `findings`/`failed`. A heartbeat failure must never change the outcome:
+
+    curl -s --max-time 15 -X POST "${AOS_API_URL:-http://localhost:8000}/audits/heartbeat" \
+      -H "Content-Type: application/json" \
+      ${AOS_TELEMETRY_TOKEN:+-H "x-telemetry-token: $AOS_TELEMETRY_TOKEN"} \
+      -d '{"routine":"coherence","status":"findings","day":"<DATE>","pr_url":"<PR_URL>"}'

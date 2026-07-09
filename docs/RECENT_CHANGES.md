@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-UX-IA-001 (deliverable 1): global command palette (Cmd/Ctrl+K) (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-UX-IA-001 (deliverable 1 of 4) — a global command palette lands.** Phase 4, the "control room → control tower" upgrade (Findings 2/3/12); first of four UX-IA deliverables, and the first work after AOS-WEB-SPINE-001 completed. New `features/palette/CommandPalette.tsx`: a Cmd/Ctrl+K modal overlay to fuzzy-jump between live surfaces. Global `keydown` toggles it (Esc + backdrop click close); it lists the live surfaces from the same `WORKSPACE_MODES` the rail uses (each labelled with its mode), filters by label/mode on type, Arrow keys move a wrapping highlight, Enter/click navigates via the shell's `setActiveView` (URL-routed through useHashRoute) then closes. Accessible: role=dialog, aria-modal/label, input focused on open, focus restored on close, aria-selected on the active row. Purely additive + global: mounted once inside Shell in `main.tsx` (`<CommandPalette navigate={setActiveView}/>`), renders null until opened, no new App state, no backend change. New `e2e/command-palette.spec.ts` (4 cases: open→filter→Enter navigates to #/reuse + closes; non-matching query → empty state; Escape closes without navigating; backdrop click closes) green. `tsc`+build clean; full suite unchanged vs baseline (only canonical worker/scheduler flakes fail locally; nav/shell specs green, confirming the global key listener doesn't interfere). Next UX-IA deliverables: Planned drawer (clicking a 'soon' surface shows planned-feature info), global operator status strip, Now/Next/Blocked per workspace.
+
 ## 2026-07-09 — AOS-WEB-SPINE-001 (slice 3f): Governance (Council) cluster extracted; main.tsx under 400 lines (laptop session — in review)
 
 ### In Review (tandem laptop session)

@@ -18,6 +18,7 @@ import { ArchitectureView } from './features/architecture/ArchitectureView';
 import { DigestView } from './features/digest/DigestView';
 import { SchedulingView } from './features/scheduling/SchedulingView';
 import { CouncilView } from './features/council/CouncilView';
+import { CommandPalette } from './features/palette/CommandPalette';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
@@ -384,6 +385,7 @@ function App() {
       health={healthPip}
     >
       {renderView()}
+      <CommandPalette navigate={setActiveView} />
     </Shell>
   );
 }

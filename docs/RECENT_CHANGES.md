@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-08 — AOS-AUTHORITY-001 (backend): authority action policy as enforced infrastructure (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-AUTHORITY-001 (backend) — review-first becomes enforceable, not just convention.** Phase 3 (eval Finding 10: `AuthorityGrant`/`ApprovalRecord` existed as data, but no central policy every high-impact operation passes through). New `services/authority.py`: an ordered `ActionClass` enum (`capture_only` -> `read_only` -> `draft_artifact` -> `external_network` -> `repo_write` -> `git_commit` -> `deploy` -> `delete_destructive`) and a **pure, total** central evaluator `requires_approval(action_type, target, sensitivity, capability)`. Policy: write/destructive classes **always** require approval (no sensitivity or claimed capability can waive it — the enforcement backbone); `external_network` gates only for sensitive data (public egress is free); `capture_only`/`read_only`/`draft_artifact` never gate (this is why voice/command capture is safe); an unknown action type **raises** rather than defaulting to allowed. Routes: `GET /authority/action-classes` (catalog), `POST /authority/evaluate` (how a route/client asks the engine; 422 on unknown class), `GET /authority/pending` (the `ApprovalRecord` queue awaiting a human, for the dashboard). New `docs/AUTHORITY_POLICY.md` + capability-map entry. 9 hermetic tests (write/destructive always gate; safe classes never; external-network sensitivity rule; evaluate reason; unknown rejected; catalog ordered; pending queue). Full API suite 362 passed; route inventory 61->64; ruff clean. Follow-up: the pending-authority-actions panel on the Awaiting You dashboard (UI PR) and threading the `evaluate` dependency onto future write routes.
+
 ## 2026-07-08 — AOS-ARCH-STUDIO-001 (UI): editable architecture — node/edge detail drawer + inline corrections (laptop session — in review)
 
 ### In Review (tandem laptop session)

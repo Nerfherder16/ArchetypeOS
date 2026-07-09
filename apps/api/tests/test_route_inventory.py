@@ -97,6 +97,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/connectors"),
         ("GET", "/connectors/{name}"),
         ("POST", "/connectors/{name}/health"),
+        ("GET", "/authority/action-classes"),
+        ("POST", "/authority/evaluate"),
+        ("GET", "/authority/pending"),
     }
 )
 
@@ -137,6 +140,8 @@ def test_route_inventory_count() -> None:
     # node-registry routes (POST /nodes/register, POST /nodes/{node_id}/heartbeat,
     # GET /nodes, GET /nodes/{node_id}) = 58, plus the AOS-CONNECTOR-001 connector
     # -registry routes (GET /connectors, GET /connectors/{name}, POST
-    # /connectors/{name}/health) = 61.
-    assert len(EXPECTED_ROUTES) == 61
-    assert len(_actual_routes()) == 61
+    # /connectors/{name}/health) = 61, plus the AOS-AUTHORITY-001 authority-policy
+    # routes (GET /authority/action-classes, POST /authority/evaluate, GET
+    # /authority/pending) = 64.
+    assert len(EXPECTED_ROUTES) == 64
+    assert len(_actual_routes()) == 64

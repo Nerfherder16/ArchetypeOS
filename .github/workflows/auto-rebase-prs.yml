@@ -12,6 +12,15 @@ name: Auto-update open PRs
 # Safety: merges main INTO the PR branch (a normal fast-forwarding push, NOT a
 # force-push), same-repo PRs only, drafts skipped. Pushing a PR branch does not
 # re-trigger this workflow (it fires on push:main only), so there is no loop.
+#
+# CI trigger (AOS-CI-AUTOREBASE-002): the rebased branch is pushed with a GitHub
+# App installation token when AUTOREBASE_APP_ID / AUTOREBASE_APP_PRIVATE_KEY are
+# configured, so the push re-runs the PR's CI + PR Guardian on the new head.
+# Pushing with the default GITHUB_TOKEN does NOT trigger workflows (GitHub blocks
+# it to prevent recursion), which silently left every auto-rebased head with its
+# CI run parked as `action_required` (0 jobs) — i.e. UNVERIFIED. When the App
+# secrets are absent the token step is skipped and it falls back to GITHUB_TOKEN:
+# the rebase still works, but CI stays gated until the secrets are added.
 
 on:
   push:
@@ -31,14 +40,26 @@ jobs:
     name: Merge main into open PR branches (union-aware)
     runs-on: ubuntu-latest
     steps:
+      - name: Generate a GitHub App token (falls back to GITHUB_TOKEN if unset)
+        id: app-token
+        if: ${{ secrets.AUTOREBASE_APP_ID != '' }}
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.AUTOREBASE_APP_ID }}
+          private-key: ${{ secrets.AUTOREBASE_APP_PRIVATE_KEY }}
+
       - name: Checkout main (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # Push with the App token when present so the push re-triggers the PR's
+          # CI; otherwise the default GITHUB_TOKEN (CI stays gated — see header).
+          token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Merge main into each open PR branch
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           git config user.name "aos-autorebase[bot]"

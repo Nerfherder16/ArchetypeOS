@@ -61,5 +61,8 @@ partial-borrow — cheap, clean, genuinely additive. MIT, authored by the Obsidi
 
 ## Linked Decisions / Projects
 
-- Plane AOS-68 — "Evaluate: obsidian-skills" (Done) — in the External Repo Evaluation & Adoption Pipeline module
-- No borrow item created yet — json-canvas (Architecture Studio output) + obsidian-markdown skill are strong low-cost candidates pending operator greenlight; skill-authoring patterns can propagate independently
+- Plane AOS-68 — "Evaluate: obsidian-skills" (Done)
+- Plane AOS-69 — "JSON Canvas emitter for Architecture Studio" (Todo, RFC-first) — greenlit 2026-07-09
+- Plane AOS-70 — "Vendor obsidian-markdown skill into AOS .claude/skills" (Todo) — greenlit 2026-07-09
+- Plane AOS-71 — "Propagate obsidian-skills skill-authoring patterns to AOS skills" (Todo) — greenlit 2026-07-09
+- obsidian-cli / obsidian-bases / defuddle remain rejected (headless-incompatible / redundant)

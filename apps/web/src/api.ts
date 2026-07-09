@@ -716,3 +716,102 @@ export type PendingAuthorityAction = {
 export async function fetchPendingAuthorityActions(): Promise<PendingAuthorityAction[]> {
   return request<PendingAuthorityAction[]>('/authority/pending');
 }
+
+// Multi-phase research plans + runs (AOS-RESEARCH-003).
+export type ResearchPlan = {
+  id: string;
+  project_id: string;
+  question: string;
+  sensitivity: string;
+  plan_status: string;
+  required_source_types: string[];
+  search_queries: string[];
+  verification_steps: string[];
+  synthesis_policy: Record<string, unknown>;
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ResearchRunSource = {
+  ref: string;
+  title: string;
+  tier: string | null;
+  score: number;
+  accepted: boolean;
+  reason: string | null;
+};
+
+export type ResearchRunFinding = {
+  claim: string;
+  source_ref: string;
+  tier?: string;
+  label?: string;
+};
+
+export type ResearchRunPhase = { phase: string; detail: string };
+
+export type ResearchRun = {
+  id: string;
+  plan_id: string;
+  project_id: string;
+  job_id: string | null;
+  run_status: string;
+  phases: ResearchRunPhase[];
+  sources: ResearchRunSource[];
+  findings: ResearchRunFinding[];
+  conflicts: unknown[];
+  open_questions: string[];
+  confidence: number;
+  status: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export async function createResearchPlan(
+  projectId: string,
+  question: string,
+  sensitivity = 'public',
+): Promise<ResearchPlan> {
+  return request<ResearchPlan>(`/projects/${projectId}/research-plans`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, sensitivity }),
+  });
+}
+
+export async function fetchResearchPlans(projectId: string): Promise<ResearchPlan[]> {
+  return request<ResearchPlan[]>(`/projects/${projectId}/research-plans`);
+}
+
+export async function fetchResearchPlan(planId: string): Promise<ResearchPlan> {
+  return request<ResearchPlan>(`/research-plans/${planId}`);
+}
+
+export async function runResearchPlan(planId: string): Promise<Job> {
+  return request<Job>(`/research-plans/${planId}/run`, { method: 'POST' });
+}
+
+export async function fetchResearchRuns(planId: string): Promise<ResearchRun[]> {
+  return request<ResearchRun[]>(`/research-plans/${planId}/runs`);
+}
+
+export async function decideSource(
+  runId: string,
+  sourceRef: string,
+  accepted: boolean,
+  reason: string,
+): Promise<ResearchRun> {
+  // The backend route is `{source_ref:path}`, so raw slashes in a ref (e.g. a
+  // vault path) are matched as-is — do not percent-encode them away.
+  return request<ResearchRun>(
+    `/research-runs/${runId}/sources/${sourceRef}/decision`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ accepted, reason }),
+    },
+  );
+}

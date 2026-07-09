@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-RESEARCH-003 (UI): Research Plans surface — COMPLETES the package + the consolidation plan (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-RESEARCH-003 (UI PR) — a Research Plans surface; completes the package and the entire 10-package consolidation plan.** Phase 4, final package (eval Finding 15). New `features/research-plans/ResearchPlansView.tsx` (consumes useProjectContext + SelectProjectNotice guard): create a plan from a question (POST /projects/{id}/research-plans, auto-selects), plan detail shows recorded search_queries + verification_steps + a Run button (POST /research-plans/{id}/run), run detail shows phases in order (plan→search→fetch→verify→synthesize), sources tagged accepted/rejected with reason + Accept/Reject operator override (POST /research-runs/{id}/sources/{ref}/decision), visible conflicts, findings each citing source_ref, and open questions. api.ts: ResearchPlan/ResearchRun types + createResearchPlan/fetchResearchPlans/fetchResearchPlan/runResearchPlan/fetchResearchRuns/decideSource fetchers. Wired as a NEW live surface under the Research workspace: added the 'research-plans' ViewId (Shell.tsx union + useHashRoute VIEW_IDS), a live surface in workspaces.ts (Research mode), the renderView case in main.tsx. Additive (no existing view/route changed; shell-modes unaffected). New `e2e/research-plans.spec.ts` (create→run→inspect 5 phases/sources/findings/open-questions→operator accept override flips a source) green; `tsc`+build clean; full suite otherwise the canonical worker/scheduler flakes only. **AOS-RESEARCH-003 complete (backend #148 plans + #149 runs + this UI). The entire consolidation plan is now complete: VOICE-PROJECT, CONTRACT, WORKER-ROUTER, NODE, CONNECTOR, ARCH-STUDIO, AUTHORITY, WEB-SPINE, UX-IA, RESEARCH-003 — all 10 packages shipped.**
+
 ## 2026-07-09 — AOS-RESEARCH-003 (backend PR2): the research-run executor (laptop session — in review)
 
 ### In Review (tandem laptop session)

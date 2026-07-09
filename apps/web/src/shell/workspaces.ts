@@ -80,6 +80,7 @@ export const WORKSPACE_MODES: WorkspaceMode[] = [
     surfaces: [
       { id: 'knowledge', label: 'Knowledge', status: 'live', view: 'knowledge' },
       { id: 'research-inbox', label: 'Research Inbox', status: 'live', view: 'research' },
+      { id: 'research-plans', label: 'Research Plans', status: 'live', view: 'research-plans' },
       { id: 'signals-ecosystem-watch', label: 'Signals / Ecosystem Watch', status: 'soon' },
       { id: 'knowledge-graph', label: 'Knowledge Graph', status: 'soon' },
       { id: 'distillation', label: 'Distillation', status: 'soon' },

@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-SELFHEAL: nightly-probe heartbeat endpoint + cron unblock (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **Nightly-probe heartbeat endpoint + the cron-unblock (AOS-SELFHEAL observability).** Adapts the operator's `nightly-docs-tokens-audit` cloud-routine pattern (which posts a clean/findings/failed heartbeat to a dashboard collector so a MISSED run is visible) to ArchetypeOS. New `AuditHeartbeat` model (routine [unique], heartbeat_status [avoids the status clash], day, pr_url, detail — one row per routine, upserted each run) + Alembic `0014_audit_heartbeats` off head 0013. New `services/audit_heartbeat.py` (record_heartbeat upsert + list_heartbeats; statuses clean/findings/failed). Routes `app/routes/audits.py`: POST /audits/heartbeat (201; 422 unknown status/empty routine; optional x-telemetry-token enforced only when settings.audit_heartbeat_token is set), GET /audits/heartbeats (the status board a dashboard reads). Route inventory 71→73. **Also fixes the silent skip:** `.gitignore` now ignores `.archetype/work/` — leftover untracked per-session PR-body scratch made `git status` non-empty, so `conflict_learn.sh` (the only probe in cron) refused to run over a "dirty" tree every morning; ignoring the scratch dir lets the tree read clean at cron time. Additive (no existing model/route/service touched; token inert unless configured). 8 new tests green (6 heartbeat + 2 route-inventory); full API suite green; ruff clean. Follow-ups: wire the four local `*_learn.sh` + prompts to POST heartbeats; author cloud RemoteTrigger routines for the probes (fresh checkout dodges the dirty-tree skip); a Control Tower Nightly Audits panel reading GET /audits/heartbeats.
+
 ## 2026-07-09 — AOS-SELFHEAL-006: session-pain probe (laptop session — in review)
 
 ### In Review (tandem laptop session)

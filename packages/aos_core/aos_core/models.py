@@ -205,6 +205,25 @@ class ResearchRun(AuditMixin, Base):
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
 
+class AuditHeartbeat(AuditMixin, Base):
+    """The last-run heartbeat of a nightly self-learn probe (observability).
+
+    Each probe (conflict / toil / coherence / session-pain / ...) posts a heartbeat
+    on every run — ``clean`` / ``findings`` / ``failed`` — so the operator can tell
+    a clean night from a MISSED run without reading logs. One row per routine
+    (upserted), carrying the run day and, when it opened a review PR, its url.
+    ``heartbeat_status`` (not ``status``) avoids the AuditMixin.status clash.
+    """
+
+    __tablename__ = "audit_heartbeats"
+
+    routine: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    heartbeat_status: Mapped[str] = mapped_column(String(32), nullable=False)
+    day: Mapped[str] = mapped_column(String(32), nullable=False)
+    pr_url: Mapped[str | None] = mapped_column(Text)
+    detail: Mapped[str | None] = mapped_column(Text)
+
+
 class Recommendation(AuditMixin, Base):
     __tablename__ = "recommendations"
 

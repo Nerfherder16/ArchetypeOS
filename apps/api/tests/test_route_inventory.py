@@ -20,6 +20,7 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects"),
         ("GET", "/projects"),
         ("GET", "/projects/{project_id}"),
+        ("PATCH", "/projects/{project_id}"),
         # repositories
         ("POST", "/projects/{project_id}/repositories"),
         ("GET", "/projects/{project_id}/repositories"),
@@ -160,6 +161,7 @@ def test_route_inventory_count() -> None:
     # research-run routes (POST /research-plans/{plan_id}/run, GET /research-plans/
     # {plan_id}/runs, GET /research-runs/{run_id}, POST /research-runs/{run_id}/
     # sources/{source_ref}/decision) = 71, plus the AOS-SELFHEAL heartbeat routes
-    # (POST /audits/heartbeat, GET /audits/heartbeats) = 73.
-    assert len(EXPECTED_ROUTES) == 73
-    assert len(_actual_routes()) == 73
+    # (POST /audits/heartbeat, GET /audits/heartbeats) = 73, plus the per-project
+    # audit toggle (PATCH /projects/{project_id}) = 74.
+    assert len(EXPECTED_ROUTES) == 74
+    assert len(_actual_routes()) == 74

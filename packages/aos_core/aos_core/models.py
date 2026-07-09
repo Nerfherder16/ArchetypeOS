@@ -63,6 +63,10 @@ class Project(AuditMixin, Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     description: Mapped[str | None] = mapped_column(Text)
+    # AOS-SELFHEAL (per-project MVP): opt this project into the nightly audit loop.
+    # The dispatcher runs the repo-state (coherence) probe against every enabled
+    # project's repo and posts a heartbeat keyed to the project. Default off.
+    audits_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     repositories: Mapped[list["Repository"]] = relationship(back_populates="project", cascade="all, delete-orphan")
 
@@ -216,8 +220,16 @@ class AuditHeartbeat(AuditMixin, Base):
     """
 
     __tablename__ = "audit_heartbeats"
+    # One row per (routine, project). A global routine (the ArchetypeOS self-audit)
+    # has project_id NULL; a per-project audit scopes the same routine to a project
+    # so their heartbeats never collide. project_id is a soft reference (no FK) —
+    # a status board must survive a probe posting for a since-deleted project.
+    __table_args__ = (
+        UniqueConstraint("routine", "project_id", name="uq_audit_heartbeats_routine_project"),
+    )
 
-    routine: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    routine: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    project_id: Mapped[str | None] = mapped_column(GUID(), nullable=True, index=True)
     heartbeat_status: Mapped[str] = mapped_column(String(32), nullable=False)
     day: Mapped[str] = mapped_column(String(32), nullable=False)
     pr_url: Mapped[str | None] = mapped_column(Text)

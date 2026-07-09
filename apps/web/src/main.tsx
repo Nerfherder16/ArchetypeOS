@@ -52,6 +52,7 @@ import { ApprovalsView } from './features/approvals/ApprovalsView';
 import { ActivityView } from './features/activity/ActivityView';
 import { VoiceInboxView } from './features/voice/VoiceInboxView';
 import { NodesView } from './features/nodes/NodesView';
+import { ArchitectureStudio } from './features/architecture/ArchitectureStudio';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
@@ -1233,34 +1234,15 @@ function App() {
               <span className="aos-eyebrow">System map</span>
               <h2>Architecture</h2>
             </div>
-            <div className="aos-hud glass aos-card">
-              <span className="aos-eyebrow">Dependency graph</span>
-              {architectureError ? (
-                <p role="alert" className="aos-error">
-                  {architectureError}
-                </p>
-              ) : null}
-              {architecture ? (
-                <>
-                  <div className="aos-pills">
-                    <span className="aos-pill good">Nodes: {architecture.nodes.length}</span>
-                    <span className="aos-pill good">Edges: {architecture.edges.length}</span>
-                  </div>
-                  <ul className="aos-rows" style={{ marginTop: 12 }}>
-                    {architecture.nodes.map((node) => (
-                      <li key={node.id}>
-                        <span className="aos-strong">{node.label}</span>{' '}
-                        <span className="aos-rowmeta">
-                          ({node.type}) — confidence {node.confidence}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              ) : !architectureError ? (
-                <p className="aos-muted" style={{ margin: 0 }}>Loading architecture...</p>
-              ) : null}
-            </div>
+            <ArchitectureStudio
+              graph={architecture}
+              error={architectureError}
+              onCorrected={() => {
+                if (selectedProjectId && selectedRepositoryId) {
+                  void loadArchitecture(selectedProjectId, selectedRepositoryId);
+                }
+              }}
+            />
           </div>
         );
 

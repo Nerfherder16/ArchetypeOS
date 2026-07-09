@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   firstLiveView,
   modeForView,
+  type Surface,
   type WorkspaceMode,
   type WorkspaceModeId,
 } from './workspaces';
@@ -34,6 +35,9 @@ type ShellProps = {
   projectSelector: React.ReactNode;
   health: React.ReactNode;
   children: React.ReactNode;
+  // AOS-UX-IA-001 (deliverable 2): clicking a planned "soon" surface opens the
+  // Planned drawer instead of being a dead control.
+  onPlannedSelect?: (surface: Surface) => void;
 };
 
 // The ops-deck chrome: left rail (brand + mode switcher + active mode's surface
@@ -41,7 +45,15 @@ type ShellProps = {
 // pip), and a workspace that mounts the active view. Presentational only — all
 // data/state lives in App(). Shell owns only the active-mode selection, derived
 // from the incoming `activeView` (AOS-UI-007).
-export function Shell({ activeView, onNav, modes, projectSelector, health, children }: ShellProps) {
+export function Shell({
+  activeView,
+  onNav,
+  modes,
+  projectSelector,
+  health,
+  children,
+  onPlannedSelect,
+}: ShellProps) {
   // The design tokens resolve themes via `:root[data-theme="…"]`; the toggle
   // stamps that attribute. Default the deck to dark (the ops-deck intent).
   const [theme, setTheme] = useState<Theme>('dark');
@@ -127,14 +139,16 @@ export function Shell({ activeView, onNav, modes, projectSelector, health, child
                 </li>
               );
             }
+            // Planned surfaces are not dead: clicking one opens the Planned
+            // drawer with a description of what it will be (AOS-UX-IA-001 d2).
             return (
               <li key={surface.id}>
                 <button
                   type="button"
                   className="aos-nav-item aos-nav-disabled"
                   data-testid={`soon-${surface.id}`}
-                  disabled
-                  aria-disabled="true"
+                  aria-label={`${surface.label} (planned)`}
+                  onClick={() => onPlannedSelect?.(surface)}
                 >
                   <span>{surface.label}</span>
                   <span className="aos-nav-soon">soon</span>

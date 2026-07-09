@@ -6,6 +6,12 @@ This file gives new sessions a quick chronological view of what changed recently
 
 It is not a replacement for Git history. It is a human-readable coordination log.
 
+## 2026-07-09 — AOS-UX-IA-001 (deliverable 2): Planned drawer replaces dead "soon" chips (laptop session — in review)
+
+### In Review (tandem laptop session)
+
+- **AOS-UX-IA-001 (deliverable 2 of 4) — planned "soon" surfaces become informative.** Phase 4 ('control room → control tower', Findings 2/3/12). The rail's ~22 planned surfaces were dead disabled chips; clicking one now opens a Planned drawer describing what it will be. New `shell/planned.ts` (`PLANNED_SURFACES` map keyed by Surface.id → honest short {summary, phase?, ticket?} intent statements). New `features/planned/PlannedDrawer.tsx` (right-side role=dialog drawer: label + 'Planned' badge + phase + summary + optional ticket + a 'not built yet' note; closes via Esc/Close button/backdrop; falls back to a generic message for surfaces with no catalog entry). `Shell.tsx`: the 'soon' nav buttons are no longer `disabled` — they're enabled buttons (still showing the 'soon' chip) that call a new optional `onPlannedSelect(surface)` prop. `main.tsx`: App holds `plannedSurface` state, passes onPlannedSelect to Shell, renders `<PlannedDrawer/>` globally (beside the command palette); no backend change. Updated the one `shell-modes.spec.ts` case that asserted the old disabled behavior to the new contract (visible + 'soon' + enabled). New `e2e/planned-drawer.spec.ts` (click Knowledge Graph → drawer shows title/badge/summary/phase; Esc + Close button dismiss; backdrop-close then switch surface updates Final Judge→Orchestration) green. `tsc`+build clean; full suite otherwise unchanged (only canonical worker/scheduler flakes fail locally; nav/palette specs green). Next UX-IA deliverables: global operator status strip, Now/Next/Blocked per workspace.
+
 ## 2026-07-09 — AOS-UX-IA-001 (deliverable 1): global command palette (Cmd/Ctrl+K) (laptop session — in review)
 
 ### In Review (tandem laptop session)

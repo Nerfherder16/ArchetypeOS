@@ -41,16 +41,18 @@ test('shell modes: selecting Architect reveals its surfaces and routes to Reposi
   await expect(reposNav).toHaveAttribute('aria-current', 'page');
 });
 
-test('shell modes: a planned surface renders as a disabled "soon" item', async ({ page }) => {
+test('shell modes: a planned surface renders as a clickable "soon" item', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByText('Engineering Control Tower')).toBeVisible();
 
   await page.getByTestId('mode-research').click();
 
+  // AOS-UX-IA-001 (d2): planned surfaces still carry the "soon" chip, but are no
+  // longer dead — they are enabled buttons that open the Planned drawer.
   const soon = page.getByTestId('soon-signals-ecosystem-watch');
   await expect(soon).toBeVisible();
-  await expect(soon).toBeDisabled();
-  await expect(soon).toHaveAttribute('aria-disabled', 'true');
+  await expect(soon).toContainText('soon');
+  await expect(soon).toBeEnabled();
 });
 
 test('shell modes: Builder (no live surface) shows the coming-soon empty state', async ({

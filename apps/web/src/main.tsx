@@ -19,6 +19,7 @@ import { DigestView } from './features/digest/DigestView';
 import { SchedulingView } from './features/scheduling/SchedulingView';
 import { CouncilView } from './features/council/CouncilView';
 import { CommandPalette } from './features/palette/CommandPalette';
+import { PlannedDrawer } from './features/planned/PlannedDrawer';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
@@ -28,13 +29,15 @@ import { RepositoryDataProvider } from './shell/RepositoryDataContext';
 import { SelectProjectNotice } from './shell/SelectProjectNotice';
 import { RepositoriesView } from './features/repositories/RepositoriesView';
 import { errorMessage } from './shell/errorMessage';
-import { WORKSPACE_MODES } from './shell/workspaces';
+import { WORKSPACE_MODES, type Surface } from './shell/workspaces';
 import './design/tokens.css';
 
 function App() {
   // AOS-WEB-SPINE-001: the active view is URL-hash routed (deep-linkable, honors
   // browser back/forward). `setActiveView` writes the hash; same call signature.
   const [activeView, setActiveView] = useHashRoute();
+  // AOS-UX-IA-001 (d2): the planned "soon" surface whose drawer is open, if any.
+  const [plannedSurface, setPlannedSurface] = useState<Surface | null>(null);
 
   const [health, setHealth] = useState<Health | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);
@@ -383,9 +386,11 @@ function App() {
       modes={WORKSPACE_MODES}
       projectSelector={projectSelector}
       health={healthPip}
+      onPlannedSelect={setPlannedSurface}
     >
       {renderView()}
       <CommandPalette navigate={setActiveView} />
+      <PlannedDrawer surface={plannedSurface} onClose={() => setPlannedSurface(null)} />
     </Shell>
   );
 }

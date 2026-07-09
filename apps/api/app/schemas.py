@@ -269,6 +269,30 @@ class ResearchNoteRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# AOS-RESEARCH-003 — multi-phase research plans.
+class ResearchPlanCreate(BaseModel):
+    question: str
+    sensitivity: str = "public"
+
+
+class ResearchPlanRead(BaseModel):
+    id: str
+    project_id: str
+    question: str
+    sensitivity: str
+    plan_status: str
+    required_source_types: list
+    search_queries: list
+    verification_steps: list
+    synthesis_policy: dict
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ResearchRequest(BaseModel):
     question: str
     sensitivity: str = "public"

@@ -56,6 +56,7 @@ import { ArchitectureStudio } from './features/architecture/ArchitectureStudio';
 import { ResearchInboxView } from './features/research/ResearchInboxView';
 import { CommandDeck } from './features/command/CommandDeck';
 import { Shell, type ViewId } from './shell/Shell';
+import { useHashRoute } from './shell/useHashRoute';
 import { WORKSPACE_MODES } from './shell/workspaces';
 import './design/tokens.css';
 
@@ -128,7 +129,9 @@ function SelectProjectNotice() {
 }
 
 function App() {
-  const [activeView, setActiveView] = useState<ViewId>('overview');
+  // AOS-WEB-SPINE-001: the active view is URL-hash routed (deep-linkable, honors
+  // browser back/forward). `setActiveView` writes the hash; same call signature.
+  const [activeView, setActiveView] = useHashRoute();
 
   const [health, setHealth] = useState<Health | null>(null);
   const [healthError, setHealthError] = useState<string | null>(null);

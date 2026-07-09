@@ -318,6 +318,30 @@ class SourceDecisionRequest(BaseModel):
     reason: str
 
 
+# AOS-SELFHEAL observability — nightly-probe heartbeats.
+class AuditHeartbeatCreate(BaseModel):
+    routine: str
+    status: str
+    day: str
+    pr_url: str | None = None
+    detail: str | None = None
+
+
+class AuditHeartbeatRead(BaseModel):
+    id: str
+    routine: str
+    heartbeat_status: str
+    day: str
+    pr_url: str | None
+    detail: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ResearchRequest(BaseModel):
     question: str
     sensitivity: str = "public"

@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     repository_root: Path = Path("./repositories")
     knowledge_root: Path = Path("./knowledge")
     cors_origins: str = "http://localhost:5173"
+    # AOS-SELFHEAL observability: when set, POST /audits/heartbeat requires a
+    # matching x-telemetry-token header. Empty = no auth (local/tailnet default).
+    audit_heartbeat_token: str = ""
     llm_provider: str = "deterministic"
     # AOS-LLM-LOCAL-001: the "openai_compatible" provider runs ArchetypeOS's
     # reasoned tiers off a local model (Ollama/vLLM/LM Studio — e.g. teevee's

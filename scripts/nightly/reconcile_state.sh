@@ -25,7 +25,7 @@ mkdir -p "$(dirname "$LOG")"
 log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG" >&2; }
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
-CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits}"
+CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits --model sonnet}"
 DRY_RUN="${DRY_RUN:-0}"
 
 # 1. Never reconcile over uncommitted local work.

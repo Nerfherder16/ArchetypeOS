@@ -25,6 +25,7 @@ from enum import Enum
 from ..llm import (
     ClaudeCodeProvider,
     DeterministicProvider,
+    InstrumentedProvider,
     OpenAICompatibleProvider,
     Provider,
 )
@@ -128,3 +129,32 @@ def route(task_class: str, sensitivity: Sensitivity, settings) -> RouteResult:
         provider=DeterministicProvider(),
         reason=f"{task_class}/{sensitivity.value} -> deterministic (no configured tier available)",
     )
+
+
+def routed_provider(
+    task_class: str,
+    sensitivity: Sensitivity,
+    settings,
+    sink=None,
+    *,
+    context: str | None = None,
+    agent: str | None = None,
+    session: str | None = None,
+) -> Provider:
+    """Router-aware sibling of :func:`aos_core.llm.get_provider`.
+
+    ``get_provider`` pins ``settings.llm_provider`` (a single backend); this picks
+    the tier per ``task_class`` at ``sensitivity`` via :func:`route` — cheapest
+    configured tier first, under the privacy guardrail — so a service opts into
+    cheap-first routing by swapping ``get_provider`` for this. When a ledger
+    ``sink`` is given the resolved provider is wrapped in
+    :class:`~aos_core.llm.InstrumentedProvider` (AOS-USAGE-001), exactly like
+    ``get_provider``; without a sink the bare provider is returned unchanged so
+    hermetic / DB-less paths are untouched.
+    """
+    provider = route(task_class, sensitivity, settings).provider
+    if sink is not None:
+        return InstrumentedProvider(
+            provider, sink, context=context, agent=agent, session=session
+        )
+    return provider

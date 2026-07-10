@@ -13,12 +13,14 @@ import pytest
 from aos_core.llm import (
     ClaudeCodeProvider,
     DeterministicProvider,
+    InstrumentedProvider,
     OpenAICompatibleProvider,
 )
 from aos_core.services.llm_router import (
     Sensitivity,
     Tier,
     route,
+    routed_provider,
 )
 
 
@@ -105,3 +107,29 @@ def test_free_hosted_unavailable_without_key():
 def test_unknown_task_uses_default_order():
     r = route("some_new_task", Sensitivity.PUBLIC, _settings())
     assert r.tier is Tier.LOCAL  # DEFAULT_ORDER starts LOCAL, which is configured
+
+
+# --- routed_provider: router-aware sibling of get_provider (AOS-LLM-ROUTE-COV) ---
+
+
+def test_routed_provider_returns_tier_provider_bare_without_sink():
+    # distillation table = [LOCAL, FREE, CLAUDE]; with LOCAL configured it wins →
+    # the local OpenAI-compatible provider, unwrapped (no sink).
+    p = routed_provider("distillation", Sensitivity.PRIVATE, _settings())
+    assert isinstance(p, OpenAICompatibleProvider)
+
+
+def test_routed_provider_wraps_in_instrumented_when_sink_given():
+    calls: list = []
+    p = routed_provider(
+        "distillation", Sensitivity.PRIVATE, _settings(), sink=lambda **kw: calls.append(kw)
+    )
+    assert isinstance(p, InstrumentedProvider)
+    assert isinstance(p.inner, OpenAICompatibleProvider)
+
+
+def test_routed_provider_honors_privacy_guardrail():
+    # research table = [FREE, CLAUDE]; PRIVATE strips FREE, CLAUDE disabled →
+    # nothing configured survives → deterministic floor (never the free tier).
+    p = routed_provider("research", Sensitivity.PRIVATE, _settings(llm_claude_enabled=False))
+    assert isinstance(p, DeterministicProvider)

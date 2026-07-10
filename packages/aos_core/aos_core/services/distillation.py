@@ -73,8 +73,9 @@ _DIGEST_MAP_FRACTION = 0.65
 _DIGEST_FULL_MODULES = 3
 # Retry-on-empty budget: how many free-pool members to try before marking the capability
 # extraction incomplete (damps provider variance — a member returning empty/ungrounded
-# output advances to the next). RFC-0013 Slice 1.
-_REASON_MAX_ATTEMPTS = 3
+# output advances to the next). Sized to try EVERY member of the free pool (ordered
+# big-context first by build_free_pool) before giving up. RFC-0013 Slice 1.
+_REASON_MAX_ATTEMPTS = 4
 # Output-token budget for the capability call. A capabilities ARRAY (several objects) needs
 # far more room than the one-sentence purpose; the free-tier default (1024) truncated the
 # JSON mid-array, dropping every capability. Sized for a full array with headroom.

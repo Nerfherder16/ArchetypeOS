@@ -88,6 +88,21 @@ def test_build_free_pool_includes_only_members_with_keys():
     assert "cerebras" not in names and "gemini" not in names
 
 
+def test_build_free_pool_orders_by_context_capacity():
+    """Big-context/generous-free members lead so large prompts (the capability digest,
+    RFC-0013 Slice 1) land on members that handle them; the tight-free-TPM member is last."""
+    env = {
+        "GROQ_API_KEY": "gsk_x",
+        "CEREBRAS_API_KEY": "c_x",
+        "GEMINI_API_KEY": "g_x",
+        "MISTRAL_API_KEY": "m_x",
+    }
+    names = [name for name, _ in build_free_pool(env)]
+    assert names[0] == "gemini"  # 1M-context, generous free tier → first
+    assert names[-1] == "groq"  # tight free TPM (the one that 413'd) → last
+    assert names.index("gemini") < names.index("groq")
+
+
 def test_free_pool_provider_none_when_no_keys():
     assert free_pool_provider({}) is None
 

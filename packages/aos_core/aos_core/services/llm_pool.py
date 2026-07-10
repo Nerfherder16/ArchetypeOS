@@ -27,20 +27,25 @@ class PoolMember:
     base_url: str
     model: str
     key_env: str
+    # Approximate effective context/free-tier capacity, used to ORDER the pool so large
+    # prompts land on generous members first (RFC-0013 Slice 1: the capability digest is a
+    # big prompt; Groq's tight free TPM 413'd/truncated it while Gemini/Cerebras handled it).
+    context: int = 128_000
 
 
 # The known OpenAI-compatible free providers (cheahjs/free-llm-api-resources).
 # A member is included only when its key env var is set.
 DEFAULT_FREE_POOL: list[PoolMember] = [
-    PoolMember("groq", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile", "GROQ_API_KEY"),
-    PoolMember("cerebras", "https://api.cerebras.ai/v1", "gpt-oss-120b", "CEREBRAS_API_KEY"),
+    PoolMember("groq", "https://api.groq.com/openai/v1", "llama-3.3-70b-versatile", "GROQ_API_KEY", context=32_000),
+    PoolMember("cerebras", "https://api.cerebras.ai/v1", "gpt-oss-120b", "CEREBRAS_API_KEY", context=128_000),
     PoolMember(
         "gemini",
         "https://generativelanguage.googleapis.com/v1beta/openai",
         "gemini-2.5-flash",
         "GEMINI_API_KEY",
+        context=1_000_000,
     ),
-    PoolMember("mistral", "https://api.mistral.ai/v1", "mistral-large-latest", "MISTRAL_API_KEY"),
+    PoolMember("mistral", "https://api.mistral.ai/v1", "mistral-large-latest", "MISTRAL_API_KEY", context=128_000),
 ]
 
 
@@ -98,10 +103,15 @@ class RotatingProvider:
 
 
 def build_free_pool(env: dict | None = None, *, timeout: float = 120.0) -> list[tuple[str, Provider]]:
-    """Return [(name, provider)] for each free provider whose key is in ``env``."""
+    """Return [(name, provider)] for each free provider whose key is in ``env``.
+
+    Members are ordered by ``context`` capacity (descending) so large prompts land on the
+    most generous member first; the round-robin cursor still spreads load across all of
+    them (RFC-0013 Slice 1).
+    """
     env = os.environ if env is None else env
     out: list[tuple[str, Provider]] = []
-    for m in DEFAULT_FREE_POOL:
+    for m in sorted(DEFAULT_FREE_POOL, key=lambda m: -m.context):
         key = env.get(m.key_env, "")
         if key:
             out.append(

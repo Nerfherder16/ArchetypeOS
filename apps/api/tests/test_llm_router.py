@@ -106,7 +106,9 @@ def test_free_hosted_unavailable_without_key():
 
 def test_unknown_task_uses_default_order():
     r = route("some_new_task", Sensitivity.PUBLIC, _settings())
-    assert r.tier is Tier.LOCAL  # DEFAULT_ORDER starts LOCAL, which is configured
+    # DEFAULT_ORDER now starts FREE_HOSTED (best-results tuning: capable 70B free
+    # before local 7B); the free key is configured in _settings so it wins.
+    assert r.tier is Tier.FREE_HOSTED
 
 
 # --- routed_provider: router-aware sibling of get_provider (AOS-LLM-ROUTE-COV) ---

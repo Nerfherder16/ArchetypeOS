@@ -46,10 +46,16 @@ class Tier(str, Enum):
 
 # Per-task-class preferred tier ordering (first available wins). Sensitivity is
 # applied on top (PRIVATE strips FREE_HOSTED). Unknown task classes use DEFAULT.
-DEFAULT_ORDER = [Tier.LOCAL, Tier.FREE_HOSTED, Tier.CLAUDE]
+#
+# Best-results tuning (operator directive): quality-sensitive classes prefer the
+# capable FREE_HOSTED tier (70B-class Groq/Cerebras/Gemini) BEFORE the local 7B —
+# a 70B free model beats a local 7B on quality at ~zero cost. LOCAL stays in the
+# order as the private/offline fallback (and the only non-Claude tier a PRIVATE
+# task can use). Claude is the top-stakes ceiling. final_judge is always Claude.
+DEFAULT_ORDER = [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE]
 ROUTING_TABLE: dict[str, list[Tier]] = {
-    "code_review": [Tier.LOCAL, Tier.FREE_HOSTED, Tier.CLAUDE],
-    "distillation": [Tier.LOCAL, Tier.FREE_HOSTED, Tier.CLAUDE],
+    "code_review": [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE],
+    "distillation": [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE],
     "research": [Tier.FREE_HOSTED, Tier.CLAUDE],          # capability > privacy; public inputs
     "council_agent": [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE],
     "design": [Tier.FREE_HOSTED, Tier.CLAUDE],            # multimodal free models

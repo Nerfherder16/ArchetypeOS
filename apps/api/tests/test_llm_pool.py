@@ -96,3 +96,15 @@ def test_free_pool_provider_rotates_when_keys_present():
     pool = free_pool_provider({"GROQ_API_KEY": "gsk_x", "CEREBRAS_API_KEY": "c_x"})
     assert isinstance(pool, RotatingProvider)
     assert len(pool) == 2
+
+
+def test_result_provider_relabeled_to_rotating_for_free_tiering():
+    # The pool must report its own identity on the result ("rotating") so the usage
+    # ledger tiers free-pool calls as FREE (derive_tier: "rotating" -> free), keeping
+    # the member's MODEL name. Members report their own provider ("ok"); the pool
+    # normalizes only the provider label. (LES-L20 — free-pool calls were tagged local.)
+    member = _Ok("groq-model")
+    r = RotatingProvider([member], labels=["groq"])
+    result = r.generate(system="", prompt="p")
+    assert result.provider == "rotating"   # was "ok" (member) → mis-tiered local
+    assert result.model == "groq-model"    # model preserved for the by_model breakdown

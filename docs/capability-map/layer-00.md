@@ -1,0 +1,31 @@
+## Layer 0: Constitution and Governance
+
+Owns the rules of the system.
+
+Capabilities:
+
+- Engineering Constitution
+- RFC process
+- Arbiter and Final Judge rules
+- decision lifecycle
+- human approval model
+- authority action policy (AOS-AUTHORITY-001: enforced action-class policy — no write/destructive path bypasses `requires_approval`)
+- safety model
+- agent contract
+- agent hierarchy
+- external review triage
+
+Primary artifacts:
+
+- docs/ENGINEERING_CONSTITUTION.md
+- docs/CONSTITUTION_AMENDMENTS.md
+- docs/RFC_PROCESS.md
+- docs/ARBITER_FINAL_JUDGE.md
+- docs/DECISION_LIFECYCLE.md
+- docs/AUTHORITY_POLICY.md (AOS-AUTHORITY-001: action classes + central requires_approval evaluator; GET /authority/action-classes, POST /authority/evaluate, GET /authority/pending)
+- docs/AGENT_HIERARCHY_AND_COMMUNICATION.md
+- docs/EXTERNAL_REVIEW_TRIAGE_2026_07_04.md
+- agents/UNIVERSAL_AGENT_CONTRACT.md
+- knowledge/wiki/reviews/2026-07-08-archetypeos-system-evaluation.md (AOS-REVIEW-001 system evaluation)
+- docs/CONSOLIDATION_PLAN.md (AOS-REVIEW-001 phased execution plan / consolidation roadmap)
+

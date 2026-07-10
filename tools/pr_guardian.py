@@ -252,13 +252,21 @@ def check_capability_map(files: list[str], statuses: dict[str, str], body: str) 
         and statuses.get(path, "").startswith("A")
         and path not in GOVERNANCE_DOC_ALLOWLIST
         and not path.startswith("docs/rfc/")
+        # The capability map is split into per-layer files (docs/capability-map/);
+        # those ARE the map, not new docs that must register in it.
+        and not path.startswith("docs/capability-map/")
     ]
-    if added_docs and "docs/CAPABILITY_MAP.md" not in files and not has_override(body, "CAPABILITY_MAP"):
+    # The map is satisfied by touching the root index OR the relevant layer file.
+    capability_map_touched = any(
+        path == "docs/CAPABILITY_MAP.md" or path.startswith("docs/capability-map/")
+        for path in files
+    )
+    if added_docs and not capability_map_touched and not has_override(body, "CAPABILITY_MAP"):
         findings.append(
             Finding(
                 "block",
                 "capability-map-not-updated",
-                "New docs were added without updating docs/CAPABILITY_MAP.md. Add map changes or include PR_GUARDIAN_OVERRIDE_CAPABILITY_MAP with rationale.",
+                "New docs were added without updating the capability map (docs/CAPABILITY_MAP.md or docs/capability-map/layer-NN.md). Add map changes or include PR_GUARDIAN_OVERRIDE_CAPABILITY_MAP with rationale.",
             )
         )
     return findings

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..llm import Provider, ProviderResult
+from ..llm import InstrumentedProvider, Provider, ProviderResult
 from .llm_router import Tier, _available, _provider_for, route
 
 # ---------------------------------------------------------------------------
@@ -89,12 +89,18 @@ def verified_generate(
 ) -> VerifiedResult:
     """Route, produce, and optionally adversarially verify the output.
 
-    The ``sink`` parameter is accepted for API symmetry with ``routed_provider``
-    but is not forwarded to any provider in this slice (instrumentation is
-    handled upstream by the caller if needed).
+    When ``sink`` is not None, each provider call (produce, verify, escalate)
+    is wrapped in :class:`~aos_core.llm.InstrumentedProvider` so a
+    ``UsageEvent`` is recorded in the ledger for every real model call.
+    When ``sink`` is None, bare providers are used and no ledger writes occur.
     """
     r = route(task_class, sensitivity, settings)
-    produced: ProviderResult = r.provider.generate(
+    produce_provider: Provider = (
+        InstrumentedProvider(r.provider, sink, context=task_class, agent="producer")
+        if sink is not None
+        else r.provider
+    )
+    produced: ProviderResult = produce_provider.generate(
         system=system, prompt=prompt, max_tokens=max_tokens
     )
 
@@ -110,7 +116,12 @@ def verified_generate(
         )
 
     # --- adversarial pass ---------------------------------------------------
-    claude: Provider = _provider_for(Tier.CLAUDE, settings)
+    _claude_raw: Provider = _provider_for(Tier.CLAUDE, settings)
+    claude: Provider = (
+        InstrumentedProvider(_claude_raw, sink, context=task_class, agent="verifier")
+        if sink is not None
+        else _claude_raw
+    )
     verdict_result = claude.generate(
         system=_REFUTE_SYSTEM,
         prompt=_verify_prompt(system, prompt, produced.text),

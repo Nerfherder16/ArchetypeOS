@@ -57,7 +57,6 @@ from sqlalchemy.orm import sessionmaker
 
 from aos_core.config import get_settings
 from aos_core.database import Base
-from aos_core.llm import ClaudeCodeProvider, DeterministicProvider
 from aos_core.models import Project, Repository, RepositoryDNA
 from aos_core.services.distillation import _repo_slug, distill_repository
 from aos_core.services.scan import run_scan
@@ -80,19 +79,18 @@ def _repo_dirs(repository_root: Path, requested: list[str]) -> list[str]:
     return sorted(p.name for p in repository_root.iterdir() if p.is_dir() and not p.name.startswith("."))
 
 
-def _select_provider(name: str):
-    """Resolve the reality-test provider by name (default deterministic/hermetic).
+def _apply_provider_setting(name: str) -> None:
+    """Set the LLM_PROVIDER env var and clear the settings cache so distill_repository picks it up.
 
     ``deterministic`` (the DEFAULT — keeps the Package-1 ranking gate reproducible
-    and never invokes a real model) → :class:`DeterministicProvider`; the opt-in
-    ``claude_code`` → the LES-021-isolated :class:`ClaudeCodeProvider` for the live
-    quality check (Orchestrator-only). Anything else is a hard error.
+    and never invokes a real model); ``claude_code`` selects the LES-021-isolated
+    Claude Code tier for the live quality check (Orchestrator-only). Anything else
+    is a hard error.
     """
-    if name == "deterministic":
-        return DeterministicProvider()
-    if name == "claude_code":
-        return ClaudeCodeProvider()
-    raise SystemExit(f"Unknown --provider {name!r} (expected 'deterministic' or 'claude_code')")
+    if name not in ("deterministic", "claude_code"):
+        raise SystemExit(f"Unknown --provider {name!r} (expected 'deterministic' or 'claude_code')")
+    os.environ["LLM_PROVIDER"] = name
+    get_settings.cache_clear()
 
 
 def _parse_args(argv: list[str]) -> tuple[str, list[str]]:
@@ -123,7 +121,7 @@ def _parse_args(argv: list[str]) -> tuple[str, list[str]]:
     return provider, dirs
 
 
-def _ingest(session, repository_root: Path, knowledge_root: Path, dirname: str, provider) -> str | None:
+def _ingest(session, repository_root: Path, knowledge_root: Path, dirname: str) -> str | None:
     """Idempotently register + scan + distill one repo. Returns the repo id (or None on skip)."""
     slug = _repo_slug(dirname)
     existing = (
@@ -153,17 +151,16 @@ def _ingest(session, repository_root: Path, knowledge_root: Path, dirname: str, 
         session,
         repository_id=repository.id,
         knowledge_root=knowledge_root,
-        provider=provider,
     )
     return repository.id
 
 
 def main(argv: list[str]) -> int:
+    provider_name, requested = _parse_args(argv)
+    _apply_provider_setting(provider_name)
     settings = get_settings()
     repository_root = Path(settings.repository_root)
     knowledge_root = Path(settings.knowledge_root or "./knowledge")
-    provider_name, requested = _parse_args(argv)
-    provider = _select_provider(provider_name)
     dirs = _repo_dirs(repository_root, requested)
     if not dirs:
         print(f"No repositories found under {repository_root}. Clone the portfolio first.")
@@ -184,7 +181,7 @@ def main(argv: list[str]) -> int:
         print(f"== Ingest (scan + distill, {provider_name} provider) ==")
         for dirname in dirs:
             try:
-                _ingest(session, repository_root, knowledge_root, dirname, provider)
+                _ingest(session, repository_root, knowledge_root, dirname)
             except Exception as exc:  # noqa: BLE001 - a bad repo must not abort the harness
                 print(f"  ! {dirname}: ingest failed ({exc.__class__.__name__}: {exc})")
 

@@ -526,25 +526,64 @@ def _dna_purpose(tmp_path, repo_id: str) -> str:
         session.close()
 
 
-def test_reason_purpose_gating_and_parsing_is_hermetic() -> None:
+def test_reason_purpose_gating_and_parsing_is_hermetic(monkeypatch) -> None:
+    """reason_purpose now calls verified_generate internally; test via route monkeypatch."""
+    import aos_core.services.verifier as verifier_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
     files = [{"path": "app.py", "text": "print('hi')"}]
+    det_settings = types.SimpleNamespace(llm_provider="deterministic")
 
-    # Deterministic provider is gated OUT of the reasoned tier — no shell, "".
-    assert reason_purpose(_RICH_README, files, DeterministicProvider()) == ""
+    # Deterministic tier is gated OUT — verified_generate short-circuits → "".
+    def _det_route(task_class, sensitivity, s):
+        return RouteResult(tier=Tier.DETERMINISTIC, provider=DeterministicProvider(), reason="test")
 
-    # A real provider returning a canned purpose yields that exact sentence.
+    monkeypatch.setattr(verifier_mod, "route", _det_route)
+    monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)
+    assert reason_purpose(_RICH_README, files, det_settings) == ""
+
+    # A real (FREE_HOSTED) provider returning a canned purpose yields that exact sentence.
     good = _FakeReasonedProvider("Repo X is a tool useful for Y.")
-    assert reason_purpose(_RICH_README, files, good) == "Repo X is a tool useful for Y."
+
+    def _real_route(task_class, sensitivity, s):
+        return RouteResult(tier=Tier.FREE_HOSTED, provider=good, reason="test")
+
+    monkeypatch.setattr(verifier_mod, "route", _real_route)
+    monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)  # skip verify pass
+    assert reason_purpose(_RICH_README, files, det_settings) == "Repo X is a tool useful for Y."
     assert good.calls  # the real-provider path actually ran
 
     # Empty / garbled / purpose-less real output → "" (no fabrication).
-    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider("")) == ""
-    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider("not json at all")) == ""
-    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider('{"other": "x"}')) == ""
-    assert reason_purpose(_RICH_README, files, _FakeGarbledProvider('{"purpose": "   "}')) == ""
+    for bad_text in ("", "not json at all", '{"other": "x"}', '{"purpose": "   "}'):
+        garbled = _FakeGarbledProvider(bad_text)
+        monkeypatch.setattr(verifier_mod, "route", lambda tc, s, st, _p=garbled: RouteResult(tier=Tier.FREE_HOSTED, provider=_p, reason="test"))
+        assert reason_purpose(_RICH_README, files, det_settings) == ""
 
 
-def test_distill_reasoned_provider_sets_reasoned_purpose_and_state(client, tmp_path) -> None:
+def _patch_route_free_hosted(monkeypatch, provider) -> None:
+    """Patch both the verifier and distillation modules to route to a fake FREE_HOSTED provider.
+
+    Two patches are required:
+    - ``verifier_mod.route``: controls which provider ``verified_generate`` uses internally.
+    - ``distillation_mod.route``: controls the ``real`` flag in ``distill_repository`` so the
+      reasoned branch is entered (Tier != DETERMINISTIC).
+    ``verifier_mod._available`` is set to ``False`` so the Claude adversarial pass is skipped
+    (the fake's output is accepted as-is; end-to-end refutation is tested in test_verifier.py).
+    """
+    import aos_core.services.distillation as distillation_mod
+    import aos_core.services.verifier as verifier_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
+    fake_route = lambda tc, sens, s: RouteResult(  # noqa: E731
+        tier=Tier.FREE_HOSTED, provider=provider, reason="test"
+    )
+    monkeypatch.setattr(verifier_mod, "route", fake_route)
+    monkeypatch.setattr(distillation_mod, "route", fake_route)
+    monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)
+
+
+def test_distill_reasoned_provider_sets_reasoned_purpose_and_state(client, tmp_path, monkeypatch) -> None:
+    """verified_generate production path: a FREE_HOSTED fake returns a reasoned purpose."""
     settings.knowledge_root = tmp_path
     project_id = _project(client)
     repo_id = _register_repo(
@@ -553,16 +592,18 @@ def test_distill_reasoned_provider_sets_reasoned_purpose_and_state(client, tmp_p
     _seed_dna(tmp_path, repo_id)
 
     provider = _FakeReasonedProvider()
+    _patch_route_free_hosted(monkeypatch, provider)
+
     session = _same_file_session(tmp_path)
     try:
         page = distill_repository(
-            session, repository_id=repo_id, knowledge_root=tmp_path, provider=provider
+            session, repository_id=repo_id, knowledge_root=tmp_path
         )
         assert page.validation_state == "reasoned"
     finally:
         session.close()
 
-    # The real-provider path shelled the (fake) provider — gating let it run.
+    # The production verified_generate path invoked the fake provider.
     assert provider.calls
     # DNA.purpose IS the reasoned line, not the deterministic floor summary.
     purpose = _dna_purpose(tmp_path, repo_id)
@@ -574,7 +615,13 @@ def test_distill_reasoned_provider_sets_reasoned_purpose_and_state(client, tmp_p
     assert _REASONED_PURPOSE in text
 
 
-def test_distill_deterministic_provider_keeps_floor_and_derived(client, tmp_path) -> None:
+def test_distill_deterministic_provider_keeps_floor_and_derived(client, tmp_path, monkeypatch) -> None:
+    """DETERMINISTIC route: verified_generate short-circuits; floor summary kept.
+
+    No monkeypatching of route needed: ``get_settings().llm_provider`` defaults to
+    ``"deterministic"`` in the test environment, so ``route()`` returns DETERMINISTIC
+    already, and ``real`` is False. The test confirms this inherited CI default holds.
+    """
     settings.knowledge_root = tmp_path
     project_id = _project(client)
     repo_id = _register_repo(
@@ -585,7 +632,7 @@ def test_distill_deterministic_provider_keeps_floor_and_derived(client, tmp_path
     session = _same_file_session(tmp_path)
     try:
         page = distill_repository(
-            session, repository_id=repo_id, knowledge_root=tmp_path, provider=DeterministicProvider()
+            session, repository_id=repo_id, knowledge_root=tmp_path
         )
         assert page.validation_state == "derived"
     finally:
@@ -596,7 +643,8 @@ def test_distill_deterministic_provider_keeps_floor_and_derived(client, tmp_path
     assert purpose.startswith("A reusable library for building command-line widgets")
 
 
-def test_distill_garbled_reasoned_output_falls_back_to_floor(client, tmp_path) -> None:
+def test_distill_garbled_reasoned_output_falls_back_to_floor(client, tmp_path, monkeypatch) -> None:
+    """FREE_HOSTED fake returns garbled JSON: verified_generate path runs but yields no purpose."""
     settings.knowledge_root = tmp_path
     project_id = _project(client)
     repo_id = _register_repo(
@@ -604,18 +652,20 @@ def test_distill_garbled_reasoned_output_falls_back_to_floor(client, tmp_path) -
     )
     _seed_dna(tmp_path, repo_id)
 
-    # A real provider whose reasoned purpose is empty → fall back to the floor.
+    # A real (non-deterministic) provider whose output has no usable purpose.
     provider = _FakeGarbledProvider('{"purpose": ""}')
+    _patch_route_free_hosted(monkeypatch, provider)
+
     session = _same_file_session(tmp_path)
     try:
         page = distill_repository(
-            session, repository_id=repo_id, knowledge_root=tmp_path, provider=provider
+            session, repository_id=repo_id, knowledge_root=tmp_path
         )
         assert page.validation_state == "derived"
     finally:
         session.close()
 
-    assert provider.calls  # the real path ran, but produced no usable purpose
+    assert provider.calls  # the production path ran, but produced no usable purpose
     purpose = _dna_purpose(tmp_path, repo_id)
     # No fabrication: the deterministic floor summary is preserved.
     assert purpose.startswith("A reusable library for building command-line widgets")

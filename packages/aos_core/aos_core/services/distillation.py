@@ -33,6 +33,8 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..embeddings import get_embedder
+from ..llm import InstrumentedProvider
+from .llm_pool import free_pool_provider
 from .llm_router import Sensitivity, Tier, route
 from .verifier import verified_generate
 from ..models import KnowledgePage, Repository, RepositoryDNA
@@ -50,6 +52,39 @@ _FALLBACK_TITLE = "Untitled repository"
 
 # Phase-2 (RFC-0008) source selection: bound + ignore.
 _IGNORED_SOURCE_DIRS = {"node_modules", "__pycache__"}
+# Non-capability noise directories pruned from the whole-repo capability digest
+# (RFC-0013 Slice 1): test suites, fixtures, vendored deps, build output, and repo
+# tooling/scripts/docs carry no *reusable product capabilities* and were observed
+# both crowding out real modules and inviting hallucination. Matched by exact
+# directory-segment name; dot-directories are pruned separately.
+_EXCLUDED_SOURCE_DIRS = {
+    "tests", "test", "fixtures", "e2e", "examples", "__mocks__",
+    "vendor", "dist", "build", "target", "venv",
+    "scripts", "tools", "docs", "doc", "ci", "bench", "benchmarks",
+}
+# Minimum source-file size (bytes) to enter the digest — drops empty/near-empty
+# markers (e.g. a 0-byte ``__init__.py``) that carry no capability content.
+_MIN_SOURCE_BYTES = 64
+# Whole-repo capability digest (RFC-0013 Slice 1) budget split: most of the reasoned
+# prompt is the bounded symbol MAP (breadth across the repo, dense per token), the rest
+# is a few full high-signal modules (depth on the crown jewels).
+_DIGEST_MAP_FRACTION = 0.65
+# How many top-ranked modules to carry verbatim (full source) for depth.
+_DIGEST_FULL_MODULES = 3
+# Retry-on-empty budget: how many free-pool members to try before marking the capability
+# extraction incomplete (damps provider variance — a member returning empty/ungrounded
+# output advances to the next). Sized to try EVERY member of the free pool (ordered
+# big-context first by build_free_pool) before giving up. RFC-0013 Slice 1.
+_REASON_MAX_ATTEMPTS = 4
+# Output-token budget for the capability call. A capabilities ARRAY (several objects) needs
+# far more room than the one-sentence purpose; too small truncates the JSON mid-array and
+# drops every capability. Paired with a capped capability count in the prompt so a large
+# repo's output still fits.
+_REASON_MAX_TOKENS = 4096
+# Cap on capabilities requested from the model — a repo's *crown jewels*, not an exhaustive
+# list. Bounds output size (a big repo otherwise emits an array that overruns the token
+# budget and truncates to invalid JSON) and focuses on what a different project would borrow.
+_REASON_CAPABILITY_CAP = 12
 # Primary manifests, in the order we prefer them (declare purpose/deps/scripts).
 _MANIFEST_PRIORITY = ("pyproject.toml", "package.json", "go.mod")
 # Entry points by exact filename and by stem (with any extension).
@@ -644,13 +679,180 @@ def summarize_sources(files: list[dict]) -> dict:
     return {"components": components, "entry_points": entry_points}
 
 
+def _digest_signal(doc: str | None, symbols: list[str]) -> int:
+    """Cheap deterministic capability-richness score for ranking a file in the digest.
+
+    Public-symbol count dominates (a module that exports many things is more likely to
+    carry a reusable capability), with a bonus for a real module docstring. Pure.
+    """
+    return len(symbols) * 2 + (5 if doc else 0)
+
+
+def build_repo_digest(
+    repository: Repository, *, dna: RepositoryDNA | None = None, char_budget: int = _REASON_PROMPT_CHAR_BUDGET
+) -> dict:
+    """Build a whole-repo symbol digest for capability extraction (I/O, tolerant, RFC-0013 Slice 1).
+
+    Where :func:`select_source_files` picks a handful of *full* files (fit for the
+    one-sentence purpose), capability coverage needs to see the WHOLE repo's shape. This
+    walks every source-classified file (dropping empty markers < ``_MIN_SOURCE_BYTES`` and
+    non-capability dirs — see ``_EXCLUDED_SOURCE_DIRS``), extracts each file's top-level
+    symbols + docstring/leading-comment (``ast`` for Python, regex for other languages),
+    and returns:
+
+    - ``digest``: a bounded, signal-ranked MAP — one ``- <path> [<role>]: <doc>; symbols: …``
+      line per file, most capability-dense first, truncated to ``_DIGEST_MAP_FRACTION`` of
+      ``char_budget`` (so the richest modules survive truncation);
+    - ``full_modules``: the top ``_DIGEST_FULL_MODULES`` ranked files carried **verbatim**
+      (full source) within the remaining budget, for depth on the crown jewels;
+    - ``known_files`` / ``known_symbols``: everything the model is actually shown — the
+      ground truth for the deterministic cite-must-exist filter
+      (:func:`_drop_uncited_capabilities`).
+
+    Tolerant: an unreadable repo yields an empty digest and never raises out of distillation.
+    """
+    empty = {"digest": "", "full_modules": [], "known_files": set(), "known_symbols": set()}
+    try:
+        repo_dir = safe_repo_path(get_settings().repository_root, repository.local_path)
+    except Exception:
+        return empty
+
+    files: list[dict] = []
+    try:
+        for dirpath, dirnames, filenames in os.walk(repo_dir):
+            dirnames[:] = sorted(
+                d
+                for d in dirnames
+                if not d.startswith(".")
+                and d not in _IGNORED_SOURCE_DIRS
+                and d not in _EXCLUDED_SOURCE_DIRS
+            )
+            for name in sorted(filenames):
+                if _language_class_of(name) != "source":
+                    continue
+                full = Path(dirpath) / name
+                try:
+                    rel = full.relative_to(repo_dir).as_posix()
+                    if full.stat().st_size < _MIN_SOURCE_BYTES:
+                        continue
+                    content = full.read_text(encoding="utf-8")
+                except (OSError, ValueError, UnicodeDecodeError):
+                    continue
+                if name.endswith(".py"):
+                    doc, symbols = _summarize_python(content)
+                else:
+                    doc, symbols = _summarize_generic(content)
+                files.append(
+                    {
+                        "path": rel,
+                        "role": "entry_point" if _is_entry_point(name) else "module",
+                        "doc": doc,
+                        "symbols": symbols,
+                        "text": content,
+                        "score": _digest_signal(doc, symbols),
+                    }
+                )
+    except Exception:
+        return empty
+
+    # Most capability-dense first, so the richest modules survive map truncation and are
+    # the ones carried verbatim.
+    files.sort(key=lambda f: (-f["score"], f["path"]))
+
+    map_budget = int(char_budget * _DIGEST_MAP_FRACTION)
+    map_lines: list[str] = []
+    known_files: set[str] = set()
+    known_symbols: set[str] = set()
+    running = 0
+    for f in files:
+        shown = f["symbols"][:_SYMBOL_CAP]
+        detail = (f["doc"] or "no docstring").strip()
+        line = f"- {f['path']} [{f['role']}]: {detail}; symbols: {', '.join(shown) or '(none)'}"
+        if running + len(line) + 1 > map_budget and map_lines:
+            break
+        running += len(line) + 1
+        map_lines.append(line)
+        known_files.add(f["path"])
+        known_symbols.update(shown)
+
+    # A few top-ranked modules carried in full for depth — highest-ranked that FIT the
+    # remaining budget (a single oversized module must not blow the prompt past the tier
+    # budget; its symbols are already in the map, so the model can still cite it).
+    full_modules: list[dict] = []
+    full_budget = char_budget - running
+    for f in files:
+        if len(full_modules) >= _DIGEST_FULL_MODULES:
+            break
+        if f["path"] not in known_files:
+            continue
+        block = len(f["text"])
+        if block > full_budget:
+            continue
+        full_budget -= block
+        full_modules.append({"path": f["path"], "text": f["text"]})
+
+    return {
+        "digest": "\n".join(map_lines),
+        "full_modules": full_modules,
+        "known_files": known_files,
+        "known_symbols": known_symbols,
+    }
+
+
+def _cite_matches(provenance: str, known_files: set[str]) -> bool:
+    """Whether a cited provenance path grounds to a file the digest actually showed (pure).
+
+    Lenient on formatting the model may emit (backticks, ``./`` prefix, a bare or partial
+    path): matches on exact path, path-suffix, or basename against ``known_files``.
+    """
+    prov = provenance.strip().strip("`").lstrip("./")
+    if not prov:
+        return False
+    if prov in known_files:
+        return True
+    base = prov.rsplit("/", 1)[-1]
+    for kf in known_files:
+        if kf == prov or kf.endswith("/" + prov) or kf.endswith(prov):
+            return True
+        if base and kf.rsplit("/", 1)[-1] == base:
+            return True
+    return False
+
+
+def _drop_uncited_capabilities(capabilities: list[dict], known_files: set[str]) -> list[dict]:
+    """Deterministic anti-hallucination filter (RFC-0013 Slice 1, Article XII).
+
+    Keep only capabilities that cite at least one provenance file the digest actually
+    contained; drop the rest — a capability the model inferred from imports (e.g. AiGentOS
+    "SOP-via-LLM") cites a symbol/file that does not exist, so it is structurally removed
+    regardless of prompt compliance. A capability with no provenance cannot be grounded and
+    is dropped. Pure.
+    """
+    kept: list[dict] = []
+    for cap in capabilities:
+        provenance = cap.get("provenance") or []
+        if any(_cite_matches(str(p), known_files) for p in provenance):
+            kept.append(cap)
+    return kept
+
+
 _REASON_SYSTEM_PROMPT = (
-    "You are a code-distillation agent. You are given the SOURCE of a repository, each file "
-    "labelled with its path. Reason ONLY from the supplied files — do not invent APIs, files, "
-    "or behaviour that is not present. Determine what the repository was built for, how its "
-    "components work together, and what is reusable. CITE the file paths your conclusions rest "
-    "on. Respond ONLY with a JSON object with keys: built_for (string), how_it_works (string), "
-    "reusable (array of strings), provenance (array of file paths you used)."
+    "You are a code-distillation agent. You are given a MAP of a repository — every module "
+    "labelled with its path, role, top-level symbols, and docstring — plus a few modules in "
+    "FULL SOURCE. Reason ONLY from what is provided; do not invent APIs, files, or behaviour "
+    "that is not present, and do NOT infer a capability from an import or a name alone. "
+    "Identify the concrete reusable capabilities/components a DIFFERENT project could borrow "
+    "— each a real unit of behaviour, named, described, and tied to the file(s) it lives in. "
+    "GROUNDING RULE: every capability MUST cite, in its provenance, at least one file path "
+    "that appears in the provided map. If you cannot point to a provided file/symbol for a "
+    "capability, DO NOT list it. List ONLY the most significant reusable capabilities (at "
+    "most 12) — the crown jewels a different project would most want to borrow; omit trivial "
+    "boilerplate (health checks, config loaders, app scaffolding). Respond ONLY with a JSON "
+    "object with keys: built_for "
+    "(string), how_it_works (string), capabilities (array of objects, each {name: a short "
+    "reuse-oriented noun phrase such as \"LLM provider-routing abstraction\" or \"approval "
+    "queue\", description: one clause on what it does / how to borrow it, provenance: array "
+    "of the provided file path(s) it lives in}), provenance (array of file paths you used)."
 )
 
 
@@ -660,6 +862,36 @@ def _coerce_str_list(value) -> list[str]:
     if value in (None, ""):
         return []
     return [str(value)]
+
+
+def _coerce_capabilities(value, *, fallback=None) -> list[dict]:
+    """Coerce a reasoned ``capabilities`` array into ``[{name, description, provenance}]`` (pure).
+
+    Tolerant of shape drift (RFC-0013 Slice 1): each item may be a mapping
+    (``name`` / ``description`` / ``provenance``) or a bare string (the older
+    ``reusable`` shape → name-only). ``provenance`` accepts a single string or a
+    list of strings. Items without a usable ``name`` are dropped. When ``value``
+    is empty/absent and ``fallback`` (a legacy ``reusable`` array) is supplied,
+    its strings become name-only capabilities — so an older provider's output is
+    still surfaced rather than silently lost.
+    """
+    items = value if isinstance(value, list) else []
+    if not items and fallback is not None:
+        items = fallback if isinstance(fallback, list) else []
+    out: list[dict] = []
+    for item in items:
+        if isinstance(item, dict):
+            name = str(item.get("name") or "").strip()
+            description = str(item.get("description") or "").strip()
+            provenance = _coerce_str_list(item.get("provenance"))
+        else:
+            name = str(item or "").strip()
+            description = ""
+            provenance = []
+        if not name:
+            continue
+        out.append({"name": name, "description": description, "provenance": provenance})
+    return out
 
 
 def _bounded_reason_body(
@@ -704,48 +936,91 @@ def _bounded_reason_body(
     return "\n\n".join(parts)
 
 
-def reason_over_source(files: list[dict], settings, sink=None) -> dict:
-    """Reason over selected source via adversarially-verified generation (LES-021 isolated).
+def _build_capability_prompt(digest_map: str, full_modules: list[dict]) -> str:
+    """Assemble the capability-extraction prompt from a whole-repo digest (pure).
 
-    Builds ONE bounded, path-labelled prompt (each file as ``### <path>\\n<text>`` — the
-    files are already capped by :func:`select_source_files`), runs ``verified_generate``
-    with ``task_class="distillation"``, and parses the output with the council's tolerant
-    ``_loads_tolerant`` into ``{"built_for", "how_it_works", "reusable", "provenance"}``.
-    Only produces a narrative for a **real** (non-deterministic) tier: a DETERMINISTIC
-    route (or an empty parse) yields ``{}`` — no fabrication.
-    Never raises out of distillation: any provider error → ``{}``.
+    The map (breadth) leads; a few full modules (depth) follow. Already bounded by
+    :func:`build_repo_digest`, so the assembled prompt stays within the tier budget (LES-L21).
     """
-    if not files:
+    parts = [
+        "Extract the reusable capabilities of the following repository.",
+        "## Repository map (every module: path, role, symbols, docstring)\n" + digest_map,
+    ]
+    if full_modules:
+        blocks = "\n\n".join(f"### {m['path']}\n{m['text']}" for m in full_modules)
+        parts.append("## Selected modules (full source, for depth)\n" + blocks)
+    return "\n\n".join(parts)
+
+
+def reason_over_source(digest: dict, settings, sink=None) -> dict:
+    """Extract grounded reusable capabilities from a whole-repo digest (RFC-0013 Slice 1).
+
+    Takes the :func:`build_repo_digest` output (a bounded whole-repo symbol MAP + a few full
+    high-signal modules + the set of files the model is shown) rather than a handful of full
+    files — capability coverage needs the whole repo's shape, and the digest is denser per
+    token (LES-L21). Reasoned tier ONLY: a DETERMINISTIC route yields ``{}`` (hermetic floor —
+    no fabrication). On a real tier it prompts the reasoned model, parses tolerantly, and
+    applies the **deterministic cite-must-exist filter** (:func:`_drop_uncited_capabilities`)
+    so a capability the model inferred from imports/names — citing a file the digest never
+    contained — is structurally dropped (Article XII). Provider flakiness is handled by
+    **retry across pool members**: an empty/ungrounded result advances to the next free-pool
+    provider (bounded). If no grounded capability survives after retries the result is marked
+    ``extraction_incomplete`` — never a silent fabricated-empty (LES-L21). Never raises.
+    """
+    digest_map = digest.get("digest") or ""
+    full_modules = digest.get("full_modules") or []
+    known_files = digest.get("known_files") or set()
+    if not digest_map and not full_modules:
         return {}
-    try:
-        body = _bounded_reason_body("", files)
-        prompt = (
-            "Distil the following repository source into structured knowledge.\n\n"
-            f"{body}"
-        )
-        vr = verified_generate(
-            task_class="distillation",
-            sensitivity=Sensitivity.PUBLIC,
-            settings=settings,
-            system=_REASON_SYSTEM_PROMPT,
-            prompt=prompt,
-            sink=sink,
-        )
-        obj = _loads_tolerant(vr.result.text or "")
-    except Exception as exc:
-        logger.warning("distillation reasoned tier failed (%s): %s", type(exc).__name__, exc)
-        return {}
-    if not obj:
-        return {}
-    narrative = {
+
+    if route("distillation", Sensitivity.PUBLIC, settings).tier is Tier.DETERMINISTIC:
+        return {}  # hermetic floor: no real tier, no fabrication
+
+    prompt = _build_capability_prompt(digest_map, full_modules)
+
+    # Prefer the rotation pool so retry-on-empty actually advances across providers (a single
+    # RotatingProvider instance rotates on each call); fall back to the single routed provider.
+    pool = free_pool_provider()
+    if pool is not None and len(pool) > 0:
+        base, attempts = pool, min(len(pool), _REASON_MAX_ATTEMPTS)
+    else:
+        base, attempts = route("distillation", Sensitivity.PUBLIC, settings).provider, 1
+    provider = InstrumentedProvider(base, sink) if sink is not None else base
+
+    obj: dict = {}
+    for _ in range(attempts):
+        try:
+            result = provider.generate(
+                system=_REASON_SYSTEM_PROMPT, prompt=prompt, max_tokens=_REASON_MAX_TOKENS
+            )
+            obj = _loads_tolerant(result.text or "") or {}
+        except Exception as exc:
+            logger.warning("distillation reasoned tier failed (%s): %s", type(exc).__name__, exc)
+            continue
+        capabilities = _drop_uncited_capabilities(
+            _coerce_capabilities(obj.get("capabilities"), fallback=obj.get("reusable")),
+            known_files,
+        )[:_REASON_CAPABILITY_CAP]
+        if capabilities:
+            return {
+                "built_for": str(obj.get("built_for") or "").strip(),
+                "how_it_works": str(obj.get("how_it_works") or "").strip(),
+                "capabilities": capabilities,
+                "provenance": _coerce_str_list(obj.get("provenance")),
+            }
+
+    # Real tier tried, no grounded capability survived → mark incomplete (never silent).
+    logger.warning(
+        "distillation capability extraction incomplete: no grounded capability after %d attempt(s)",
+        attempts,
+    )
+    return {
         "built_for": str(obj.get("built_for") or "").strip(),
         "how_it_works": str(obj.get("how_it_works") or "").strip(),
-        "reusable": _coerce_str_list(obj.get("reusable")),
+        "capabilities": [],
         "provenance": _coerce_str_list(obj.get("provenance")),
+        "extraction_incomplete": True,
     }
-    if not (narrative["built_for"] or narrative["how_it_works"] or narrative["reusable"]):
-        return {}
-    return narrative
 
 
 _PURPOSE_SYSTEM_PROMPT = (
@@ -840,16 +1115,41 @@ def render_repository_markdown(distillation: dict) -> str:
     # How it works / Built for: only when a real provider produced a narrative
     # (the deterministic provider fabricates nothing).
     narrative = distillation.get("narrative") or {}
-    if narrative and (narrative.get("built_for") or narrative.get("how_it_works") or narrative.get("reusable")):
+    if narrative.get("built_for") or narrative.get("how_it_works"):
         lines += ["", "## How it works / Built for", ""]
         if narrative.get("built_for"):
             lines += ["**Built for:** " + str(narrative["built_for"]).strip(), ""]
         if narrative.get("how_it_works"):
             lines += ["**How it works:** " + str(narrative["how_it_works"]).strip(), ""]
-        reusable = narrative.get("reusable") or []
-        if reusable:
-            lines.append("**Reusable:**")
-            lines.extend([f"- {item}" for item in reusable])
+
+    # Reusable capabilities (RFC-0013 Slice 1): first-class named components a
+    # DIFFERENT project could borrow, each citing the file(s) it lives in. Present
+    # only when a real provider extracted them (deterministic floor → none, so this
+    # section is absent and the derived page is unchanged).
+    capabilities = narrative.get("capabilities") or []
+    if capabilities:
+        lines += ["", "## Reusable capabilities", ""]
+        for capability in capabilities:
+            name = str(capability.get("name") or "").strip()
+            if not name:
+                continue
+            description = str(capability.get("description") or "").strip()
+            provenance = capability.get("provenance") or []
+            detail = f"{name} — {description}" if description else name
+            cites = ", ".join(f"`{path}`" for path in provenance)
+            if cites:
+                detail = f"{detail} ({cites})"
+            lines.append(f"- {detail}")
+    elif narrative.get("extraction_incomplete"):
+        # Never a silent fabricated-empty (LES-L21): the reasoned tier ran but no capability
+        # could be grounded to a real file after retries — say so, assert nothing.
+        lines += [
+            "",
+            "## Reusable capabilities",
+            "",
+            "_Capability extraction incomplete: the reasoned tier returned no grounded "
+            "capability after retries. None are asserted (no fabrication)._",
+        ]
 
     lines += ["", "## Provenance", ""]
     provenance = distillation.get("provenance") or []
@@ -951,7 +1251,10 @@ def distill_repository(
     # the reasoned narrative goes through verified_generate (the single production path).
     files = select_source_files(repository, dna=dna)
     code = summarize_sources(files)
-    narrative = reason_over_source(files, _settings, sink=_sink) if real else {}
+    # Capabilities (RFC-0013 Slice 1) reason over a whole-repo symbol DIGEST, not the few
+    # full files used for the purpose sentence — capability coverage needs the whole shape.
+    digest = build_repo_digest(repository, dna=dna) if real else {}
+    narrative = reason_over_source(digest, _settings, sink=_sink) if real else {}
     distillation["components"] = code["components"]
     distillation["entry_points"] = code["entry_points"]
     distillation["source_files"] = [f["path"] for f in files]
@@ -1046,10 +1349,12 @@ __all__ = [
     "extract_repo_knowledge",
     "select_source_files",
     "summarize_sources",
+    "build_repo_digest",
     "reason_over_source",
     "reason_purpose",
     "render_repository_markdown",
     "distill_repository",
     "_bounded_reason_body",
+    "_drop_uncited_capabilities",
     "_REASON_PROMPT_CHAR_BUDGET",
 ]

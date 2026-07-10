@@ -28,5 +28,6 @@ Primary artifacts:
 - agents/UNIVERSAL_AGENT_CONTRACT.md
 - knowledge/wiki/reviews/2026-07-08-archetypeos-system-evaluation.md (AOS-REVIEW-001 system evaluation)
 - docs/reviews/2026-07-10-recall-shakedown.md (first foreign-project shakedown: scan/DNA/reasoned-distill proven on System-Recall; found the read-only-vault deployed-distill constraint + the unbounded-prompt free-tier silent-floor bug (#50); §4 decides distillation stays local-first build-time)
+- docs/reviews/2026-07-10-rfc0013-slice1-reality-test.md (RFC-0013 Slice-1 capability-extraction reality gate: 5-repo portfolio run showed select_source_files is the ceiling (3 heuristic attempts failed) + free-pool provider variance; pivots to a whole-repo symbol digest + deterministic cite-must-exist hallucination filter + retry-on-empty)
 - docs/CONSOLIDATION_PLAN.md (AOS-REVIEW-001 phased execution plan / consolidation roadmap)
 

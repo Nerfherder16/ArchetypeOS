@@ -30,10 +30,13 @@ import logging
 
 from aos_core.services.distillation import (
     _bounded_reason_body,
+    _drop_uncited_capabilities,
     _REASON_PROMPT_CHAR_BUDGET,
     _repo_slug,
+    build_repo_digest,
     distill_repository,
     extract_repo_knowledge,
+    reason_over_source,
     reason_purpose,
     render_repository_markdown,
     select_source_files,
@@ -118,6 +121,16 @@ def _register_repo(client, project_id: str, *, name: str, local_path: str, readm
     )
     assert resp.status_code == 200, resp.text
     return resp.json()["id"]
+
+
+def _write_repo(root, files: dict) -> str:
+    """Write a synthetic repo tree under settings.repository_root; return its local_path."""
+    base = root / "synthetic"
+    for rel, content in files.items():
+        target = base / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+    return "synthetic"
 
 
 def _register_code_repo(client, project_id: str, *, name: str, local_path: str) -> str:
@@ -584,6 +597,9 @@ def _patch_route_free_hosted(monkeypatch, provider) -> None:
     monkeypatch.setattr(verifier_mod, "route", fake_route)
     monkeypatch.setattr(distillation_mod, "route", fake_route)
     monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)
+    # No rotation pool in-process: the capability extractor falls back to the routed fake
+    # (deterministic regardless of any GROQ_/GEMINI_ keys in the ambient environment).
+    monkeypatch.setattr(distillation_mod, "free_pool_provider", lambda: None)
 
 
 def test_distill_reasoned_provider_sets_reasoned_purpose_and_state(client, tmp_path, monkeypatch) -> None:
@@ -835,3 +851,286 @@ def test_reason_purpose_logs_warning_when_provider_raises(monkeypatch, caplog) -
         "distillation reasoned tier failed" in record.message
         for record in caplog.records
     )
+
+
+# --- RFC-0013 Slice 1: capability extraction ----------------------------------
+#
+# reason_over_source evolves from a thin ``reusable: [str]`` narrative array to a
+# first-class ``capabilities: [{name, description, provenance}]`` list — the concrete
+# reusable components a DIFFERENT project could borrow, each named and tied to its
+# file(s). REASONED TIER ONLY: the deterministic floor fabricates nothing (capabilities
+# stays ``[]`` → the section is absent → today's hermetic behaviour is unchanged).
+
+_CAPABILITY_JSON = json.dumps(
+    {
+        "built_for": "A toolkit for composing terminal widgets.",
+        "how_it_works": "Widgets compose over a shared render loop.",
+        "capabilities": [
+            {
+                "name": "widget render loop",
+                "description": "reusable draw/update loop for TUIs",
+                "provenance": ["core.py"],
+            },
+            {
+                "name": "layout solver",
+                "description": "flexbox-like layout engine",
+                "provenance": ["layout.py", "core.py"],
+            },
+        ],
+        "provenance": ["core.py", "layout.py"],
+    }
+)
+
+
+def _digest(known: set[str], *, full=None) -> dict:
+    """A minimal build_repo_digest-shaped payload for reason_over_source unit tests."""
+    return {
+        "digest": "\n".join(f"- {p} [module]: doc; symbols: sym" for p in sorted(known)),
+        "full_modules": full or [],
+        "known_files": set(known),
+        "known_symbols": {"sym"},
+    }
+
+
+def _route_capability_extraction(monkeypatch, provider, *, pool=None, tier=None) -> None:
+    """Route reason_over_source's capability call to a fake provider (distillation-module route)."""
+    import aos_core.services.distillation as distillation_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
+    resolved = tier or Tier.FREE_HOSTED
+    monkeypatch.setattr(
+        distillation_mod,
+        "route",
+        lambda tc, sens, s: RouteResult(tier=resolved, provider=provider, reason="test"),
+    )
+    monkeypatch.setattr(distillation_mod, "free_pool_provider", lambda: pool)
+
+
+class _SequenceProvider:
+    """A fake rotation pool: returns the next canned text per call (tests retry-on-empty)."""
+
+    name = "rotating"
+
+    def __init__(self, texts: list[str]) -> None:
+        self._texts = texts
+        self.calls = 0
+
+    def __len__(self) -> int:
+        return len(self._texts)
+
+    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024, response_format=None):
+        text = self._texts[min(self.calls, len(self._texts) - 1)]
+        self.calls += 1
+        return SimpleNamespace(text=text, provider=self.name, model=None, finish_reason="stop")
+
+
+def test_reason_over_source_deterministic_emits_no_capabilities(monkeypatch) -> None:
+    """DETERMINISTIC route: reason_over_source returns {} — no call, no capabilities."""
+    import aos_core.services.distillation as distillation_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
+    monkeypatch.setattr(
+        distillation_mod,
+        "route",
+        lambda tc, sens, s: RouteResult(tier=Tier.DETERMINISTIC, provider=DeterministicProvider(), reason="test"),
+    )
+    assert reason_over_source(_digest({"core.py"}), types.SimpleNamespace(llm_provider="deterministic")) == {}
+
+
+def test_reason_over_source_parses_first_class_capabilities(monkeypatch) -> None:
+    """A real provider returning capability objects (citing known files) → parsed + kept."""
+    provider = _FakeGarbledProvider(_CAPABILITY_JSON)
+    _route_capability_extraction(monkeypatch, provider)
+
+    narrative = reason_over_source(_digest({"core.py", "layout.py"}), types.SimpleNamespace(llm_provider="x"))
+
+    assert provider.calls  # the reasoned path actually ran
+    # The system prompt explicitly asks for reusable capabilities grounded in provided files.
+    assert "capabilit" in provider.calls[0]["system"].lower()
+
+    caps = narrative["capabilities"]
+    assert [c["name"] for c in caps] == ["widget render loop", "layout solver"]
+    assert caps[0]["description"] == "reusable draw/update loop for TUIs"
+    assert caps[0]["provenance"] == ["core.py"]
+    # The legacy bare-string ``reusable`` key is gone from the narrative contract.
+    assert "reusable" not in narrative
+
+
+def test_reason_over_source_drops_capabilities_citing_unknown_files(monkeypatch) -> None:
+    """Deterministic cite-must-exist: a capability citing a file the digest never showed is dropped."""
+    payload = json.dumps(
+        {
+            "built_for": "x",
+            "how_it_works": "",
+            "capabilities": [
+                {"name": "real", "description": "d", "provenance": ["core.py"]},
+                {"name": "ghost", "description": "hallucinated", "provenance": ["does/not/exist.py"]},
+            ],
+        }
+    )
+    provider = _FakeGarbledProvider(payload)
+    _route_capability_extraction(monkeypatch, provider)
+
+    narrative = reason_over_source(_digest({"core.py"}), types.SimpleNamespace(llm_provider="x"))
+    assert [c["name"] for c in narrative["capabilities"]] == ["real"]  # ghost dropped structurally
+
+
+def test_reason_over_source_marks_incomplete_when_nothing_grounded(monkeypatch) -> None:
+    """Real tier ran but no capability grounds to a real file → extraction_incomplete, never silent."""
+    payload = json.dumps(
+        {"built_for": "x", "how_it_works": "y", "capabilities": [{"name": "ghost", "provenance": ["nope.py"]}]}
+    )
+    provider = _FakeGarbledProvider(payload)
+    _route_capability_extraction(monkeypatch, provider)
+
+    narrative = reason_over_source(_digest({"core.py"}), types.SimpleNamespace(llm_provider="x"))
+    assert narrative["capabilities"] == []
+    assert narrative["extraction_incomplete"] is True
+
+
+def test_reason_over_source_retries_across_pool_until_grounded(monkeypatch) -> None:
+    """Retry-on-empty: an empty/ungrounded member advances to the next free-pool provider."""
+    empty = json.dumps({"capabilities": []})
+    good = json.dumps({"capabilities": [{"name": "real", "description": "d", "provenance": ["core.py"]}]})
+    seq = _SequenceProvider([empty, good])
+    # route tier is real (FREE_HOSTED); the pool (seq) is what actually serves + rotates.
+    _route_capability_extraction(monkeypatch, DeterministicProvider(), pool=seq)
+
+    narrative = reason_over_source(_digest({"core.py"}), types.SimpleNamespace(llm_provider="x"))
+    assert [c["name"] for c in narrative["capabilities"]] == ["real"]
+    assert seq.calls == 2  # first (empty) member retried onto the second (grounded)
+
+
+def test_render_repository_markdown_renders_reusable_capabilities() -> None:
+    """render emits a '## Reusable capabilities' section, each capability citing its file(s)."""
+    distillation = extract_repo_knowledge(_RICH_README)
+    distillation["narrative"] = {
+        "built_for": "",
+        "how_it_works": "",
+        "capabilities": [
+            {
+                "name": "LLM provider-routing abstraction",
+                "description": "swap providers by tier",
+                "provenance": ["router.py"],
+            }
+        ],
+        "provenance": ["router.py"],
+    }
+    md = render_repository_markdown(distillation)
+    assert "## Reusable capabilities" in md
+    assert "LLM provider-routing abstraction" in md
+    assert "swap providers by tier" in md
+    assert "`router.py`" in md
+
+
+def test_render_repository_markdown_no_narrative_has_no_capabilities_section() -> None:
+    """Deterministic floor (no narrative) renders no capabilities section — unchanged behaviour."""
+    md = render_repository_markdown(extract_repo_knowledge(_RICH_README))
+    assert "## Reusable capabilities" not in md
+
+
+class _FakeCapabilityProvider:
+    """Fake real provider: capability JSON for the source-reasoning prompt, purpose JSON otherwise.
+
+    Distinguishes the two distillation system prompts by the presence of 'capabilit' in the
+    system text (reason_over_source asks for capabilities; reason_purpose asks for a purpose).
+    """
+
+    name = "claude_code"
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024):
+        self.calls.append({"system": system, "prompt": prompt})
+        if "capabilit" in system.lower():
+            text = _CAPABILITY_JSON
+        else:
+            text = json.dumps({"purpose": _REASONED_PURPOSE})
+        return SimpleNamespace(text=text, provider=self.name, model=None, finish_reason="stop")
+
+
+def test_distill_reasoned_provider_renders_capabilities_section(client, tmp_path, monkeypatch) -> None:
+    """End-to-end: a reasoned distill writes a '## Reusable capabilities' section into the vault page."""
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_code_repo(client, project_id, name="Code Repo", local_path="code-repo")
+
+    provider = _FakeCapabilityProvider()
+    _patch_route_free_hosted(monkeypatch, provider)
+
+    session = _same_file_session(tmp_path)
+    try:
+        page = distill_repository(session, repository_id=repo_id, knowledge_root=tmp_path)
+        assert page.validation_state == "reasoned"
+    finally:
+        session.close()
+
+    text = (tmp_path / page.vault_path).read_text(encoding="utf-8")
+    assert "## Reusable capabilities" in text
+    assert "widget render loop" in text
+    assert "`core.py`" in text
+
+
+# --- RFC-0013 Slice 1 (digest pivot): whole-repo digest + cite-must-exist filter ---
+#
+# The reality gate showed "pick 5 full files" starves capability coverage and invites
+# import-name hallucination. The pivot feeds the model a whole-repo SYMBOL DIGEST (every
+# source file's role + top-level symbols + docstring) plus a few full high-signal modules,
+# and then structurally drops any capability whose provenance is not a file the digest
+# actually saw (deterministic anti-hallucination — Article XII).
+
+
+def test_build_repo_digest_maps_whole_repo_and_excludes_noise(client, tmp_path) -> None:
+    local_path = _write_repo(
+        settings.repository_root,
+        {
+            "pkg/__init__.py": "",  # empty marker — carries no capability content
+            "pkg/service.py": '"""Approval queue service."""\n\ndef enqueue():\n    return 1\n\n\nclass Queue:\n    pass\n',
+            "packages/core/core/services/llm_router.py": '"""LLM provider routing."""\n\ndef route(task):\n    return "tier"\n\n\ndef fallback():\n    return None\n',
+            "tests/test_service.py": "def test_enqueue():\n    assert True\n" * 10,  # noise
+        },
+    )
+    digest = build_repo_digest(SimpleNamespace(local_path=local_path))
+
+    text = digest["digest"]
+    known = digest["known_files"]
+    # Whole-repo map: both real modules appear with their symbols; the crown jewel is present.
+    assert "pkg/service.py" in text
+    assert "packages/core/core/services/llm_router.py" in text
+    assert "route" in text and "enqueue" in text
+    # Known-files set backs the cite filter and covers the real modules.
+    assert "pkg/service.py" in known
+    assert "packages/core/core/services/llm_router.py" in known
+    # Noise is excluded: empty markers and test files never enter the digest/known set.
+    assert "__init__.py" not in text
+    assert not any(p.startswith("tests/") for p in known)
+    # A few full modules are carried verbatim for depth (crown jewels), each a known file.
+    full_paths = {m["path"] for m in digest["full_modules"]}
+    assert full_paths
+    assert full_paths <= known
+    assert all("text" in m and m["text"] for m in digest["full_modules"])
+
+
+def test_build_repo_digest_tolerant_of_missing_repo(client, tmp_path) -> None:
+    digest = build_repo_digest(SimpleNamespace(local_path="does-not-exist"))
+    assert digest["digest"] == ""
+    assert digest["known_files"] == set()
+    assert digest["full_modules"] == []
+
+
+def test_drop_uncited_capabilities_removes_hallucinated_and_uncited() -> None:
+    known = {"pkg/service.py", "packages/core/core/services/llm_router.py"}
+    caps = [
+        {"name": "Approval queue", "description": "x", "provenance": ["pkg/service.py"]},
+        {"name": "LLM routing", "description": "y", "provenance": ["services/llm_router.py"]},  # basename match
+        {"name": "SOP via LLM", "description": "hallucinated", "provenance": ["app/sop/llm.py"]},  # not in repo
+        {"name": "Uncited", "description": "no provenance", "provenance": []},  # cannot verify
+    ]
+    kept = _drop_uncited_capabilities(caps, known)
+    names = [c["name"] for c in kept]
+
+    assert "Approval queue" in names  # exact provenance match survives
+    assert "LLM routing" in names  # basename/suffix match against a known file survives
+    assert "SOP via LLM" not in names  # cites a file the repo does not contain → dropped
+    assert "Uncited" not in names  # no citation → cannot ground → dropped

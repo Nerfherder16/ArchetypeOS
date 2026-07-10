@@ -39,10 +39,16 @@ jobs:
   update:
     name: Merge main into open PR branches (union-aware)
     runs-on: ubuntu-latest
+    env:
+      # The `secrets` context is NOT available in step `if:` conditions (using it
+      # there fails workflow validation at startup — 0 jobs, see LES-L18). Surface
+      # the App secret's presence through a job-level env (where `secrets` IS
+      # allowed) so the token step can gate on it and fall back to GITHUB_TOKEN.
+      HAS_APP_TOKEN: ${{ secrets.AUTOREBASE_APP_ID != '' }}
     steps:
       - name: Generate a GitHub App token (falls back to GITHUB_TOKEN if unset)
         id: app-token
-        if: ${{ secrets.AUTOREBASE_APP_ID != '' }}
+        if: ${{ env.HAS_APP_TOKEN == 'true' }}
         uses: actions/create-github-app-token@v1
         with:
           app-id: ${{ secrets.AUTOREBASE_APP_ID }}

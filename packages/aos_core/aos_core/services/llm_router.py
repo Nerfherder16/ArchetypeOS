@@ -25,6 +25,7 @@ from enum import Enum
 from ..llm import (
     ClaudeCodeProvider,
     DeterministicProvider,
+    InstrumentedProvider,
     OpenAICompatibleProvider,
     Provider,
 )
@@ -45,10 +46,16 @@ class Tier(str, Enum):
 
 # Per-task-class preferred tier ordering (first available wins). Sensitivity is
 # applied on top (PRIVATE strips FREE_HOSTED). Unknown task classes use DEFAULT.
-DEFAULT_ORDER = [Tier.LOCAL, Tier.FREE_HOSTED, Tier.CLAUDE]
+#
+# Best-results tuning (operator directive): quality-sensitive classes prefer the
+# capable FREE_HOSTED tier (70B-class Groq/Cerebras/Gemini) BEFORE the local 7B —
+# a 70B free model beats a local 7B on quality at ~zero cost. LOCAL stays in the
+# order as the private/offline fallback (and the only non-Claude tier a PRIVATE
+# task can use). Claude is the top-stakes ceiling. final_judge is always Claude.
+DEFAULT_ORDER = [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE]
 ROUTING_TABLE: dict[str, list[Tier]] = {
-    "code_review": [Tier.LOCAL, Tier.FREE_HOSTED, Tier.CLAUDE],
-    "distillation": [Tier.LOCAL, Tier.FREE_HOSTED, Tier.CLAUDE],
+    "code_review": [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE],
+    "distillation": [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE],
     "research": [Tier.FREE_HOSTED, Tier.CLAUDE],          # capability > privacy; public inputs
     "council_agent": [Tier.FREE_HOSTED, Tier.LOCAL, Tier.CLAUDE],
     "design": [Tier.FREE_HOSTED, Tier.CLAUDE],            # multimodal free models
@@ -109,6 +116,18 @@ def route(task_class: str, sensitivity: Sensitivity, settings) -> RouteResult:
     Always returns a provider — falls back to the deterministic tier if nothing
     else is configured.
     """
+    # Honor the explicit offline signal: ``llm_provider=deterministic`` forces the
+    # deterministic tier regardless of what else is configured. Every hermetic/CI
+    # path and any node opting out of reasoned tiers relies on this — it preserves
+    # the ``get_provider`` contract that ``routed_provider`` replaced (without it a
+    # default ``llm_base_url`` makes LOCAL "available" and the router hits the network).
+    if getattr(settings, "llm_provider", "") == "deterministic":
+        return RouteResult(
+            tier=Tier.DETERMINISTIC,
+            provider=DeterministicProvider(),
+            reason=f"{task_class}/{sensitivity.value} -> deterministic (llm_provider=deterministic, forced offline)",
+        )
+
     order = list(ROUTING_TABLE.get(task_class, DEFAULT_ORDER))
 
     # THE GUARDRAIL: private data never reaches a free hosted tier.
@@ -128,3 +147,32 @@ def route(task_class: str, sensitivity: Sensitivity, settings) -> RouteResult:
         provider=DeterministicProvider(),
         reason=f"{task_class}/{sensitivity.value} -> deterministic (no configured tier available)",
     )
+
+
+def routed_provider(
+    task_class: str,
+    sensitivity: Sensitivity,
+    settings,
+    sink=None,
+    *,
+    context: str | None = None,
+    agent: str | None = None,
+    session: str | None = None,
+) -> Provider:
+    """Router-aware sibling of :func:`aos_core.llm.get_provider`.
+
+    ``get_provider`` pins ``settings.llm_provider`` (a single backend); this picks
+    the tier per ``task_class`` at ``sensitivity`` via :func:`route` — cheapest
+    configured tier first, under the privacy guardrail — so a service opts into
+    cheap-first routing by swapping ``get_provider`` for this. When a ledger
+    ``sink`` is given the resolved provider is wrapped in
+    :class:`~aos_core.llm.InstrumentedProvider` (AOS-USAGE-001), exactly like
+    ``get_provider``; without a sink the bare provider is returned unchanged so
+    hermetic / DB-less paths are untouched.
+    """
+    provider = route(task_class, sensitivity, settings).provider
+    if sink is not None:
+        return InstrumentedProvider(
+            provider, sink, context=context, agent=agent, session=session
+        )
+    return provider

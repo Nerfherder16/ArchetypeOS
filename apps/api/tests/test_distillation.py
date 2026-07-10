@@ -22,7 +22,9 @@ from types import SimpleNamespace
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from aos_core.llm import DeterministicProvider
+import types
+
+from aos_core.llm import DeterministicProvider, InstrumentedProvider, OpenAICompatibleProvider
 from aos_core.models import KnowledgePage, RepositoryDNA
 from aos_core.services.distillation import (
     _repo_slug,
@@ -617,3 +619,68 @@ def test_distill_garbled_reasoned_output_falls_back_to_floor(client, tmp_path) -
     purpose = _dna_purpose(tmp_path, repo_id)
     # No fabrication: the deterministic floor summary is preserved.
     assert purpose.startswith("A reusable library for building command-line widgets")
+
+
+# --- AOS-LLM-ROUTE-COV: distillation service uses routed_provider ---
+
+
+def _route_settings(**over):
+    """Minimal hermetic settings for router-selection assertions."""
+    base = dict(
+        llm_base_url="http://localhost:11434/v1",
+        llm_model="qwen2.5-coder:7b",
+        llm_api_key="",
+        llm_free_base_url="https://api.groq.com/openai/v1",
+        llm_free_model="llama-3.3-70b-versatile",
+        llm_free_api_key="gsk_test",
+        llm_claude_enabled=False,
+    )
+    base.update(over)
+    return types.SimpleNamespace(**base)
+
+
+def test_distillation_routes_to_free_tier_when_local_absent(monkeypatch):
+    """When LOCAL is unconfigured and a free key exists, distillation picks FREE_HOSTED."""
+    import aos_core.services.llm_router as router_mod
+
+    # No rotation pool (slice 3) so the single-key path is exercised.
+    monkeypatch.setattr(router_mod, "build_free_pool", lambda: [])
+    monkeypatch.setattr(router_mod, "free_pool_provider", lambda: None)
+
+    from aos_core.services.llm_router import Sensitivity, routed_provider
+
+    s = _route_settings(llm_base_url="", llm_model="")
+    provider = routed_provider("distillation", Sensitivity.PUBLIC, s)
+    assert isinstance(provider, OpenAICompatibleProvider)
+
+
+def test_distillation_falls_back_deterministic_when_nothing_configured(monkeypatch):
+    """With no tier configured, distillation falls back to deterministic (hermetic CI)."""
+    import aos_core.services.llm_router as router_mod
+
+    monkeypatch.setattr(router_mod, "build_free_pool", lambda: [])
+    monkeypatch.setattr(router_mod, "free_pool_provider", lambda: None)
+
+    from aos_core.services.llm_router import Sensitivity, routed_provider
+
+    s = _route_settings(llm_base_url="", llm_model="", llm_free_api_key="")
+    provider = routed_provider("distillation", Sensitivity.PUBLIC, s)
+    assert isinstance(provider, DeterministicProvider)
+    # is_real_provider check in distill_repository must still read "deterministic"
+    assert getattr(provider, "name", "") == "deterministic"
+
+
+def test_distillation_wraps_in_instrumented_when_sink_supplied(monkeypatch):
+    """With a FREE tier configured + sink, routed_provider wraps in InstrumentedProvider."""
+    import aos_core.services.llm_router as router_mod
+
+    monkeypatch.setattr(router_mod, "build_free_pool", lambda: [])
+    monkeypatch.setattr(router_mod, "free_pool_provider", lambda: None)
+
+    from aos_core.services.llm_router import Sensitivity, routed_provider
+
+    s = _route_settings(llm_base_url="", llm_model="")
+    sink_calls: list = []
+    provider = routed_provider("distillation", Sensitivity.PUBLIC, s, sink=lambda **kw: sink_calls.append(kw))
+    assert isinstance(provider, InstrumentedProvider)
+    assert isinstance(provider.inner, OpenAICompatibleProvider)

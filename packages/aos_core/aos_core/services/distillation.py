@@ -32,7 +32,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..embeddings import get_embedder
-from ..llm import get_provider
+from .llm_router import Sensitivity, routed_provider
 from ..models import KnowledgePage, Repository, RepositoryDNA
 from ..repository_scanner import EXTENSIONS, LANGUAGE_CLASS, safe_repo_path
 from .council import _loads_tolerant
@@ -879,7 +879,7 @@ def distill_repository(
         from .usage import make_ledger_sink
 
         _settings = get_settings()
-        provider = get_provider(_settings, sink=make_ledger_sink(SessionLocal, _settings, context="distillation"))
+        provider = routed_provider("distillation", Sensitivity.PUBLIC, _settings, sink=make_ledger_sink(SessionLocal, _settings, context="distillation"))
     if embedder is None:
         embedder = get_embedder(get_settings())
 

@@ -135,3 +135,13 @@ def test_routed_provider_honors_privacy_guardrail():
     # nothing configured survives → deterministic floor (never the free tier).
     p = routed_provider("research", Sensitivity.PRIVATE, _settings(llm_claude_enabled=False))
     assert isinstance(p, DeterministicProvider)
+
+
+def test_llm_provider_deterministic_forces_offline():
+    # The explicit offline signal wins over tier availability: even with LOCAL and
+    # a FREE key configured, llm_provider=deterministic routes to the deterministic
+    # tier (the hermetic contract routed_provider must preserve, else CI hits the net).
+    s = _settings(llm_provider="deterministic")
+    r = route("distillation", Sensitivity.PUBLIC, s)
+    assert r.tier is Tier.DETERMINISTIC
+    assert isinstance(r.provider, DeterministicProvider)

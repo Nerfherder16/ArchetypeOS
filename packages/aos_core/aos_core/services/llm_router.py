@@ -116,6 +116,18 @@ def route(task_class: str, sensitivity: Sensitivity, settings) -> RouteResult:
     Always returns a provider — falls back to the deterministic tier if nothing
     else is configured.
     """
+    # Honor the explicit offline signal: ``llm_provider=deterministic`` forces the
+    # deterministic tier regardless of what else is configured. Every hermetic/CI
+    # path and any node opting out of reasoned tiers relies on this — it preserves
+    # the ``get_provider`` contract that ``routed_provider`` replaced (without it a
+    # default ``llm_base_url`` makes LOCAL "available" and the router hits the network).
+    if getattr(settings, "llm_provider", "") == "deterministic":
+        return RouteResult(
+            tier=Tier.DETERMINISTIC,
+            provider=DeterministicProvider(),
+            reason=f"{task_class}/{sensitivity.value} -> deterministic (llm_provider=deterministic, forced offline)",
+        )
+
     order = list(ROUTING_TABLE.get(task_class, DEFAULT_ORDER))
 
     # THE GUARDRAIL: private data never reaches a free hosted tier.

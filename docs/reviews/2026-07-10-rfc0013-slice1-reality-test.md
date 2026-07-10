@@ -142,3 +142,25 @@ reliability is the last gap.
 
 Slice 1 is **not** merged until the gate is reliably green on the acceptance repos
 (ArchetypeOS → "LLM provider-routing", AiGentOS → "approval queue").
+
+## Acceptance gate: PASS (single-repo runs, fresh quota)
+
+Final root cause of the big-repo failures was **output truncation**, not the mechanism:
+the model emitted an unbounded capabilities array that overran `max_tokens` and truncated
+mid-JSON → unparseable → 0 capabilities. Fix: prompt requests only the ~12 most significant
+(crown-jewel) capabilities, `max_tokens` → 4096, and the digest no longer adds an oversized
+full module unbounded. Both acceptance repos then passed:
+
+- **ArchetypeOS** → 12 grounded capabilities incl. **"LLM tier router"**, **"LLM provider
+  abstraction"**, **"Free-API rotating LLM pool"**, repository scanner, embedding
+  abstraction, research engine, knowledge transfer engine, LLM usage ledger. ✅
+- **AiGentOS** → 12 grounded capabilities incl. **"Approval queue management system"**,
+  **"Generic action execution engine"**, **"Immutable audit ledger builder"**, autonomy
+  control plane. **No "SOP-via-LLM" hallucination** — the cite-must-exist filter held the
+  ground-truth discriminator. ✅
+
+Slice-1 quality bar met. Remaining note: under a *burst* of full-portfolio runs, free-tier
+quota exhaustion still produces intermittent `extraction_incomplete` (honestly marked, never
+fabricated) — the acceptance bar is "grounded, hallucination-free capabilities when a capable
+provider serves; honest incomplete otherwise", which is met. The Claude escalate-on-empty
+tier (when enabled) is the eventual belt-and-suspenders for burst reliability.

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import logging
 import os
 import re
 from pathlib import Path
@@ -38,8 +39,13 @@ from ..models import KnowledgePage, Repository, RepositoryDNA
 from ..repository_scanner import EXTENSIONS, LANGUAGE_CLASS, safe_repo_path
 from .council import _loads_tolerant
 
+logger = logging.getLogger(__name__)
+
 _PAGE_TYPE = "repository"
 _README_CAP_BYTES = 40_000
+# ~7K tokens — sized to stay under the smallest common free-tier per-minute
+# limit (~12K TPM) with headroom for the system prompt + model output.
+_REASON_PROMPT_CHAR_BUDGET = 28_000
 _FALLBACK_TITLE = "Untitled repository"
 
 # Phase-2 (RFC-0008) source selection: bound + ignore.
@@ -656,6 +662,48 @@ def _coerce_str_list(value) -> list[str]:
     return [str(value)]
 
 
+def _bounded_reason_body(
+    readme: str, files: list[dict], budget: int = _REASON_PROMPT_CHAR_BUDGET
+) -> str:
+    """Assemble the README + source-file body for reasoned prompts, truncated to ``budget`` chars.
+
+    Includes the README first (itself clipped if it alone exceeds the budget),
+    then appends source-file blocks in order while the running total stays under
+    ``budget``. Blocks that would push the total over are dropped entirely (no
+    partial blocks). When everything already fits the result is identical to a
+    direct assembly.
+    """
+    parts: list[str] = []
+    running = 0
+
+    if readme:
+        readme_section = "## README\n" + readme
+        if len(readme_section) > budget:
+            readme_section = readme_section[:budget]
+        running += len(readme_section)
+        parts.append(readme_section)
+
+    if files:
+        source_header = "## Source"
+        # Each file block: "### <path>\n<text>"
+        file_blocks: list[str] = []
+        for f in files:
+            block = f"### {f.get('path')}\n{f.get('text') or ''}"
+            candidate = (
+                "\n\n" + source_header + "\n" + block
+                if not file_blocks
+                else "\n\n" + block
+            )
+            if running + len(candidate) > budget:
+                break
+            running += len(candidate)
+            file_blocks.append(block)
+        if file_blocks:
+            parts.append(source_header + "\n" + "\n\n".join(file_blocks))
+
+    return "\n\n".join(parts)
+
+
 def reason_over_source(files: list[dict], settings, sink=None) -> dict:
     """Reason over selected source via adversarially-verified generation (LES-021 isolated).
 
@@ -670,10 +718,10 @@ def reason_over_source(files: list[dict], settings, sink=None) -> dict:
     if not files:
         return {}
     try:
-        blocks = "\n\n".join(f"### {f.get('path')}\n{f.get('text') or ''}" for f in files)
+        body = _bounded_reason_body("", files)
         prompt = (
             "Distil the following repository source into structured knowledge.\n\n"
-            f"{blocks}"
+            f"{body}"
         )
         vr = verified_generate(
             task_class="distillation",
@@ -684,7 +732,8 @@ def reason_over_source(files: list[dict], settings, sink=None) -> dict:
             sink=sink,
         )
         obj = _loads_tolerant(vr.result.text or "")
-    except Exception:
+    except Exception as exc:
+        logger.warning("distillation reasoned tier failed (%s): %s", type(exc).__name__, exc)
         return {}
     if not obj:
         return {}
@@ -724,13 +773,8 @@ def reason_purpose(readme: str, files: list[dict], settings, sink=None) -> str:
     if not readme_text and not files:
         return ""
     try:
-        prompt_parts = ["Distil the following repository into a one-sentence purpose."]
-        if readme_text:
-            prompt_parts.append("## README\n" + readme_text)
-        blocks = "\n\n".join(f"### {f.get('path')}\n{f.get('text') or ''}" for f in files or [])
-        if blocks:
-            prompt_parts.append("## Source\n" + blocks)
-        prompt = "\n\n".join(prompt_parts)
+        body = _bounded_reason_body(readme_text, files or [])
+        prompt = "Distil the following repository into a one-sentence purpose.\n\n" + body
         vr = verified_generate(
             task_class="distillation",
             sensitivity=Sensitivity.PUBLIC,
@@ -740,7 +784,8 @@ def reason_purpose(readme: str, files: list[dict], settings, sink=None) -> str:
             sink=sink,
         )
         obj = _loads_tolerant(vr.result.text or "")
-    except Exception:
+    except Exception as exc:
+        logger.warning("distillation reasoned tier failed (%s): %s", type(exc).__name__, exc)
         return ""
     if not obj:
         return ""
@@ -1005,4 +1050,6 @@ __all__ = [
     "reason_purpose",
     "render_repository_markdown",
     "distill_repository",
+    "_bounded_reason_body",
+    "_REASON_PROMPT_CHAR_BUDGET",
 ]

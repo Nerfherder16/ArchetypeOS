@@ -28,7 +28,7 @@ log() { printf '[%s] %s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$*" | tee -a "$LOG"
 source "$(dirname "${BASH_SOURCE[0]}")/heartbeat.sh"
 
 CLAUDE_BIN="${CLAUDE_BIN:-claude}"
-CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits}"
+CLAUDE_FLAGS="${CLAUDE_FLAGS:---permission-mode acceptEdits --model sonnet}"
 SINCE="${SINCE:-midnight}"
 DRY_RUN="${DRY_RUN:-0}"
 

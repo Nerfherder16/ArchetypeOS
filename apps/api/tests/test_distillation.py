@@ -26,7 +26,11 @@ import types
 
 from aos_core.llm import DeterministicProvider, InstrumentedProvider, OpenAICompatibleProvider
 from aos_core.models import KnowledgePage, RepositoryDNA
+import logging
+
 from aos_core.services.distillation import (
+    _bounded_reason_body,
+    _REASON_PROMPT_CHAR_BUDGET,
     _repo_slug,
     distill_repository,
     extract_repo_knowledge,
@@ -734,3 +738,100 @@ def test_distillation_wraps_in_instrumented_when_sink_supplied(monkeypatch):
     provider = routed_provider("distillation", Sensitivity.PUBLIC, s, sink=lambda **kw: sink_calls.append(kw))
     assert isinstance(provider, InstrumentedProvider)
     assert isinstance(provider.inner, OpenAICompatibleProvider)
+
+
+# --- AOS-DISTILL-005: bounded reason prompt + failure logging (task #50) ------
+
+
+def test_bounded_reason_body_truncates_oversized_input() -> None:
+    """_bounded_reason_body never returns more than budget chars for large input."""
+    huge_readme = "R" * 100_000
+    large_files = [
+        {"path": f"file{i}.py", "text": "x" * 10_000}
+        for i in range(5)
+    ]
+    body = _bounded_reason_body(huge_readme, large_files)
+    assert len(body) <= _REASON_PROMPT_CHAR_BUDGET
+
+
+def test_bounded_reason_body_small_input_is_identical_to_direct_assembly() -> None:
+    """When input fits the budget, the result is identical to a direct assembly."""
+    readme = "A short README."
+    files = [
+        {"path": "main.py", "text": "def main(): pass"},
+        {"path": "util.py", "text": "def helper(): pass"},
+    ]
+    body = _bounded_reason_body(readme, files)
+
+    # Direct assembly: same structure the prompt builders used to produce inline.
+    direct_parts = ["## README\n" + readme]
+    blocks = "\n\n".join(f"### {f['path']}\n{f['text']}" for f in files)
+    direct_parts.append("## Source\n" + blocks)
+    direct = "\n\n".join(direct_parts)
+
+    assert body == direct
+
+
+def test_reason_purpose_deterministic_returns_empty_no_call() -> None:
+    """DETERMINISTIC route: reason_purpose returns '' without invoking any provider."""
+    import aos_core.services.verifier as verifier_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+    from aos_core.llm import DeterministicProvider
+
+    files = [{"path": "app.py", "text": "print('hi')"}]
+    det_settings = types.SimpleNamespace(llm_provider="deterministic")
+
+    def _det_route(task_class, sensitivity, s):
+        return RouteResult(tier=Tier.DETERMINISTIC, provider=DeterministicProvider(), reason="test")
+
+    monkeypatch_holder: dict = {}
+
+    class _MP:
+        def setattr(self, obj, name, val):
+            monkeypatch_holder[(id(obj), name)] = getattr(obj, name)
+            setattr(obj, name, val)
+
+    # Use a simple manual patch/restore since this is a non-fixture test.
+    orig_route = verifier_mod.route
+    orig_avail = verifier_mod._available
+    try:
+        verifier_mod.route = _det_route
+        verifier_mod._available = lambda t, s: False
+        result = reason_purpose(_RICH_README, files, det_settings)
+    finally:
+        verifier_mod.route = orig_route
+        verifier_mod._available = orig_avail
+
+    assert result == ""
+
+
+def test_reason_purpose_logs_warning_when_provider_raises(monkeypatch, caplog) -> None:
+    """When the reasoned call raises, reason_purpose logs a warning and returns ''."""
+    import aos_core.services.verifier as verifier_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
+    class _BoomProvider:
+        name = "boom"
+
+        def generate(self, *, system: str, prompt: str, max_tokens: int = 1024):
+            raise RuntimeError("HTTP 413 Request too large")
+
+    boom = _BoomProvider()
+
+    def fake_route(tc, sens, s):
+        return RouteResult(tier=Tier.FREE_HOSTED, provider=boom, reason="test")
+
+    monkeypatch.setattr(verifier_mod, "route", fake_route)
+    monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)
+
+    files = [{"path": "main.py", "text": "def main(): pass"}]
+    det_settings = types.SimpleNamespace(llm_provider="deterministic")
+
+    with caplog.at_level(logging.WARNING, logger="aos_core.services.distillation"):
+        result = reason_purpose(_RICH_README, files, det_settings)
+
+    assert result == ""
+    assert any(
+        "distillation reasoned tier failed" in record.message
+        for record in caplog.records
+    )

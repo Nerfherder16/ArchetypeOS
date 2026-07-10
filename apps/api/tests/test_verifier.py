@@ -274,3 +274,46 @@ def test_deterministic_tier_skips_verifier(monkeypatch):
     assert vr.verdict is None
     assert det_provider.call_count == 1
     assert verifier_spy.call_count == 0
+
+
+# ---------------------------------------------------------------------------
+# Test 6: sink is invoked for produce and verify calls when provided
+# ---------------------------------------------------------------------------
+
+def test_sink_invoked_for_produce_and_verify_calls(monkeypatch):
+    """When a sink is supplied, the produce and verify calls each record a usage event.
+
+    Expected: with a FREE_HOSTED produce tier and Claude saying VALID, the sink
+    is called exactly twice — once for the produce call and once for the verify call.
+    """
+    cheap_provider = FakeProvider(responses=["The cheap answer"], name="free_hosted")
+    claude_provider = FakeProvider(responses=["VALID"], name="claude_code")
+
+    settings = _settings(llm_claude_enabled=True)
+
+    _patch_route(monkeypatch, Tier.FREE_HOSTED, cheap_provider)
+    _patch_claude(monkeypatch, available=True, claude_provider=claude_provider)
+
+    sink_calls: list[dict] = []
+
+    def _sink(**kwargs):
+        sink_calls.append(kwargs)
+
+    vr: VerifiedResult = verified_generate(
+        task_class="distillation",
+        sensitivity=Sensitivity.PUBLIC,
+        settings=settings,
+        system="You are a distillation agent.",
+        prompt="Summarise this repo.",
+        sink=_sink,
+    )
+
+    assert vr.result.text == "The cheap answer"
+    assert vr.verdict == "valid"
+    # Produce call recorded, verify call recorded — two total events.
+    assert len(sink_calls) == 2
+    # Both events carry the task context label.
+    assert all(call["context"] == "distillation" for call in sink_calls)
+    # Producer and verifier are distinguishable by their agent labels.
+    agents = {call["agent"] for call in sink_calls}
+    assert agents == {"producer", "verifier"}

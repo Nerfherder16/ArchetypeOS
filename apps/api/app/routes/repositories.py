@@ -2,12 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from aos_core.config import get_settings
-from aos_core.database import SessionLocal, get_db
-from aos_core.llm import get_provider
+from aos_core.database import get_db
 from aos_core.models import KnowledgePage, Project, Repository, RepositoryDNA
 from aos_core.repository_scanner import safe_repo_path
 from aos_core.services.distillation import distill_repository
-from aos_core.services.usage import make_ledger_sink
 
 from ..schemas import KnowledgePageRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead
 
@@ -57,15 +55,11 @@ def distill_repository_endpoint(repository_id: str, db: Session = Depends(get_db
     # Service 404s a missing repository and 409s a non-writable (:ro-mounted /
     # read-only) vault — never a 500 (local-first write; the distillation is
     # projected as a re-syncable KnowledgePage). RFC-0008. Phase 2 reads a bounded
-    # set of source files through the configured (deterministic in CI) provider.
+    # set of source files through verified_generate (routes via settings; deterministic
+    # in CI). AOS-USAGE-001: the ledger sink is created inside distill_repository.
     settings_ = get_settings()
-    # AOS-USAGE-001: instrument the resolved provider so a real (non-deterministic)
-    # distillation call records a usage event. The deterministic CI provider is
-    # skipped by the wrapper → hermetic path unchanged. Ledger writes go to a fresh
-    # SessionLocal session (best-effort; never breaks the distillation).
     return distill_repository(
         db,
         repository_id=repository_id,
         knowledge_root=settings_.knowledge_root,
-        provider=get_provider(settings_, sink=make_ledger_sink(SessionLocal, settings_, context="distillation")),
     )

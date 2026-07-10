@@ -32,7 +32,8 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..embeddings import get_embedder
-from .llm_router import Sensitivity, routed_provider
+from .llm_router import Sensitivity, Tier, route
+from .verifier import verified_generate
 from ..models import KnowledgePage, Repository, RepositoryDNA
 from ..repository_scanner import EXTENSIONS, LANGUAGE_CLASS, safe_repo_path
 from .council import _loads_tolerant
@@ -655,19 +656,18 @@ def _coerce_str_list(value) -> list[str]:
     return [str(value)]
 
 
-def reason_over_source(files: list[dict], provider) -> dict:
-    """Reason over selected source with a real provider (LES-021 isolated), citing files.
+def reason_over_source(files: list[dict], settings, sink=None) -> dict:
+    """Reason over selected source via adversarially-verified generation (LES-021 isolated).
 
     Builds ONE bounded, path-labelled prompt (each file as ``### <path>\\n<text>`` — the
-    files are already capped by :func:`select_source_files`), runs ``provider.generate``,
-    and parses the output with the council's tolerant ``_loads_tolerant`` into
-    ``{"built_for", "how_it_works", "reusable", "provenance"}``. Only produces a narrative
-    for a **real** provider: a ``deterministic`` provider (or an empty parse) yields ``{}``
-    — no fabrication. Never raises out of distillation: any provider error → ``{}``.
+    files are already capped by :func:`select_source_files`), runs ``verified_generate``
+    with ``task_class="distillation"``, and parses the output with the council's tolerant
+    ``_loads_tolerant`` into ``{"built_for", "how_it_works", "reusable", "provenance"}``.
+    Only produces a narrative for a **real** (non-deterministic) tier: a DETERMINISTIC
+    route (or an empty parse) yields ``{}`` — no fabrication.
+    Never raises out of distillation: any provider error → ``{}``.
     """
     if not files:
-        return {}
-    if getattr(provider, "name", "") == "deterministic":
         return {}
     try:
         blocks = "\n\n".join(f"### {f.get('path')}\n{f.get('text') or ''}" for f in files)
@@ -675,8 +675,15 @@ def reason_over_source(files: list[dict], provider) -> dict:
             "Distil the following repository source into structured knowledge.\n\n"
             f"{blocks}"
         )
-        result = provider.generate(system=_REASON_SYSTEM_PROMPT, prompt=prompt)
-        obj = _loads_tolerant(result.text or "")
+        vr = verified_generate(
+            task_class="distillation",
+            sensitivity=Sensitivity.PUBLIC,
+            settings=settings,
+            system=_REASON_SYSTEM_PROMPT,
+            prompt=prompt,
+            sink=sink,
+        )
+        obj = _loads_tolerant(vr.result.text or "")
     except Exception:
         return {}
     if not obj:
@@ -702,19 +709,17 @@ _PURPOSE_SYSTEM_PROMPT = (
 )
 
 
-def reason_purpose(readme: str, files: list[dict], provider) -> str:
-    """Reason a concise one-sentence ``DNA.purpose`` from README + bounded source (LES-021 isolated).
+def reason_purpose(readme: str, files: list[dict], settings, sink=None) -> str:
+    """Reason a concise one-sentence ``DNA.purpose`` via adversarially-verified generation (LES-021 isolated).
 
     Builds ONE bounded prompt (the README, already capped by :func:`_read_primary_readme`, plus
-    each already-capped source file as ``### <path>\\n<text>``), runs ``provider.generate``, and
-    parses the output with the council's tolerant ``_loads_tolerant`` into a single ``purpose``
-    sentence — one declarative statement of what the repo is and what it is useful for. Only
-    produces a purpose for a **real** provider: a ``deterministic`` provider (or an empty / garbled
-    parse, or an absent ``purpose`` key) yields ``""`` — no fabrication. Never raises out of
-    distillation: any provider error → ``""``.
+    each already-capped source file as ``### <path>\\n<text>``), runs ``verified_generate`` with
+    ``task_class="distillation"``, and parses the output with the council's tolerant
+    ``_loads_tolerant`` into a single ``purpose`` sentence. Only produces a purpose for a **real**
+    (non-deterministic) tier: a DETERMINISTIC route (or an empty / garbled parse, or an absent
+    ``purpose`` key) yields ``""`` — no fabrication. Never raises out of distillation: any provider
+    error → ``""``.
     """
-    if getattr(provider, "name", "") == "deterministic":
-        return ""
     readme_text = (readme or "").strip()
     if not readme_text and not files:
         return ""
@@ -726,8 +731,15 @@ def reason_purpose(readme: str, files: list[dict], provider) -> str:
         if blocks:
             prompt_parts.append("## Source\n" + blocks)
         prompt = "\n\n".join(prompt_parts)
-        result = provider.generate(system=_PURPOSE_SYSTEM_PROMPT, prompt=prompt)
-        obj = _loads_tolerant(result.text or "")
+        vr = verified_generate(
+            task_class="distillation",
+            sensitivity=Sensitivity.PUBLIC,
+            settings=settings,
+            system=_PURPOSE_SYSTEM_PROMPT,
+            prompt=prompt,
+            sink=sink,
+        )
+        obj = _loads_tolerant(vr.result.text or "")
     except Exception:
         return ""
     if not obj:
@@ -846,7 +858,7 @@ def _read_primary_readme(repository: Repository) -> str:
 
 
 def distill_repository(
-    db: Session, *, repository_id: str, knowledge_root: Path | str, provider=None, embedder=None
+    db: Session, *, repository_id: str, knowledge_root: Path | str, embedder=None
 ) -> KnowledgePage:
     """Distil a scanned repo's content into a vault page + ``KnowledgePage``.
 
@@ -859,29 +871,28 @@ def distill_repository(
     ``vault_path`` (``page_type="repository"``, sha256 checksum) and, when a
     ``RepositoryDNA`` row exists, stamps its ``purpose``.
 
-    Two-tier ``DNA.purpose`` (AOS-DISTILL-004): with a **real** (non-deterministic)
-    provider that reasons a non-empty one-sentence purpose from README + bounded
-    source, that purpose becomes the page summary + ``DNA.purpose`` and the page is
-    ``validation_state="reasoned"``. Otherwise — the deterministic CI provider, or
-    empty/garbled reasoned output — the Package-1 clean deterministic floor summary
-    is kept and the page is ``validation_state="derived"`` (fully hermetic; no live
-    model, no fabrication). Idempotent.
+    Two-tier ``DNA.purpose`` (AOS-DISTILL-004): when the configured tier is
+    non-deterministic, ``verified_generate`` reasons a one-sentence purpose from
+    README + bounded source; that purpose becomes the page summary + ``DNA.purpose``
+    and the page is ``validation_state="reasoned"``. Otherwise — ``llm_provider=
+    deterministic`` (the CI default), or empty/garbled reasoned output — the
+    Package-1 clean deterministic floor summary is kept and the page is
+    ``validation_state="derived"`` (fully hermetic; no live model, no fabrication).
+    Idempotent.
     """
     repository = db.get(Repository, repository_id)
     if not repository:
         raise HTTPException(status_code=404, detail="Repository not found")
 
-    if provider is None:
-        # AOS-USAGE-001: when no provider is injected, resolve one instrumented so a
-        # real (non-deterministic) distillation call records a usage event. The
-        # deterministic CI provider is skipped by the wrapper → hermetic + unchanged.
-        from ..database import SessionLocal
-        from .usage import make_ledger_sink
+    from ..database import SessionLocal
+    from .usage import make_ledger_sink
 
-        _settings = get_settings()
-        provider = routed_provider("distillation", Sensitivity.PUBLIC, _settings, sink=make_ledger_sink(SessionLocal, _settings, context="distillation"))
+    _settings = get_settings()
+    _sink = make_ledger_sink(SessionLocal, _settings, context="distillation")
+    real = route("distillation", Sensitivity.PUBLIC, _settings).tier is not Tier.DETERMINISTIC
+
     if embedder is None:
-        embedder = get_embedder(get_settings())
+        embedder = get_embedder(_settings)
 
     readme_text = _read_primary_readme(repository)
     dna = repository.dna
@@ -892,11 +903,10 @@ def distill_repository(
 
     # Phase 2 (RFC-0008): a bounded, provenance-tagged read of the actual source.
     # The deterministic structural summary is always produced (hermetic, CI-tested);
-    # the reasoned narrative is produced only for a real provider (no fabrication).
+    # the reasoned narrative goes through verified_generate (the single production path).
     files = select_source_files(repository, dna=dna)
     code = summarize_sources(files)
-    is_real_provider = getattr(provider, "name", "") != "deterministic"
-    narrative = reason_over_source(files, provider) if is_real_provider else {}
+    narrative = reason_over_source(files, _settings, sink=_sink) if real else {}
     distillation["components"] = code["components"]
     distillation["entry_points"] = code["entry_points"]
     distillation["source_files"] = [f["path"] for f in files]
@@ -909,7 +919,7 @@ def distill_repository(
     # marked "reasoned"). The deterministic CI provider — and any empty/garbled
     # reasoned output — falls back to the Package-1 clean floor + "derived" (no
     # fabrication, fully hermetic).
-    reasoned_purpose = reason_purpose(readme_text, files, provider) if is_real_provider else ""
+    reasoned_purpose = reason_purpose(readme_text, files, _settings, sink=_sink) if real else ""
     if reasoned_purpose:
         distillation["summary"] = reasoned_purpose
         validation_state = "reasoned"

@@ -78,12 +78,20 @@ class RotatingProvider:
         for offset in range(n):
             idx = (start + offset) % n
             try:
-                return self._providers[idx].generate(
+                result = self._providers[idx].generate(
                     system=system,
                     prompt=prompt,
                     max_tokens=max_tokens,
                     response_format=response_format,
                 )
+                # Report the pool's identity ("rotating") on the result so the usage
+                # ledger tiers it as FREE (derive_tier maps "rotating" -> free). The
+                # member's model name is kept; only the provider LABEL is normalized.
+                # Without this the member's "openai_compatible" + a None base_url fell
+                # through to the local branch, mis-tagging every free-pool call "local"
+                # (LES-L20: gemini/llama-70b/mistral/120b all showed up as local tier).
+                result.provider = "rotating"
+                return result
             except Exception as exc:  # noqa: BLE001 — try the next member on ANY failure
                 errors.append(f"{self._labels[idx]}: {exc}")
         raise RuntimeError("all rotation-pool providers failed — " + " | ".join(errors))

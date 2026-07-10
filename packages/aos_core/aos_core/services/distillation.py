@@ -648,9 +648,14 @@ _REASON_SYSTEM_PROMPT = (
     "You are a code-distillation agent. You are given the SOURCE of a repository, each file "
     "labelled with its path. Reason ONLY from the supplied files — do not invent APIs, files, "
     "or behaviour that is not present. Determine what the repository was built for, how its "
-    "components work together, and what is reusable. CITE the file paths your conclusions rest "
-    "on. Respond ONLY with a JSON object with keys: built_for (string), how_it_works (string), "
-    "reusable (array of strings), provenance (array of file paths you used)."
+    "components work together, and — most importantly — the concrete reusable "
+    "capabilities/components a DIFFERENT project could borrow, each named and tied to its "
+    "file(s). CITE the file paths your conclusions rest on. Respond ONLY with a JSON object "
+    "with keys: built_for (string), how_it_works (string), capabilities (array of objects, "
+    "each {name: a short reuse-oriented noun phrase such as \"LLM provider-routing "
+    "abstraction\" or \"approval queue\", description: one clause on what it does / how to "
+    "borrow it, provenance: array of the file path(s) it lives in}), provenance (array of "
+    "file paths you used)."
 )
 
 
@@ -660,6 +665,36 @@ def _coerce_str_list(value) -> list[str]:
     if value in (None, ""):
         return []
     return [str(value)]
+
+
+def _coerce_capabilities(value, *, fallback=None) -> list[dict]:
+    """Coerce a reasoned ``capabilities`` array into ``[{name, description, provenance}]`` (pure).
+
+    Tolerant of shape drift (RFC-0013 Slice 1): each item may be a mapping
+    (``name`` / ``description`` / ``provenance``) or a bare string (the older
+    ``reusable`` shape → name-only). ``provenance`` accepts a single string or a
+    list of strings. Items without a usable ``name`` are dropped. When ``value``
+    is empty/absent and ``fallback`` (a legacy ``reusable`` array) is supplied,
+    its strings become name-only capabilities — so an older provider's output is
+    still surfaced rather than silently lost.
+    """
+    items = value if isinstance(value, list) else []
+    if not items and fallback is not None:
+        items = fallback if isinstance(fallback, list) else []
+    out: list[dict] = []
+    for item in items:
+        if isinstance(item, dict):
+            name = str(item.get("name") or "").strip()
+            description = str(item.get("description") or "").strip()
+            provenance = _coerce_str_list(item.get("provenance"))
+        else:
+            name = str(item or "").strip()
+            description = ""
+            provenance = []
+        if not name:
+            continue
+        out.append({"name": name, "description": description, "provenance": provenance})
+    return out
 
 
 def _bounded_reason_body(
@@ -710,10 +745,13 @@ def reason_over_source(files: list[dict], settings, sink=None) -> dict:
     Builds ONE bounded, path-labelled prompt (each file as ``### <path>\\n<text>`` — the
     files are already capped by :func:`select_source_files`), runs ``verified_generate``
     with ``task_class="distillation"``, and parses the output with the council's tolerant
-    ``_loads_tolerant`` into ``{"built_for", "how_it_works", "reusable", "provenance"}``.
-    Only produces a narrative for a **real** (non-deterministic) tier: a DETERMINISTIC
-    route (or an empty parse) yields ``{}`` — no fabrication.
-    Never raises out of distillation: any provider error → ``{}``.
+    ``_loads_tolerant`` into ``{"built_for", "how_it_works", "capabilities", "provenance"}``.
+    ``capabilities`` (RFC-0013 Slice 1) is a first-class list of ``{name, description,
+    provenance}`` objects — the concrete reusable components a different project could borrow,
+    each named and tied to its file(s) — coerced tolerantly (older ``reusable: [str]`` output
+    is upgraded to name-only capabilities). Only produces a narrative for a **real**
+    (non-deterministic) tier: a DETERMINISTIC route (or an empty parse) yields ``{}`` — no
+    fabrication. Never raises out of distillation: any provider error → ``{}``.
     """
     if not files:
         return {}
@@ -740,10 +778,12 @@ def reason_over_source(files: list[dict], settings, sink=None) -> dict:
     narrative = {
         "built_for": str(obj.get("built_for") or "").strip(),
         "how_it_works": str(obj.get("how_it_works") or "").strip(),
-        "reusable": _coerce_str_list(obj.get("reusable")),
+        "capabilities": _coerce_capabilities(
+            obj.get("capabilities"), fallback=obj.get("reusable")
+        ),
         "provenance": _coerce_str_list(obj.get("provenance")),
     }
-    if not (narrative["built_for"] or narrative["how_it_works"] or narrative["reusable"]):
+    if not (narrative["built_for"] or narrative["how_it_works"] or narrative["capabilities"]):
         return {}
     return narrative
 
@@ -840,16 +880,31 @@ def render_repository_markdown(distillation: dict) -> str:
     # How it works / Built for: only when a real provider produced a narrative
     # (the deterministic provider fabricates nothing).
     narrative = distillation.get("narrative") or {}
-    if narrative and (narrative.get("built_for") or narrative.get("how_it_works") or narrative.get("reusable")):
+    if narrative.get("built_for") or narrative.get("how_it_works"):
         lines += ["", "## How it works / Built for", ""]
         if narrative.get("built_for"):
             lines += ["**Built for:** " + str(narrative["built_for"]).strip(), ""]
         if narrative.get("how_it_works"):
             lines += ["**How it works:** " + str(narrative["how_it_works"]).strip(), ""]
-        reusable = narrative.get("reusable") or []
-        if reusable:
-            lines.append("**Reusable:**")
-            lines.extend([f"- {item}" for item in reusable])
+
+    # Reusable capabilities (RFC-0013 Slice 1): first-class named components a
+    # DIFFERENT project could borrow, each citing the file(s) it lives in. Present
+    # only when a real provider extracted them (deterministic floor → none, so this
+    # section is absent and the derived page is unchanged).
+    capabilities = narrative.get("capabilities") or []
+    if capabilities:
+        lines += ["", "## Reusable capabilities", ""]
+        for capability in capabilities:
+            name = str(capability.get("name") or "").strip()
+            if not name:
+                continue
+            description = str(capability.get("description") or "").strip()
+            provenance = capability.get("provenance") or []
+            detail = f"{name} — {description}" if description else name
+            cites = ", ".join(f"`{path}`" for path in provenance)
+            if cites:
+                detail = f"{detail} ({cites})"
+            lines.append(f"- {detail}")
 
     lines += ["", "## Provenance", ""]
     provenance = distillation.get("provenance") or []

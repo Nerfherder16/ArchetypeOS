@@ -34,6 +34,7 @@ from aos_core.services.distillation import (
     _repo_slug,
     distill_repository,
     extract_repo_knowledge,
+    reason_over_source,
     reason_purpose,
     render_repository_markdown,
     select_source_files,
@@ -835,3 +836,170 @@ def test_reason_purpose_logs_warning_when_provider_raises(monkeypatch, caplog) -
         "distillation reasoned tier failed" in record.message
         for record in caplog.records
     )
+
+
+# --- RFC-0013 Slice 1: capability extraction ----------------------------------
+#
+# reason_over_source evolves from a thin ``reusable: [str]`` narrative array to a
+# first-class ``capabilities: [{name, description, provenance}]`` list — the concrete
+# reusable components a DIFFERENT project could borrow, each named and tied to its
+# file(s). REASONED TIER ONLY: the deterministic floor fabricates nothing (capabilities
+# stays ``[]`` → the section is absent → today's hermetic behaviour is unchanged).
+
+_CAPABILITY_JSON = json.dumps(
+    {
+        "built_for": "A toolkit for composing terminal widgets.",
+        "how_it_works": "Widgets compose over a shared render loop.",
+        "capabilities": [
+            {
+                "name": "widget render loop",
+                "description": "reusable draw/update loop for TUIs",
+                "provenance": ["core.py"],
+            },
+            {
+                "name": "layout solver",
+                "description": "flexbox-like layout engine",
+                "provenance": ["layout.py", "core.py"],
+            },
+        ],
+        "provenance": ["core.py", "layout.py"],
+    }
+)
+
+
+def _route_reason_over_source(monkeypatch, provider) -> None:
+    """Route ``verified_generate`` (used inside reason_over_source) to a fake FREE_HOSTED provider."""
+    import aos_core.services.verifier as verifier_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
+    monkeypatch.setattr(
+        verifier_mod,
+        "route",
+        lambda tc, sens, s: RouteResult(tier=Tier.FREE_HOSTED, provider=provider, reason="test"),
+    )
+    monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)
+
+
+def test_reason_over_source_deterministic_emits_no_capabilities(monkeypatch) -> None:
+    """DETERMINISTIC route: reason_over_source returns {} — no call, no capabilities."""
+    import aos_core.services.verifier as verifier_mod
+    from aos_core.services.llm_router import RouteResult, Tier
+
+    monkeypatch.setattr(
+        verifier_mod,
+        "route",
+        lambda tc, sens, s: RouteResult(tier=Tier.DETERMINISTIC, provider=DeterministicProvider(), reason="test"),
+    )
+    monkeypatch.setattr(verifier_mod, "_available", lambda t, s: False)
+
+    files = [{"path": "core.py", "text": "def render():\n    pass\n"}]
+    assert reason_over_source(files, types.SimpleNamespace(llm_provider="deterministic")) == {}
+
+
+def test_reason_over_source_parses_first_class_capabilities(monkeypatch) -> None:
+    """A real provider returning capability objects → parsed name/description/provenance."""
+    provider = _FakeGarbledProvider(_CAPABILITY_JSON)
+    _route_reason_over_source(monkeypatch, provider)
+
+    files = [{"path": "core.py", "text": "def render():\n    pass\n"}]
+    narrative = reason_over_source(files, types.SimpleNamespace(llm_provider="deterministic"))
+
+    assert provider.calls  # the reasoned path actually ran
+    # The system prompt explicitly asks for reusable capabilities tied to files.
+    assert "capabilit" in provider.calls[0]["system"].lower()
+
+    caps = narrative["capabilities"]
+    assert [c["name"] for c in caps] == ["widget render loop", "layout solver"]
+    assert caps[0]["description"] == "reusable draw/update loop for TUIs"
+    assert caps[0]["provenance"] == ["core.py"]
+    assert caps[1]["provenance"] == ["layout.py", "core.py"]
+    # The legacy bare-string ``reusable`` key is gone from the narrative contract.
+    assert "reusable" not in narrative
+
+
+def test_reason_over_source_tolerates_legacy_reusable_and_bare_items(monkeypatch) -> None:
+    """Old-shape output (bare ``reusable`` strings, no ``capabilities``) still yields capabilities."""
+    legacy = json.dumps(
+        {"built_for": "x", "how_it_works": "", "reusable": ["approval queue", "   "]}
+    )
+    provider = _FakeGarbledProvider(legacy)
+    _route_reason_over_source(monkeypatch, provider)
+
+    files = [{"path": "q.py", "text": "x = 1\n"}]
+    narrative = reason_over_source(files, types.SimpleNamespace(llm_provider="deterministic"))
+
+    caps = narrative["capabilities"]
+    assert [c["name"] for c in caps] == ["approval queue"]  # blank item dropped
+    assert caps[0]["description"] == ""
+    assert caps[0]["provenance"] == []
+
+
+def test_render_repository_markdown_renders_reusable_capabilities() -> None:
+    """render emits a '## Reusable capabilities' section, each capability citing its file(s)."""
+    distillation = extract_repo_knowledge(_RICH_README)
+    distillation["narrative"] = {
+        "built_for": "",
+        "how_it_works": "",
+        "capabilities": [
+            {
+                "name": "LLM provider-routing abstraction",
+                "description": "swap providers by tier",
+                "provenance": ["router.py"],
+            }
+        ],
+        "provenance": ["router.py"],
+    }
+    md = render_repository_markdown(distillation)
+    assert "## Reusable capabilities" in md
+    assert "LLM provider-routing abstraction" in md
+    assert "swap providers by tier" in md
+    assert "`router.py`" in md
+
+
+def test_render_repository_markdown_no_narrative_has_no_capabilities_section() -> None:
+    """Deterministic floor (no narrative) renders no capabilities section — unchanged behaviour."""
+    md = render_repository_markdown(extract_repo_knowledge(_RICH_README))
+    assert "## Reusable capabilities" not in md
+
+
+class _FakeCapabilityProvider:
+    """Fake real provider: capability JSON for the source-reasoning prompt, purpose JSON otherwise.
+
+    Distinguishes the two distillation system prompts by the presence of 'capabilit' in the
+    system text (reason_over_source asks for capabilities; reason_purpose asks for a purpose).
+    """
+
+    name = "claude_code"
+
+    def __init__(self) -> None:
+        self.calls: list[dict] = []
+
+    def generate(self, *, system: str, prompt: str, max_tokens: int = 1024):
+        self.calls.append({"system": system, "prompt": prompt})
+        if "capabilit" in system.lower():
+            text = _CAPABILITY_JSON
+        else:
+            text = json.dumps({"purpose": _REASONED_PURPOSE})
+        return SimpleNamespace(text=text, provider=self.name, model=None, finish_reason="stop")
+
+
+def test_distill_reasoned_provider_renders_capabilities_section(client, tmp_path, monkeypatch) -> None:
+    """End-to-end: a reasoned distill writes a '## Reusable capabilities' section into the vault page."""
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_code_repo(client, project_id, name="Code Repo", local_path="code-repo")
+
+    provider = _FakeCapabilityProvider()
+    _patch_route_free_hosted(monkeypatch, provider)
+
+    session = _same_file_session(tmp_path)
+    try:
+        page = distill_repository(session, repository_id=repo_id, knowledge_root=tmp_path)
+        assert page.validation_state == "reasoned"
+    finally:
+        session.close()
+
+    text = (tmp_path / page.vault_path).read_text(encoding="utf-8")
+    assert "## Reusable capabilities" in text
+    assert "widget render loop" in text
+    assert "`core.py`" in text

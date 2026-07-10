@@ -108,3 +108,37 @@ Proposed direction (for advisor review — they hold the context on prompt-tight
 
 Kept the attempt-3 code in the worktree (unit-green) but **not** committed as a fix — it
 does not pass this gate, and the pivot above should be agreed with the advisor first.
+
+## Pivot implemented (advisor-greenlit) — results
+
+Shipped on the branch (held from merge): `build_repo_digest` (whole-repo symbol map +
+few full modules), digest-based `reason_over_source`, deterministic
+`_drop_uncited_capabilities` cite-must-exist filter, retry-on-empty across pool members
++ `extraction_incomplete` marking, and a `max_tokens=2048` bump for the capability call
+(the free-tier default was truncating the JSON array mid-stream — the single biggest
+reliability fix). Hermetic suite 449 green; ruff clean.
+
+Reality gate (free pool), latest run:
+
+| Repo | Result |
+|---|---|
+| Recall | **16 grounded capabilities** (LLM/Ollama abstraction, embedding service, temporal knowledge-graph, contradiction detection, memory write guard, …) |
+| insta-ntly | **22 grounded capabilities** (Canva OAuth2+PKCE, Supabase Auth, AI provider abstraction, carousel pipeline, …) |
+| AiGentOS / ArchetypeOS / tali-api | `extraction_incomplete` (provider variance — a member truncated/empty on the larger prompt; honestly marked, nothing fabricated) |
+
+**Validated:** the digest + cite-must-exist mechanism produces rich, grounded,
+hallucination-free capabilities (the two successes are dense and accurate; the cite-filter
+structurally removed ungrounded items). **Remaining:** free-provider variance still yields
+~3/5 `extraction_incomplete` per run (which repos vary run-to-run). The mechanism is right;
+reliability is the last gap.
+
+## Next lever (for the gate to go fully green) — provider reliability
+
+- Order the free pool by context capacity (Gemini/Cerebras big-context members first) so
+  the larger digest prompt lands on members that handle it — the advisor's scoped secondary
+  lever; touches `llm_pool`, so worth agreeing the approach first.
+- Try all pool members on empty (raise the retry bound to the pool size).
+- When Claude tiering is enabled, escalate-on-empty via the verifier is the clean upgrade.
+
+Slice 1 is **not** merged until the gate is reliably green on the acceptance repos
+(ArchetypeOS → "LLM provider-routing", AiGentOS → "approval queue").

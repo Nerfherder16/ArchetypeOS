@@ -577,3 +577,52 @@ def test_parse_agent_output_true_prose_falls_back():
     assert out["status"] == "Needs Evidence"
     assert out["confidence"] == 0.05
     assert out["findings"] == []
+
+
+# --- AOS-LLM-ROUTE-COV: council_provider fallback uses routed_provider ---
+
+
+def _council_route_settings(**over):
+    """Minimal hermetic settings for router-selection assertions."""
+    base = dict(
+        llm_base_url="http://localhost:11434/v1",
+        llm_model="qwen2.5-coder:7b",
+        llm_api_key="",
+        llm_free_base_url="https://api.groq.com/openai/v1",
+        llm_free_model="llama-3.3-70b-versatile",
+        llm_free_api_key="gsk_test",
+        llm_claude_enabled=False,
+        council_multi_model=False,
+    )
+    base.update(over)
+    return types.SimpleNamespace(**base)
+
+
+def test_council_provider_fallback_routes_to_free_when_local_absent(monkeypatch):
+    """Single-provider path picks FREE_HOSTED when LOCAL is unconfigured (no pool)."""
+    import aos_core.services.council as council_mod
+    import aos_core.services.llm_router as router_mod
+
+    monkeypatch.setattr(router_mod, "build_free_pool", lambda: [])
+    monkeypatch.setattr(router_mod, "free_pool_provider", lambda: None)
+    monkeypatch.setattr(council_mod, "free_pool_provider", lambda: None)
+
+    from aos_core.llm import OpenAICompatibleProvider
+
+    s = _council_route_settings(llm_base_url="", llm_model="")
+    p = council_mod.council_provider(s)
+    assert isinstance(p, OpenAICompatibleProvider)
+
+
+def test_council_provider_fallback_deterministic_when_nothing_configured(monkeypatch):
+    """With nothing configured and multi-model off, fallback yields deterministic (hermetic)."""
+    import aos_core.services.council as council_mod
+    import aos_core.services.llm_router as router_mod
+
+    monkeypatch.setattr(router_mod, "build_free_pool", lambda: [])
+    monkeypatch.setattr(router_mod, "free_pool_provider", lambda: None)
+    monkeypatch.setattr(council_mod, "free_pool_provider", lambda: None)
+
+    s = _council_route_settings(llm_base_url="", llm_model="", llm_free_api_key="")
+    p = council_mod.council_provider(s)
+    assert isinstance(p, DeterministicProvider)

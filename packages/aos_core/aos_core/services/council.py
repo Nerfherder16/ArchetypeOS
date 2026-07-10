@@ -21,7 +21,8 @@ import json
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
-from ..llm import InstrumentedProvider, get_provider
+from ..llm import InstrumentedProvider
+from .llm_router import Sensitivity, routed_provider
 from ..models import (
     ArchitectureEdge,
     ArchitectureNode,
@@ -454,14 +455,14 @@ def council_provider(settings, sink=None):
 
     When a usage ``sink`` is supplied (AOS-USAGE-001) the chosen provider is
     instrumented so each agent call records a usage event: the single-provider
-    path defers to ``get_provider(settings, sink=...)`` (which wraps), and the
+    path defers to ``routed_provider`` (cheap-first tier selection), and the
     multi-model pool is wrapped here in :class:`InstrumentedProvider`.
     """
     if getattr(settings, "council_multi_model", False):
         pool = free_pool_provider()
         if pool is not None and len(pool) >= 2:
             return InstrumentedProvider(pool, sink) if sink is not None else pool
-    return get_provider(settings, sink=sink)
+    return routed_provider("council_agent", Sensitivity.PUBLIC, settings, sink=sink)
 
 
 def run_council(db: Session, *, project_id: str, question: str, provider, agents=DEFAULT_AGENTS) -> CouncilReview:

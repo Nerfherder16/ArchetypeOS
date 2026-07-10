@@ -77,9 +77,14 @@ _DIGEST_FULL_MODULES = 3
 # big-context first by build_free_pool) before giving up. RFC-0013 Slice 1.
 _REASON_MAX_ATTEMPTS = 4
 # Output-token budget for the capability call. A capabilities ARRAY (several objects) needs
-# far more room than the one-sentence purpose; the free-tier default (1024) truncated the
-# JSON mid-array, dropping every capability. Sized for a full array with headroom.
-_REASON_MAX_TOKENS = 2048
+# far more room than the one-sentence purpose; too small truncates the JSON mid-array and
+# drops every capability. Paired with a capped capability count in the prompt so a large
+# repo's output still fits.
+_REASON_MAX_TOKENS = 4096
+# Cap on capabilities requested from the model — a repo's *crown jewels*, not an exhaustive
+# list. Bounds output size (a big repo otherwise emits an array that overruns the token
+# budget and truncates to invalid JSON) and focuses on what a different project would borrow.
+_REASON_CAPABILITY_CAP = 12
 # Primary manifests, in the order we prefer them (declare purpose/deps/scripts).
 _MANIFEST_PRIORITY = ("pyproject.toml", "package.json", "go.mod")
 # Entry points by exact filename and by stem (with any extension).
@@ -770,14 +775,18 @@ def build_repo_digest(
         known_files.add(f["path"])
         known_symbols.update(shown)
 
-    # A few top-ranked modules carried in full for depth, within the remaining budget.
+    # A few top-ranked modules carried in full for depth — highest-ranked that FIT the
+    # remaining budget (a single oversized module must not blow the prompt past the tier
+    # budget; its symbols are already in the map, so the model can still cite it).
     full_modules: list[dict] = []
     full_budget = char_budget - running
-    for f in files[:_DIGEST_FULL_MODULES]:
+    for f in files:
+        if len(full_modules) >= _DIGEST_FULL_MODULES:
+            break
         if f["path"] not in known_files:
             continue
         block = len(f["text"])
-        if full_modules and full_budget - block < 0:
+        if block > full_budget:
             continue
         full_budget -= block
         full_modules.append({"path": f["path"], "text": f["text"]})
@@ -836,7 +845,10 @@ _REASON_SYSTEM_PROMPT = (
     "— each a real unit of behaviour, named, described, and tied to the file(s) it lives in. "
     "GROUNDING RULE: every capability MUST cite, in its provenance, at least one file path "
     "that appears in the provided map. If you cannot point to a provided file/symbol for a "
-    "capability, DO NOT list it. Respond ONLY with a JSON object with keys: built_for "
+    "capability, DO NOT list it. List ONLY the most significant reusable capabilities (at "
+    "most 12) — the crown jewels a different project would most want to borrow; omit trivial "
+    "boilerplate (health checks, config loaders, app scaffolding). Respond ONLY with a JSON "
+    "object with keys: built_for "
     "(string), how_it_works (string), capabilities (array of objects, each {name: a short "
     "reuse-oriented noun phrase such as \"LLM provider-routing abstraction\" or \"approval "
     "queue\", description: one clause on what it does / how to borrow it, provenance: array "
@@ -988,7 +1000,7 @@ def reason_over_source(digest: dict, settings, sink=None) -> dict:
         capabilities = _drop_uncited_capabilities(
             _coerce_capabilities(obj.get("capabilities"), fallback=obj.get("reusable")),
             known_files,
-        )
+        )[:_REASON_CAPABILITY_CAP]
         if capabilities:
             return {
                 "built_for": str(obj.get("built_for") or "").strip(),

@@ -13,6 +13,7 @@ export type Project = {
   slug: string;
   description?: string | null;
   status: string;
+  audits_enabled: boolean;
   version: number;
   created_at: string;
   updated_at: string;
@@ -337,6 +338,17 @@ export async function createProject(name: string, description?: string): Promise
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name, description: description ?? null }),
+  });
+}
+
+export async function updateProject(
+  projectId: string,
+  patch: { audits_enabled?: boolean },
+): Promise<Project> {
+  return request<Project>(`/projects/${projectId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
   });
 }
 
@@ -798,6 +810,7 @@ export type ResearchRun = {
 
 // AOS-SELFHEAL observability — one heartbeat row per nightly self-learn routine
 // (conflict / toil / coherence / session-pain). Mirrors AuditHeartbeatRead.
+// `project_id` is null for global routines; per-project audits carry the owning project.
 export type AuditHeartbeat = {
   id: string;
   routine: string;
@@ -805,6 +818,7 @@ export type AuditHeartbeat = {
   day: string;
   pr_url: string | null;
   detail: string | null;
+  project_id: string | null;
   status: string;
   version: number;
   created_at: string;

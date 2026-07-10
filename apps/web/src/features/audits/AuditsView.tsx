@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { fetchAuditHeartbeats, type AuditHeartbeat } from '../../api';
+import {
+  fetchAuditHeartbeats,
+  fetchProjects,
+  updateProject,
+  type AuditHeartbeat,
+  type Project,
+} from '../../api';
 import { errorMessage } from '../../shell/errorMessage';
 
 // AOS-SELFHEAL observability (UI) — the Nightly Audits board. One row per known
@@ -8,6 +14,9 @@ import { errorMessage } from '../../shell/errorMessage';
 // the board — a "missed" flag when a routine has not checked in within a day, so
 // a silently-skipped nightly is VISIBLE instead of invisible. Data comes from
 // GET /audits/heartbeats (a global surface, not project-scoped).
+//
+// AOS-SELFHEAL-PANEL-GROUP: below the global board, a per-project audits section
+// lets operators enable/disable per-project audit routines via PATCH /projects/{id}.
 
 // The self-learn routines expected to report every night. A routine with no
 // fresh heartbeat is surfaced as missed / never-reported rather than simply
@@ -69,14 +78,16 @@ type Row = {
 // Merge the known routines with whatever the API returned: every known routine
 // gets a row (so a never-run routine is visible), and any extra routine that has
 // reported but is not in the known set is appended so nothing is hidden.
+// Only considers heartbeats with no project_id (global routines).
 function buildRows(heartbeats: AuditHeartbeat[], now: number): Row[] {
-  const byRoutine = new Map(heartbeats.map((hb) => [hb.routine, hb]));
+  const globalHeartbeats = heartbeats.filter((hb) => hb.project_id == null);
+  const byRoutine = new Map(globalHeartbeats.map((hb) => [hb.routine, hb]));
   const rows: Row[] = KNOWN_ROUTINES.map(({ routine, label }) => {
     const heartbeat = byRoutine.get(routine);
     return { routine, label, state: rowState(heartbeat, now), heartbeat };
   });
   const known = new Set(KNOWN_ROUTINES.map((entry) => entry.routine));
-  for (const hb of heartbeats) {
+  for (const hb of globalHeartbeats) {
     if (!known.has(hb.routine)) {
       rows.push({ routine: hb.routine, label: hb.routine, state: rowState(hb, now), heartbeat: hb });
     }
@@ -84,10 +95,47 @@ function buildRows(heartbeats: AuditHeartbeat[], now: number): Row[] {
   return rows;
 }
 
+// Shared row renderer used by both the global board and per-project heartbeat lists.
+// Keeps the visual treatment identical between the two contexts.
+function HeartbeatRow({ row }: { row: Row }) {
+  return (
+    <li key={row.routine} data-testid="audit-row" data-routine={row.routine} data-state={row.state}>
+      <span className={`aos-pill ${PILL[row.state]}`}>{PILL_LABEL[row.state]}</span>{' '}
+      <span className="aos-strong">{row.label}</span>
+      {row.heartbeat ? (
+        <span className="aos-rowmeta">
+          {' '}· last {row.heartbeat.day}
+          {row.heartbeat.detail ? ` · ${row.heartbeat.detail}` : ''}
+        </span>
+      ) : (
+        <span className="aos-rowmeta"> · never reported</span>
+      )}
+      {row.heartbeat?.pr_url ? (
+        <>
+          {' '}
+          <a
+            className="aos-linkbtn"
+            href={row.heartbeat.pr_url}
+            target="_blank"
+            rel="noreferrer"
+            data-testid="audit-pr-link"
+          >
+            PR
+          </a>
+        </>
+      ) : null}
+    </li>
+  );
+}
+
 export function AuditsView() {
   const [heartbeats, setHeartbeats] = useState<AuditHeartbeat[]>([]);
+  const [projects, setProjects] = useState<Project[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -101,11 +149,41 @@ export function AuditsView() {
     }
   }, []);
 
+  const loadProjects = useCallback(async () => {
+    setProjectsError(null);
+    try {
+      setProjects(await fetchProjects());
+    } catch (err) {
+      setProjects([]);
+      setProjectsError(errorMessage(err));
+    } finally {
+      setProjectsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadProjects();
+  }, [load, loadProjects]);
 
-  const rows = buildRows(heartbeats, Date.now());
+  const handleToggle = useCallback(
+    async (project: Project) => {
+      setTogglingId(project.id);
+      try {
+        const updated = await updateProject(project.id, { audits_enabled: !project.audits_enabled });
+        setProjects((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      } catch {
+        // Reload from server to get ground truth on failure
+        void loadProjects();
+      } finally {
+        setTogglingId(null);
+      }
+    },
+    [loadProjects],
+  );
+
+  const now = Date.now();
+  const rows = buildRows(heartbeats, now);
   const attention = rows.filter((row) => row.state === 'missed' || row.state === 'failed').length;
 
   return (
@@ -136,33 +214,94 @@ export function AuditsView() {
         ) : (
           <ul className="aos-rows" style={{ marginTop: 12 }}>
             {rows.map((row) => (
-              <li key={row.routine} data-testid="audit-row" data-routine={row.routine} data-state={row.state}>
-                <span className={`aos-pill ${PILL[row.state]}`}>{PILL_LABEL[row.state]}</span>{' '}
-                <span className="aos-strong">{row.label}</span>
-                {row.heartbeat ? (
-                  <span className="aos-rowmeta">
-                    {' '}· last {row.heartbeat.day}
-                    {row.heartbeat.detail ? ` · ${row.heartbeat.detail}` : ''}
-                  </span>
-                ) : (
-                  <span className="aos-rowmeta"> · never reported</span>
-                )}
-                {row.heartbeat?.pr_url ? (
-                  <>
-                    {' '}
-                    <a
-                      className="aos-linkbtn"
-                      href={row.heartbeat.pr_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      data-testid="audit-pr-link"
-                    >
-                      PR
-                    </a>
-                  </>
-                ) : null}
-              </li>
+              <HeartbeatRow key={row.routine} row={row} />
             ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="aos-hud glass aos-card" style={{ marginTop: 16 }}>
+        <div className="aos-form-row" style={{ marginTop: 0, justifyContent: 'space-between' }}>
+          <span className="aos-eyebrow">Per-project audits</span>
+        </div>
+
+        {projectsError ? (
+          <p role="alert" className="aos-error">Projects unavailable: {projectsError}</p>
+        ) : null}
+
+        {projectsLoading ? (
+          <p className="aos-muted" style={{ margin: '12px 0 0' }}>Loading projects…</p>
+        ) : projects.length === 0 ? (
+          <p className="aos-muted" style={{ margin: '12px 0 0' }}>No projects found.</p>
+        ) : (
+          <ul className="aos-rows" style={{ marginTop: 12 }}>
+            {projects.map((project) => {
+              const projectHeartbeats = heartbeats.filter((hb) => hb.project_id === project.id);
+              const projectRows = projectHeartbeats.map((hb) => ({
+                routine: hb.routine,
+                label: hb.routine,
+                state: rowState(hb, now),
+                heartbeat: hb,
+              }));
+
+              return (
+                <li key={project.id} data-testid="audits-project-row" data-project-id={project.id}>
+                  <div className="aos-form-row" style={{ marginTop: 0, alignItems: 'center', gap: 8 }}>
+                    <span className="aos-strong">{project.name}</span>
+                    <button
+                      type="button"
+                      className={`aos-btn aos-btn-sm${project.audits_enabled ? ' aos-btn-active' : ''}`}
+                      onClick={() => void handleToggle(project)}
+                      disabled={togglingId === project.id}
+                      aria-pressed={project.audits_enabled}
+                      data-testid="audits-project-toggle"
+                    >
+                      {project.audits_enabled ? 'Enabled' : 'Disabled'}
+                    </button>
+                  </div>
+
+                  {project.audits_enabled && projectRows.length > 0 ? (
+                    <ul className="aos-rows" style={{ marginTop: 8 }}>
+                      {projectRows.map((row) => (
+                        <li
+                          key={row.routine}
+                          data-testid="audits-project-heartbeat"
+                          data-routine={row.routine}
+                          data-state={row.state}
+                        >
+                          <span className={`aos-pill ${PILL[row.state]}`}>{PILL_LABEL[row.state]}</span>{' '}
+                          <span className="aos-strong">{row.label}</span>
+                          {row.heartbeat ? (
+                            <span className="aos-rowmeta">
+                              {' '}· last {row.heartbeat.day}
+                              {row.heartbeat.detail ? ` · ${row.heartbeat.detail}` : ''}
+                            </span>
+                          ) : null}
+                          {row.heartbeat?.pr_url ? (
+                            <>
+                              {' '}
+                              <a
+                                className="aos-linkbtn"
+                                href={row.heartbeat.pr_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                data-testid="audit-pr-link"
+                              >
+                                PR
+                              </a>
+                            </>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : project.audits_enabled && projectRows.length === 0 ? (
+                    <p className="aos-muted" style={{ margin: '4px 0 0', fontSize: 12 }}>
+                      No heartbeats yet for this project.
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

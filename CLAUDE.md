@@ -56,6 +56,21 @@ Multiple Claude sessions operate on this repository at the same time. They share
 - **Never run `git reset --hard`, `git clean -fd`, or a forced checkout on the shared working tree without first running `git status`** and confirming no other session's untracked or uncommitted work would be destroyed. When in doubt, work in your own worktree instead.
 - Remove a worktree with `git worktree remove` only after its branch is pushed or merged.
 
+## Model routing and orchestration
+
+**Opus 4.8 orchestrates; it delegates, it does not grind.** It is pinned as the session model in `.claude/settings.json`, so this survives new sessions; this section survives auto-compaction (CLAUDE.md is re-injected, conversation is summarized). The orchestrator plans, decides, reviews, and routes each piece of work to the cheapest tier that clears the bar:
+
+| Work | Model |
+|------|-------|
+| Search / locate / grep-and-summarize; CI/PR watching; log parsing | Haiku subagent |
+| Mechanical edits, scaffolds, boilerplate, routine feature building | Sonnet subagent |
+| Architecture, hard debugging, adversarial review, final judgment | Opus (the orchestrator itself) |
+| Pure text/data slicing, deterministic transforms | no model — a script (the deterministic tier) |
+
+Discipline: delegate the top two rows **by default**, not occasionally; escalate to Opus only on the 3-strike / genuinely-hard trigger; **always verify delegated work against decisions that live in docs, not just code** (a subagent can silently reverse an operator choice it never saw). Keep the jCodeMunch ladder honest (outline → symbol → full read) — it is the token-routing analog of tier selection.
+
+This mirrors the product's own `llm_router` (ADR-0001): the cheapest capable tier first, the expensive tier reserved for high stakes, and an adversarial verifier keeping cheap-tier output honest.
+
 ## Output standards
 
 For major work, provide:

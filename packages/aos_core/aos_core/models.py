@@ -382,6 +382,35 @@ class ScheduleFire(AuditMixin, Base):
     job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
 
 
+class ActionRequest(AuditMixin, Base):
+    """The mandatory execution envelope for a high-impact action (AOS-AUTHORITY-ENVELOPE-001, P0-6).
+
+    The authority evaluator was advisory — nothing compelled an execution path
+    through it. Now a high-impact action (write/deploy/destructive/sensitive egress)
+    must be created here first: ``request_action`` records it and runs the policy;
+    approval flips ``execution_state`` to ``authorized``; and the execution
+    chokepoint (``enqueue_job``) refuses to run a high-impact action without an
+    authorized envelope. Low-impact actions auto-authorize.
+    """
+
+    __tablename__ = "action_requests"
+
+    action_class: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    actor: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
+    agent: Mapped[str | None] = mapped_column(String(128))
+    project_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("projects.id"), index=True)
+    target: Mapped[str | None] = mapped_column(Text)
+    sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
+    requested_capability: Mapped[str | None] = mapped_column(String(128))
+    payload_digest: Mapped[str | None] = mapped_column(String(128))
+    # allow | needs_approval
+    policy_decision: Mapped[str] = mapped_column(String(32), default="allow", nullable=False)
+    # pending | approved | rejected | auto_approved
+    approval_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
+    # requested | authorized | executed | rejected
+    execution_state: Mapped[str] = mapped_column(String(32), default="requested", nullable=False, index=True)
+
+
 class Agent(AuditMixin, Base):
     __tablename__ = "agents"
 

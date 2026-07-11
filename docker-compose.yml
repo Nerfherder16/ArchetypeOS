@@ -55,6 +55,13 @@ services:
       # the free Groq key; empty → POST /voice/speak returns 204 and the browser
       # falls back to speechSynthesis. Never hard-code the secret value here.
       TTS_API_KEY: ${GROQ_API_KEY:-}
+      # AOS-CONNECTOR-RUNTIME-001 (P0-4): forward the free-LLM-pool keys to the API
+      # too (not just the worker), so the connector registry that runs here agrees
+      # with the pool the worker actually builds from these same vars.
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

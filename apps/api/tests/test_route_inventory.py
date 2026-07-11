@@ -110,7 +110,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/nodes/route"),
         ("GET", "/nodes/{node_id}"),
         ("GET", "/connectors"),
+        ("POST", "/connectors/reconcile"),
         ("GET", "/connectors/{name}"),
+        ("POST", "/connectors/{name}/probe"),
         ("POST", "/connectors/{name}/health"),
         ("GET", "/authority/action-classes"),
         ("POST", "/authority/evaluate"),
@@ -168,11 +170,12 @@ def test_route_inventory_count() -> None:
     # {plan_id}/runs, GET /research-runs/{run_id}, POST /research-runs/{run_id}/
     # sources/{source_ref}/decision) = 71, plus the AOS-SELFHEAL heartbeat routes
     # (POST /audits/heartbeat, GET /audits/heartbeats) = 73, plus the per-project
-    # audit toggle (PATCH /projects/{project_id}) = 74.
-    # + AOS-NODE-IDENTITY-001 enrollment route (POST /nodes/enroll) = 75, plus the
+    # audit toggle (PATCH /projects/{project_id}) = 74, plus the
+    # AOS-NODE-IDENTITY-001 enrollment route (POST /nodes/enroll) = 75, the
     # AOS-AUTHORITY-ENVELOPE-001 action-request routes (POST /authority/actions,
     # POST /authority/actions/{id}/authorize, POST /authority/actions/{id}/reject,
-    # GET /authority/actions/{id}) = 79.
-    # + AOS-NODE-AGENT-001 routing route (GET /nodes/route) = 80.
-    assert len(EXPECTED_ROUTES) == 80
-    assert len(_actual_routes()) == 80
+    # GET /authority/actions/{id}) = 79, the AOS-NODE-AGENT-001 routing route
+    # (GET /nodes/route) = 80, and the AOS-CONNECTOR-RUNTIME-001 routes
+    # (POST /connectors/reconcile, POST /connectors/{name}/probe) = 82.
+    assert len(EXPECTED_ROUTES) == 82
+    assert len(_actual_routes()) == 82

@@ -122,6 +122,21 @@ def build_free_pool(env: dict | None = None, *, timeout: float = 120.0) -> list[
     return out
 
 
+def free_pool_configured(settings, env: dict | None = None) -> bool:
+    """True when the free rotation pool has at least one usable credential.
+
+    This reads the SAME source the worker's pool is actually built from — the
+    per-provider env keys in ``DEFAULT_FREE_POOL`` — plus the legacy single
+    ``llm_free_api_key``. The connector registry (which runs in the API) uses this
+    so its "free_llm_pool configured?" bit agrees with the pool the worker runs,
+    instead of the two processes disagreeing (finding P0-4).
+    """
+    if getattr(settings, "llm_free_api_key", ""):
+        return True
+    env = os.environ if env is None else env
+    return any(env.get(m.key_env) for m in DEFAULT_FREE_POOL)
+
+
 def free_pool_provider(env: dict | None = None, *, timeout: float = 120.0) -> RotatingProvider | None:
     """A RotatingProvider over the configured free pool, or None if none configured."""
     members = build_free_pool(env, timeout=timeout)

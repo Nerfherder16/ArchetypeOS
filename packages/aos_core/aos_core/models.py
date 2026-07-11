@@ -301,6 +301,24 @@ class Job(AuditMixin, Base):
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
 
 
+class JobOutbox(AuditMixin, Base):
+    """Transactional outbox for job delivery (AOS-JOBS-RELIABILITY-001, RFC-0014).
+
+    Written in the SAME transaction as its ``Job`` so origination is atomic: a
+    ``Job`` never exists without a delivery intent. A dispatcher publishes
+    undelivered rows to the Redis queue and stamps ``delivered_at``; a Redis
+    outage after the job commits can therefore no longer orphan a queued job —
+    the row stays undelivered and is retried, rather than lost (finding P0-1).
+    """
+
+    __tablename__ = "job_outbox"
+
+    job_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("jobs.id"), nullable=False, unique=True, index=True
+    )
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Schedule(AuditMixin, Base):
     __tablename__ = "schedules"
 

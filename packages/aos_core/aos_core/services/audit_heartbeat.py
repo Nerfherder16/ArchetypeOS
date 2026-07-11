@@ -6,6 +6,7 @@ One row per routine, upserted — the store is a live status board, not a log.
 
 from __future__ import annotations
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from ..models import AuditHeartbeat
@@ -37,8 +38,31 @@ def record_heartbeat(
         .one_or_none()
     )
     if row is None:
-        row = AuditHeartbeat(routine=routine, project_id=project_id)
+        # Build the row fully (heartbeat_status is NOT NULL) before flushing so the
+        # flush both satisfies the column and surfaces a uniqueness race.
+        row = AuditHeartbeat(
+            routine=routine,
+            project_id=project_id,
+            heartbeat_status=status,
+            day=day,
+            pr_url=pr_url,
+            detail=detail,
+        )
         db.add(row)
+        try:
+            db.flush()
+            db.commit()
+            db.refresh(row)
+            return row
+        except IntegrityError:
+            # A concurrent writer won the (routine, project) / global slot first
+            # (AOS-NODE-CONSTRAINTS-001). Fall through to update the winner's row.
+            db.rollback()
+            row = (
+                db.query(AuditHeartbeat)
+                .filter_by(routine=routine, project_id=project_id)
+                .one()
+            )
     row.heartbeat_status = status
     row.day = day
     row.pr_url = pr_url

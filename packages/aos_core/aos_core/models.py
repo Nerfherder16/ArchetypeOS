@@ -151,6 +151,11 @@ class Decision(AuditMixin, Base):
 
 class ResearchNote(AuditMixin, Base):
     __tablename__ = "research_notes"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: a unique job_id makes the note the single
+    # output of its originating job, so a redelivered research job cannot create a
+    # duplicate note (finding P0-3). NULL job_id (notes created outside a job) is
+    # exempt — Postgres treats NULLs as distinct.
+    __table_args__ = (UniqueConstraint("job_id", name="uq_research_notes_job_id"),)
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -160,6 +165,7 @@ class ResearchNote(AuditMixin, Base):
     findings: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     freshness: Mapped[str | None] = mapped_column(String(128))
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
 
 
 class ResearchPlan(AuditMixin, Base):
@@ -196,6 +202,8 @@ class ResearchRun(AuditMixin, Base):
     """
 
     __tablename__ = "research_runs"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: one run per originating job (finding P0-3).
+    __table_args__ = (UniqueConstraint("job_id", name="uq_research_runs_job_id"),)
 
     plan_id: Mapped[str] = mapped_column(GUID(), ForeignKey("research_plans.id"), nullable=False, index=True)
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
@@ -299,6 +307,29 @@ class Job(AuditMixin, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # AOS-JOBS-RELIABILITY-001 Slice 2 (RFC-0014): a worker takes a time-boxed lease
+    # when it claims a job. If the worker dies, the lease expires and the reaper
+    # recovers the job — closing the crash-recovery half of finding P0-1.
+    claimed_by: Mapped[str | None] = mapped_column(String(128))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class JobOutbox(AuditMixin, Base):
+    """Transactional outbox for job delivery (AOS-JOBS-RELIABILITY-001, RFC-0014).
+
+    Written in the SAME transaction as its ``Job`` so origination is atomic: a
+    ``Job`` never exists without a delivery intent. A dispatcher publishes
+    undelivered rows to the Redis queue and stamps ``delivered_at``; a Redis
+    outage after the job commits can therefore no longer orphan a queued job —
+    the row stays undelivered and is retried, rather than lost (finding P0-1).
+    """
+
+    __tablename__ = "job_outbox"
+
+    job_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("jobs.id"), nullable=False, unique=True, index=True
+    )
+    delivered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Schedule(AuditMixin, Base):
@@ -387,6 +418,8 @@ class Experiment(AuditMixin, Base):
 
 class NightlyDigest(AuditMixin, Base):
     __tablename__ = "nightly_digests"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: one digest per originating job (finding P0-3).
+    __table_args__ = (UniqueConstraint("job_id", name="uq_nightly_digests_job_id"),)
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     digest_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -394,10 +427,13 @@ class NightlyDigest(AuditMixin, Base):
     changes: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     recommendations: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     repeated_tasks: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
 
 
 class CouncilReview(AuditMixin, Base):
     __tablename__ = "council_reviews"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: one review per originating job (finding P0-3).
+    __table_args__ = (UniqueConstraint("job_id", name="uq_council_reviews_job_id"),)
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     question: Mapped[str | None] = mapped_column(Text)

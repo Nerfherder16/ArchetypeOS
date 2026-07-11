@@ -14,6 +14,7 @@ Capabilities:
 - Redis
 - API
 - worker
+- durable job execution (AOS-JOBS-RELIABILITY-001, RFC-0014: transactional outbox for atomic origination, leased claims + reaper for crash recovery, handler idempotency via unique origin job_id, dead-letter after retry budget, reconciliation sweep — at-least-once delivery with exactly-once effect)
 - web dashboard
 - GPU node
 - WSL node
@@ -39,4 +40,5 @@ Primary artifacts:
 - packages/aos_core (shared domain library: config/database/models/scanner + scan/digest/jobs/scheduler services; RFC-0006)
 - docs/rfc/RFC-0006-Shared-Core-Domain-Library.md
 - docs/rfc/RFC-0007-Scheduling-Control-Plane-Job-Origination.md (schedules-as-data; control plane decides + stores, nodes execute)
+- docs/rfc/RFC-0014-Durable-Job-Execution-Outbox-Leases-Idempotency.md (AOS-JOBS-RELIABILITY-001: durable jobs — outbox, leases, idempotency, dead-letter, reconciliation)
 

@@ -30,6 +30,9 @@ class FakeRedis:
     def lpush(self, name: str, value: str) -> None:
         self.queue.append(value)
 
+    def lrange(self, name: str, start: int, end: int) -> list[str]:
+        return list(self.queue)
+
 
 @pytest.fixture()
 def worker_db(tmp_path, monkeypatch) -> Generator[sessionmaker, None, None]:
@@ -345,11 +348,170 @@ def test_retry_then_fail(worker_db):
 
     with worker_db() as db:
         job = db.get(Job, job_id)
-        assert job.status == "failed"
+        # Slice 3: retry-budget exhaustion lands in dead_letter, not a bare "failed".
+        assert job.status == "dead_letter"
         assert job.attempts == worker.MAX_ATTEMPTS
         assert job.error
-    # Re-enqueued on every attempt except the final (failing) one.
+    # Re-enqueued on every attempt except the final (dead-lettered) one.
     assert len(client.queue) == worker.MAX_ATTEMPTS - 1
+
+
+def test_drain_outbox_delivers_deferred_jobs(worker_db):
+    # AOS-JOBS-RELIABILITY-001: the worker tick drains undelivered job-outbox rows
+    # so a job whose origination-time delivery was deferred (Redis was down) still
+    # reaches the queue once the broker is reachable.
+    from aos_core.models import JobOutbox
+
+    with worker_db() as db:
+        job = Job(job_type="test", status="queued")
+        db.add(job)
+        db.flush()
+        db.add(JobOutbox(job_id=job.id))  # undelivered
+        db.commit()
+        job_id = job.id
+
+    client = FakeRedis()
+    assert worker.drain_outbox(client) == 1
+    assert client.queue == [job_id]
+
+    with worker_db() as db:
+        assert db.query(JobOutbox).filter_by(job_id=job_id).one().delivered_at is not None
+
+
+def test_digest_idempotent_on_rerun(worker_db):
+    # AOS-JOBS-RELIABILITY-001 Slice 3: re-running a handler for the same job (as a
+    # crash-recovery redelivery would) returns the existing output, never a duplicate.
+    from aos_core.models import NightlyDigest
+
+    with worker_db() as db:
+        project = Project(name="Idem", slug="idem-digest")
+        db.add(project)
+        db.flush()
+        job = Job(job_type="project_digest", status="running", project_id=project.id)
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        first = worker._run_project_digest(job, db)
+        second = worker._run_project_digest(job, db)
+        assert first["digest_id"] == second["digest_id"]
+        assert db.query(NightlyDigest).filter(NightlyDigest.job_id == job_id).count() == 1
+
+
+def test_research_idempotent_on_rerun(worker_db):
+    from aos_core.models import ResearchNote
+
+    with worker_db() as db:
+        project = Project(name="IdemR", slug="idem-research")
+        db.add(project)
+        db.flush()
+        db.add(
+            KnowledgePage(
+                project_id=project.id,
+                title="asyncpg pooling",
+                vault_path="vault/repos/asyncpg.md",
+                page_type="repository",
+            )
+        )
+        job = Job(
+            job_type="research",
+            status="running",
+            project_id=project.id,
+            payload={"question": "adopt asyncpg?", "sensitivity": "public"},
+        )
+        db.add(job)
+        db.commit()
+        job_id = job.id
+
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        first = worker._run_research(job, db)
+        second = worker._run_research(job, db)
+        assert first["note_id"] == second["note_id"]
+        assert db.query(ResearchNote).filter(ResearchNote.job_id == job_id).count() == 1
+
+
+def test_research_note_job_id_unique_backstop(worker_db):
+    # The unique(job_id) constraint is the hard backstop behind the get-or-create
+    # guard: a second note for the same job cannot be committed.
+    import pytest as _pytest
+    from sqlalchemy.exc import IntegrityError
+
+    from aos_core.models import ResearchNote
+
+    with worker_db() as db:
+        project = Project(name="Uniq", slug="uniq-note")
+        db.add(project)
+        db.flush()
+        job = Job(job_type="research", status="running", project_id=project.id)
+        db.add(job)
+        db.commit()
+        db.add(ResearchNote(project_id=project.id, title="a", job_id=job.id))
+        db.commit()
+        db.add(ResearchNote(project_id=project.id, title="b", job_id=job.id))
+        with _pytest.raises(IntegrityError):
+            db.commit()
+
+
+def test_reap_requeues_crashed_job(worker_db):
+    # AOS-JOBS-RELIABILITY-001 Slice 2: a worker that died mid-job leaves a running
+    # row with an expired lease; worker.reap recovers it (re-queues + redelivers),
+    # closing the crash-recovery half of finding P0-1.
+    from datetime import datetime, timezone
+
+    from aos_core.models import JobOutbox
+
+    dead_past = datetime(2000, 1, 1, tzinfo=timezone.utc)
+    with worker_db() as db:
+        job = Job(
+            job_type="test",
+            status="running",
+            attempts=1,
+            claimed_by="dead-worker",
+            lease_expires_at=dead_past,
+        )
+        db.add(job)
+        db.flush()
+        db.add(JobOutbox(job_id=job.id, delivered_at=dead_past))  # already delivered once
+        db.commit()
+        job_id = job.id
+
+    client = FakeRedis()
+    assert worker.reap(client) == 1
+    assert client.queue == [job_id]
+
+    with worker_db() as db:
+        row = db.get(Job, job_id)
+        assert row.status == "queued"
+        assert row.claimed_by is None and row.lease_expires_at is None
+
+
+def test_reconcile_restores_job_stranded_from_broker(worker_db):
+    # AOS-JOBS-RELIABILITY-001 Slice 4: a job marked queued and previously delivered
+    # whose id is no longer in the broker list (Redis was flushed) is re-armed and
+    # redelivered — the gap the outbox alone cannot see.
+    from datetime import datetime, timezone
+
+    from aos_core.models import JobOutbox
+
+    with worker_db() as db:
+        job = Job(job_type="test", status="queued")
+        db.add(job)
+        db.flush()
+        # Outbox says delivered, but the broker (empty FakeRedis) has lost the id.
+        db.add(JobOutbox(job_id=job.id, delivered_at=datetime(2026, 7, 11, tzinfo=timezone.utc)))
+        db.commit()
+        job_id = job.id
+
+    client = FakeRedis()  # empty: the id is not in the queue
+    summary = worker.reconcile_now(client)
+    assert summary["restored"] == 1
+    assert client.queue == [job_id]  # redelivered
+
+    # Idempotent: once it is back in the queue, a second sweep restores nothing.
+    assert worker.reconcile_now(client)["restored"] == 0
 
 
 def test_queue_is_single_sourced_from_core():

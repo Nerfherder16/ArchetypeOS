@@ -1,10 +1,11 @@
 # RFC-0013 — Capability-Level Reuse Matching
 
-- Status: **Proposed**
-- Date: 2026-07-10
+- Status: **Accepted — Slices 1-4 shipped** (Slice 1 extraction merged earlier; Slices 2-4 storage/embedding/matching + the portfolio benchmark landed by AOS-CAPABILITY-REUSE-001)
+- Date: 2026-07-10 (accepted 2026-07-11)
 - Author: Chief Architect / Orchestrator (laptop session)
 - Evidence: `docs/reviews/2026-07-10-recall-shakedown.md`; task #51
 - Depends on: RFC-0008 (distillation), RFC-0010 (embedding tier), #50 (bounded prompt — merged)
+- Implemented by: `.archetype/work/AOS-CAPABILITY-REUSE-001.md` (`RepositoryCapability` model + migration 0026, per-capability embeddings at distill time, `recommend_reuse` capability path, `scripts/reality_test_capability_reuse.py`); lesson LES-039
 
 ## 1. Summary
 

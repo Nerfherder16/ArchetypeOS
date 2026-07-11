@@ -37,7 +37,7 @@ from ..llm import InstrumentedProvider
 from .llm_pool import free_pool_provider
 from .llm_router import Sensitivity, Tier, route
 from .verifier import verified_generate
-from ..models import KnowledgePage, Repository, RepositoryDNA
+from ..models import KnowledgePage, Repository, RepositoryCapability, RepositoryDNA
 from ..repository_scanner import EXTENSIONS, LANGUAGE_CLASS, safe_repo_path
 from .council import _loads_tolerant
 
@@ -1202,6 +1202,59 @@ def _read_primary_readme(repository: Repository) -> str:
         return ""
 
 
+def _persist_capabilities(
+    db: Session, repository: Repository, page: KnowledgePage, narrative: dict, embedder
+) -> int:
+    """Replace a repo's persisted capabilities from the reasoned narrative (RFC-0013 Slice 2/3).
+
+    The narrative's ``capabilities`` (``[{name, description, provenance}]``, already
+    grounded + capped in :func:`reason_over_source`) are stored one row per capability
+    with a per-capability embedding of ``name + " " + description`` — the granularity
+    that lets the Transfer Engine match a need against a single capability's vector.
+
+    **Replace-only-when-produced:** the rows are wiped and rebuilt only when this run
+    actually extracted capabilities (a real reasoned tier). A deterministic re-distill
+    (narrative ``{}`` → empty) leaves any prior reasoned capabilities untouched, exactly
+    like the page embedding — so the hermetic CI provider never destroys good data.
+    Never raises (a bad embed → NULL vector, that capability still stored for lexical
+    matching). Returns the number of capability rows written (0 when none produced).
+    """
+    capabilities = narrative.get("capabilities") or []
+    if not capabilities:
+        return 0
+
+    # Wholesale replace: the capability set is a pure function of the current source,
+    # so stale rows must not accumulate across re-distills.
+    db.query(RepositoryCapability).filter(
+        RepositoryCapability.repository_id == repository.id
+    ).delete(synchronize_session=False)
+
+    written = 0
+    for cap in capabilities:
+        name = str(cap.get("name") or "").strip()
+        if not name:
+            continue
+        description = str(cap.get("description") or "").strip()
+        provenance = cap.get("provenance") or []
+        embed_text = f"{name} {description}".strip()
+        try:
+            vec = embedder.embed(embed_text)
+        except Exception:
+            vec = None
+        db.add(
+            RepositoryCapability(
+                repository_id=repository.id,
+                knowledge_page_id=page.id,
+                name=name[:255],
+                description=description,
+                provenance=provenance,
+                embedding=vec,
+            )
+        )
+        written += 1
+    return written
+
+
 def distill_repository(
     db: Session, *, repository_id: str, knowledge_root: Path | str, embedder=None
 ) -> KnowledgePage:
@@ -1339,6 +1392,10 @@ def distill_repository(
 
     if dna is not None:
         dna.purpose = distillation["summary"]
+
+    # Flush so a newly-added page has its id before capabilities link to it (RFC-0013).
+    db.flush()
+    _persist_capabilities(db, repository, page, narrative, embedder)
 
     db.commit()
     db.refresh(page)

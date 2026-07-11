@@ -46,13 +46,22 @@ def register_node(
     max_sensitivity: str = "public",
     write_access: bool = False,
     capabilities: list[dict] | None = None,
+    allow_policy: bool = False,
 ) -> Node:
-    """Register (or re-register, by name) a node and replace its declared capabilities."""
+    """Register (or re-register, by name) a node and replace its declared capabilities.
+
+    ``allow_policy`` gates the operator-owned fields (``write_access``,
+    ``max_sensitivity``): only enrollment sets them (AOS-NODE-IDENTITY-001, finding
+    P0-5). A self-registering node cannot self-grant write access or raise its
+    sensitivity ceiling — a new node stays read-only/public, and an existing node
+    keeps the policy the operator enrolled it with.
+    """
     node = _get_or_create_node(db, name)
     node.node_type = node_type
     node.endpoint = endpoint
-    node.max_sensitivity = max_sensitivity
-    node.write_access = write_access
+    if allow_policy:
+        node.max_sensitivity = max_sensitivity
+        node.write_access = write_access
     node.node_status = "healthy"
     node.last_seen_at = now_utc()
     db.flush()

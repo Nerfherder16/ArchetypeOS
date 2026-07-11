@@ -21,6 +21,7 @@ Capabilities:
 - GPU node
 - WSL node
 - concurrency-safe node registry (AOS-NODE-CONSTRAINTS-001, finding P1-3: unique node name, unique (node_id, capability), and a partial unique index for one global (routine, NULL) audit heartbeat — the uniqueness the query-then-insert services relied on)
+- per-node service identity (AOS-NODE-IDENTITY-001, finding P0-5: operator-approved enrollment issues a hashed bearer credential; heartbeat requires the node token (X-Node-Token) so a client can no longer report false health; self-register is non-escalating — only enrollment grants write_access / a higher max_sensitivity; credentials rotate and revoke)
 - GitHub integration
 - database schema migrations (Alembic)
 

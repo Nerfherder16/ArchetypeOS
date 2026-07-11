@@ -27,6 +27,7 @@ Capabilities:
 - GitHub integration
 - database schema migrations (Alembic)
 - unified connector runtime (AOS-CONNECTOR-RUNTIME-001, finding P0-4: the free-LLM-pool "configured" bit reads the same per-provider env keys the worker's pool is built from, so API and worker agree; GET /connectors is read-only; reachability is an active TCP probe separate from credential-present; sync moved to POST /connectors/reconcile)
+- static web deployment (AOS-WEB-DEPLOY-001, finding P1-5: a multi-stage image builds the Vite SPA to static assets served by Caddy behind a single-origin /api reverse proxy — replacing the Vite dev server; relative baked API base fixes the tailnet base-URL fragility of LES-L04; immutable-asset + no-cache-index cache policy + a /healthz check)
 
 Primary artifacts:
 

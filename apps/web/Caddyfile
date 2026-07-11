@@ -1,0 +1,33 @@
+# AOS-WEB-DEPLOY-001 (finding P1-5): serve the built SPA and reverse-proxy the API
+# under one origin, so there is no cross-origin/base-URL fragility and hashed assets
+# are cached aggressively while index.html is always revalidated.
+{
+	admin off
+	auto_https off
+}
+
+:80 {
+	# Health endpoint for the compose healthcheck.
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	# Single-origin API: handle_path strips the /api prefix, so the browser's
+	# /api/connectors reaches the API's /connectors. Upstream is overridable.
+	handle_path /api/* {
+		reverse_proxy {$API_UPSTREAM:api:8000}
+	}
+
+	# Static SPA. Hashed build assets are immutable; index.html must never be
+	# cached so a new deploy is picked up immediately. Unknown paths fall back to
+	# index.html for client-side (hash) routing.
+	handle {
+		root * /srv
+		encode gzip
+		@immutable path *.js *.css *.woff2 *.woff *.ttf *.png *.jpg *.jpeg *.svg *.ico *.webp
+		header @immutable Cache-Control "public, max-age=31536000, immutable"
+		header /index.html Cache-Control "no-cache"
+		try_files {path} /index.html
+		file_server
+	}
+}

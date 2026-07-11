@@ -35,3 +35,4 @@ data/artifacts/
 
 # Local-LLM eval spike log (AOS-LLM-LOCAL-001)
 .archetype/eval/
+.venv312/

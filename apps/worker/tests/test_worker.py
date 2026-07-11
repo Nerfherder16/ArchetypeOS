@@ -352,6 +352,28 @@ def test_retry_then_fail(worker_db):
     assert len(client.queue) == worker.MAX_ATTEMPTS - 1
 
 
+def test_drain_outbox_delivers_deferred_jobs(worker_db):
+    # AOS-JOBS-RELIABILITY-001: the worker tick drains undelivered job-outbox rows
+    # so a job whose origination-time delivery was deferred (Redis was down) still
+    # reaches the queue once the broker is reachable.
+    from aos_core.models import JobOutbox
+
+    with worker_db() as db:
+        job = Job(job_type="test", status="queued")
+        db.add(job)
+        db.flush()
+        db.add(JobOutbox(job_id=job.id))  # undelivered
+        db.commit()
+        job_id = job.id
+
+    client = FakeRedis()
+    assert worker.drain_outbox(client) == 1
+    assert client.queue == [job_id]
+
+    with worker_db() as db:
+        assert db.query(JobOutbox).filter_by(job_id=job_id).one().delivered_at is not None
+
+
 def test_queue_is_single_sourced_from_core():
     # The worker's QUEUE must be the shared aos_core constant, not a local
     # literal (RFC-0007 / AOS-SCHED-001: one job-origination source of truth).

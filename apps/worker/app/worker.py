@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from aos_core.config import get_settings
 from aos_core.database import SessionLocal
 from aos_core.models import Job
-from aos_core.services.jobs import QUEUE
+from aos_core.services.jobs import QUEUE, dispatch_outbox
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
 from aos_core.services.council import council_provider, run_council
@@ -160,10 +160,25 @@ def handle_failure(job_id: str, client: "redis.Redis", error: str) -> None:
         logger.error("job failed after %s attempts: %s", attempts, job_id)
 
 
+def drain_outbox(client: "redis.Redis") -> int:
+    """Deliver any undelivered job-outbox rows to the queue (AOS-JOBS-RELIABILITY-001).
+
+    Runs each worker tick so jobs whose immediate delivery was deferred (Redis was
+    down when they were originated) are picked up once the broker is reachable
+    again. Returns the number delivered.
+    """
+    with SessionLocal() as db:
+        return dispatch_outbox(db, client)
+
+
 def main() -> None:
     logger.info("worker starting")
     client = redis.Redis.from_url(settings.redis_url)
     while True:
+        try:
+            drain_outbox(client)
+        except Exception:  # noqa: BLE001 — outbox recovery must never crash the loop
+            logger.exception("outbox drain failed")
         item = client.brpop(QUEUE, timeout=5)
         if not item:
             continue

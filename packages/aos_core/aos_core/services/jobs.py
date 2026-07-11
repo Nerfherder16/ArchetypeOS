@@ -25,8 +25,11 @@ from uuid import uuid4
 
 from sqlalchemy import or_, update
 
-from ..models import ActionRequest, Job, JobOutbox, now_utc
+from ..models import ActionRequest, Job, JobOutbox, Node, now_utc
 from .authority import requires_approval
+from .authority_envelope import consume_action, is_authorized
+from .job_requirements import get_requirement
+from .routing import node_eligibility, route_job
 
 QUEUE = "archetypeos:jobs"
 
@@ -38,6 +41,10 @@ DEFAULT_LEASE_SECONDS = 300
 logger = logging.getLogger("archetypeos.jobs")
 
 
+class UnknownJobType(ValueError):
+    """Raised when a job of an unregistered ``job_type`` is originated."""
+
+
 def enqueue_job(
     db,
     client,
@@ -47,25 +54,34 @@ def enqueue_job(
     repository_id: str | None = None,
     payload: dict | None = None,
     priority: int = 100,
-    action_class: str = "read_only",
-    sensitivity: str = "public",
     action_request: ActionRequest | None = None,
 ) -> Job:
     """Create a queued ``Job`` + its outbox row atomically, then best-effort deliver.
 
     The job is durable once this returns, whether or not Redis accepted the push.
 
-    Authority gate (finding P0-6): origination is the single execution chokepoint,
-    so a **high-impact** action (write/deploy/destructive/sensitive egress) is
-    refused here unless it carries an authorized ``ActionRequest`` for the same
-    class. Low-impact ``read_only`` jobs (the default, and every current job type)
-    pass straight through, so the common path is unchanged.
+    Authority gate (finding P0-6, hardened by AOS-AUTHORITY-HARDEN-001): origination
+    is the single execution chokepoint. The action class + sensitivity are DERIVED
+    SERVER-SIDE from the job registry — never accepted from the caller — so a client
+    cannot submit a write/egress handler as ``read_only``. An unknown ``job_type`` is
+    rejected before any row is written. A high-impact action is refused unless it
+    carries an authorized ``ActionRequest`` for the same class, which is then consumed
+    exactly once (atomic CAS) and linked to the job. Low-impact ``read_only`` jobs
+    (every current job type) pass straight through, so the common path is unchanged.
     """
+    requirement = get_requirement(job_type)
+    if requirement is None:
+        # Reject unknown job types BEFORE persistence (was: durably queued, then
+        # discovered unroutable at worker dispatch).
+        raise UnknownJobType(f"unknown job_type {job_type!r}")
+    action_class = requirement.action_class
+    sensitivity = requirement.sensitivity
+
     if requires_approval(action_class, sensitivity=sensitivity):
         if (
             action_request is None
             or action_request.action_class != action_class
-            or action_request.execution_state != "authorized"
+            or not is_authorized(action_request)
         ):
             raise PermissionError(
                 f"job_type {job_type!r} ({action_class}) requires an authorized ActionRequest"
@@ -78,14 +94,25 @@ def enqueue_job(
         payload=payload or {},
         priority=priority,
         status="queued",
+        # Requirements are server-derived (AOS-NODE-EXECUTION-001) — routing sends the
+        # job only to a node that can run it.
+        required_capability=requirement.capability,
+        sensitivity=sensitivity,
+        requires_write=requirement.requires_write,
     )
     db.add(job)
     db.flush()  # assign job.id so the outbox row can reference it in the same txn
+    _route(db, job)
     outbox = JobOutbox(job_id=job.id)
     db.add(outbox)
     if action_request is not None:
-        # The envelope is consumed by exactly this job, committed in the same txn.
-        action_request.execution_state = "executed"
+        # Consume the envelope EXACTLY once (atomic CAS) and link it to this job, in
+        # the same transaction — so double-origination cannot reuse one approval.
+        if not consume_action(db, action_request, job_id=job.id):
+            db.rollback()
+            raise PermissionError(
+                f"ActionRequest {action_request.id} is not consumable (already used/expired/rejected)"
+            )
     db.commit()  # Job + JobOutbox (+ envelope) committed together — durable before Redis
     db.refresh(job)
 
@@ -134,6 +161,66 @@ def dispatch_outbox(db, client, *, limit: int = 100) -> int:
     return delivered
 
 
+def _route(db, job: Job, *, now: datetime | None = None) -> None:
+    """Route a job to an eligible node and persist the decision (AOS-NODE-EXECUTION-001).
+
+    Sets ``assigned_node_id`` + ``routing_status`` (``routed`` / ``no_eligible_node``)
+    + a deterministic ``routing_explanation`` + ``routed_at``. A job with no eligible
+    node stays ``queued`` and unassigned — visibly waiting, never lost — and the
+    reroute sweep assigns it once a node becomes eligible.
+    """
+    now = now or now_utc()
+    decision = route_job(
+        db,
+        required_capability=job.required_capability,
+        sensitivity=job.sensitivity,
+        requires_write=job.requires_write,
+        now=now,
+    )
+    job.assigned_node_id = decision.node_id
+    job.routing_status = "routed" if decision.node_id is not None else "no_eligible_node"
+    job.routing_explanation = decision.explanation
+    job.routed_at = now
+
+
+def reroute_waiting_jobs(db, *, now: datetime | None = None) -> int:
+    """Re-route jobs that have no live eligible node assignment; return count routed.
+
+    Covers two cases (finding: "restored node health allows waiting jobs to route";
+    "node failure expires assignment"): a ``no_eligible_node`` job for which a node
+    has since become eligible, and a still-``queued`` job whose assigned node is gone
+    or no longer eligible. Only unclaimed queued jobs are touched — a running job's
+    recovery is the WP1 lease reaper's job, not this sweep's.
+    """
+    now = now or now_utc()
+    routed = 0
+    waiting = (
+        db.query(Job)
+        .filter(Job.status == "queued", Job.claimed_by.is_(None))
+        .all()
+    )
+    for job in waiting:
+        # A job assigned to a node that is still eligible needs no re-routing.
+        if job.assigned_node_id is not None:
+            node = db.get(Node, job.assigned_node_id)
+            if node is not None:
+                ok, _reason = node_eligibility(
+                    node,
+                    required_capability=job.required_capability,
+                    sensitivity=job.sensitivity,
+                    requires_write=job.requires_write,
+                    now=now,
+                )
+                if ok:
+                    continue
+        before = job.assigned_node_id
+        _route(db, job, now=now)
+        if job.assigned_node_id is not None and job.assigned_node_id != before:
+            routed += 1
+    db.commit()
+    return routed
+
+
 @dataclass(frozen=True)
 class Claim:
     """Proof of active ownership returned by a winning :func:`claim_job`.
@@ -175,6 +262,78 @@ def claim_job(
             Job.id == job_id,
             Job.status.in_(("queued", "running")),
             or_(Job.lease_expires_at.is_(None), Job.lease_expires_at < now),
+        )
+        .values(
+            status="running",
+            claimed_by=worker_id,
+            claim_token=token,
+            lease_expires_at=expires,
+            started_at=now,
+            attempts=Job.attempts + 1,
+        )
+    )
+    result = db.execute(stmt)
+    db.commit()
+    if result.rowcount == 1:
+        return Claim(job_id=job_id, worker_id=worker_id, claim_token=token, lease_expires_at=expires)
+    return None
+
+
+def claim_job_for_node(
+    db,
+    job_id: str,
+    worker_id: str,
+    *,
+    node: Node | None = None,
+    lease_seconds: int = DEFAULT_LEASE_SECONDS,
+    now: datetime | None = None,
+) -> Claim | None:
+    """Claim a job ONLY if this node is assigned + eligible (AOS-NODE-EXECUTION-001).
+
+    Layers node routing onto the WP1 fencing claim:
+
+    * **Assignment** — the claim CAS is gated on ``assigned_node_id IN (NULL, this
+      node)``, so a worker can never claim a job routed to a *different* node (the
+      classic global-queue bypass). A worker with no node identity (``node=None``)
+      can only claim unassigned jobs.
+    * **Eligibility** — when the claiming node is known, it is re-validated at claim
+      time (capability ∈ node caps ∧ sensitivity ≤ ceiling ∧ write ≤ policy ∧ fresh
+      health), NOT trusted from the origination-time routing decision.
+    * **Fencing** — on success a fresh ``claim_token`` is minted exactly as
+      :func:`claim_job`, so all the WP1 ownership guarantees still hold.
+
+    Returns a :class:`Claim` if won, else ``None``.
+    """
+    now = now or now_utc()
+    claiming_node_id = node.id if node is not None else None
+
+    job = db.get(Job, job_id)
+    if job is None:
+        return None
+    # Assignment: refuse a job routed to another node before touching the row.
+    if job.assigned_node_id is not None and job.assigned_node_id != claiming_node_id:
+        return None
+    # Eligibility: only enforceable when we know which node is claiming.
+    if node is not None:
+        eligible, _reason = node_eligibility(
+            node,
+            required_capability=job.required_capability,
+            sensitivity=job.sensitivity,
+            requires_write=job.requires_write,
+            now=now,
+        )
+        if not eligible:
+            return None
+
+    token = uuid4().hex
+    expires = now + timedelta(seconds=lease_seconds)
+    stmt = (
+        update(Job)
+        .where(
+            Job.id == job_id,
+            Job.status.in_(("queued", "running")),
+            or_(Job.lease_expires_at.is_(None), Job.lease_expires_at < now),
+            or_(Job.assigned_node_id.is_(None), Job.assigned_node_id == claiming_node_id),
         )
         .values(
             status="running",
@@ -392,17 +551,23 @@ def reconcile(db, client, *, max_attempts: int, now: datetime | None = None) -> 
         if restored:
             db.commit()
             delivered += dispatch_outbox(db, client)
-    return {"delivered": delivered, "requeued": requeued, "restored": restored}
+    # AOS-NODE-EXECUTION-001: assign waiting jobs to a node that has since become
+    # eligible, and re-route jobs whose assigned node is gone/unhealthy.
+    rerouted = reroute_waiting_jobs(db, now=now)
+    return {"delivered": delivered, "requeued": requeued, "restored": restored, "rerouted": rerouted}
 
 
 __all__ = [
     "QUEUE",
     "DEFAULT_LEASE_SECONDS",
     "Claim",
+    "UnknownJobType",
     "enqueue_job",
     "dispatch_outbox",
     "reconcile",
+    "reroute_waiting_jobs",
     "claim_job",
+    "claim_job_for_node",
     "renew_lease",
     "complete_job",
     "release_for_retry",

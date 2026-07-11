@@ -33,6 +33,8 @@ class RepositoryCreate(BaseModel):
     local_path: str
     default_branch: str | None = None
     remote_url: str | None = None
+    # AOS-AUTHORITY-HARDEN-001: data-sensitivity policy; drives egress approval.
+    sensitivity: str = "public"
 
 
 class RepositoryRead(BaseModel):
@@ -43,6 +45,7 @@ class RepositoryRead(BaseModel):
     default_branch: str | None
     remote_url: str | None
     is_read_only: bool
+    sensitivity: str
     status: str
     last_scanned_at: datetime | None
     version: int
@@ -74,6 +77,14 @@ class JobRead(BaseModel):
     started_at: datetime | None
     finished_at: datetime | None
     attempts: int
+    # AOS-NODE-EXECUTION-001: routing decision, surfaced for the Control Tower audit.
+    required_capability: str | None = None
+    sensitivity: str = "public"
+    requires_write: bool = False
+    assigned_node_id: str | None = None
+    routing_status: str = "unrouted"
+    routing_explanation: str | None = None
+    routed_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -762,6 +773,10 @@ class ActionRequestRead(BaseModel):
     updated_at: datetime
     # AOS-AUTH-BOUNDARY-001: the operator who approved/rejected (audit trail).
     updated_by: str
+    # AOS-AUTHORITY-HARDEN-001: binding + execution linkage + expiry.
+    repository_id: str | None = None
+    job_id: str | None = None
+    expires_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

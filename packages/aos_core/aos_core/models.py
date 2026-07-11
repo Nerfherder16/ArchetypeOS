@@ -80,10 +80,18 @@ class Repository(AuditMixin, Base):
     default_branch: Mapped[str | None] = mapped_column(String(255))
     remote_url: Mapped[str | None] = mapped_column(Text)
     is_read_only: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # AOS-AUTHORITY-HARDEN-001: the repository's data-sensitivity policy. Egress of
+    # its content (e.g. distillation to a model provider) derives the authority
+    # envelope's sensitivity from HERE, instead of hardcoding "public" — a private
+    # repository's content therefore requires approval to egress.
+    sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
     last_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     project: Mapped[Project] = relationship(back_populates="repositories")
     dna: Mapped["RepositoryDNA | None"] = relationship(back_populates="repository", cascade="all, delete-orphan")
+    capabilities: Mapped[list["RepositoryCapability"]] = relationship(
+        back_populates="repository", cascade="all, delete-orphan"
+    )
 
 
 class RepositoryDNA(AuditMixin, Base):
@@ -103,6 +111,46 @@ class RepositoryDNA(AuditMixin, Base):
     evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
 
     repository: Mapped[Repository] = relationship(back_populates="dna")
+
+
+class RepositoryCapability(AuditMixin, Base):
+    """A single named, reuse-oriented capability extracted from a repository (RFC-0013).
+
+    Distillation's reasoned tier already names the concrete, reusable capabilities a
+    *different* project could borrow (``{name, description, provenance}``); Slice 1
+    only rendered them into the vault markdown. This table persists them at
+    **capability granularity** so the Transfer Engine can match a reuse need against a
+    *single capability's* embedding (high cosine) instead of a whole-product blob
+    (noise) — the granularity fix RFC-0013 identifies. One row per capability; a repo
+    has several. ``embedding`` reuses the RFC-0010 dialect-variant column (real
+    ``VECTOR(384)`` on postgres, benign NULL JSON on sqlite), embedding
+    ``name + " " + description``. Rows are replaced wholesale on every re-distill
+    (the capability set is a pure function of the current source), so no per-row
+    version drift accumulates.
+    """
+
+    __tablename__ = "repository_capabilities"
+    __table_args__ = (
+        Index("ix_repository_capabilities_repository_id", "repository_id"),
+    )
+
+    repository_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("repositories.id"), nullable=False
+    )
+    # The vault page this capability was rendered into — evidence provenance; nullable
+    # so a capability can outlive a page row without a hard FK failure.
+    knowledge_page_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("knowledge_pages.id"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    # File path(s) the capability lives in — every capability is grounded to at least
+    # one cited file (``_drop_uncited_capabilities``); this is what a recommendation
+    # points a borrower at.
+    provenance: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    embedding: Mapped[list[float] | None] = mapped_column(EmbeddingColumn, nullable=True)
+
+    repository: Mapped[Repository] = relationship(back_populates="capabilities")
 
 
 class ArchitectureNode(AuditMixin, Base):
@@ -360,6 +408,20 @@ class Job(AuditMixin, Base):
     # fail, retry) is a compare-and-swap on this token, so a claim reclaimed by the
     # reaper or another worker (which mints a NEW token) invalidates the old owner.
     claim_token: Mapped[str | None] = mapped_column(String(64))
+    # AOS-NODE-EXECUTION-001: routing binds a job to the node allowed to run it.
+    # ``required_capability``/``sensitivity``/``requires_write`` are the execution
+    # requirements DERIVED SERVER-SIDE at origination (from the job registry, never
+    # trusted from the client). ``assigned_node_id`` is the node routing chose;
+    # ``routing_status`` is ``unrouted`` → ``routed`` / ``no_eligible_node``;
+    # ``routing_explanation`` is the deterministic Control-Tower reason; ``routed_at``
+    # stamps the decision. A worker may only claim a job assigned to its own node.
+    required_capability: Mapped[str | None] = mapped_column(String(128))
+    sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
+    requires_write: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    assigned_node_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("nodes.id"), index=True)
+    routing_status: Mapped[str] = mapped_column(String(32), default="unrouted", nullable=False)
+    routing_explanation: Mapped[str | None] = mapped_column(Text)
+    routed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class JobOutbox(AuditMixin, Base):
@@ -434,6 +496,9 @@ class ActionRequest(AuditMixin, Base):
     actor: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
     agent: Mapped[str | None] = mapped_column(String(128))
     project_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("projects.id"), index=True)
+    # AOS-AUTHORITY-HARDEN-001: bind the envelope to the concrete target so an
+    # approval for one repository/payload cannot authorize another.
+    repository_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("repositories.id"), index=True)
     target: Mapped[str | None] = mapped_column(Text)
     sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
     requested_capability: Mapped[str | None] = mapped_column(String(128))
@@ -444,6 +509,10 @@ class ActionRequest(AuditMixin, Base):
     approval_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
     # requested | authorized | executed | rejected
     execution_state: Mapped[str] = mapped_column(String(32), default="requested", nullable=False, index=True)
+    # AOS-AUTHORITY-HARDEN-001: execution linkage (which job consumed this envelope)
+    # and an expiry so a pending/authorized envelope does not live forever.
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Agent(AuditMixin, Base):

@@ -19,6 +19,7 @@ from aos_core.services.node_identity import (
 )
 from aos_core.services.nodes import record_heartbeat, register_node
 from aos_core.services.routing import route_job
+from aos_core.sensitivity import validate_sensitivity
 
 from ..security import require_operator
 
@@ -163,6 +164,12 @@ def route(
 ) -> RoutingDecisionRead:
     # Capability/sensitivity/write/health-aware routing with a deterministic
     # explanation the Control Tower can show (AOS-NODE-AGENT-001, finding P1-2).
+    # AOS-NODE-EXECUTION-001: an unknown sensitivity is a 422, not a silent
+    # fail-open to public.
+    try:
+        validate_sensitivity(sensitivity)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     decision = route_job(
         db,
         required_capability=capability,

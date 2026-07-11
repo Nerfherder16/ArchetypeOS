@@ -38,6 +38,20 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - **P2 AOS-RESEARCH-003** — multi-phase research loop (persisted plan; search/fetch/verify/synthesize recorded; open questions → follow-ups).
 - **AOS-WEB-SPINE-001** (enabler) — split `main.tsx` into app bootstrap + per-view modules; project context provider; query/cache layer; URL routing. Prereq/booster for AOS-VOICE-PROJECT-001 and the UX-IA work.
 
+### Intelligence-loop re-centering (Proposed — from AOS-REVIEW-003, 2026-07-11)
+
+Closes the **right-of-decision** half of the engineering-intelligence loop. See `knowledge/wiki/reviews/2026-07-11-vision-drift-and-recentering.md`. Strictly the BRAIN complement to the REVIEW-002 shell-integrity wave — rides its enforcement rails, does not duplicate them. Each package should get its own RFC before build.
+
+- **P0 AOS-RESEARCH-COUNCIL-001** (Wave A, small, low-risk) — `execute_research_run` also emits a `ResearchNote` (or the council selector learns to read `ResearchRun`), so deep multi-phase research reaches the council. Closes seam #5 (research run → council data-type mismatch, `council.py:73-92`). Highest immediate leverage.
+- **P0 AOS-BUILD-PLAN-001** (Wave B, medium) — Build Intelligence stage 1: `ImplementationPlan` model + `plan_from_decision()` + `POST /decisions/{id}/plan`. An approved `Decision` becomes a structured, governed, **draft-only** plan (tasks, acceptance criteria, target repo, risk, required verification). Closes seam #1 (Decision → Plan hard break). No code execution — safe to build now.
+- **P1 AOS-BUILD-EXEC-001** (Wave B, large, gated) — governed `build`/`execute` job handler: hands an approved plan to the `ClaudeCodeProvider`/builder **through the Authority execution envelope**, human approval mandatory, results written back. Closes seam #2. **Depends on AOS-AUTHORITY-ENVELOPE-001 (REVIEW-002 P0-6) + AOS-JOBS-RELIABILITY-001.** Articles IX/XIX — must not precede the enforcement chokepoint; start read-only/dry-run.
+- **P1 AOS-VERIFY-RUNTIME-001** (Wave B, medium) — make the deterministic verifier / Guardian reachable from the worker so a runtime build result is verified inside the loop, producing a verification record on the plan/decision. Closes seam #3 (verify isolated to CLI/CI).
+- **P2 AOS-LESSON-AUTO-001** (Wave B, medium) — auto-generate a lesson/`KnowledgePage` from a runtime verification failure/build outcome. Closes seam #4 (verify → retain break). Reuse the self-heal probe machinery.
+- **P2 AOS-RECO-ENGINE-001** (Wave C, medium) — turn `Recommendation` from vestigial CRUD into a real generator derived from research + scan + a minimal Technology Fitness scoring pass. Gives Technology Fitness + Recommendation Intelligence real engines; closes the `compare → recommend` gap.
+- **P2 AOS-EVOLVE-001** (Wave C, medium) — Evolution Engine: decision-staleness detection + scheduled re-evaluation (Article X, Roadmap Phase 7), reusing the scheduler.
+- **P2 AOS-COUNCIL-REALRUN-001** (Wave C, medium) — governed continuous (scheduled/operator-triggered) real-model council run on the authed node, so the brain is *exercised*, not only run deterministically in CI. Builds on `docs/COUNCIL_REALRUN_PYDANTIC_AI.md`.
+- **Deferred with intent (name-only engines):** Design Intelligence, Architecture Spine Graph, Engineering Evaluation Standard (production-readiness scoring beyond DNA), Architecture Studio text/image ingestion. Mark these deferred in `docs/ENGINE_CATALOG.md` so the catalog stops overstating (Article XII).
+
 ### AOS-VOICE-005 — Per-intent agent drafts (promote on approval)
 
 - Status: In Review

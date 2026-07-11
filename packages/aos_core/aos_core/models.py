@@ -149,6 +149,34 @@ class Decision(AuditMixin, Base):
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class ImplementationPlan(AuditMixin, Base):
+    """A governed, draft-first implementation plan for an approved Decision.
+
+    RFC-0015 Design §1 (AOS-BUILD-PLAN-001): the right-of-decision half of the
+    Build Intelligence loop. Drafted only from a ``Decision`` whose ``status``
+    is already ``approved`` (``services/build_plan.py:plan_from_decision``);
+    status rides ``AuditMixin.status`` with the same vocab as ``Decision``
+    (``draft``/``approved``/``rejected``/``superseded``) so the governance gate
+    is uniform. **No job_type, no execution** — that is AOS-BUILD-EXEC-001.
+    """
+
+    __tablename__ = "implementation_plans"
+
+    decision_id: Mapped[str] = mapped_column(GUID(), ForeignKey("decisions.id"), nullable=False, index=True)
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    objective: Mapped[str | None] = mapped_column(Text)
+    tasks: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    acceptance_criteria: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    verification_requirements: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    target_repository_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("repositories.id"), index=True)
+    risk: Mapped[str | None] = mapped_column(Text)
+    effort: Mapped[str | None] = mapped_column(String(128))
+    evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    approved_by: Mapped[str | None] = mapped_column(String(128))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class ResearchNote(AuditMixin, Base):
     __tablename__ = "research_notes"
     # AOS-JOBS-RELIABILITY-001 Slice 3: a unique job_id makes the note the single

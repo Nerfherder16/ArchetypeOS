@@ -124,6 +124,11 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/authority/actions/{action_id}/authorize"),
         ("POST", "/authority/actions/{action_id}/reject"),
         ("GET", "/authority/actions/{action_id}"),
+        # implementation plans (AOS-BUILD-PLAN-001 — RFC-0015 Design §1, Decision → Plan)
+        ("POST", "/decisions/{decision_id}/plan"),
+        ("GET", "/plans/{plan_id}"),
+        ("GET", "/projects/{project_id}/plans"),
+        ("POST", "/plans/{plan_id}/approve"),
     }
 )
 
@@ -181,5 +186,8 @@ def test_route_inventory_count() -> None:
     # (GET /nodes/route) = 80, and the AOS-CONNECTOR-RUNTIME-001 routes
     # (POST /connectors/reconcile, POST /connectors/{name}/probe) = 82.
     # AOS-AUTH-BOUNDARY-001 added the operator credential rotate/revoke routes = 84.
-    assert len(EXPECTED_ROUTES) == 84
-    assert len(_actual_routes()) == 84
+    # AOS-BUILD-PLAN-001 added the implementation-plan routes (POST
+    # /decisions/{decision_id}/plan, GET /plans/{plan_id}, GET
+    # /projects/{project_id}/plans, POST /plans/{plan_id}/approve) = 88.
+    assert len(EXPECTED_ROUTES) == 88
+    assert len(_actual_routes()) == 88

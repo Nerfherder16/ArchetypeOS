@@ -591,13 +591,15 @@ def apply_accepted_warnings(
 
 
 def check_doc_staleness(files: list[str]) -> list[Finding]:
-    """Advisory, non-blocking WARN when docs have drifted from reality (AOS-20).
+    """Doc-vs-reality drift (AOS-20; block-on-contradiction added by AOS-STATE-RECON-002).
 
-    Additive only: surfaces HARD doc-staleness signals (see tools/doc_staleness.py)
-    as guardian warnings. It NEVER emits a block, and it fails open — a missing or
-    erroring detector yields no findings — so it can never block a PR or weaken any
-    existing rule. SOFT drift (e.g. the normal one-PR reconciliation lag) is dropped
-    to keep the guardian quiet.
+    Fails open — a missing or erroring detector yields no findings. Most HARD signals
+    (roadmap-phase lag, state/PR watermark lag) are advisory WARNs, since a normal
+    one-PR reconciliation lag is expected. But ``semantic-label-stale`` is a **BLOCK**:
+    the state docs asserting a subsystem is advisory/pending/proposed when its
+    enforcement symbol has shipped is an unambiguous contradiction (not a lag), and
+    those "shipped-but-called-Proposed" lies are exactly what AOS-REVIEW-002 caught —
+    a clear contradiction should stop the merge, not just warn.
     """
     if _doc_staleness is None:
         return []
@@ -605,11 +607,13 @@ def check_doc_staleness(files: list[str]) -> list[Finding]:
         results = _doc_staleness.evaluate()
     except Exception:
         return []
-    return [
-        Finding("warn", f"doc-staleness:{result.signal}", result.message)
-        for result in results
-        if result.severity == "hard"
-    ]
+    findings: list[Finding] = []
+    for result in results:
+        if result.severity != "hard":
+            continue
+        severity = "block" if result.signal == "semantic-label-stale" else "warn"
+        findings.append(Finding(severity, f"doc-staleness:{result.signal}", result.message))
+    return findings
 
 
 def render(findings: list[Finding], files: list[str]) -> int:

@@ -13,12 +13,12 @@ fixed; see LES-L09).
      `state-canonical-refresh` workflow (tools/doc_staleness.py --refresh-canonical).
      Do NOT hand-edit those two lines — they cannot drift because a human never owns
      them. The other fields are human-authored and kept short. -->
-- Watermark PR: #203
+- Watermark PR: #204
 - Active Branch: none (on main)
-- Current Phase: post-v0.1 consolidation (per the AOS-REVIEW-001 system evaluation)
-- Current Objective: Consolidate integration coherence before adding more surface — canonical state (AOS-STATE-RECON-001), project-scoped CommandDeck turns (AOS-VOICE-PROJECT-001), and surfacing rich backend evidence in the API/web contracts (AOS-CONTRACT-001), then the node/connector registries that make the distributed-agent vision first-class.
+- Current Phase: post-AOS-REVIEW-002 runtime-integrity remediation (the July-10 evaluation, LES-033)
+- Current Objective: Close the runtime-integrity gaps LES-033 named — the registries/evaluators exist but must be ON the execution path. The AOS-REVIEW-002 wave is landing: durable job fencing (AOS-JOB-FENCING-001), operator+node auth boundary (AOS-AUTH-BOUNDARY-001), node-enforced execution (AOS-NODE-EXECUTION-001), hardened one-use authority envelope (AOS-AUTHORITY-HARDEN-001), reproducible web build (AOS-WEB-LOCK-001) are merged; state reconciliation (AOS-STATE-RECON-002) and capability-level reuse (RFC-0013) close it out.
 - Blockers: none
-- Next: AOS-STATE-RECON-001 (this) → AOS-VOICE-PROJECT-001 → AOS-CONTRACT-001
+- Next: AOS-STATE-RECON-002 (this) → RFC-0013 capability-level reuse (Slices 2-4 + portfolio benchmark)
 <!-- AOS-CANONICAL:END -->
 
 ## Where We Are
@@ -30,10 +30,13 @@ Command Center (Sotto STT → `/voice/turns` → Groq Orpheus TTS → Voice Inbo
 → promote to draft ResearchNote/Decision), the Research Engine (local floor + web tier),
 the routed reasoned LLM tier (local/free/Claude with a privacy guardrail + usage ledger),
 live auto-deploy to teevee, and a two-probe self-learn nightly (conflict → lesson, toil
-→ skill). The AOS-REVIEW-001 evaluation (`knowledge/wiki/reviews/2026-07-08-...`) found
-the risk is now over-building sideways: integration coherence lags feature velocity.
-Consolidation is the current focus. For the full chronological history see
-`docs/RECENT_CHANGES.md`.
+→ skill). A second evaluation (AOS-REVIEW-002, July-10, recorded in `knowledge/wiki/lessons/LES-033.md`)
+found the deeper risk: feature completeness had outrun runtime integrity — the Node
+registry, Connector catalog, and Authority evaluator existed but sat off the execution
+path, and the job substrate was not durable under crashes. The AOS-REVIEW-002 remediation
+wave closes those gaps and is the current focus: durable job fencing, an authenticated
+control plane, node-enforced execution, and a hardened one-use authority envelope are
+merged. For the full chronological history see `docs/RECENT_CHANGES.md`.
 
 ## CI / Governance
 
@@ -55,13 +58,13 @@ Consolidation is the current focus. For the full chronological history see
 | Decision | Status | Notes |
 | --- | --- | --- |
 | PR approval guard | Lifted 2026-07-08 | Opening PRs no longer needs per-PR approval; merge-safety (green + Guardian PASS) stays. See `~/.claude/rules/git-operations.md`. |
-| Distributed runtime (Node/Capability registry) | Implemented (registry); routing pending | Node/NodeCapability/NodeHeartbeat models + register/heartbeat/list routes exist (`services/nodes.py`), concurrency-hardened (AOS-NODE-CONSTRAINTS-001). Not yet wired to execution — the worker does not claim by capability (AOS-NODE-AGENT-001), and there is no node identity (AOS-NODE-IDENTITY-001). |
-| Connector registry / policy center | Implemented (registry); runtime unification pending | Connector catalog + registry + health exist (`services/connectors.py`). Config truth is still split API↔worker and `GET /connectors` mutates — AOS-CONNECTOR-RUNTIME-001. |
-| Authority action policy | Implemented (advisory); enforcement pending | Evaluator + action classes exist (`services/authority.py`) but are advisory — no execution path is compelled through them. Mandatory execution envelope is AOS-AUTHORITY-ENVELOPE-001. |
+| Distributed runtime (Node/Capability registry) | Enforced on the execution path | Node registry + per-node identity (`X-Node-Token`, AOS-NODE-IDENTITY-001) shipped; the worker claims through `claim_job_for_node`, which routes at origination and enforces node assignment + capability/sensitivity/write/health at claim time (AOS-NODE-AGENT-001 + AOS-NODE-EXECUTION-001, merged). Remote HTTPS execution across machines is the remaining follow-up. |
+| Connector registry / policy center | Unified runtime | `GET /connectors` is read-only, config truth is unified API↔worker, and reachability is an active probe (AOS-CONNECTOR-RUNTIME-001, merged); connector write routes carry a token gate. |
+| Authority action policy | Structural gate (enforced) | The authority envelope is mandatory at job origination and hardened: server-owned action classification, atomic one-use consume, target/expiry binding, distillation approve-and-resume (AOS-AUTHORITY-ENVELOPE-001 + AOS-AUTHORITY-HARDEN-001, merged). Extending it to council/research egress is a follow-up. |
 
 ## Next Recommended Task
 
-Work the AOS-REVIEW-001 P0 set in order: **AOS-STATE-RECON-001** (canonical state + drift assurance — this), then **AOS-VOICE-PROJECT-001** (project-scoped CommandDeck turns), then **AOS-CONTRACT-001** (surface DNA/edge/research evidence the backend already computes). P1/P2 packages (node/connector/worker-router/arch-studio/UX-IA/authority/research-loop) are tracked in `docs/ACTIVE_WORK.md` as Proposed.
+Finish the AOS-REVIEW-002 runtime-integrity wave (LES-033): **AOS-STATE-RECON-002** (this — reconcile these canonical docs to the merged wave and harden the semantic drift detector), then **RFC-0013 capability-level reuse** (Slice 2 `RepositoryCapability` persistence, Slice 3 per-capability embeddings, Slice 4 capability-match `recommend_reuse` with provenance, and the automated five-repo portfolio benchmark). The merged wave — durable job fencing, operator+node auth boundary, node-enforced execution, hardened authority envelope, reproducible web build — is recorded in `docs/RECENT_CHANGES.md`.
 
 ## Required Reading For New Sessions
 

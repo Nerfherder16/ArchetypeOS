@@ -260,29 +260,70 @@ def check_state_pr_lag(
     ]
 
 
-# --- semantic-label drift (AOS-STATE-SEMANTIC-001, finding P1-4) -------------
-# The canonical watermark can be numerically current while the human narrative
-# rots: AOS-REVIEW-002 found CURRENT_STATE marking shipped subsystems "Proposed".
-# A subsystem whose implementation module exists MUST NOT be labelled Proposed.
-# (label keywords, implementation module, display name)
-_SEMANTIC_SUBSYSTEMS: tuple[tuple[tuple[str, ...], str, str], ...] = (
-    (("node",), "packages/aos_core/aos_core/services/nodes.py", "Node/Capability registry"),
-    (("connector",), "packages/aos_core/aos_core/services/connectors.py", "Connector registry"),
-    (("authority",), "packages/aos_core/aos_core/services/authority.py", "Authority action policy"),
+# --- semantic-label drift (AOS-STATE-SEMANTIC-001 P1-4; hardened by AOS-STATE-RECON-002)
+# The canonical watermark can be numerically current while the human narrative rots:
+# AOS-REVIEW-002 found CURRENT_STATE marking shipped subsystems "Proposed", and the
+# runtime-integrity wave then found it calling ENFORCED subsystems "advisory"/"pending"
+# (the enforcement had shipped, the label lied). File existence is too weak — those
+# files existed while the behaviour was still advisory. Each marker is therefore a
+# specific ENFORCEMENT SYMBOL: if it is present, the subsystem is on the execution
+# path, and an Open-Decisions row calling it by a contradiction token is HARD drift.
+# Generic contradiction tokens apply to every marker; per-marker tokens catch the
+# subsystem-specific stale phrasings.
+_GENERIC_CONTRADICTION_TOKENS = ("proposed", "pending", "not yet in code", "not yet first-class")
+
+# (label keywords, "relpath::enforcement_symbol", extra contradiction tokens, display name)
+_SEMANTIC_MARKERS: tuple[tuple[tuple[str, ...], str, tuple[str, ...], str], ...] = (
+    (
+        ("node", "distributed runtime"),
+        "packages/aos_core/aos_core/services/jobs.py::claim_job_for_node",
+        ("not yet wired", "does not claim by capability", "no node identity", "routing pending"),
+        "Node-enforced execution",
+    ),
+    (
+        ("connector",),
+        "packages/aos_core/aos_core/services/connectors.py::connector_views",
+        ("mutates", "runtime unification pending"),
+        "Connector runtime",
+    ),
+    (
+        ("authority",),
+        "packages/aos_core/aos_core/services/authority_envelope.py::consume_action",
+        ("advisory", "enforcement pending", "not compelled"),
+        "Authority envelope",
+    ),
 )
-_PROPOSED_TOKENS = ("proposed", "not yet first-class in code", "not yet in code")
 
 
-def check_semantic_labels(current_state_text: str, present_modules: set[str]) -> list[Finding]:
-    """A shipped subsystem marked 'Proposed' in the state docs is HARD drift.
+def _present_markers(repo_root: Path) -> set[str]:
+    """The set of ``relpath::symbol`` enforcement markers actually present on disk.
 
-    ``present_modules`` is the set of repo-relative module paths that exist on
-    disk — a pure input so this stays fixture-testable.
+    A marker is present iff its file exists AND contains the symbol — so it proves
+    the *enforcement* shipped, not merely that a (long-existing) file is there.
+    """
+    present: set[str] = set()
+    for _, marker, _, _ in _SEMANTIC_MARKERS:
+        relpath, symbol = marker.split("::", 1)
+        path = repo_root / relpath
+        try:
+            if path.exists() and symbol in path.read_text(encoding="utf-8", errors="ignore"):
+                present.add(marker)
+        except OSError:
+            continue
+    return present
+
+
+def check_semantic_labels(current_state_text: str, present_markers: set[str]) -> list[Finding]:
+    """An ENFORCED subsystem labelled advisory/pending/proposed is HARD drift.
+
+    ``present_markers`` is the set of ``relpath::symbol`` enforcement markers that
+    exist — a pure input so this stays fixture-testable.
     """
     findings: list[Finding] = []
-    for keywords, module, name in _SEMANTIC_SUBSYSTEMS:
-        if module not in present_modules:
-            continue  # legitimately proposed — no implementation yet
+    for keywords, marker, extra_tokens, name in _SEMANTIC_MARKERS:
+        if marker not in present_markers:
+            continue  # the enforcement symbol is absent — the label may be honest
+        tokens = _GENERIC_CONTRADICTION_TOKENS + extra_tokens
         for line in current_state_text.splitlines():
             stripped = line.strip()
             # Only the Open Decisions status table (markdown rows) carries the
@@ -290,14 +331,15 @@ def check_semantic_labels(current_state_text: str, present_modules: set[str]) ->
             if not stripped.startswith("|"):
                 continue
             low = stripped.lower()
-            if any(k in low for k in keywords) and any(t in low for t in _PROPOSED_TOKENS):
+            if any(k in low for k in keywords) and any(t in low for t in tokens):
+                hit = next(t for t in tokens if t in low)
                 findings.append(
                     Finding(
                         signal="semantic-label-stale",
                         severity=HARD,
                         message=(
-                            f"{name} is labelled 'Proposed' but its implementation exists "
-                            f"({module}); relabel it to reflect reality."
+                            f"{name} is enforced ({marker.split('::')[1]} ships) but the state "
+                            f"doc calls it {hit!r}; relabel it to reflect reality."
                         ),
                         evidence=line.strip(),
                     )
@@ -440,8 +482,7 @@ def evaluate(repo_root: Path = REPO_ROOT, hard_threshold: int = DEFAULT_HARD_THR
         origin_branches=_origin_branches(repo_root),
         hard_threshold=hard_threshold,
     )
-    present = {module for _, module, _ in _SEMANTIC_SUBSYSTEMS if (repo_root / module).exists()}
-    findings.extend(check_semantic_labels(current_state_text, present))
+    findings.extend(check_semantic_labels(current_state_text, _present_markers(repo_root)))
     return findings
 
 

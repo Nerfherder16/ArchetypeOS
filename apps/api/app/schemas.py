@@ -259,6 +259,47 @@ class DecisionReject(BaseModel):
     rationale: str
 
 
+# AOS-EVOLVE-001 (RFC-0015 Wave C) — Evolution Engine: staleness + re-evaluation.
+class DecisionStaleness(BaseModel):
+    decision_id: str
+    title: str
+    reason: str
+    age_days: int | None = None
+
+
+class DecisionReevaluate(BaseModel):
+    reason: str | None = None
+
+
+# AOS-BUILD-PLAN-001 (RFC-0015 Design §1) — Decision → Plan.
+class ImplementationPlanRead(BaseModel):
+    id: str
+    decision_id: str
+    project_id: str
+    title: str
+    objective: str | None
+    tasks: list
+    acceptance_criteria: list
+    verification_requirements: list
+    target_repository_id: str | None
+    risk: str | None
+    effort: str | None
+    evidence: list
+    status: str
+    approved_by: str | None
+    approved_at: datetime | None
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ImplementationPlanApprove(BaseModel):
+    approver: str
+    rationale: str | None = None
+
+
 class ResearchNoteCreate(BaseModel):
     title: str
     question: str | None = None

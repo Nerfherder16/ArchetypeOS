@@ -10,12 +10,16 @@ from aos_core.services.decisions import (
     draft_decision_from_review,
     reject_decision,
 )
+from aos_core.services.evolution import find_stale_decisions, reevaluate_decision
+from aos_core.services.recommendation import generate_recommendations
 
 from ..schemas import (
     DecisionApprove,
     DecisionCreate,
+    DecisionReevaluate,
     DecisionRead,
     DecisionReject,
+    DecisionStaleness,
     KnowledgePageRead,
     RecommendationCreate,
     RecommendationRead,
@@ -88,6 +92,27 @@ def reject_decision_endpoint(
 ) -> Decision:
     # Service 404s a missing decision and 409s an already-transitioned decision.
     return reject_decision(db, decision_id=decision_id, approver=payload.approver, rationale=payload.rationale)
+
+
+@router.get("/projects/{project_id}/decisions/stale", response_model=list[DecisionStaleness])
+def list_stale_decisions(
+    project_id: str, max_age_days: int = 90, db: Session = Depends(get_db)
+) -> list[dict]:
+    # AOS-EVOLVE-001: read-only staleness pass over approved decisions (Article
+    # X/XVIII) — no status mutation, no execution. 404s a missing project.
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return find_stale_decisions(db, project_id=project_id, max_age_days=max_age_days)
+
+
+@router.post("/decisions/{decision_id}/reevaluate", response_model=DecisionRead)
+def reevaluate_decision_endpoint(
+    decision_id: str, payload: DecisionReevaluate = DecisionReevaluate(), db: Session = Depends(get_db)
+) -> Decision:
+    # Service 404s a missing decision. Advisory only (Article IX): flags
+    # meta["reevaluation_requested_at"] / meta["stale_reason"] — never mutates
+    # status, never deletes. Idempotent re-flag.
+    return reevaluate_decision(db, decision_id=decision_id, reason=payload.reason)
 
 
 @router.post("/decisions/{decision_id}/adr", response_model=KnowledgePageRead)
@@ -171,3 +196,14 @@ def get_recommendation(recommendation_id: str, db: Session = Depends(get_db)) ->
     if not recommendation:
         raise HTTPException(status_code=404, detail="Recommendation not found")
     return recommendation
+
+
+@router.post("/projects/{project_id}/recommendations/generate", response_model=list[RecommendationRead])
+def generate_recommendations_endpoint(project_id: str, db: Session = Depends(get_db)) -> list[Recommendation]:
+    # AOS-RECO-ENGINE-001: runs the deterministic Technology Fitness pass over
+    # the project's RepositoryDNA + latest research and drafts recommendations;
+    # idempotent (services/recommendation.py:generate_recommendations dedups on
+    # meta["reco_signature"]) — a repeat call returns only newly-created rows.
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return generate_recommendations(db, project_id=project_id)

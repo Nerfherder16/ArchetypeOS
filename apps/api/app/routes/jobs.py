@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from aos_core.config import get_settings
 from aos_core.database import get_db
 from aos_core.models import Job, Project
-from aos_core.services.jobs import enqueue_job
+from aos_core.services.jobs import UnknownJobType, enqueue_job
 
 from ..schemas import JobCreate, JobRead
 
@@ -15,15 +15,22 @@ router = APIRouter()
 
 @router.post("/jobs", response_model=JobRead)
 def create_job(payload: JobCreate, db: Session = Depends(get_db)) -> Job:
-    return enqueue_job(
-        db,
-        redis.Redis.from_url(settings.redis_url),
-        job_type=payload.job_type,
-        project_id=payload.project_id,
-        repository_id=payload.repository_id,
-        payload=payload.payload,
-        priority=payload.priority,
-    )
+    # AOS-AUTHORITY-HARDEN-001: an unknown job type is rejected before persistence
+    # (422); a high-impact job without an authorized envelope is refused (403).
+    try:
+        return enqueue_job(
+            db,
+            redis.Redis.from_url(settings.redis_url),
+            job_type=payload.job_type,
+            project_id=payload.project_id,
+            repository_id=payload.repository_id,
+            payload=payload.payload,
+            priority=payload.priority,
+        )
+    except UnknownJobType as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except PermissionError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
 @router.get("/jobs/{job_id}", response_model=JobRead)

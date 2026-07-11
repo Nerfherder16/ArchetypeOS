@@ -27,6 +27,7 @@ from sqlalchemy import or_, update
 
 from ..models import ActionRequest, Job, JobOutbox, Node, now_utc
 from .authority import requires_approval
+from .authority_envelope import consume_action, is_authorized
 from .job_requirements import get_requirement
 from .routing import node_eligibility, route_job
 
@@ -40,6 +41,10 @@ DEFAULT_LEASE_SECONDS = 300
 logger = logging.getLogger("archetypeos.jobs")
 
 
+class UnknownJobType(ValueError):
+    """Raised when a job of an unregistered ``job_type`` is originated."""
+
+
 def enqueue_job(
     db,
     client,
@@ -49,25 +54,34 @@ def enqueue_job(
     repository_id: str | None = None,
     payload: dict | None = None,
     priority: int = 100,
-    action_class: str = "read_only",
-    sensitivity: str = "public",
     action_request: ActionRequest | None = None,
 ) -> Job:
     """Create a queued ``Job`` + its outbox row atomically, then best-effort deliver.
 
     The job is durable once this returns, whether or not Redis accepted the push.
 
-    Authority gate (finding P0-6): origination is the single execution chokepoint,
-    so a **high-impact** action (write/deploy/destructive/sensitive egress) is
-    refused here unless it carries an authorized ``ActionRequest`` for the same
-    class. Low-impact ``read_only`` jobs (the default, and every current job type)
-    pass straight through, so the common path is unchanged.
+    Authority gate (finding P0-6, hardened by AOS-AUTHORITY-HARDEN-001): origination
+    is the single execution chokepoint. The action class + sensitivity are DERIVED
+    SERVER-SIDE from the job registry — never accepted from the caller — so a client
+    cannot submit a write/egress handler as ``read_only``. An unknown ``job_type`` is
+    rejected before any row is written. A high-impact action is refused unless it
+    carries an authorized ``ActionRequest`` for the same class, which is then consumed
+    exactly once (atomic CAS) and linked to the job. Low-impact ``read_only`` jobs
+    (every current job type) pass straight through, so the common path is unchanged.
     """
+    requirement = get_requirement(job_type)
+    if requirement is None:
+        # Reject unknown job types BEFORE persistence (was: durably queued, then
+        # discovered unroutable at worker dispatch).
+        raise UnknownJobType(f"unknown job_type {job_type!r}")
+    action_class = requirement.action_class
+    sensitivity = requirement.sensitivity
+
     if requires_approval(action_class, sensitivity=sensitivity):
         if (
             action_request is None
             or action_request.action_class != action_class
-            or action_request.execution_state != "authorized"
+            or not is_authorized(action_request)
         ):
             raise PermissionError(
                 f"job_type {job_type!r} ({action_class}) requires an authorized ActionRequest"
@@ -80,28 +94,25 @@ def enqueue_job(
         payload=payload or {},
         priority=priority,
         status="queued",
+        # Requirements are server-derived (AOS-NODE-EXECUTION-001) — routing sends the
+        # job only to a node that can run it.
+        required_capability=requirement.capability,
+        sensitivity=sensitivity,
+        requires_write=requirement.requires_write,
     )
-    # AOS-NODE-EXECUTION-001: derive the job's execution requirements server-side
-    # (from the registry, never the client) and route to an eligible node before
-    # delivery, persisting the decision. An unknown job type has no capability
-    # requirement (WP4 rejects unknown types before this point). ``sensitivity``
-    # from the registry drives routing; the caller's ``sensitivity`` arg still
-    # governs the authority check above.
-    requirement = get_requirement(job_type)
-    if requirement is not None:
-        job.required_capability = requirement.capability
-        job.sensitivity = requirement.sensitivity
-        job.requires_write = requirement.requires_write
-    else:
-        job.sensitivity = sensitivity
     db.add(job)
     db.flush()  # assign job.id so the outbox row can reference it in the same txn
     _route(db, job)
     outbox = JobOutbox(job_id=job.id)
     db.add(outbox)
     if action_request is not None:
-        # The envelope is consumed by exactly this job, committed in the same txn.
-        action_request.execution_state = "executed"
+        # Consume the envelope EXACTLY once (atomic CAS) and link it to this job, in
+        # the same transaction — so double-origination cannot reuse one approval.
+        if not consume_action(db, action_request, job_id=job.id):
+            db.rollback()
+            raise PermissionError(
+                f"ActionRequest {action_request.id} is not consumable (already used/expired/rejected)"
+            )
     db.commit()  # Job + JobOutbox (+ envelope) committed together — durable before Redis
     db.refresh(job)
 
@@ -550,6 +561,7 @@ __all__ = [
     "QUEUE",
     "DEFAULT_LEASE_SECONDS",
     "Claim",
+    "UnknownJobType",
     "enqueue_job",
     "dispatch_outbox",
     "reconcile",

@@ -33,3 +33,13 @@ def test_every_registry_entry_has_a_handler():
     # No orphan registry rows — every declared requirement maps to a real handler.
     for job_type in JOB_REQUIREMENTS:
         assert job_type in worker.JOB_HANDLERS, f"registry has {job_type!r} with no handler"
+
+
+def test_registry_action_classes_are_valid():
+    # AOS-AUTHORITY-HARDEN-001: every server-owned action_class is a real ActionClass
+    # the authority policy can evaluate (an unknown class would raise at origination).
+    from aos_core.services.authority import ActionClass
+
+    valid = {ac.value for ac in ActionClass}
+    for job_type, req in JOB_REQUIREMENTS.items():
+        assert req.action_class in valid, f"{job_type}: invalid action_class {req.action_class!r}"

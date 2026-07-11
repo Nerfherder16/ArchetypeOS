@@ -10,9 +10,10 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from aos_core.database import get_db
-from aos_core.models import Node
+from aos_core.models import Node, now_utc
 from aos_core.services.node_identity import enroll_node, verify_node_token
 from aos_core.services.nodes import record_heartbeat, register_node
+from aos_core.services.routing import route_job
 
 from ..schemas import (
     NodeEnrollRead,
@@ -20,6 +21,7 @@ from ..schemas import (
     NodeHeartbeatRead,
     NodeRead,
     NodeRegister,
+    RoutingDecisionRead,
 )
 
 router = APIRouter()
@@ -80,6 +82,30 @@ def heartbeat(node_id: str, payload: NodeHeartbeatCreate, db: Session = Depends(
 @router.get("/nodes", response_model=list[NodeRead])
 def list_nodes(db: Session = Depends(get_db)) -> list[Node]:
     return db.query(Node).order_by(Node.created_at.desc(), Node.id).all()
+
+
+@router.get("/nodes/route", response_model=RoutingDecisionRead)
+def route(
+    capability: str | None = None,
+    sensitivity: str = "public",
+    write: bool = False,
+    db: Session = Depends(get_db),
+) -> RoutingDecisionRead:
+    # Capability/sensitivity/write/health-aware routing with a deterministic
+    # explanation the Control Tower can show (AOS-NODE-AGENT-001, finding P1-2).
+    decision = route_job(
+        db,
+        required_capability=capability,
+        sensitivity=sensitivity,
+        requires_write=write,
+        now=now_utc(),
+    )
+    return RoutingDecisionRead(
+        node_id=decision.node_id,
+        node_name=decision.node_name,
+        eligible_node_ids=list(decision.eligible_node_ids),
+        explanation=decision.explanation,
+    )
 
 
 @router.get("/nodes/{node_id}", response_model=NodeRead)

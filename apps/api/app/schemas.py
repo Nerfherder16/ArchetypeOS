@@ -612,6 +612,15 @@ class NodeEnrollRead(NodeRead):
     token: str
 
 
+class RoutingDecisionRead(BaseModel):
+    # AOS-NODE-AGENT-001 (P1-2): the capability-routing decision + a human-readable
+    # explanation for the Control Tower.
+    node_id: str | None = None
+    node_name: str | None = None
+    eligible_node_ids: list[str] = []
+    explanation: str
+
+
 class NodeHeartbeatCreate(BaseModel):
     health: str = "healthy"
     metrics: dict = {}

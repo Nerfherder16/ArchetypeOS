@@ -105,6 +105,35 @@ def reconcile_now(client: "redis.Redis") -> dict:
         return reconcile(db, client, max_attempts=MAX_ATTEMPTS)
 
 
+def node_capabilities() -> list[dict]:
+    """This worker's capabilities — the union of its registered handlers' capabilities."""
+    return [{"capability": c} for c in sorted({spec.capability for spec in JOB_HANDLERS.values()})]
+
+
+def register_self() -> str:
+    """Register this worker as a node with its handler capabilities (AOS-NODE-AGENT-001).
+
+    Connects the worker to the node registry so the control plane can route
+    capability-declared work to it and the Operations dashboard sees it live.
+    Returns the node id.
+    """
+    from aos_core.services.nodes import record_heartbeat as node_heartbeat
+    from aos_core.services.nodes import register_node
+
+    with SessionLocal() as db:
+        node = register_node(db, name=WORKER_ID, node_type="worker", capabilities=node_capabilities())
+        node_heartbeat(db, node_id=node.id, health="healthy")
+        return node.id
+
+
+def heartbeat_self(node_id: str) -> None:
+    """Emit a node heartbeat so the worker's freshness stays visible for routing."""
+    from aos_core.services.nodes import record_heartbeat as node_heartbeat
+
+    with SessionLocal() as db:
+        node_heartbeat(db, node_id=node_id, health="healthy")
+
+
 # How often the heavier reconciliation sweep (which scans the broker list) runs,
 # versus the light per-tick drain + reap.
 RECONCILE_INTERVAL_SECONDS = 60
@@ -113,9 +142,17 @@ RECONCILE_INTERVAL_SECONDS = 60
 def main() -> None:
     logger.info("worker starting")
     client = redis.Redis.from_url(settings.redis_url)
+    try:
+        self_node_id = register_self()  # join the node registry (AOS-NODE-AGENT-001)
+        logger.info("registered as node %s (%s)", WORKER_ID, self_node_id)
+    except Exception:  # noqa: BLE001 — never let node registration stop the worker
+        logger.exception("node self-registration failed")
+        self_node_id = None
     last_reconcile = time.monotonic()
     while True:
         try:
+            if self_node_id is not None:
+                heartbeat_self(self_node_id)
             drain_outbox(client)
             reap(client)
             if time.monotonic() - last_reconcile >= RECONCILE_INTERVAL_SECONDS:

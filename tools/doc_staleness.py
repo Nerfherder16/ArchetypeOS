@@ -260,6 +260,52 @@ def check_state_pr_lag(
     ]
 
 
+# --- semantic-label drift (AOS-STATE-SEMANTIC-001, finding P1-4) -------------
+# The canonical watermark can be numerically current while the human narrative
+# rots: AOS-REVIEW-002 found CURRENT_STATE marking shipped subsystems "Proposed".
+# A subsystem whose implementation module exists MUST NOT be labelled Proposed.
+# (label keywords, implementation module, display name)
+_SEMANTIC_SUBSYSTEMS: tuple[tuple[tuple[str, ...], str, str], ...] = (
+    (("node",), "packages/aos_core/aos_core/services/nodes.py", "Node/Capability registry"),
+    (("connector",), "packages/aos_core/aos_core/services/connectors.py", "Connector registry"),
+    (("authority",), "packages/aos_core/aos_core/services/authority.py", "Authority action policy"),
+)
+_PROPOSED_TOKENS = ("proposed", "not yet first-class in code", "not yet in code")
+
+
+def check_semantic_labels(current_state_text: str, present_modules: set[str]) -> list[Finding]:
+    """A shipped subsystem marked 'Proposed' in the state docs is HARD drift.
+
+    ``present_modules`` is the set of repo-relative module paths that exist on
+    disk — a pure input so this stays fixture-testable.
+    """
+    findings: list[Finding] = []
+    for keywords, module, name in _SEMANTIC_SUBSYSTEMS:
+        if module not in present_modules:
+            continue  # legitimately proposed — no implementation yet
+        for line in current_state_text.splitlines():
+            stripped = line.strip()
+            # Only the Open Decisions status table (markdown rows) carries the
+            # authoritative label — prose that merely mentions the backlog does not.
+            if not stripped.startswith("|"):
+                continue
+            low = stripped.lower()
+            if any(k in low for k in keywords) and any(t in low for t in _PROPOSED_TOKENS):
+                findings.append(
+                    Finding(
+                        signal="semantic-label-stale",
+                        severity=HARD,
+                        message=(
+                            f"{name} is labelled 'Proposed' but its implementation exists "
+                            f"({module}); relabel it to reflect reality."
+                        ),
+                        evidence=line.strip(),
+                    )
+                )
+                break
+    return findings
+
+
 def run_checks(
     *,
     roadmap_text: str,
@@ -385,14 +431,18 @@ def _current_branch(repo_root: Path) -> str:
 
 def evaluate(repo_root: Path = REPO_ROOT, hard_threshold: int = DEFAULT_HARD_THRESHOLD) -> list[Finding]:
     """Gather real inputs from the working tree and run every signal."""
-    return run_checks(
+    current_state_text = _read(repo_root / "docs" / "CURRENT_STATE.md")
+    findings = run_checks(
         roadmap_text=_read(repo_root / ".archetype" / "roadmap.md"),
-        current_state_text=_read(repo_root / "docs" / "CURRENT_STATE.md"),
+        current_state_text=current_state_text,
         recent_changes_text=_read(repo_root / "docs" / "RECENT_CHANGES.md"),
         git_log_text=_git_log(repo_root),
         origin_branches=_origin_branches(repo_root),
         hard_threshold=hard_threshold,
     )
+    present = {module for _, module, _ in _SEMANTIC_SUBSYSTEMS if (repo_root / module).exists()}
+    findings.extend(check_semantic_labels(current_state_text, present))
+    return findings
 
 
 def main(argv: list[str] | None = None) -> int:

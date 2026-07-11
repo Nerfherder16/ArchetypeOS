@@ -13,7 +13,7 @@ fixed; see LES-L09).
      `state-canonical-refresh` workflow (tools/doc_staleness.py --refresh-canonical).
      Do NOT hand-edit those two lines — they cannot drift because a human never owns
      them. The other fields are human-authored and kept short. -->
-- Watermark PR: #184
+- Watermark PR: #185
 - Active Branch: none (on main)
 - Current Phase: post-v0.1 consolidation (per the AOS-REVIEW-001 system evaluation)
 - Current Objective: Consolidate integration coherence before adding more surface — canonical state (AOS-STATE-RECON-001), project-scoped CommandDeck turns (AOS-VOICE-PROJECT-001), and surfacing rich backend evidence in the API/web contracts (AOS-CONTRACT-001), then the node/connector registries that make the distributed-agent vision first-class.
@@ -55,9 +55,9 @@ Consolidation is the current focus. For the full chronological history see
 | Decision | Status | Notes |
 | --- | --- | --- |
 | PR approval guard | Lifted 2026-07-08 | Opening PRs no longer needs per-PR approval; merge-safety (green + Guardian PASS) stays. See `~/.claude/rules/git-operations.md`. |
-| Distributed runtime (Node/Capability registry) | Proposed | AOS-NODE-001 (P1 in AOS-REVIEW-001); not yet first-class in code. |
-| Connector registry / policy center | Proposed | AOS-CONNECTOR-001 (P1); providers exist, connectors not governed centrally. |
-| Authority action policy | Proposed | AOS-AUTHORITY-001 (P2); model exists as data, not enforced as policy. |
+| Distributed runtime (Node/Capability registry) | Implemented (registry); routing pending | Node/NodeCapability/NodeHeartbeat models + register/heartbeat/list routes exist (`services/nodes.py`), concurrency-hardened (AOS-NODE-CONSTRAINTS-001). Not yet wired to execution — the worker does not claim by capability (AOS-NODE-AGENT-001), and there is no node identity (AOS-NODE-IDENTITY-001). |
+| Connector registry / policy center | Implemented (registry); runtime unification pending | Connector catalog + registry + health exist (`services/connectors.py`). Config truth is still split API↔worker and `GET /connectors` mutates — AOS-CONNECTOR-RUNTIME-001. |
+| Authority action policy | Implemented (advisory); enforcement pending | Evaluator + action classes exist (`services/authority.py`) but are advisory — no execution path is compelled through them. Mandatory execution envelope is AOS-AUTHORITY-ENVELOPE-001. |
 
 ## Next Recommended Task
 

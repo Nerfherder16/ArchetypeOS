@@ -18,6 +18,7 @@ from tools import doc_staleness  # noqa: E402
 from tools.doc_staleness import (  # noqa: E402
     Finding,
     check_roadmap_phase,
+    check_semantic_labels,
     check_state_pr_lag,
     run_checks,
 )
@@ -233,3 +234,41 @@ def test_fix_writes_pending_draft_never_edits_prose(tmp_path, monkeypatch) -> No
     assert (tmp_path / "docs" / "CURRENT_STATE.md").read_text(encoding="utf-8") == before_cs
     assert (tmp_path / "docs" / "RECENT_CHANGES.md").read_text(encoding="utf-8") == before_rc
     assert rc == 1, "HARD drift still stands until the docs are actually reconciled"
+
+
+# --- semantic-label drift (AOS-STATE-SEMANTIC-001, finding P1-4) -------------
+
+_NODES_MODULE = "packages/aos_core/aos_core/services/nodes.py"
+
+
+def test_semantic_label_stale_flags_shipped_subsystem_marked_proposed():
+    text = "| Distributed runtime (Node/Capability registry) | Proposed | not yet in code |"
+    findings = check_semantic_labels(text, present_modules={_NODES_MODULE})
+    assert len(findings) == 1
+    assert findings[0].signal == "semantic-label-stale"
+    assert findings[0].severity == "hard"
+
+
+def test_semantic_label_fresh_once_relabelled():
+    text = "| Distributed runtime (Node/Capability registry) | Implemented | wired to routing |"
+    assert check_semantic_labels(text, present_modules={_NODES_MODULE}) == []
+
+
+def test_semantic_label_absent_module_is_legitimately_proposed():
+    # No implementation on disk → 'Proposed' is honest, not drift.
+    text = "| Distributed runtime (Node/Capability registry) | Proposed | not yet in code |"
+    assert check_semantic_labels(text, present_modules=set()) == []
+
+
+def test_semantic_label_covers_connector_and_authority():
+    text = (
+        "| Connector registry | Proposed | providers exist |\n"
+        "| Authority action policy | Proposed | model exists as data |"
+    )
+    present = {
+        "packages/aos_core/aos_core/services/connectors.py",
+        "packages/aos_core/aos_core/services/authority.py",
+    }
+    signals = {f.signal for f in check_semantic_labels(text, present)}
+    assert signals == {"semantic-label-stale"}
+    assert len(check_semantic_labels(text, present)) == 2

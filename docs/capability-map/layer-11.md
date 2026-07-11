@@ -18,6 +18,7 @@ Capabilities:
 - web dashboard
 - GPU node
 - WSL node
+- concurrency-safe node registry (AOS-NODE-CONSTRAINTS-001, finding P1-3: unique node name, unique (node_id, capability), and a partial unique index for one global (routine, NULL) audit heartbeat — the uniqueness the query-then-insert services relied on)
 - GitHub integration
 - database schema migrations (Alembic)
 

@@ -9,10 +9,32 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from sqlalchemy.exc import IntegrityError
+
 from ..models import Node, NodeCapability, NodeHeartbeat, now_utc
 
 if TYPE_CHECKING:  # pragma: no cover
     from sqlalchemy.orm import Session
+
+
+def _get_or_create_node(db: "Session", name: str) -> Node:
+    """Fetch a node by name, creating it if absent — safe under a concurrent race.
+
+    The unique ``nodes.name`` constraint (AOS-NODE-CONSTRAINTS-001) means a racing
+    insert loses with an ``IntegrityError`` instead of creating a duplicate; we
+    catch it, roll back, and re-fetch the row the winner created.
+    """
+    node = db.query(Node).filter(Node.name == name).first()
+    if node is not None:
+        return node
+    node = Node(name=name)
+    db.add(node)
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        node = db.query(Node).filter(Node.name == name).one()
+    return node
 
 
 def register_node(
@@ -26,10 +48,7 @@ def register_node(
     capabilities: list[dict] | None = None,
 ) -> Node:
     """Register (or re-register, by name) a node and replace its declared capabilities."""
-    node = db.query(Node).filter(Node.name == name).first()
-    if node is None:
-        node = Node(name=name)
-        db.add(node)
+    node = _get_or_create_node(db, name)
     node.node_type = node_type
     node.endpoint = endpoint
     node.max_sensitivity = max_sensitivity
@@ -41,7 +60,11 @@ def register_node(
     if capabilities is not None:
         for existing in list(node.capabilities):
             db.delete(existing)
-        for cap in capabilities:
+        db.flush()  # apply the deletes before re-inserting so the unique (node_id,
+        # capability) index never sees the old + new rows at once
+        # Dedupe by capability (last wins) — the unique constraint forbids repeats.
+        by_capability = {cap["capability"]: cap for cap in capabilities}
+        for cap in by_capability.values():
             db.add(
                 NodeCapability(
                     node_id=node.id,

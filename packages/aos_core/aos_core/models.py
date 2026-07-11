@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, TypeDecorator
@@ -232,8 +232,21 @@ class AuditHeartbeat(AuditMixin, Base):
     # has project_id NULL; a per-project audit scopes the same routine to a project
     # so their heartbeats never collide. project_id is a soft reference (no FK) —
     # a status board must survive a probe posting for a since-deleted project.
+    #
+    # AOS-NODE-CONSTRAINTS-001 (finding P1-3): the composite unique above does NOT
+    # constrain the global rows, because SQL treats NULLs as distinct — two
+    # (routine, NULL) inserts would both succeed. A partial unique index on
+    # ``routine WHERE project_id IS NULL`` enforces the one-global-row-per-routine
+    # invariant the service relies on.
     __table_args__ = (
         UniqueConstraint("routine", "project_id", name="uq_audit_heartbeats_routine_project"),
+        Index(
+            "uq_audit_heartbeats_routine_global",
+            "routine",
+            unique=True,
+            sqlite_where=text("project_id IS NULL"),
+            postgresql_where=text("project_id IS NULL"),
+        ),
     )
 
     routine: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
@@ -552,7 +565,10 @@ class Node(AuditMixin, Base):
 
     __tablename__ = "nodes"
 
-    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    # AOS-NODE-CONSTRAINTS-001 (finding P1-3): a node's name is its logical identity;
+    # a unique constraint stops a concurrent register-by-name race from creating
+    # duplicate logical nodes.
+    name: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     node_type: Mapped[str] = mapped_column(String(64), default="worker", nullable=False)
     endpoint: Mapped[str | None] = mapped_column(Text)
     # Operational health, distinct from AuditMixin.status (record lifecycle).
@@ -568,6 +584,10 @@ class Node(AuditMixin, Base):
 
 class NodeCapability(AuditMixin, Base):
     __tablename__ = "node_capabilities"
+    # AOS-NODE-CONSTRAINTS-001 (finding P1-3): a node declares each capability once.
+    __table_args__ = (
+        UniqueConstraint("node_id", "capability", name="uq_node_capabilities_node_capability"),
+    )
 
     node_id: Mapped[str] = mapped_column(GUID(), ForeignKey("nodes.id"), nullable=False, index=True)
     capability: Mapped[str] = mapped_column(String(128), nullable=False)

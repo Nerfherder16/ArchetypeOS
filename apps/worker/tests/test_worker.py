@@ -520,6 +520,25 @@ def test_reconcile_restores_job_stranded_from_broker(worker_db):
     assert worker.reconcile_now(client)["restored"] == 0
 
 
+def test_register_self_registers_node_with_handler_capabilities(worker_db):
+    # AOS-NODE-AGENT-001: the worker joins the node registry with its handlers'
+    # capabilities so the control plane can route capability-declared work to it.
+    from aos_core.models import Node, NodeCapability
+
+    node_id = worker.register_self()
+    with worker_db() as db:
+        node = db.get(Node, node_id)
+        assert node is not None
+        assert node.name == worker.WORKER_ID
+        caps = {
+            c.capability
+            for c in db.query(NodeCapability).filter(NodeCapability.node_id == node_id).all()
+        }
+        assert {"scan", "digest", "council", "research", "noop"} <= caps
+        assert node.node_status == "healthy"
+        assert node.last_seen_at is not None
+
+
 def test_queue_is_single_sourced_from_core():
     # The worker's QUEUE must be the shared aos_core constant, not a local
     # literal (RFC-0007 / AOS-SCHED-001: one job-origination source of truth).

@@ -72,44 +72,57 @@ def test_enqueue_low_impact_passes_through(db_session):
     assert db_session.get(Job, job.id) is not None
 
 
-def test_enqueue_high_impact_without_envelope_is_rejected(db_session):
+def _register_high_impact(monkeypatch, job_type, action_class):
+    # AOS-AUTHORITY-HARDEN-001: action class is SERVER-OWNED, so a high-impact job is
+    # declared in the registry (not passed to enqueue_job). Register a temp one.
+    from aos_core.services.job_requirements import JOB_REQUIREMENTS, JobRequirement
+
+    monkeypatch.setitem(
+        JOB_REQUIREMENTS, job_type, JobRequirement(capability="write", action_class=action_class)
+    )
+
+
+def test_enqueue_high_impact_without_envelope_is_rejected(db_session, monkeypatch):
+    _register_high_impact(monkeypatch, "deploy_service", "deploy")
     with pytest.raises(PermissionError):
-        enqueue_job(db_session, FakeRedis(), job_type="deploy_service", action_class="deploy")
+        enqueue_job(db_session, FakeRedis(), job_type="deploy_service")
     # No job was created.
     assert db_session.query(Job).count() == 0
 
 
-def test_enqueue_high_impact_with_authorized_envelope_runs_and_consumes_it(db_session):
+def test_enqueue_high_impact_with_authorized_envelope_runs_and_consumes_it(db_session, monkeypatch):
+    _register_high_impact(monkeypatch, "apply_patch", "repo_write")
     ar = request_action(db_session, action_class="repo_write")
     authorize_action(db_session, ar.id)
-    job = enqueue_job(
-        db_session,
-        FakeRedis(),
-        job_type="apply_patch",
-        action_class="repo_write",
-        action_request=ar,
-    )
+    job = enqueue_job(db_session, FakeRedis(), job_type="apply_patch", action_request=ar)
     assert db_session.get(Job, job.id) is not None
     db_session.refresh(ar)
     assert ar.execution_state == "executed"  # the envelope is consumed by the job
+    assert ar.job_id == job.id                # ...and linked to it (execution trace)
 
 
-def test_enqueue_high_impact_with_unauthorized_envelope_is_rejected(db_session):
+def test_enqueue_high_impact_with_unauthorized_envelope_is_rejected(db_session, monkeypatch):
+    _register_high_impact(monkeypatch, "apply_patch", "repo_write")
     ar = request_action(db_session, action_class="repo_write")  # still pending
     with pytest.raises(PermissionError):
-        enqueue_job(
-            db_session, FakeRedis(), job_type="apply_patch", action_class="repo_write", action_request=ar
-        )
+        enqueue_job(db_session, FakeRedis(), job_type="apply_patch", action_request=ar)
 
 
-def test_enqueue_envelope_class_mismatch_is_rejected(db_session):
+def test_enqueue_envelope_class_mismatch_is_rejected(db_session, monkeypatch):
+    _register_high_impact(monkeypatch, "apply_patch", "repo_write")
     ar = request_action(db_session, action_class="deploy")
     authorize_action(db_session, ar.id)
     # An envelope authorized for 'deploy' cannot authorize a 'repo_write' job.
     with pytest.raises(PermissionError):
-        enqueue_job(
-            db_session, FakeRedis(), job_type="apply_patch", action_class="repo_write", action_request=ar
-        )
+        enqueue_job(db_session, FakeRedis(), job_type="apply_patch", action_request=ar)
+
+
+def test_enqueue_unknown_job_type_is_rejected_before_persistence(db_session):
+    from aos_core.services.jobs import UnknownJobType
+
+    with pytest.raises(UnknownJobType):
+        enqueue_job(db_session, FakeRedis(), job_type="totally-made-up")
+    assert db_session.query(Job).count() == 0
 
 
 # --- API surface ---------------------------------------------------------------

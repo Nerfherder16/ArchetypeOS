@@ -15,6 +15,8 @@ from aos_core.models import ActionRequest, ApprovalRecord
 from aos_core.services.authority import action_class_catalog, evaluate, list_pending_actions
 from aos_core.services.authority_envelope import authorize_action, reject_action, request_action
 
+from ..security import require_operator
+
 from ..schemas import (
     ActionClassRead,
     ActionRequestCreate,
@@ -73,16 +75,26 @@ def create_action_request(payload: ActionRequestCreate, db: Session = Depends(ge
 
 
 @router.post("/authority/actions/{action_id}/authorize", response_model=ActionRequestRead)
-def authorize_action_request(action_id: str, db: Session = Depends(get_db)) -> ActionRequest:
-    ar = authorize_action(db, action_id)
+def authorize_action_request(
+    action_id: str,
+    db: Session = Depends(get_db),
+    operator: str = Depends(require_operator),
+) -> ActionRequest:
+    # AOS-AUTH-BOUNDARY-001: only an authenticated operator may approve an action,
+    # and their identity is recorded as the approver (was a hardcoded "operator").
+    ar = authorize_action(db, action_id, approver=operator)
     if ar is None:
         raise HTTPException(status_code=404, detail="ActionRequest not found")
     return ar
 
 
 @router.post("/authority/actions/{action_id}/reject", response_model=ActionRequestRead)
-def reject_action_request(action_id: str, db: Session = Depends(get_db)) -> ActionRequest:
-    ar = reject_action(db, action_id)
+def reject_action_request(
+    action_id: str,
+    db: Session = Depends(get_db),
+    operator: str = Depends(require_operator),
+) -> ActionRequest:
+    ar = reject_action(db, action_id, approver=operator)
     if ar is None:
         raise HTTPException(status_code=404, detail="ActionRequest not found")
     return ar

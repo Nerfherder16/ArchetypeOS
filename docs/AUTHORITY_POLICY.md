@@ -60,6 +60,27 @@ Actions awaiting a human decision are `ApprovalRecord` rows with
 `approval_status = "pending"`. `GET /authority/pending` surfaces the queue for the
 operator dashboard (the "Awaiting You" surface).
 
+## Who may approve (AOS-AUTH-BOUNDARY-001)
+
+Approving or rejecting an action changes authority state, so it is an
+**operator-owned** mutation. `POST /authority/actions/{id}/authorize` and
+`.../reject` are gated by the reusable `require_operator` dependency
+(`apps/api/app/security.py`):
+
+- When `operator_token` is set, the request must carry a matching `X-Operator-Token`
+  (compared in constant time). The approver's `X-Operator-Id` (default `operator`)
+  is recorded as `updated_by` on the `ActionRequest`, so approvals are attributable.
+- When no token is set, the routes run open **only** if `auth_dev_mode` is true (the
+  local/tailnet default, logged as a warning). The shipped `docker-compose.yml` sets
+  `AUTH_DEV_MODE=false`, so a deployed profile with no operator secret **fails
+  closed** (`503`) rather than accepting anonymous approvals.
+
+The same `require_operator` gate governs the node-registry control plane: node
+enrollment, credential rotation (`POST /nodes/{id}/rotate-credential`), and
+revocation (`POST /nodes/{id}/revoke-credential`). A node's own `X-Node-Token`
+governs node-owned actions (heartbeat, and re-registration of an already-enrolled
+node) — a node can never approve an authority action or enroll/repolicy another node.
+
 ## Applies to
 
 - Voice promotions (draft -> concrete action)

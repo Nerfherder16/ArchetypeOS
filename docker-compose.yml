@@ -46,6 +46,17 @@ services:
       REPOSITORY_ROOT: ${REPOSITORY_ROOT:-/repositories}
       KNOWLEDGE_ROOT: ${KNOWLEDGE_ROOT:-/knowledge}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      # AOS-AUTH-BOUNDARY-001: the operator plane (node enrollment, credential
+      # rotation/revocation, authority approve/reject) fails CLOSED in this deployed
+      # profile. AUTH_DEV_MODE is forced false here, so if no OPERATOR_TOKEN is set
+      # those routes return 503 rather than silently running open. Set OPERATOR_TOKEN
+      # (and matching X-Operator-Token on operator requests) to enable them.
+      OPERATOR_TOKEN: ${OPERATOR_TOKEN:-}
+      AUTH_DEV_MODE: ${AUTH_DEV_MODE:-false}
+      # Connector-write + audit telemetry gates (soft tokens; empty = open on the
+      # tailnet). Set to lock the connector/audit write routes on a deployed profile.
+      CONNECTOR_WRITE_TOKEN: ${CONNECTOR_WRITE_TOKEN:-}
+      AUDIT_HEARTBEAT_TOKEN: ${AUDIT_HEARTBEAT_TOKEN:-}
       # Embedding tier. Default "deterministic" (lexical fallback, no model, no
       # onnxruntime). Set EMBEDDING_PROVIDER=fastembed (on api AND worker) to
       # activate the real fastembed/ONNX embedder — pair with the pre-download

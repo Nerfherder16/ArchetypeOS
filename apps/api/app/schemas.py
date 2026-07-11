@@ -602,6 +602,8 @@ class NodeRead(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
+    # AOS-AUTH-BOUNDARY-001: the operator who last enrolled/rotated/revoked (audit).
+    updated_by: str
 
     model_config = {"from_attributes": True}
 
@@ -717,6 +719,8 @@ class ActionRequestRead(BaseModel):
     version: int
     created_at: datetime
     updated_at: datetime
+    # AOS-AUTH-BOUNDARY-001: the operator who approved/rejected (audit trail).
+    updated_by: str
 
     model_config = {"from_attributes": True}
 

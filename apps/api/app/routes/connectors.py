@@ -7,6 +7,8 @@ explicit write path. ``POST /connectors/{name}/probe`` runs an active reachabili
 probe and records the result. ``POST /connectors/{name}/health`` records a posted
 probe result (create-on-demand for a catalogued connector).
 """
+import secrets
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
@@ -35,7 +37,8 @@ def require_connector_write_token(x_telemetry_token: str | None = Header(default
     (the follow-up to node identity — the connector-health endpoint was writable
     without any auth dependency).
     """
-    if settings.connector_write_token and x_telemetry_token != settings.connector_write_token:
+    token = settings.connector_write_token
+    if token and (not x_telemetry_token or not secrets.compare_digest(x_telemetry_token, token)):
         raise HTTPException(status_code=401, detail="Invalid or missing connector token")
 
 

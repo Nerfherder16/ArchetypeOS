@@ -24,6 +24,16 @@ class Settings(BaseSettings):
     # require a matching x-telemetry-token header, so an unauthenticated client can no
     # longer post false connector health. Empty = no auth (local/tailnet default).
     connector_write_token: str = ""
+    # AOS-AUTH-BOUNDARY-001: operator identity for control-plane mutations
+    # (node enrollment, credential rotation/revocation, authority approve/reject).
+    # ``operator_token`` — when set, these routes require a matching X-Operator-Token
+    # (constant-time compared). ``auth_dev_mode`` — the ONLY way to run these routes
+    # open with no token: it defaults True for the local/tailnet single-operator box,
+    # but the shipped docker-compose sets AUTH_DEV_MODE=false so a DEPLOYED profile
+    # with no operator token FAILS CLOSED (401) instead of silently leaving the
+    # operator plane open. Dev-mode passes are logged so "open" is never silent.
+    operator_token: str = ""
+    auth_dev_mode: bool = True
     llm_provider: str = "deterministic"
     # AOS-LLM-LOCAL-001: the "openai_compatible" provider runs ArchetypeOS's
     # reasoned tiers off a local model (Ollama/vLLM/LM Studio — e.g. teevee's

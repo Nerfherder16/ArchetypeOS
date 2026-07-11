@@ -1,3 +1,5 @@
+import secrets
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
@@ -21,9 +23,10 @@ def post_heartbeat(
     db: Session = Depends(get_db),
     x_telemetry_token: str | None = Header(default=None),
 ) -> AuditHeartbeat:
-    # When a token is configured, require it — mirrors the audit-routine collector
-    # pattern. Empty token (the local/tailnet default) means no auth.
-    if settings.audit_heartbeat_token and x_telemetry_token != settings.audit_heartbeat_token:
+    # When a token is configured, require it (constant-time) — mirrors the audit-
+    # routine collector pattern. Empty token (the local/tailnet default) means no auth.
+    _token = settings.audit_heartbeat_token
+    if _token and (not x_telemetry_token or not secrets.compare_digest(x_telemetry_token, _token)):
         raise HTTPException(status_code=401, detail="Invalid telemetry token")
     routine = payload.routine.strip()
     if not routine:

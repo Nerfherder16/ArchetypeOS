@@ -606,6 +606,12 @@ class NodeRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class NodeEnrollRead(NodeRead):
+    # AOS-NODE-IDENTITY-001 (P0-5): the plaintext node token, shown ONCE at
+    # enrollment (only its hash is stored). The node presents it on heartbeat/claim.
+    token: str
+
+
 class NodeHeartbeatCreate(BaseModel):
     health: str = "healthy"
     metrics: dict = {}

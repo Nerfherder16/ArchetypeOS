@@ -631,6 +631,27 @@ class NodeHeartbeat(AuditMixin, Base):
     metrics: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
 
 
+class NodeCredential(AuditMixin, Base):
+    """A per-node service credential (AOS-NODE-IDENTITY-001, finding P0-5).
+
+    Issued during operator-approved enrollment; only the SHA-256 hash is stored.
+    A node presents its token on heartbeat/claim so an unauthenticated client can
+    no longer report false health or impersonate a node. One live credential per
+    node (unique ``node_id``); ``revoked_at``/``rotated_at`` support rotation and
+    revocation.
+    """
+
+    __tablename__ = "node_credentials"
+
+    node_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("nodes.id"), nullable=False, unique=True, index=True
+    )
+    token_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    issued_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
+    rotated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class Connector(AuditMixin, Base):
     """A governed external connection in the connector registry (AOS-CONNECTOR-001).
 

@@ -103,6 +103,7 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         # voice TTS (AOS-VOICE-004 — Groq Orpheus spoken replies)
         ("POST", "/voice/speak"),
         # node registry (AOS-NODE-001 — distributed runtime)
+        ("POST", "/nodes/enroll"),
         ("POST", "/nodes/register"),
         ("POST", "/nodes/{node_id}/heartbeat"),
         ("GET", "/nodes"),
@@ -163,5 +164,6 @@ def test_route_inventory_count() -> None:
     # sources/{source_ref}/decision) = 71, plus the AOS-SELFHEAL heartbeat routes
     # (POST /audits/heartbeat, GET /audits/heartbeats) = 73, plus the per-project
     # audit toggle (PATCH /projects/{project_id}) = 74.
-    assert len(EXPECTED_ROUTES) == 74
-    assert len(_actual_routes()) == 74
+    # + AOS-NODE-IDENTITY-001 enrollment route (POST /nodes/enroll) = 75.
+    assert len(EXPECTED_ROUTES) == 75
+    assert len(_actual_routes()) == 75

@@ -15,7 +15,7 @@ import threading
 from datetime import timedelta
 
 import pytest
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
@@ -40,6 +40,11 @@ def pg_engine():
     if not _is_postgres(_DB_URL):
         pytest.skip("AOS_TEST_DATABASE_URL not set to a postgresql database")
     engine = create_engine(_DB_URL, pool_pre_ping=True, pool_size=16, max_overflow=16)
+    # create_all builds every table, including knowledge_pages.embedding (pgvector);
+    # ensure the extension exists first, like the pgvector store suite does — this
+    # suite may run before it and the type would otherwise be undefined.
+    with engine.begin() as conn:
+        conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     try:

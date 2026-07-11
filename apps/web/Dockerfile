@@ -6,7 +6,11 @@
 FROM node:22-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json* ./
-RUN npm ci || npm install
+# npm's optional-dependencies bug (npm/cli#4828) can omit the platform-specific
+# Rollup native binary from a committed lockfile → "Cannot find module
+# @rollup/rollup-linux-x64-musl" at `vite build`. Install fresh from package.json
+# so the correct-platform optional dep is resolved in-image.
+RUN rm -f package-lock.json && npm install --no-audit --no-fund
 COPY . .
 # Single origin: the API is reached at /api (proxied by Caddy), so the baked base
 # is a RELATIVE url — a tailnet viewer hits their OWN origin, fixing the baked-

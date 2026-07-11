@@ -19,12 +19,24 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from ..models import ResearchPlan, ResearchRun
+from ..models import ResearchNote, ResearchPlan, ResearchRun
 from .llm_router import Sensitivity
 from .research import LocalCorpusSource, _rank, synthesize_dossier
 
 # Gather at most this many candidate sources from the local corpus per run.
 _GATHER_LIMIT = 25
+
+
+def _title_for(question: str) -> str:
+    """Derive a ResearchNote title from a question, truncated to fit String(255).
+
+    Mirrors the ``research.py`` convention (:func:`aos_core.services.research._title_for`)
+    so a deep run's note reads the same as the deterministic-floor's note.
+    """
+    q = (question or "").strip()
+    if not q:
+        return "Research: (no question provided)"
+    return f"Research: {q}"[:255]
 
 
 def _decide_sources(ranked: list[dict], gathered_refs: list[str], top_n: int) -> list[dict]:
@@ -112,6 +124,29 @@ def execute_research_run(
         confidence=float(dossier.get("confidence", 0.0)),
     )
     db.add(run)
+
+    # AOS-RESEARCH-COUNCIL-001: mirror the run into a ResearchNote so the Agent
+    # Council's evidence selector (which reads ResearchNote, not ResearchRun) picks
+    # up deep multi-phase research too. Only when the run belongs to a job — a
+    # get-or-create keyed on job_id keeps this idempotent under job redelivery and
+    # respects the table's own uq_research_notes_job_id constraint. A direct call
+    # with no job_id leaves behavior unchanged (no note).
+    if job_id is not None:
+        note = db.query(ResearchNote).filter(ResearchNote.job_id == job_id).one_or_none()
+        if note is None:
+            db.add(
+                ResearchNote(
+                    project_id=plan.project_id,
+                    title=_title_for(question),
+                    question=question,
+                    summary=dossier["summary"],
+                    sources=decided,
+                    findings=dossier["findings"],
+                    freshness=dossier["freshness"],
+                    confidence=float(dossier.get("confidence", 0.0)),
+                    job_id=job_id,
+                )
+            )
 
     # criterion 5: each open question becomes a follow-up plan.
     for open_question in run.open_questions:

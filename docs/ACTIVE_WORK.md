@@ -45,6 +45,22 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 - **P2 AOS-RESEARCH-003** — multi-phase research loop (persisted plan; search/fetch/verify/synthesize recorded; open questions → follow-ups).
 - **AOS-WEB-SPINE-001** (enabler) — split `main.tsx` into app bootstrap + per-view modules; project context provider; query/cache layer; URL routing. Prereq/booster for AOS-VOICE-PROJECT-001 and the UX-IA work.
 
+### Intelligence-loop re-centering (Proposed — from AOS-REVIEW-003, 2026-07-11)
+
+Closes the **right-of-decision** half of the engineering-intelligence loop. See `knowledge/wiki/reviews/2026-07-11-vision-drift-and-recentering.md` (assessment) and `docs/rfc/RFC-0015-Build-Intelligence-Closing-The-Loop.md` (anchoring RFC + routed delivery plan). Strictly the BRAIN complement to the REVIEW-002 shell-integrity wave — rides its enforcement rails, does not duplicate them.
+
+**Delivery status (branch `claude/archetypeos-vision-realignment-6psujb`, awaiting review/PR):** 4 unblocked packages BUILT + hermetically verified (full API suite 572 passed / 5 skipped combined). BUILD-EXEC + its dependents remain Proposed, blocked on the REVIEW-002 durability rail (RFC-0014) and an authed builder node.
+
+- **✅ Built — P0 AOS-RESEARCH-COUNCIL-001** (Wave A) — `execute_research_run` now emits a `ResearchNote` so deep research reaches the council. Closes seam #5. Commit `a1a3692`.
+- **✅ Built — P0 AOS-BUILD-PLAN-001** (Wave B stage 1) — `ImplementationPlan` model + `plan_from_decision()`/`approve_plan()` + plans routes + migration 0024. An approved `Decision` becomes a governed, **draft-only** plan. Closes seam #1. No execution. Commit `f6b9018`.
+- **⛔ Proposed — P1 AOS-BUILD-EXEC-001** (Wave B, large, gated) — governed `build`/`execute` job handler through the Authority execution envelope, human approval mandatory. Closes seam #2. **Blocked on AOS-JOBS-RELIABILITY-001 / RFC-0014 (durability) + an authed builder node.** Articles IX/XIX — dry-run slice first. (Authority envelope is already live on `enqueue_job`, so that rail is ready.)
+- **📋 Proposed — P1 AOS-VERIFY-RUNTIME-001** (Wave B) — make the verifier/Guardian reachable from the worker; verification record on the build. Closes seam #3. Follows BUILD-EXEC.
+- **📋 Proposed — P2 AOS-LESSON-AUTO-001** (Wave B) — auto-generate a lesson/`KnowledgePage` from a runtime verification failure. Closes seam #4. Follows VERIFY-RUNTIME.
+- **✅ Built — P2 AOS-RECO-ENGINE-001** (Wave C) — deterministic Technology Fitness pass + `Recommendation` generator from DNA risk flags + research findings; `POST /projects/{id}/recommendations/generate`. Gives two name-only engines a real engine; closes seam #4 (compare→recommend). Commit `db93282`.
+- **✅ Built — P2 AOS-EVOLVE-001** (Wave C) — Evolution Engine: decision-staleness (age + evidence supersession) + advisory `reevaluate` + routes. Article X/XVIII. Commit `f50f553`. (Scheduled `evolution_sweep` job = documented follow-up.)
+- **P2 AOS-COUNCIL-REALRUN-001** (Wave C, medium) — governed continuous (scheduled/operator-triggered) real-model council run on the authed node, so the brain is *exercised*, not only run deterministically in CI. Builds on `docs/COUNCIL_REALRUN_PYDANTIC_AI.md`.
+- **Deferred with intent (name-only engines):** Design Intelligence, Architecture Spine Graph, Engineering Evaluation Standard (production-readiness scoring beyond DNA), Architecture Studio text/image ingestion. Mark these deferred in `docs/ENGINE_CATALOG.md` so the catalog stops overstating (Article XII).
+
 ### AOS-VOICE-005 — Per-intent agent drafts (promote on approval)
 
 - Status: In Review

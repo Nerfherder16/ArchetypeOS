@@ -106,6 +106,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/nodes/enroll"),
         ("POST", "/nodes/register"),
         ("POST", "/nodes/{node_id}/heartbeat"),
+        # AOS-AUTH-BOUNDARY-001: operator-owned credential lifecycle
+        ("POST", "/nodes/{node_id}/rotate-credential"),
+        ("POST", "/nodes/{node_id}/revoke-credential"),
         ("GET", "/nodes"),
         ("GET", "/nodes/route"),
         ("GET", "/nodes/{node_id}"),
@@ -177,5 +180,6 @@ def test_route_inventory_count() -> None:
     # GET /authority/actions/{id}) = 79, the AOS-NODE-AGENT-001 routing route
     # (GET /nodes/route) = 80, and the AOS-CONNECTOR-RUNTIME-001 routes
     # (POST /connectors/reconcile, POST /connectors/{name}/probe) = 82.
-    assert len(EXPECTED_ROUTES) == 82
-    assert len(_actual_routes()) == 82
+    # AOS-AUTH-BOUNDARY-001 added the operator credential rotate/revoke routes = 84.
+    assert len(EXPECTED_ROUTES) == 84
+    assert len(_actual_routes()) == 84

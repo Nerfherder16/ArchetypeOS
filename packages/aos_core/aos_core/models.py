@@ -325,6 +325,13 @@ class Job(AuditMixin, Base):
     # recovers the job — closing the crash-recovery half of finding P0-1.
     claimed_by: Mapped[str | None] = mapped_column(String(128))
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # AOS-JOB-FENCING-001: an opaque fencing token minted on every successful claim.
+    # ``claimed_by`` alone is not a fence — a worker id (``hostname:pid``) can recur,
+    # and a stale worker that lost its lease could still complete/fail a job another
+    # worker has since re-claimed. Every worker-side state transition (renew, complete,
+    # fail, retry) is a compare-and-swap on this token, so a claim reclaimed by the
+    # reaper or another worker (which mints a NEW token) invalidates the old owner.
+    claim_token: Mapped[str | None] = mapped_column(String(64))
 
 
 class JobOutbox(AuditMixin, Base):

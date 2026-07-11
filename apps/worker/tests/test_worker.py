@@ -1,4 +1,5 @@
 import os
+import time
 from collections.abc import Generator
 
 import pytest
@@ -334,28 +335,35 @@ def test_test_job_backward_compat(worker_db):
 
 def test_retry_then_fail(worker_db):
     # A repository_scan with a bogus repository_id: run_scan raises HTTPException(404).
+    # AOS-JOB-FENCING-001: run_job now owns the fenced retry/dead-letter lifecycle
+    # itself (driven by spec.max_attempts), re-queuing through the durable outbox
+    # instead of a direct Redis push — so we just call run_job until exhaustion.
+    from aos_core.models import JobOutbox
+
     with worker_db() as db:
         job = Job(job_type="repository_scan", status="queued", repository_id="00000000-0000-0000-0000-000000000000")
         db.add(job)
+        db.flush()
+        db.add(JobOutbox(job_id=job.id))
         db.commit()
         job_id = job.id
+        max_attempts = worker.JOB_HANDLERS["repository_scan"].max_attempts
 
-    client = FakeRedis()
-    # Mirror main()'s try/except across attempts until exhaustion.
-    for _ in range(worker.MAX_ATTEMPTS):
-        try:
-            worker.run_job(job_id)
-        except Exception as exc:
-            worker.handle_failure(job_id, client, str(exc))
+    for _ in range(max_attempts):
+        worker.run_job(job_id)
+        with worker_db() as db:
+            job = db.get(Job, job_id)
+            if job.status == "queued":
+                # Re-armed through the outbox for redelivery (not a direct Redis push).
+                assert db.query(JobOutbox).filter_by(job_id=job_id).one().delivered_at is None
 
     with worker_db() as db:
         job = db.get(Job, job_id)
-        # Slice 3: retry-budget exhaustion lands in dead_letter, not a bare "failed".
+        # Retry-budget exhaustion lands in dead_letter, not a bare "failed".
         assert job.status == "dead_letter"
-        assert job.attempts == worker.MAX_ATTEMPTS
+        assert job.attempts == max_attempts
         assert job.error
-    # Re-enqueued on every attempt except the final (dead-lettered) one.
-    assert len(client.queue) == worker.MAX_ATTEMPTS - 1
+        assert job.claimed_by is None and job.claim_token is None
 
 
 def test_drain_outbox_delivers_deferred_jobs(worker_db):
@@ -601,3 +609,136 @@ def test_unknown_job_type_fails_clearly(worker_db):
         job = db.get(Job, job_id)
         assert job.status == "failed"
         assert "totally-unknown-kind" in (job.error or "")
+
+
+# --- AOS-JOB-FENCING-001: runtime enforcement of HandlerSpec metadata ---
+
+
+def _register_temp_handler(**kw):
+    from app.handlers.registry import HandlerSpec
+
+    spec = HandlerSpec(**kw)
+    worker.register_handler(spec)
+    return spec
+
+
+def _seed_job(worker_db, job_type: str) -> str:
+    from aos_core.models import JobOutbox
+
+    with worker_db() as db:
+        job = Job(job_type=job_type, status="queued")
+        db.add(job)
+        db.flush()
+        db.add(JobOutbox(job_id=job.id))
+        db.commit()
+        return job.id
+
+
+def test_handler_timeout_is_enforced(worker_db):
+    # A handler that overruns its per-spec timeout is interrupted (SIGALRM) and,
+    # with max_attempts=1, dead-lettered — the field is no longer inert metadata.
+    def _slow(job, db):
+        time.sleep(3.0)
+        return {"never": True}
+
+    _register_temp_handler(job_type="slow_test", capability="test", sensitivity="public",
+                           run=_slow, timeout_seconds=0.2, max_attempts=1)
+    try:
+        job_id = _seed_job(worker_db, "slow_test")
+        start = time.monotonic()
+        worker.run_job(job_id)
+        elapsed = time.monotonic() - start
+        assert elapsed < 2.0, "handler was interrupted well before its 3s sleep finished"
+        with worker_db() as db:
+            job = db.get(Job, job_id)
+            assert job.status == "dead_letter"
+            assert "timeout" in (job.error or "").lower()
+    finally:
+        worker.JOB_HANDLERS.pop("slow_test", None)
+
+
+def test_result_schema_is_enforced(worker_db):
+    # A result missing a declared schema key is rejected before completion.
+    def _bad(job, db):
+        return {"wrong": 1}
+
+    _register_temp_handler(job_type="schema_test", capability="test", sensitivity="public",
+                           run=_bad, max_attempts=1, result_schema=("required_key",))
+    try:
+        job_id = _seed_job(worker_db, "schema_test")
+        worker.run_job(job_id)
+        with worker_db() as db:
+            job = db.get(Job, job_id)
+            assert job.status == "dead_letter"
+            assert "missing required keys" in (job.error or "")
+    finally:
+        worker.JOB_HANDLERS.pop("schema_test", None)
+
+
+def test_per_handler_max_attempts_drives_dead_letter(worker_db):
+    # max_attempts=2 dead-letters on the 2nd attempt — proving the PER-HANDLER budget
+    # drives retries, not the module-level MAX_ATTEMPTS (3).
+    def _boom(job, db):
+        raise RuntimeError("boom")
+
+    _register_temp_handler(job_type="boom_test", capability="test", sensitivity="public",
+                           run=_boom, max_attempts=2)
+    try:
+        job_id = _seed_job(worker_db, "boom_test")
+        worker.run_job(job_id)  # attempt 1 → re-queued
+        with worker_db() as db:
+            assert db.get(Job, job_id).status == "queued"
+        worker.run_job(job_id)  # attempt 2 → dead_letter (budget = 2, not 3)
+        with worker_db() as db:
+            job = db.get(Job, job_id)
+            assert job.status == "dead_letter"
+            assert job.attempts == 2
+    finally:
+        worker.JOB_HANDLERS.pop("boom_test", None)
+
+
+def test_lease_renewer_extends_lease(worker_db):
+    # The renewer thread extends a live owner's lease (so a long handler is not
+    # reaped mid-flight) and reports it never lost ownership.
+    from aos_core.services.jobs import claim_job
+
+    job_id = _seed_job(worker_db, "test")
+    with worker_db() as db:
+        claim = claim_job(db, job_id, "w1")
+        before = db.get(Job, job_id).lease_expires_at
+
+    renewer = worker.LeaseRenewer(claim, interval=0.05, session_factory=worker_db)
+    renewer.start()
+    time.sleep(0.25)
+    renewer.stop()
+    renewer.join(timeout=2)
+
+    with worker_db() as db:
+        after = db.get(Job, job_id).lease_expires_at
+    assert after > before  # the lease was extended
+    assert renewer.lost_ownership is False
+
+
+def test_renewer_detects_lost_ownership(worker_db):
+    # If the job is reclaimed (token changes) while the renewer runs, the renewer
+    # learns it lost ownership and stops.
+    from aos_core.services.jobs import claim_job
+
+    job_id = _seed_job(worker_db, "test")
+    with worker_db() as db:
+        claim = claim_job(db, job_id, "w1")
+
+    # Simulate a reclaim: another worker takes it (fresh token) after the lease lapses.
+    with worker_db() as db:
+        job = db.get(Job, job_id)
+        job.lease_expires_at = job.lease_expires_at.replace(year=2000)
+        db.commit()
+    with worker_db() as db:
+        claim_job(db, job_id, "w2")
+
+    renewer = worker.LeaseRenewer(claim, interval=0.05, session_factory=worker_db)
+    renewer.start()
+    time.sleep(0.25)
+    renewer.stop()
+    renewer.join(timeout=2)
+    assert renewer.lost_ownership is True

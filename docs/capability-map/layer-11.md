@@ -26,6 +26,7 @@ Capabilities:
 - capability-aware node routing (AOS-NODE-AGENT-001, finding P1-2: the worker registers itself as a node with its handler capabilities and heartbeats; route_job / GET /nodes/route choose an eligible node by capability ∈ node capabilities, job sensitivity ≤ node ceiling, write requirement ≤ node policy, and fresh health — with a deterministic Control-Tower explanation of why a job routes to a given node. Remote HTTPS execution across machines is a follow-up)
 - GitHub integration
 - database schema migrations (Alembic)
+- unified connector runtime (AOS-CONNECTOR-RUNTIME-001, finding P0-4: the free-LLM-pool "configured" bit reads the same per-provider env keys the worker's pool is built from, so API and worker agree; GET /connectors is read-only; reachability is an active TCP probe separate from credential-present; sync moved to POST /connectors/reconcile)
 
 Primary artifacts:
 

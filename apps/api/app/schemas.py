@@ -643,6 +643,10 @@ class ConnectorRead(BaseModel):
     tier: str
     enabled: bool
     configured: bool
+    # AOS-CONNECTOR-RUNTIME-001 (P0-4): decomposed status — credential present vs
+    # actually reachable (a non-empty default URL is configured but may be down).
+    credential_present: bool = False
+    reachable: bool | None = None
     privacy_class: str
     egress_allowed: bool
     browser_exposed: bool

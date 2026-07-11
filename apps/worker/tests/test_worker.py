@@ -196,8 +196,10 @@ def test_council_review_multi_model_records_agent_models(worker_db, monkeypatch)
                 text=text, provider="openai_compatible", model=m, finish_reason="stop"
             )
 
+    from app.handlers import council_review as council_handler
+
     monkeypatch.setattr(
-        worker, "council_provider",
+        council_handler, "council_provider",
         lambda settings, sink=None: _SpreadFake(["groq-70b", "gemini", "cerebras-120b", "mistral"]),
     )
 
@@ -394,8 +396,10 @@ def test_digest_idempotent_on_rerun(worker_db):
 
     with worker_db() as db:
         job = db.get(Job, job_id)
-        first = worker._run_project_digest(job, db)
-        second = worker._run_project_digest(job, db)
+        from app.handlers.project_digest import run as run_digest
+
+        first = run_digest(job, db)
+        second = run_digest(job, db)
         assert first["digest_id"] == second["digest_id"]
         assert db.query(NightlyDigest).filter(NightlyDigest.job_id == job_id).count() == 1
 
@@ -427,8 +431,10 @@ def test_research_idempotent_on_rerun(worker_db):
 
     with worker_db() as db:
         job = db.get(Job, job_id)
-        first = worker._run_research(job, db)
-        second = worker._run_research(job, db)
+        from app.handlers.research import run as run_research
+
+        first = run_research(job, db)
+        second = run_research(job, db)
         assert first["note_id"] == second["note_id"]
         assert db.query(ResearchNote).filter(ResearchNote.job_id == job_id).count() == 1
 
@@ -520,6 +526,34 @@ def test_queue_is_single_sourced_from_core():
     from aos_core.services.jobs import QUEUE as CORE_QUEUE
 
     assert worker.QUEUE is CORE_QUEUE
+
+
+def test_registry_loads_all_handlers_from_modules():
+    # AOS-WORKER-HANDLERS-001: dispatch is assembled from per-type modules, not a
+    # central source block (finding P1-1 / PR #179 hotspot).
+    from app.handlers.registry import load_handlers
+
+    reg = load_handlers()
+    assert {
+        "repository_scan",
+        "project_digest",
+        "council_review",
+        "research",
+        "research_run",
+        "test",
+    } <= set(reg)
+
+
+def test_handler_spec_declares_richer_metadata():
+    from app.handlers.registry import IDEMPOTENCY_STRATEGIES
+
+    for spec in worker.JOB_HANDLERS.values():
+        assert spec.capability
+        assert spec.sensitivity in {"public", "private"}
+        assert spec.timeout_seconds > 0
+        assert spec.max_attempts >= 1
+        assert spec.idempotency_strategy in IDEMPOTENCY_STRATEGIES
+        assert isinstance(spec.result_schema, tuple)
 
 
 def test_handler_registry_declares_capabilities():

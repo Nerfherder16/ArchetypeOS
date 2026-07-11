@@ -89,6 +89,9 @@ class Repository(AuditMixin, Base):
 
     project: Mapped[Project] = relationship(back_populates="repositories")
     dna: Mapped["RepositoryDNA | None"] = relationship(back_populates="repository", cascade="all, delete-orphan")
+    capabilities: Mapped[list["RepositoryCapability"]] = relationship(
+        back_populates="repository", cascade="all, delete-orphan"
+    )
 
 
 class RepositoryDNA(AuditMixin, Base):
@@ -108,6 +111,46 @@ class RepositoryDNA(AuditMixin, Base):
     evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
 
     repository: Mapped[Repository] = relationship(back_populates="dna")
+
+
+class RepositoryCapability(AuditMixin, Base):
+    """A single named, reuse-oriented capability extracted from a repository (RFC-0013).
+
+    Distillation's reasoned tier already names the concrete, reusable capabilities a
+    *different* project could borrow (``{name, description, provenance}``); Slice 1
+    only rendered them into the vault markdown. This table persists them at
+    **capability granularity** so the Transfer Engine can match a reuse need against a
+    *single capability's* embedding (high cosine) instead of a whole-product blob
+    (noise) — the granularity fix RFC-0013 identifies. One row per capability; a repo
+    has several. ``embedding`` reuses the RFC-0010 dialect-variant column (real
+    ``VECTOR(384)`` on postgres, benign NULL JSON on sqlite), embedding
+    ``name + " " + description``. Rows are replaced wholesale on every re-distill
+    (the capability set is a pure function of the current source), so no per-row
+    version drift accumulates.
+    """
+
+    __tablename__ = "repository_capabilities"
+    __table_args__ = (
+        Index("ix_repository_capabilities_repository_id", "repository_id"),
+    )
+
+    repository_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("repositories.id"), nullable=False
+    )
+    # The vault page this capability was rendered into — evidence provenance; nullable
+    # so a capability can outlive a page row without a hard FK failure.
+    knowledge_page_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("knowledge_pages.id"), index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    # File path(s) the capability lives in — every capability is grounded to at least
+    # one cited file (``_drop_uncited_capabilities``); this is what a recommendation
+    # points a borrower at.
+    provenance: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    embedding: Mapped[list[float] | None] = mapped_column(EmbeddingColumn, nullable=True)
+
+    repository: Mapped[Repository] = relationship(back_populates="capabilities")
 
 
 class ArchitectureNode(AuditMixin, Base):

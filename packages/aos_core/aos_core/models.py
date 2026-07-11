@@ -80,6 +80,11 @@ class Repository(AuditMixin, Base):
     default_branch: Mapped[str | None] = mapped_column(String(255))
     remote_url: Mapped[str | None] = mapped_column(Text)
     is_read_only: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    # AOS-AUTHORITY-HARDEN-001: the repository's data-sensitivity policy. Egress of
+    # its content (e.g. distillation to a model provider) derives the authority
+    # envelope's sensitivity from HERE, instead of hardcoding "public" — a private
+    # repository's content therefore requires approval to egress.
+    sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
     last_scanned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     project: Mapped[Project] = relationship(back_populates="repositories")
@@ -420,6 +425,9 @@ class ActionRequest(AuditMixin, Base):
     actor: Mapped[str] = mapped_column(String(128), default="system", nullable=False)
     agent: Mapped[str | None] = mapped_column(String(128))
     project_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("projects.id"), index=True)
+    # AOS-AUTHORITY-HARDEN-001: bind the envelope to the concrete target so an
+    # approval for one repository/payload cannot authorize another.
+    repository_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("repositories.id"), index=True)
     target: Mapped[str | None] = mapped_column(Text)
     sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
     requested_capability: Mapped[str | None] = mapped_column(String(128))
@@ -430,6 +438,10 @@ class ActionRequest(AuditMixin, Base):
     approval_state: Mapped[str] = mapped_column(String(32), default="pending", nullable=False, index=True)
     # requested | authorized | executed | rejected
     execution_state: Mapped[str] = mapped_column(String(32), default="requested", nullable=False, index=True)
+    # AOS-AUTHORITY-HARDEN-001: execution linkage (which job consumed this envelope)
+    # and an expiry so a pending/authorized envelope does not live forever.
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Agent(AuditMixin, Base):

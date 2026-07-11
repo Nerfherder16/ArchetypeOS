@@ -66,6 +66,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/council-reviews/{review_id}/draft-decision"),
         ("POST", "/decisions/{decision_id}/approve"),
         ("POST", "/decisions/{decision_id}/reject"),
+        # evolution engine (AOS-EVOLVE-001 — decision staleness + advisory re-evaluation)
+        ("GET", "/projects/{project_id}/decisions/stale"),
+        ("POST", "/decisions/{decision_id}/reevaluate"),
         # decision → knowledge (AOS-COUNCIL-PHASEC2A — approved decision → repo-vault ADR)
         ("POST", "/decisions/{decision_id}/adr"),
         # digests
@@ -194,5 +197,8 @@ def test_route_inventory_count() -> None:
     # /projects/{project_id}/plans, POST /plans/{plan_id}/approve) = 88.
     # AOS-RECO-ENGINE-001 added the recommendation-generator route (POST
     # /projects/{project_id}/recommendations/generate) = 89.
-    assert len(EXPECTED_ROUTES) == 89
-    assert len(_actual_routes()) == 89
+    # AOS-EVOLVE-001 added the evolution-engine routes (GET
+    # /projects/{project_id}/decisions/stale, POST
+    # /decisions/{decision_id}/reevaluate) = 91.
+    assert len(EXPECTED_ROUTES) == 91
+    assert len(_actual_routes()) == 91

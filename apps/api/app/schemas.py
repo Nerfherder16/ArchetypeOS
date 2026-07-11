@@ -248,6 +248,18 @@ class DecisionReject(BaseModel):
     rationale: str
 
 
+# AOS-EVOLVE-001 (RFC-0015 Wave C) — Evolution Engine: staleness + re-evaluation.
+class DecisionStaleness(BaseModel):
+    decision_id: str
+    title: str
+    reason: str
+    age_days: int | None = None
+
+
+class DecisionReevaluate(BaseModel):
+    reason: str | None = None
+
+
 # AOS-BUILD-PLAN-001 (RFC-0015 Design §1) — Decision → Plan.
 class ImplementationPlanRead(BaseModel):
     id: str

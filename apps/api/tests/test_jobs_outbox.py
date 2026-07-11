@@ -7,8 +7,16 @@ job, and the dispatcher delivers deferred rows once the broker is reachable.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from aos_core.models import Job, JobOutbox
-from aos_core.services.jobs import QUEUE, dispatch_outbox, enqueue_job
+from aos_core.services.jobs import (
+    QUEUE,
+    claim_job,
+    dispatch_outbox,
+    enqueue_job,
+    reap_expired_leases,
+)
 
 
 class FakeRedis:
@@ -83,3 +91,46 @@ def test_dispatch_outbox_stops_on_broker_failure(db_session):
     assert dispatch_outbox(db_session, DeadRedis()) == 0
     undelivered = db_session.query(JobOutbox).filter(JobOutbox.delivered_at.is_(None)).count()
     assert undelivered == 2
+
+
+# --- Slice 2: leased claims + crash recovery (finding P0-1, execution half) ---
+
+
+def test_claim_is_single_winner(db_session):
+    job = enqueue_job(db_session, FakeRedis(), job_type="test")
+    assert claim_job(db_session, job.id, "w1") is True
+    assert claim_job(db_session, job.id, "w2") is False  # w1 holds a live lease
+    row = db_session.get(Job, job.id)
+    assert row.status == "running" and row.claimed_by == "w1"
+    assert row.attempts == 1  # claim increments once; the losing claim does not
+
+
+def test_reap_recovers_expired_lease(db_session):
+    client = FakeRedis()
+    job = enqueue_job(db_session, client, job_type="test")
+    t0 = datetime(2026, 7, 11, tzinfo=timezone.utc)
+    assert claim_job(db_session, job.id, "w1", now=t0) is True  # lease -> t0 + 300s
+
+    # Worker "dies"; reap runs well after the lease lapses.
+    requeued = reap_expired_leases(db_session, client, max_attempts=3, now=t0 + timedelta(seconds=400))
+    assert requeued == 1
+
+    row = db_session.get(Job, job.id)
+    assert row.status == "queued"
+    assert row.claimed_by is None and row.lease_expires_at is None
+    assert (QUEUE, job.id) in client.queue  # redelivered through the outbox
+
+
+def test_reap_fails_when_attempts_exhausted(db_session):
+    client = FakeRedis()
+    job = enqueue_job(db_session, client, job_type="test")
+    row = db_session.get(Job, job.id)
+    row.status = "running"
+    row.attempts = 3
+    row.lease_expires_at = datetime(2000, 1, 1, tzinfo=timezone.utc)  # long expired
+    db_session.commit()
+
+    assert reap_expired_leases(db_session, client, max_attempts=3) == 0
+    row = db_session.get(Job, job.id)
+    assert row.status == "failed"
+    assert "lease expired" in (row.error or "")

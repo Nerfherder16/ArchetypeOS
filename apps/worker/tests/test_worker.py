@@ -374,6 +374,39 @@ def test_drain_outbox_delivers_deferred_jobs(worker_db):
         assert db.query(JobOutbox).filter_by(job_id=job_id).one().delivered_at is not None
 
 
+def test_reap_requeues_crashed_job(worker_db):
+    # AOS-JOBS-RELIABILITY-001 Slice 2: a worker that died mid-job leaves a running
+    # row with an expired lease; worker.reap recovers it (re-queues + redelivers),
+    # closing the crash-recovery half of finding P0-1.
+    from datetime import datetime, timezone
+
+    from aos_core.models import JobOutbox
+
+    dead_past = datetime(2000, 1, 1, tzinfo=timezone.utc)
+    with worker_db() as db:
+        job = Job(
+            job_type="test",
+            status="running",
+            attempts=1,
+            claimed_by="dead-worker",
+            lease_expires_at=dead_past,
+        )
+        db.add(job)
+        db.flush()
+        db.add(JobOutbox(job_id=job.id, delivered_at=dead_past))  # already delivered once
+        db.commit()
+        job_id = job.id
+
+    client = FakeRedis()
+    assert worker.reap(client) == 1
+    assert client.queue == [job_id]
+
+    with worker_db() as db:
+        row = db.get(Job, job_id)
+        assert row.status == "queued"
+        assert row.claimed_by is None and row.lease_expires_at is None
+
+
 def test_queue_is_single_sourced_from_core():
     # The worker's QUEUE must be the shared aos_core constant, not a local
     # literal (RFC-0007 / AOS-SCHED-001: one job-origination source of truth).

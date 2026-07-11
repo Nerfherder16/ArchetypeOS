@@ -19,10 +19,18 @@ depend on redis.
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timedelta
+
+from sqlalchemy import or_, update
 
 from ..models import Job, JobOutbox, now_utc
 
 QUEUE = "archetypeos:jobs"
+
+# Default lease window a worker holds while executing a job. Sized well above a
+# normal handler's runtime; long handlers renew (Slice 2). The reaper reclaims a
+# job only after its lease has fully expired, so a live worker is never preempted.
+DEFAULT_LEASE_SECONDS = 300
 
 logger = logging.getLogger("archetypeos.jobs")
 
@@ -101,4 +109,152 @@ def dispatch_outbox(db, client, *, limit: int = 100) -> int:
     return delivered
 
 
-__all__ = ["QUEUE", "enqueue_job", "dispatch_outbox"]
+def claim_job(
+    db,
+    job_id: str,
+    worker_id: str,
+    *,
+    lease_seconds: int = DEFAULT_LEASE_SECONDS,
+    now: datetime | None = None,
+) -> bool:
+    """Atomically claim a job with a lease (compare-and-swap). Returns True if won.
+
+    The claim only succeeds when the job is ``queued``/``running`` AND its lease is
+    absent or expired, so two workers racing the same id cannot both win — the
+    second sees ``rowcount == 0`` and drops it (finding P0-1). Claiming increments
+    ``attempts`` and stamps ``started_at``.
+    """
+    now = now or now_utc()
+    stmt = (
+        update(Job)
+        .where(
+            Job.id == job_id,
+            Job.status.in_(("queued", "running")),
+            or_(Job.lease_expires_at.is_(None), Job.lease_expires_at < now),
+        )
+        .values(
+            status="running",
+            claimed_by=worker_id,
+            lease_expires_at=now + timedelta(seconds=lease_seconds),
+            started_at=now,
+            attempts=Job.attempts + 1,
+        )
+    )
+    result = db.execute(stmt)
+    db.commit()
+    return result.rowcount == 1
+
+
+def renew_lease(
+    db,
+    job_id: str,
+    worker_id: str,
+    *,
+    lease_seconds: int = DEFAULT_LEASE_SECONDS,
+    now: datetime | None = None,
+) -> bool:
+    """Extend the lease for a job this worker still holds. Returns True if renewed."""
+    now = now or now_utc()
+    stmt = (
+        update(Job)
+        .where(Job.id == job_id, Job.claimed_by == worker_id, Job.status == "running")
+        .values(lease_expires_at=now + timedelta(seconds=lease_seconds))
+    )
+    result = db.execute(stmt)
+    db.commit()
+    return result.rowcount == 1
+
+
+def complete_job(db, job_id: str, result: dict | None) -> None:
+    """Mark a job completed and release its lease (same session as the handler)."""
+    job = db.get(Job, job_id)
+    if job is None:
+        return
+    now = now_utc()
+    job.status = "completed"
+    job.result = result
+    job.finished_at = now
+    job.updated_at = now
+    job.claimed_by = None
+    job.lease_expires_at = None
+    db.commit()
+
+
+def release_for_retry(db, job_id: str) -> None:
+    """Reset a job to ``queued`` and release its lease so it can be re-claimed."""
+    job = db.get(Job, job_id)
+    if job is None:
+        return
+    job.status = "queued"
+    job.claimed_by = None
+    job.lease_expires_at = None
+    job.updated_at = now_utc()
+    db.commit()
+
+
+def fail_job(db, job_id: str, error: str | None) -> None:
+    """Mark a job failed and release its lease."""
+    job = db.get(Job, job_id)
+    if job is None:
+        return
+    now = now_utc()
+    job.status = "failed"
+    job.error = error
+    job.finished_at = now
+    job.updated_at = now
+    job.claimed_by = None
+    job.lease_expires_at = None
+    db.commit()
+
+
+def reap_expired_leases(db, client, *, max_attempts: int, now: datetime | None = None) -> int:
+    """Recover jobs whose worker died mid-execution (lease expired while running).
+
+    Under the retry budget, the job is reset to ``queued`` and its outbox row is
+    re-armed (``delivered_at = NULL``) so the single dispatch path redelivers it;
+    over budget it is marked ``failed``. Returns the number re-queued for retry.
+    """
+    now = now or now_utc()
+    stale = (
+        db.query(Job)
+        .filter(
+            Job.status == "running",
+            Job.lease_expires_at.isnot(None),
+            Job.lease_expires_at < now,
+        )
+        .all()
+    )
+    requeued = 0
+    for job in stale:
+        job.claimed_by = None
+        job.lease_expires_at = None
+        if (job.attempts or 0) < max_attempts:
+            job.status = "queued"
+            outbox = db.query(JobOutbox).filter(JobOutbox.job_id == job.id).one_or_none()
+            if outbox is None:
+                db.add(JobOutbox(job_id=job.id))
+            else:
+                outbox.delivered_at = None  # re-arm for redelivery
+            requeued += 1
+        else:
+            job.status = "failed"
+            job.error = "lease expired: max attempts exhausted"
+            job.finished_at = now
+    db.commit()
+    # Deliver any re-armed rows now that the broker call is outside the reap txn.
+    dispatch_outbox(db, client)
+    return requeued
+
+
+__all__ = [
+    "QUEUE",
+    "DEFAULT_LEASE_SECONDS",
+    "enqueue_job",
+    "dispatch_outbox",
+    "claim_job",
+    "renew_lease",
+    "complete_job",
+    "release_for_retry",
+    "fail_job",
+    "reap_expired_leases",
+]

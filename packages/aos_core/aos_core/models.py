@@ -299,6 +299,11 @@ class Job(AuditMixin, Base):
     started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # AOS-JOBS-RELIABILITY-001 Slice 2 (RFC-0014): a worker takes a time-boxed lease
+    # when it claims a job. If the worker dies, the lease expires and the reaper
+    # recovers the job — closing the crash-recovery half of finding P0-1.
+    claimed_by: Mapped[str | None] = mapped_column(String(128))
+    lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class JobOutbox(AuditMixin, Base):

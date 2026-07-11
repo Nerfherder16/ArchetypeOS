@@ -3,13 +3,23 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Callable
 import logging
+import os
+import socket
 import time
 import redis
 from sqlalchemy.orm import Session
 from aos_core.config import get_settings
 from aos_core.database import SessionLocal
 from aos_core.models import Job
-from aos_core.services.jobs import QUEUE, dispatch_outbox
+from aos_core.services.jobs import (
+    QUEUE,
+    claim_job,
+    complete_job,
+    dispatch_outbox,
+    fail_job,
+    reap_expired_leases,
+    release_for_retry,
+)
 from aos_core.services.scan import run_scan
 from aos_core.services.digest import build_digest
 from aos_core.services.council import council_provider, run_council
@@ -23,24 +33,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger("archetypeos.worker")
 settings = get_settings()
 MAX_ATTEMPTS = 3
-
-
-def mark_job(job_id: str, status: str, result: dict | None = None, error: str | None = None) -> None:
-    now = datetime.now(timezone.utc)
-    with SessionLocal() as db:
-        job = db.get(Job, job_id)
-        if job is None:
-            return
-        job.status = status
-        job.updated_at = now
-        if status == "running":
-            job.started_at = now
-            job.attempts = (job.attempts or 0) + 1
-        elif status in {"completed", "failed"}:
-            job.result = result
-            job.error = error
-            job.finished_at = now
-        db.commit()
+# Identifies this worker process for lease ownership (finding P0-1 recovery).
+WORKER_ID = f"{socket.gethostname()}:{os.getpid()}"
 
 
 @dataclass
@@ -126,38 +120,45 @@ register_handler(HandlerSpec("research_run", "research", "public", _run_research
 register_handler(HandlerSpec("test", "noop", "public", _run_test))
 
 
-def run_job(job_id: str) -> None:
+def run_job(job_id: str, *, worker_id: str = WORKER_ID) -> None:
     with SessionLocal() as db:
         job = db.get(Job, job_id)
         if job is None:
             logger.warning("job not found: %s", job_id)
             return
 
-        mark_job(job_id, "running")
+        # Take a lease via compare-and-swap. If another worker already holds a live
+        # lease (or the reaper is mid-recovery), the claim loses and we drop the id
+        # rather than run it twice (finding P0-1).
+        if not claim_job(db, job_id, worker_id):
+            logger.info("job not claimed (already leased): %s", job_id)
+            return
+        db.refresh(job)
 
         spec = JOB_HANDLERS.get(job.job_type)
         if spec is None:
             # Unknown job type fails clearly (was silently treated as a test job).
             logger.error("no handler registered for job_type %r: %s", job.job_type, job_id)
-            mark_job(job_id, "failed", error=f"no handler registered for job_type {job.job_type!r}")
+            fail_job(db, job_id, f"no handler registered for job_type {job.job_type!r}")
             return
 
         logger.info("dispatching job %s (type=%s capability=%s)", job_id, job.job_type, spec.capability)
         result = spec.run(job, db)
-        mark_job(job_id, "completed", result=result)
+        complete_job(db, job_id, result)
 
 
 def handle_failure(job_id: str, client: "redis.Redis", error: str) -> None:
     with SessionLocal() as db:
         job = db.get(Job, job_id)
         attempts = job.attempts if job is not None else MAX_ATTEMPTS
-    if attempts < MAX_ATTEMPTS:
-        client.lpush(QUEUE, job_id)
-        mark_job(job_id, "queued")
-        logger.warning("job re-enqueued (attempt %s of %s): %s", attempts, MAX_ATTEMPTS, job_id)
-    else:
-        mark_job(job_id, "failed", error=error)
-        logger.error("job failed after %s attempts: %s", attempts, job_id)
+        if attempts < MAX_ATTEMPTS:
+            # Release the lease so the retry can re-claim, then re-enqueue.
+            release_for_retry(db, job_id)
+            client.lpush(QUEUE, job_id)
+            logger.warning("job re-enqueued (attempt %s of %s): %s", attempts, MAX_ATTEMPTS, job_id)
+        else:
+            fail_job(db, job_id, error)
+            logger.error("job failed after %s attempts: %s", attempts, job_id)
 
 
 def drain_outbox(client: "redis.Redis") -> int:
@@ -171,14 +172,25 @@ def drain_outbox(client: "redis.Redis") -> int:
         return dispatch_outbox(db, client)
 
 
+def reap(client: "redis.Redis") -> int:
+    """Recover jobs whose worker died mid-execution (expired lease); return count.
+
+    Runs each worker tick so a crashed worker's in-flight jobs are re-queued once
+    their lease lapses — the crash-recovery half of finding P0-1.
+    """
+    with SessionLocal() as db:
+        return reap_expired_leases(db, client, max_attempts=MAX_ATTEMPTS)
+
+
 def main() -> None:
     logger.info("worker starting")
     client = redis.Redis.from_url(settings.redis_url)
     while True:
         try:
             drain_outbox(client)
-        except Exception:  # noqa: BLE001 — outbox recovery must never crash the loop
-            logger.exception("outbox drain failed")
+            reap(client)
+        except Exception:  # noqa: BLE001 — recovery sweeps must never crash the loop
+            logger.exception("outbox drain / lease reap failed")
         item = client.brpop(QUEUE, timeout=5)
         if not item:
             continue

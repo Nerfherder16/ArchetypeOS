@@ -3,14 +3,20 @@
 # proxy) instead of shipping the Vite dev server.
 
 # --- build stage: compile the SPA to static assets ---
-FROM node:22-alpine AS build
+# AOS-WEB-LOCK-001: build on the glibc (Debian) node image, NOT alpine/musl. npm
+# records only the HOST platform's Rollup native binary in the lockfile
+# (@rollup/rollup-linux-x64-gnu), so a musl (alpine) `npm ci` hit npm/cli#4828
+# ("Cannot find module @rollup/rollup-linux-x64-musl") — the reason the old build
+# deleted the lockfile and ran `npm install`, making every build non-reproducible.
+# Building on glibc matches the locked gnu binary AND the CI ubuntu runner, so a
+# plain `npm ci` from the committed lockfile is reproducible. The serve stage stays
+# alpine (Caddy) — it only copies static assets, no node runtime.
+FROM node:22-slim AS build
 WORKDIR /app
-COPY package.json package-lock.json* ./
-# npm's optional-dependencies bug (npm/cli#4828) can omit the platform-specific
-# Rollup native binary from a committed lockfile → "Cannot find module
-# @rollup/rollup-linux-x64-musl" at `vite build`. Install fresh from package.json
-# so the correct-platform optional dep is resolved in-image.
-RUN rm -f package-lock.json && npm install --no-audit --no-fund
+COPY package.json package-lock.json ./
+# `npm ci` installs exactly the committed lockfile and FAILS if it and package.json
+# disagree, so a build can no longer silently drift from the pinned dependency graph.
+RUN npm ci --no-audit --no-fund
 COPY . .
 # Single origin: the API is reached at /api (proxied by Caddy), so the baked base
 # is a RELATIVE url — a tailnet viewer hits their OWN origin, fixing the baked-

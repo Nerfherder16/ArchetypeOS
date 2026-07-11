@@ -236,39 +236,80 @@ def test_fix_writes_pending_draft_never_edits_prose(tmp_path, monkeypatch) -> No
     assert rc == 1, "HARD drift still stands until the docs are actually reconciled"
 
 
-# --- semantic-label drift (AOS-STATE-SEMANTIC-001, finding P1-4) -------------
+# --- semantic-label drift (AOS-STATE-SEMANTIC-001 P1-4; hardened AOS-STATE-RECON-002) --
 
-_NODES_MODULE = "packages/aos_core/aos_core/services/nodes.py"
+_NODE_MARKER = "packages/aos_core/aos_core/services/jobs.py::claim_job_for_node"
+_CONNECTOR_MARKER = "packages/aos_core/aos_core/services/connectors.py::connector_views"
+_AUTHORITY_MARKER = "packages/aos_core/aos_core/services/authority_envelope.py::consume_action"
 
 
 def test_semantic_label_stale_flags_shipped_subsystem_marked_proposed():
     text = "| Distributed runtime (Node/Capability registry) | Proposed | not yet in code |"
-    findings = check_semantic_labels(text, present_modules={_NODES_MODULE})
+    findings = check_semantic_labels(text, present_markers={_NODE_MARKER})
     assert len(findings) == 1
     assert findings[0].signal == "semantic-label-stale"
     assert findings[0].severity == "hard"
 
 
+def test_semantic_label_flags_enforced_subsystem_called_advisory():
+    # The HARDENING: 'advisory'/'pending' contradictions, not just the literal 'Proposed'.
+    text = "| Authority action policy | Implemented (advisory); enforcement pending | evaluator only |"
+    findings = check_semantic_labels(text, present_markers={_AUTHORITY_MARKER})
+    assert len(findings) == 1 and findings[0].signal == "semantic-label-stale"
+
+
+def test_semantic_label_flags_node_routing_pending_after_wired():
+    text = "| Distributed runtime | Implemented (registry); routing pending | not yet wired to execution |"
+    findings = check_semantic_labels(text, present_markers={_NODE_MARKER})
+    assert len(findings) == 1
+
+
+def test_semantic_label_flags_connector_mutates_after_readonly():
+    text = "| Connector registry | Implemented; runtime unification pending | GET /connectors mutates |"
+    findings = check_semantic_labels(text, present_markers={_CONNECTOR_MARKER})
+    assert len(findings) == 1
+
+
 def test_semantic_label_fresh_once_relabelled():
-    text = "| Distributed runtime (Node/Capability registry) | Implemented | wired to routing |"
-    assert check_semantic_labels(text, present_modules={_NODES_MODULE}) == []
+    text = "| Distributed runtime (Node/Capability registry) | Enforced on the execution path | claims by capability |"
+    assert check_semantic_labels(text, present_markers={_NODE_MARKER}) == []
 
 
-def test_semantic_label_absent_module_is_legitimately_proposed():
-    # No implementation on disk → 'Proposed' is honest, not drift.
-    text = "| Distributed runtime (Node/Capability registry) | Proposed | not yet in code |"
-    assert check_semantic_labels(text, present_modules=set()) == []
+def test_semantic_label_absent_marker_is_legitimately_proposed():
+    # The enforcement symbol is absent → 'Proposed'/'advisory' is honest, not drift.
+    text = "| Authority action policy | Implemented (advisory); enforcement pending | evaluator only |"
+    assert check_semantic_labels(text, present_markers=set()) == []
 
 
-def test_semantic_label_covers_connector_and_authority():
+def test_semantic_label_covers_all_three_subsystems():
     text = (
-        "| Connector registry | Proposed | providers exist |\n"
-        "| Authority action policy | Proposed | model exists as data |"
+        "| Connector registry | runtime unification pending | GET /connectors mutates |\n"
+        "| Authority action policy | advisory | evaluator only |\n"
+        "| Distributed runtime | routing pending | not yet wired |"
     )
-    present = {
-        "packages/aos_core/aos_core/services/connectors.py",
-        "packages/aos_core/aos_core/services/authority.py",
-    }
-    signals = {f.signal for f in check_semantic_labels(text, present)}
-    assert signals == {"semantic-label-stale"}
-    assert len(check_semantic_labels(text, present)) == 2
+    present = {_CONNECTOR_MARKER, _AUTHORITY_MARKER, _NODE_MARKER}
+    findings = check_semantic_labels(text, present)
+    assert {f.signal for f in findings} == {"semantic-label-stale"}
+    assert len(findings) == 3
+
+
+def test_guardian_blocks_on_semantic_contradiction_but_warns_on_lag(monkeypatch):
+    # AOS-STATE-RECON-002 block-vs-warn decision: a semantic contradiction BLOCKS the
+    # merge; a normal PR-lag / roadmap-phase HARD signal stays an advisory WARN.
+    from tools import pr_guardian
+    from tools.doc_staleness import Finding as DsFinding
+
+    monkeypatch.setattr(
+        pr_guardian._doc_staleness,
+        "evaluate",
+        lambda **kw: [
+            DsFinding("semantic-label-stale", "hard", "authority called advisory", "row"),
+            DsFinding("roadmap-phase-stale", "hard", "phase lag", "row"),
+            DsFinding("state-docs-pr-lag", "soft", "lag", "row"),
+        ],
+    )
+    findings = pr_guardian.check_doc_staleness([])
+    by_signal = {f.code: f.severity for f in findings}
+    assert by_signal["doc-staleness:semantic-label-stale"] == "block"
+    assert by_signal["doc-staleness:roadmap-phase-stale"] == "warn"
+    assert "doc-staleness:state-docs-pr-lag" not in by_signal  # soft dropped

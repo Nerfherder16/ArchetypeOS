@@ -18,6 +18,13 @@ It complements Plane. If Plane is unavailable, this file remains the active work
 
 ## Active Work Items
 
+### AOS-REVIEW-002 runtime-integrity remediation wave (cloud session)
+
+- Status: Merged (WP1–WP4, WP6) · In Review (AOS-STATE-RECON-002) · Proposed (RFC-0013 capability reuse)
+- Owner: Orchestrator (Opus 4.8), cloud session
+- Summary: Closes the LES-033 gap — the registries/evaluators existed but sat off the execution path, and the job substrate was not durable under crashes. One branch/PR per package, in dependency order. **Merged:** AOS-JOB-FENCING-001 (#199, LES-034 — per-claim `claim_token` fences every transition + SIGALRM timeout + fenced retry/dead-letter), AOS-AUTH-BOUNDARY-001 (#200, LES-035 — reusable `require_operator`, fail-closed deployed profile, constant-time gates), AOS-WEB-LOCK-001 (#201 — `npm ci` reproducible glibc build), AOS-NODE-EXECUTION-001 (#203, LES-036 — routing on the claim path via `claim_job_for_node`, shared fail-closed `Sensitivity`), AOS-AUTHORITY-HARDEN-001 (#204, LES-037 — server-classified, one-use, bound, resumable envelope). **In Review:** AOS-STATE-RECON-002 (`claude/aos-state-recon-002` — reconcile the canonical docs to the wave + harden the semantic-drift detector to block on enforcement contradictions; LES-038). **Proposed (last):** RFC-0013 capability-level reuse (Slices 2–4 + five-repo portfolio benchmark).
+- Verification Status: each merged package Orchestrator-verified with targeted + full regression AND its stated non-unit surface (PostgreSQL concurrency tests for fencing/node/authority, fail-closed auth tests, compose-smoke for the web build); CI green + Guardian PASS per PR.
+
 ### AOS-STATE-RECON-001 — Canonical state + drift assurance
 
 - Status: In Review

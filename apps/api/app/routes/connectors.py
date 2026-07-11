@@ -7,7 +7,7 @@ explicit write path. ``POST /connectors/{name}/probe`` runs an active reachabili
 probe and records the result. ``POST /connectors/{name}/health`` records a posted
 probe result (create-on-demand for a catalogued connector).
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from aos_core.config import get_settings
@@ -27,13 +27,29 @@ router = APIRouter()
 settings = get_settings()
 
 
+def require_connector_write_token(x_telemetry_token: str | None = Header(default=None)) -> None:
+    """Gate the connector WRITE routes when a token is configured (AOS-REVIEW-002 P0-5).
+
+    Mirrors the audit-heartbeat telemetry gate: empty token = open (local/tailnet
+    default); when set, an unauthenticated client can no longer post connector state
+    (the follow-up to node identity — the connector-health endpoint was writable
+    without any auth dependency).
+    """
+    if settings.connector_write_token and x_telemetry_token != settings.connector_write_token:
+        raise HTTPException(status_code=401, detail="Invalid or missing connector token")
+
+
 @router.get("/connectors", response_model=list[ConnectorRead])
 def list_connectors(db: Session = Depends(get_db)) -> list[ConnectorRead]:
     # Read-only: computed from the catalog + settings + persisted health; no write.
     return [ConnectorRead(**view) for view in connector_views(db, settings)]
 
 
-@router.post("/connectors/reconcile", response_model=list[ConnectorRead])
+@router.post(
+    "/connectors/reconcile",
+    response_model=list[ConnectorRead],
+    dependencies=[Depends(require_connector_write_token)],
+)
 def reconcile_connectors(db: Session = Depends(get_db)) -> list[Connector]:
     # The explicit reconciliation (write) path — replaces reconcile-on-read.
     return sync_connectors(db, settings)
@@ -47,7 +63,11 @@ def get_connector(name: str, db: Session = Depends(get_db)) -> ConnectorRead:
     raise HTTPException(status_code=404, detail="Connector not found")
 
 
-@router.post("/connectors/{name}/probe", response_model=ConnectorRead)
+@router.post(
+    "/connectors/{name}/probe",
+    response_model=ConnectorRead,
+    dependencies=[Depends(require_connector_write_token)],
+)
 def probe_connector(name: str, db: Session = Depends(get_db)) -> Connector:
     connector = probe_and_record(db, name=name, settings=settings)
     if connector is None:
@@ -55,7 +75,11 @@ def probe_connector(name: str, db: Session = Depends(get_db)) -> Connector:
     return connector
 
 
-@router.post("/connectors/{name}/health", response_model=ConnectorRead)
+@router.post(
+    "/connectors/{name}/health",
+    response_model=ConnectorRead,
+    dependencies=[Depends(require_connector_write_token)],
+)
 def record_connector_health(
     name: str, payload: ConnectorHealthUpdate, db: Session = Depends(get_db)
 ) -> Connector:

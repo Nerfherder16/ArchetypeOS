@@ -16,6 +16,7 @@ from aos_core.services.jobs import (
     dispatch_outbox,
     enqueue_job,
     reap_expired_leases,
+    reconcile,
 )
 
 
@@ -28,15 +29,21 @@ class FakeRedis:
     def lpush(self, name: str, value: str) -> None:
         self.queue.append((name, value))
 
+    def lrange(self, name: str, start: int, end: int) -> list[str]:
+        return [value for (_, value) in self.queue]
+
 
 class DeadRedis:
-    """A broker that is down — every lpush raises, as a real outage would."""
+    """A broker that is down — every call raises, as a real outage would."""
 
     def __init__(self) -> None:
         self.calls = 0
 
     def lpush(self, name: str, value: str) -> None:
         self.calls += 1
+        raise ConnectionError("redis unavailable")
+
+    def lrange(self, name: str, start: int, end: int) -> list[str]:
         raise ConnectionError("redis unavailable")
 
 
@@ -121,7 +128,7 @@ def test_reap_recovers_expired_lease(db_session):
     assert (QUEUE, job.id) in client.queue  # redelivered through the outbox
 
 
-def test_reap_fails_when_attempts_exhausted(db_session):
+def test_reap_dead_letters_when_attempts_exhausted(db_session):
     client = FakeRedis()
     job = enqueue_job(db_session, client, job_type="test")
     row = db_session.get(Job, job.id)
@@ -132,5 +139,30 @@ def test_reap_fails_when_attempts_exhausted(db_session):
 
     assert reap_expired_leases(db_session, client, max_attempts=3) == 0
     row = db_session.get(Job, job.id)
-    assert row.status == "failed"
+    assert row.status == "dead_letter"  # Slice 3: exhausted retry budget → dead letter
     assert "lease expired" in (row.error or "")
+
+
+# --- Slice 4: reconciliation sweep (jobs stranded from the broker) ---
+
+
+def test_reconcile_restores_stranded_queued_job(db_session):
+    client = FakeRedis()
+    job = enqueue_job(db_session, client, job_type="test")  # delivered
+    # Simulate a broker flush: the job is still queued in the DB but gone from Redis.
+    client.queue.clear()
+
+    summary = reconcile(db_session, client, max_attempts=3)
+    assert summary["restored"] == 1
+    assert (QUEUE, job.id) in client.queue  # redelivered
+
+    # Idempotent once it is back in the broker.
+    assert reconcile(db_session, client, max_attempts=3)["restored"] == 0
+
+
+def test_reconcile_survives_broker_down(db_session):
+    # A dead broker must not raise: the outbox still guarantees eventual delivery.
+    dead = DeadRedis()
+    enqueue_job(db_session, dead, job_type="test")
+    summary = reconcile(db_session, dead, max_attempts=3)
+    assert summary["restored"] == 0  # could not scan the broker; nothing lost

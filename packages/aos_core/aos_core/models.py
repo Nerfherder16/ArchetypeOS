@@ -151,6 +151,11 @@ class Decision(AuditMixin, Base):
 
 class ResearchNote(AuditMixin, Base):
     __tablename__ = "research_notes"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: a unique job_id makes the note the single
+    # output of its originating job, so a redelivered research job cannot create a
+    # duplicate note (finding P0-3). NULL job_id (notes created outside a job) is
+    # exempt — Postgres treats NULLs as distinct.
+    __table_args__ = (UniqueConstraint("job_id", name="uq_research_notes_job_id"),)
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     title: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -160,6 +165,7 @@ class ResearchNote(AuditMixin, Base):
     findings: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     freshness: Mapped[str | None] = mapped_column(String(128))
     confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
 
 
 class ResearchPlan(AuditMixin, Base):
@@ -196,6 +202,8 @@ class ResearchRun(AuditMixin, Base):
     """
 
     __tablename__ = "research_runs"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: one run per originating job (finding P0-3).
+    __table_args__ = (UniqueConstraint("job_id", name="uq_research_runs_job_id"),)
 
     plan_id: Mapped[str] = mapped_column(GUID(), ForeignKey("research_plans.id"), nullable=False, index=True)
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
@@ -410,6 +418,8 @@ class Experiment(AuditMixin, Base):
 
 class NightlyDigest(AuditMixin, Base):
     __tablename__ = "nightly_digests"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: one digest per originating job (finding P0-3).
+    __table_args__ = (UniqueConstraint("job_id", name="uq_nightly_digests_job_id"),)
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     digest_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -417,10 +427,13 @@ class NightlyDigest(AuditMixin, Base):
     changes: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     recommendations: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     repeated_tasks: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
 
 
 class CouncilReview(AuditMixin, Base):
     __tablename__ = "council_reviews"
+    # AOS-JOBS-RELIABILITY-001 Slice 3: one review per originating job (finding P0-3).
+    __table_args__ = (UniqueConstraint("job_id", name="uq_council_reviews_job_id"),)
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     question: Mapped[str | None] = mapped_column(Text)

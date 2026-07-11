@@ -192,19 +192,24 @@ def release_for_retry(db, job_id: str) -> None:
     db.commit()
 
 
-def fail_job(db, job_id: str, error: str | None) -> None:
-    """Mark a job failed and release its lease."""
+def fail_job(db, job_id: str, error: str | None, *, status: str = "failed") -> None:
+    """Mark a job terminal (``failed`` or ``dead_letter``) and release its lease."""
     job = db.get(Job, job_id)
     if job is None:
         return
     now = now_utc()
-    job.status = "failed"
+    job.status = status
     job.error = error
     job.finished_at = now
     job.updated_at = now
     job.claimed_by = None
     job.lease_expires_at = None
     db.commit()
+
+
+def dead_letter_job(db, job_id: str, error: str | None) -> None:
+    """Move a job to the ``dead_letter`` terminal state (retry budget exhausted)."""
+    fail_job(db, job_id, error, status="dead_letter")
 
 
 def reap_expired_leases(db, client, *, max_attempts: int, now: datetime | None = None) -> int:
@@ -237,7 +242,7 @@ def reap_expired_leases(db, client, *, max_attempts: int, now: datetime | None =
                 outbox.delivered_at = None  # re-arm for redelivery
             requeued += 1
         else:
-            job.status = "failed"
+            job.status = "dead_letter"
             job.error = "lease expired: max attempts exhausted"
             job.finished_at = now
     db.commit()
@@ -246,15 +251,51 @@ def reap_expired_leases(db, client, *, max_attempts: int, now: datetime | None =
     return requeued
 
 
+def reconcile(db, client, *, max_attempts: int, now: datetime | None = None) -> dict:
+    """One repair sweep: deliver, reap, and restore jobs stranded from the broker.
+
+    Beyond the per-tick drain + reap, this catches the case the outbox alone
+    cannot: a job marked ``queued`` and previously delivered whose id is no longer
+    in the Redis list (the broker was flushed / lost its data). Such jobs are
+    re-armed and redelivered. Returns a summary count for operator surfacing.
+    """
+    now = now or now_utc()
+    delivered = dispatch_outbox(db, client)
+    requeued = reap_expired_leases(db, client, max_attempts=max_attempts, now=now)
+
+    restored = 0
+    try:
+        raw = client.lrange(QUEUE, 0, -1)
+    except Exception:  # noqa: BLE001 — broker unavailable; the outbox still guarantees eventual delivery
+        raw = None
+    if raw is not None:
+        in_queue = {v.decode("utf-8") if isinstance(v, (bytes, bytearray)) else v for v in raw}
+        for job in db.query(Job).filter(Job.status == "queued").all():
+            if job.id in in_queue:
+                continue
+            outbox = db.query(JobOutbox).filter(JobOutbox.job_id == job.id).one_or_none()
+            if outbox is None:
+                db.add(JobOutbox(job_id=job.id))
+            else:
+                outbox.delivered_at = None  # re-arm for redelivery
+            restored += 1
+        if restored:
+            db.commit()
+            delivered += dispatch_outbox(db, client)
+    return {"delivered": delivered, "requeued": requeued, "restored": restored}
+
+
 __all__ = [
     "QUEUE",
     "DEFAULT_LEASE_SECONDS",
     "enqueue_job",
     "dispatch_outbox",
+    "reconcile",
     "claim_job",
     "renew_lease",
     "complete_job",
     "release_for_retry",
     "fail_job",
+    "dead_letter_job",
     "reap_expired_leases",
 ]

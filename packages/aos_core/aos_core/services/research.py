@@ -423,6 +423,7 @@ def research(
     source: ResearchSource | None = None,
     limit: int = 8,
     as_of: str | None = None,
+    job_id: str | None = None,
 ) -> ResearchNote:
     """Research ``question`` over ``project_id``'s corpus → a persisted ``ResearchNote``.
 
@@ -478,6 +479,7 @@ def research(
         findings=dossier["findings"],
         freshness=dossier["freshness"],
         confidence=dossier["confidence"],
+        job_id=job_id,  # stamped before commit so a redelivered job cannot duplicate (P0-3)
     )
     db.add(note)
     db.commit()

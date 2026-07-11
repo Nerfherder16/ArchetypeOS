@@ -14,6 +14,7 @@ Capabilities:
 - Redis
 - API
 - worker
+- per-type job-handler registry (AOS-WORKER-HANDLERS-001, finding P1-1: one module per job type under `apps/worker/app/handlers/`, each exporting an immutable `HandlerSpec` with capability/sensitivity/timeout/retry/idempotency-strategy/result-schema — adding a job type adds a module, never edits a shared `worker.py` block)
 - durable job execution (AOS-JOBS-RELIABILITY-001, RFC-0014: transactional outbox for atomic origination, leased claims + reaper for crash recovery, handler idempotency via unique origin job_id, dead-letter after retry budget, reconciliation sweep — at-least-once delivery with exactly-once effect)
 - web dashboard
 - GPU node

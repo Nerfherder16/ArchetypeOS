@@ -74,6 +74,14 @@ class JobRead(BaseModel):
     started_at: datetime | None
     finished_at: datetime | None
     attempts: int
+    # AOS-NODE-EXECUTION-001: routing decision, surfaced for the Control Tower audit.
+    required_capability: str | None = None
+    sensitivity: str = "public"
+    requires_write: bool = False
+    assigned_node_id: str | None = None
+    routing_status: str = "unrouted"
+    routing_explanation: str | None = None
+    routed_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

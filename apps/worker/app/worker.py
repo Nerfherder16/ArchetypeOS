@@ -8,12 +8,12 @@ import time
 import redis
 from aos_core.config import get_settings
 from aos_core.database import SessionLocal
-from aos_core.models import Job
+from aos_core.models import Job, Node
 from aos_core.services.jobs import (
     DEFAULT_LEASE_SECONDS,
     QUEUE,
     Claim,
-    claim_job,
+    claim_job_for_node,
     complete_job,
     dead_letter_job,
     dispatch_outbox,
@@ -153,6 +153,17 @@ def _retry_or_dead_letter(db, job_id: str, claim: Claim, spec: HandlerSpec, erro
             logger.warning("dead-letter skipped — ownership lost: %s", job_id)
 
 
+def _self_node(db, worker_id: str = WORKER_ID) -> Node | None:
+    """This worker's registered node (by name == worker id), or None if unregistered.
+
+    The worker registers itself as a node named ``WORKER_ID`` on startup
+    (:func:`register_self`); resolving it here lets the claim enforce capability /
+    sensitivity / write / health eligibility for THIS node. None (not yet registered)
+    means the claim can still take unassigned jobs to bootstrap.
+    """
+    return db.query(Node).filter(Node.name == worker_id).one_or_none()
+
+
 def run_job(job_id: str, *, worker_id: str = WORKER_ID) -> None:
     with SessionLocal() as db:
         job = db.get(Job, job_id)
@@ -160,12 +171,17 @@ def run_job(job_id: str, *, worker_id: str = WORKER_ID) -> None:
             logger.warning("job not found: %s", job_id)
             return
 
-        # Take a lease + fencing token via compare-and-swap. If another worker holds
-        # a live lease (or the reaper is mid-recovery), the claim loses and we drop
-        # the id rather than run it twice (finding P0-1 / AOS-JOB-FENCING-001).
-        claim = claim_job(db, job_id, worker_id)
+        # Node-aware fenced claim (AOS-NODE-EXECUTION-001): the claim only succeeds
+        # if this worker's node is the one routing assigned AND the node is still
+        # eligible (capability/sensitivity/write/health) — revalidated at claim time,
+        # not trusted from origination. A job routed to another node cannot be claimed
+        # here even if its id was delivered to this worker. Falls back to an
+        # unassigned-only claim when this worker is not yet a registered node (bootstrap
+        # / tests). All the WP1 fencing guarantees still hold (fresh claim_token).
+        node = _self_node(db, worker_id)
+        claim = claim_job_for_node(db, job_id, worker_id, node=node)
         if claim is None:
-            logger.info("job not claimed (already leased): %s", job_id)
+            logger.info("job not claimed (not assigned/eligible or already leased): %s", job_id)
             return
         db.refresh(job)
 

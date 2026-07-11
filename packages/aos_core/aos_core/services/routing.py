@@ -17,25 +17,16 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
 from ..models import Node
+from ..sensitivity import SENSITIVITY_ORDER, sensitivity_rank
 
-# Ordered sensitivity ladder (index = rank). A node may run work at or below its
-# declared ``max_sensitivity`` ceiling, never above it.
-SENSITIVITY_ORDER: tuple[str, ...] = (
-    "public",
-    "private",
-    "internal",
-    "confidential",
-    "restricted",
-    "secret",
-)
+# SENSITIVITY_ORDER is re-exported from aos_core.sensitivity (the single source).
 DEFAULT_HEARTBEAT_FRESHNESS_SECONDS = 120
 
 
 def _rank(sensitivity: str) -> int:
-    try:
-        return SENSITIVITY_ORDER.index(sensitivity)
-    except ValueError:
-        return 0
+    # AOS-NODE-EXECUTION-001: fail CLOSED — an unknown sensitivity ranks above every
+    # ceiling (never eligible), instead of the old fail-open ``return 0`` (=public).
+    return sensitivity_rank(sensitivity)
 
 
 def _as_utc(value: datetime) -> datetime:

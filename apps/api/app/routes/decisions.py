@@ -10,6 +10,7 @@ from aos_core.services.decisions import (
     draft_decision_from_review,
     reject_decision,
 )
+from aos_core.services.recommendation import generate_recommendations
 
 from ..schemas import (
     DecisionApprove,
@@ -171,3 +172,14 @@ def get_recommendation(recommendation_id: str, db: Session = Depends(get_db)) ->
     if not recommendation:
         raise HTTPException(status_code=404, detail="Recommendation not found")
     return recommendation
+
+
+@router.post("/projects/{project_id}/recommendations/generate", response_model=list[RecommendationRead])
+def generate_recommendations_endpoint(project_id: str, db: Session = Depends(get_db)) -> list[Recommendation]:
+    # AOS-RECO-ENGINE-001: runs the deterministic Technology Fitness pass over
+    # the project's RepositoryDNA + latest research and drafts recommendations;
+    # idempotent (services/recommendation.py:generate_recommendations dedups on
+    # meta["reco_signature"]) — a repeat call returns only newly-created rows.
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return generate_recommendations(db, project_id=project_id)

@@ -59,6 +59,9 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/recommendations"),
         ("GET", "/projects/{project_id}/recommendations"),
         ("GET", "/recommendations/{recommendation_id}"),
+        # recommendation generator (AOS-RECO-ENGINE-001 — deterministic Technology
+        # Fitness pass over RepositoryDNA + research; compare -> recommend seam)
+        ("POST", "/projects/{project_id}/recommendations/generate"),
         # decision loop (AOS-COUNCIL-PHASEC — Council review → draft → approve/reject)
         ("POST", "/council-reviews/{review_id}/draft-decision"),
         ("POST", "/decisions/{decision_id}/approve"),
@@ -189,5 +192,7 @@ def test_route_inventory_count() -> None:
     # AOS-BUILD-PLAN-001 added the implementation-plan routes (POST
     # /decisions/{decision_id}/plan, GET /plans/{plan_id}, GET
     # /projects/{project_id}/plans, POST /plans/{plan_id}/approve) = 88.
-    assert len(EXPECTED_ROUTES) == 88
-    assert len(_actual_routes()) == 88
+    # AOS-RECO-ENGINE-001 added the recommendation-generator route (POST
+    # /projects/{project_id}/recommendations/generate) = 89.
+    assert len(EXPECTED_ROUTES) == 89
+    assert len(_actual_routes()) == 89

@@ -332,6 +332,20 @@ class Job(AuditMixin, Base):
     # fail, retry) is a compare-and-swap on this token, so a claim reclaimed by the
     # reaper or another worker (which mints a NEW token) invalidates the old owner.
     claim_token: Mapped[str | None] = mapped_column(String(64))
+    # AOS-NODE-EXECUTION-001: routing binds a job to the node allowed to run it.
+    # ``required_capability``/``sensitivity``/``requires_write`` are the execution
+    # requirements DERIVED SERVER-SIDE at origination (from the job registry, never
+    # trusted from the client). ``assigned_node_id`` is the node routing chose;
+    # ``routing_status`` is ``unrouted`` → ``routed`` / ``no_eligible_node``;
+    # ``routing_explanation`` is the deterministic Control-Tower reason; ``routed_at``
+    # stamps the decision. A worker may only claim a job assigned to its own node.
+    required_capability: Mapped[str | None] = mapped_column(String(128))
+    sensitivity: Mapped[str] = mapped_column(String(32), default="public", nullable=False)
+    requires_write: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    assigned_node_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("nodes.id"), index=True)
+    routing_status: Mapped[str] = mapped_column(String(32), default="unrouted", nullable=False)
+    routing_explanation: Mapped[str | None] = mapped_column(Text)
+    routed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class JobOutbox(AuditMixin, Base):

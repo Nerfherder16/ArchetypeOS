@@ -153,8 +153,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify lockfile is reproducible (AOS-WEB-LOCK-001)
+        run: node scripts/check-lockfile.mjs
+        working-directory: apps/web
       - name: Install web dependencies
-        run: npm install
+        run: npm ci
         working-directory: apps/web
       - name: Build web
         run: npm run build
@@ -174,7 +177,7 @@ jobs:
           cache: pip
           cache-dependency-path: apps/api/requirements.txt
       - name: Install web dependencies
-        run: npm install
+        run: npm ci
         working-directory: apps/web
       - name: Install API dependencies
         run: |

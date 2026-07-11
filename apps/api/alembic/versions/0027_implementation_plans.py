@@ -1,7 +1,7 @@
 """implementation plans
 
-Revision ID: 0024
-Revises: 0023
+Revision ID: 0027
+Revises: 0026
 Create Date: 2026-07-11 08:00:00.000000
 
 AOS-BUILD-PLAN-001 (RFC-0015 Design §1): adds ``implementation_plans`` — a
@@ -18,8 +18,8 @@ import sqlalchemy as sa
 import aos_core.models  # GUID / JSONField TypeDecorators
 
 
-revision: str = '0024'
-down_revision: Union[str, None] = '0023'
+revision: str = '0027'
+down_revision: Union[str, None] = '0026'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

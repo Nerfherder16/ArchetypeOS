@@ -60,13 +60,17 @@ def test_per_project_and_global_heartbeats_coexist(db_session):
 
 
 def test_register_node_idempotent_and_replaces_capabilities(db_session):
-    first = register_node(db_session, name="box", capabilities=[{"capability": "scan"}])
+    first = register_node(
+        db_session, name="box", write_access=True, capabilities=[{"capability": "scan"}], allow_policy=True
+    )
     second = register_node(
-        db_session, name="box", write_access=True, capabilities=[{"capability": "git-read"}]
+        db_session, name="box", capabilities=[{"capability": "git-read"}]
     )
     assert first.id == second.id
     assert db_session.query(Node).filter(Node.name == "box").count() == 1
     assert {c.capability for c in second.capabilities} == {"git-read"}
+    # AOS-NODE-IDENTITY-001 (P0-5): a plain re-register (allow_policy=False) does not
+    # touch operator policy, so the write_access the operator granted persists.
     assert second.write_access is True
 
 

@@ -30,7 +30,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..embeddings import get_embedder
-from ..models import KnowledgePage, Repository
+from ..models import KnowledgePage, Repository, RepositoryCapability
 
 # RFC-0010 confidence calibration. The semantic path blends the calibrated cosine
 # similarity ``sem = clamp(1 - cosine_distance, 0, 1)`` with the lexical need
@@ -243,6 +243,142 @@ def _recommend_semantic(
     return _finalize(results, limit)
 
 
+# --- RFC-0013 capability-level matching -------------------------------------
+# The repo/DNA-purpose granularity above answers "what is this repo?"; a reuse
+# need asks "what capability inside it can I borrow?" — a component-level question
+# product-level evidence cannot answer (the 5-repo shakedown proved this, lexically
+# AND semantically). These match a need against a *single capability's* text/vector
+# (high signal) and aggregate to the repo of its best-matching capability, citing the
+# named capability + its file so the recommendation is actionable, not just a pointer.
+
+
+def _has_capabilities(db: Session) -> bool:
+    """True when any capability has been extracted (tolerant — a DB error → False).
+
+    Gates the capability path: with no rows (the deterministic floor never extracts
+    any), :func:`recommend_reuse` is byte-for-byte its pre-RFC-0013 repo-level self.
+    """
+    try:
+        return db.query(RepositoryCapability.id).first() is not None
+    except Exception:
+        return False
+
+
+def _capability_recommendation(
+    cap: RepositoryCapability, repo: Repository, matched_terms: list[str], confidence: float
+) -> dict:
+    """Assemble a recommendation that cites the specific reusable capability + its file."""
+    provenance = [str(p) for p in (cap.provenance or []) if str(p).strip()]
+    where = provenance[0] if provenance else None
+    asset = f"{cap.name} — {where}" if where else cap.name
+    reason = "; ".join(matched_terms) if matched_terms else cap.name
+    evidence: list[dict] = [{"type": "capability", "name": cap.name, "provenance": provenance}]
+    evidence.append({"type": "repository", "id": repo.id})
+    return {
+        "source_repository": repo.name,
+        "source_project_id": repo.project_id,
+        "reusable_asset": asset,
+        "reason": reason,
+        "matched_terms": matched_terms,
+        "capability": cap.name,
+        "capability_provenance": provenance,
+        "evidence": evidence,
+        "required_changes": (
+            "Borrow the named capability: adapt its interface/config to the target; "
+            "start from its provenance file(s)."
+        ),
+        "risks": "Version/API drift and integration effort not yet quantified (MVP heuristic).",
+        "confidence": confidence,
+        "_tech_hits": 0,
+    }
+
+
+def _best_capability_per_repo(scored: list[tuple]) -> list[dict]:
+    """Keep the single best-scoring capability per repository, then build recommendations.
+
+    ``scored`` is ``[(confidence, matched_terms, capability, repository), ...]``; a repo
+    is represented by its strongest capability so one repo yields one recommendation.
+    """
+    best: dict[str, tuple] = {}
+    for confidence, matched, cap, repo in scored:
+        prev = best.get(cap.repository_id)
+        if prev is None or confidence > prev[0]:
+            best[cap.repository_id] = (confidence, matched, cap, repo)
+    return [
+        _capability_recommendation(cap, repo, matched, confidence)
+        for confidence, matched, cap, repo in best.values()
+    ]
+
+
+def _capability_rows(db: Session, exclude_project_id: str | None) -> list[tuple]:
+    """Load ``(capability, repository)`` pairs, dropping the excluded project (tolerant)."""
+    pairs: list[tuple] = []
+    for cap in db.query(RepositoryCapability).all():
+        repo = db.get(Repository, cap.repository_id)
+        if repo is None:
+            continue
+        if exclude_project_id is not None and repo.project_id == exclude_project_id:
+            continue
+        pairs.append((cap, repo))
+    return pairs
+
+
+def _recommend_capabilities_lexical(
+    db: Session, need_tokens: set[str], exclude_project_id: str | None, limit: int
+) -> list[dict]:
+    """Lexical capability path — need coverage over each capability's ``name + description``.
+
+    Runs for the deterministic embedder, on sqlite, or whenever no capability carries an
+    embedding. A capability is a far tighter matchable unit than the whole-product text.
+    """
+    scored: list[tuple] = []
+    for cap, repo in _capability_rows(db, exclude_project_id):
+        cap_tokens = _tokenize(f"{cap.name} {cap.description or ''}")
+        score, matched = score_relevance(need_tokens, cap_tokens, set())
+        if score <= 0.0:
+            continue
+        scored.append((score, matched, cap, repo))
+    return _finalize(_best_capability_per_repo(scored), limit)
+
+
+def _recommend_capabilities_semantic(
+    db: Session, need_tokens: set[str], need_vec: list[float], exclude_project_id: str | None, limit: int
+) -> list[dict]:
+    """Semantic capability path (Postgres + pgvector) — cosine over per-capability vectors.
+
+    Orders capabilities by ``embedding <=> need_vec`` and blends the calibrated cosine
+    similarity with the lexical coverage over the capability text (``_W_SEM``/``_W_COV``;
+    never a raw cosine, LES-023). This is where the granularity fix pays off: a paraphrase
+    need lands on the *one* capability whose vector is close, not on a noisy product blob.
+    Any DB error degrades to the lexical capability path (never raises).
+    """
+    try:
+        rows = db.execute(
+            sa.select(
+                RepositoryCapability.id,
+                RepositoryCapability.embedding.cosine_distance(need_vec).label("distance"),
+            ).where(RepositoryCapability.embedding.isnot(None))
+        ).all()
+    except Exception:
+        return _recommend_capabilities_lexical(db, need_tokens, exclude_project_id, limit)
+    distances: dict = {row[0]: float(row[1]) for row in rows if row[1] is not None}
+
+    scored: list[tuple] = []
+    for cap, repo in _capability_rows(db, exclude_project_id):
+        cap_tokens = _tokenize(f"{cap.name} {cap.description or ''}")
+        coverage, matched = score_relevance(need_tokens, cap_tokens, set())
+        distance = distances.get(cap.id)
+        if distance is None:
+            confidence = coverage
+        else:
+            sem = max(0.0, min(1.0, 1.0 - distance))
+            confidence = round(max(coverage, _W_SEM * sem + _W_COV * coverage), 4)
+        if confidence <= 0.0:
+            continue
+        scored.append((confidence, matched, cap, repo))
+    return _finalize(_best_capability_per_repo(scored), limit)
+
+
 def recommend_reuse(
     db: Session, *, need: str, exclude_project_id: str | None = None, limit: int = 5, embedder=None
 ) -> list[dict]:
@@ -274,6 +410,24 @@ def recommend_reuse(
 
     bind = getattr(db, "bind", None)
     dialect = getattr(getattr(bind, "dialect", None), "name", None)
+
+    # RFC-0013: when capabilities have been extracted, match at capability granularity
+    # (the actionable, high-signal path) FIRST. If it yields any recommendation, that is
+    # the answer. It falls through to the repo-level floor only when the need matches no
+    # capability (or none were extracted — the deterministic tier), so the sqlite/empty
+    # path is byte-for-byte the pre-RFC-0013 behaviour and there is never a regression.
+    if _has_capabilities(db):
+        if need_vec is not None and dialect == "postgresql":
+            capability_recs = _recommend_capabilities_semantic(
+                db, need_tokens, need_vec, exclude_project_id, limit
+            )
+        else:
+            capability_recs = _recommend_capabilities_lexical(
+                db, need_tokens, exclude_project_id, limit
+            )
+        if capability_recs:
+            return capability_recs
+
     if need_vec is not None and dialect == "postgresql":
         return _recommend_semantic(db, need_tokens, need_vec, exclude_project_id, limit)
     return _recommend_lexical(db, need_tokens, exclude_project_id, limit)

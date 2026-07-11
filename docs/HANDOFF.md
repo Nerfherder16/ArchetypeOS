@@ -10,19 +10,19 @@ Every engineering session should end by updating this file or creating a dated h
 
 ### Date
 
-2026-07-06
+2026-07-11
 
 ### Agent
 
-Runtime Agent (Opus) under Orchestrator (Opus 4.8)
+Orchestrator (Opus 4.8), cloud session
 
 ### Task
 
-AOS-DISTILL-003 — Package 1 of the distillation mature-state arc: deterministic summary floor + framework evidence (motivated by the first end-to-end reality test). (Prior arc, all merged: AOS-TRANSFER-001 PR #63 — Knowledge Transfer Engine; AOS-DISTILL-002 PR #62 — code-aware distillation; AOS-DISTILL-001 PR #61 — distillation MVP/pipe; AOS-LLM-ISOLATION-001 PR #60 — LES-021 provider isolation; AOS-ARCH-SEMANTICS-001 PR #59 — Phase B; RFC-0008 PR #58; Phase C PRs #54–#57.)
+AOS-REVIEW-002 runtime-integrity remediation wave — put the registries/evaluators LES-033 flagged ON the execution path and harden them. Merged: AOS-JOB-FENCING-001 (#199), AOS-AUTH-BOUNDARY-001 (#200), AOS-WEB-LOCK-001 (#201), AOS-NODE-EXECUTION-001 (#203), AOS-AUTHORITY-HARDEN-001 (#204). In progress: AOS-STATE-RECON-002 (this — doc reconciliation + drift-detector hardening). Remaining: RFC-0013 capability-level reuse (Slices 2–4 + portfolio benchmark). Each merged package carries a closing lesson LES-034…LES-037.
 
 ### Branch
 
-`claude/aos-runtime-002-scanner-1egyjw` (restarted from `main` at `8c4a400` after the PR #62 merge; env-pinned — see branch note above)
+`claude/aos-state-recon-002` (cut fresh from `origin/main` after the AOS-REVIEW-002 wave merged; one branch/PR per work package)
 
 ### PR
 
@@ -112,7 +112,7 @@ None — PR #59 merged as `8296cfc` and reconciled. Phase B complete.
 
 ### Next Recommended Step
 
-**Operator's direction — Phase C complete, Phase B merged.** Recommended: **LES-021 (isolate the `claude_code` provider — a small tactical prerequisite) → RFC-0008 (repository content extraction)**, the operator's founding "feed a repo → extract what's useful → Obsidian for reuse" capability; Phase B just made its structural counterpart richer. Alternatives: **scanner precision** (LES-016 manifest/ecosystem coverage, LES-017 secret-signal precision); **LES-014 manifest/import architecture edges**; the standalone **Council dashboard** (AOS-COUNCIL-002); AOS-20 (doc-staleness), AOS-22 (backups).
+Finish the AOS-REVIEW-002 wave: after **AOS-STATE-RECON-002** (this), complete **RFC-0013 capability-level reuse** — Slice 2 `RepositoryCapability` persistence (idempotent/versioned), Slice 3 per-capability embeddings, Slice 4 capability-match `recommend_reuse` with provenance citations, and the automated five-repository portfolio benchmark. The runtime-integrity core (durable fencing, authenticated control plane, node-enforced execution, hardened authority envelope) is merged; capability reuse is the last open package. Follow-ups noted in the PR bodies: remote HTTPS node execution, extending the authority envelope to council/research egress, and web views for routing/approvals.
 
 ## Handoff Template
 

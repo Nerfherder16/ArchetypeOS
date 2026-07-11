@@ -676,6 +676,38 @@ class AuthorityDecisionRead(BaseModel):
     reason: str
 
 
+class ActionRequestCreate(BaseModel):
+    action_class: str
+    actor: str = "system"
+    agent: str | None = None
+    project_id: str | None = None
+    target: str | None = None
+    sensitivity: str = "public"
+    requested_capability: str | None = None
+    payload_digest: str | None = None
+
+
+class ActionRequestRead(BaseModel):
+    id: str
+    action_class: str
+    actor: str
+    agent: str | None = None
+    project_id: str | None = None
+    target: str | None = None
+    sensitivity: str
+    requested_capability: str | None = None
+    payload_digest: str | None = None
+    policy_decision: str
+    approval_state: str
+    execution_state: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 class ApprovalRecordRead(BaseModel):
     id: str
     project_id: str | None = None

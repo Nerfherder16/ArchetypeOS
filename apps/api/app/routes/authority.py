@@ -11,11 +11,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from aos_core.database import get_db
-from aos_core.models import ApprovalRecord
+from aos_core.models import ActionRequest, ApprovalRecord
 from aos_core.services.authority import action_class_catalog, evaluate, list_pending_actions
+from aos_core.services.authority_envelope import authorize_action, reject_action, request_action
 
 from ..schemas import (
     ActionClassRead,
+    ActionRequestCreate,
+    ActionRequestRead,
     ApprovalRecordRead,
     AuthorityDecisionRead,
     AuthorityEvaluateRequest,
@@ -46,3 +49,48 @@ def evaluate_action(payload: AuthorityEvaluateRequest) -> dict:
 @router.get("/authority/pending", response_model=list[ApprovalRecordRead])
 def get_pending_actions(db: Session = Depends(get_db)) -> list[ApprovalRecord]:
     return list_pending_actions(db)
+
+
+# --- AOS-AUTHORITY-ENVELOPE-001 (P0-6): the mandatory execution envelope --------
+
+
+@router.post("/authority/actions", response_model=ActionRequestRead)
+def create_action_request(payload: ActionRequestCreate, db: Session = Depends(get_db)) -> ActionRequest:
+    try:
+        return request_action(
+            db,
+            action_class=payload.action_class,
+            actor=payload.actor,
+            agent=payload.agent,
+            project_id=payload.project_id,
+            target=payload.target,
+            sensitivity=payload.sensitivity,
+            requested_capability=payload.requested_capability,
+            payload_digest=payload.payload_digest,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=f"Unknown action_class: {payload.action_class}") from exc
+
+
+@router.post("/authority/actions/{action_id}/authorize", response_model=ActionRequestRead)
+def authorize_action_request(action_id: str, db: Session = Depends(get_db)) -> ActionRequest:
+    ar = authorize_action(db, action_id)
+    if ar is None:
+        raise HTTPException(status_code=404, detail="ActionRequest not found")
+    return ar
+
+
+@router.post("/authority/actions/{action_id}/reject", response_model=ActionRequestRead)
+def reject_action_request(action_id: str, db: Session = Depends(get_db)) -> ActionRequest:
+    ar = reject_action(db, action_id)
+    if ar is None:
+        raise HTTPException(status_code=404, detail="ActionRequest not found")
+    return ar
+
+
+@router.get("/authority/actions/{action_id}", response_model=ActionRequestRead)
+def get_action_request(action_id: str, db: Session = Depends(get_db)) -> ActionRequest:
+    ar = db.get(ActionRequest, action_id)
+    if ar is None:
+        raise HTTPException(status_code=404, detail="ActionRequest not found")
+    return ar

@@ -17,6 +17,7 @@ Capabilities:
 - per-type job-handler registry (AOS-WORKER-HANDLERS-001, finding P1-1: one module per job type under `apps/worker/app/handlers/`, each exporting an immutable `HandlerSpec` with capability/sensitivity/timeout/retry/idempotency-strategy/result-schema — adding a job type adds a module, never edits a shared `worker.py` block)
 - durable job execution (AOS-JOBS-RELIABILITY-001, RFC-0014: transactional outbox for atomic origination, leased claims + reaper for crash recovery, handler idempotency via unique origin job_id, dead-letter after retry budget, reconciliation sweep — at-least-once delivery with exactly-once effect)
 - reliable scheduling (AOS-SCHEDULER-RELIABILITY-001, finding P0-2: ScheduleFire unique on (schedule_id, nominal_fire_at) fires each occurrence exactly once across replicas/retries; FOR UPDATE SKIP LOCKED single-firer on Postgres; nominal cadence with coalesced catch-up so ticks never drift or replay a backlog)
+- mandatory authority envelope (AOS-AUTHORITY-ENVELOPE-001, finding P0-6: a high-impact action (write/deploy/destructive/sensitive egress) must carry an authorized ActionRequest; the job-origination chokepoint refuses an ungated high-impact action, so the authority evaluator is a structural gate rather than advisory; low-impact read_only jobs auto-authorize and are unchanged)
 - web dashboard
 - GPU node
 - WSL node

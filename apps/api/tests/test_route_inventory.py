@@ -114,6 +114,10 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/authority/action-classes"),
         ("POST", "/authority/evaluate"),
         ("GET", "/authority/pending"),
+        ("POST", "/authority/actions"),
+        ("POST", "/authority/actions/{action_id}/authorize"),
+        ("POST", "/authority/actions/{action_id}/reject"),
+        ("GET", "/authority/actions/{action_id}"),
     }
 )
 
@@ -164,6 +168,9 @@ def test_route_inventory_count() -> None:
     # sources/{source_ref}/decision) = 71, plus the AOS-SELFHEAL heartbeat routes
     # (POST /audits/heartbeat, GET /audits/heartbeats) = 73, plus the per-project
     # audit toggle (PATCH /projects/{project_id}) = 74.
-    # + AOS-NODE-IDENTITY-001 enrollment route (POST /nodes/enroll) = 75.
-    assert len(EXPECTED_ROUTES) == 75
-    assert len(_actual_routes()) == 75
+    # + AOS-NODE-IDENTITY-001 enrollment route (POST /nodes/enroll) = 75, plus the
+    # AOS-AUTHORITY-ENVELOPE-001 action-request routes (POST /authority/actions,
+    # POST /authority/actions/{id}/authorize, POST /authority/actions/{id}/reject,
+    # GET /authority/actions/{id}) = 79.
+    assert len(EXPECTED_ROUTES) == 79
+    assert len(_actual_routes()) == 79

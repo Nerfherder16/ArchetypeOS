@@ -23,7 +23,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import or_, update
 
-from ..models import Job, JobOutbox, now_utc
+from ..models import ActionRequest, Job, JobOutbox, now_utc
+from .authority import requires_approval
 
 QUEUE = "archetypeos:jobs"
 
@@ -44,11 +45,30 @@ def enqueue_job(
     repository_id: str | None = None,
     payload: dict | None = None,
     priority: int = 100,
+    action_class: str = "read_only",
+    sensitivity: str = "public",
+    action_request: ActionRequest | None = None,
 ) -> Job:
     """Create a queued ``Job`` + its outbox row atomically, then best-effort deliver.
 
     The job is durable once this returns, whether or not Redis accepted the push.
+
+    Authority gate (finding P0-6): origination is the single execution chokepoint,
+    so a **high-impact** action (write/deploy/destructive/sensitive egress) is
+    refused here unless it carries an authorized ``ActionRequest`` for the same
+    class. Low-impact ``read_only`` jobs (the default, and every current job type)
+    pass straight through, so the common path is unchanged.
     """
+    if requires_approval(action_class, sensitivity=sensitivity):
+        if (
+            action_request is None
+            or action_request.action_class != action_class
+            or action_request.execution_state != "authorized"
+        ):
+            raise PermissionError(
+                f"job_type {job_type!r} ({action_class}) requires an authorized ActionRequest"
+            )
+
     job = Job(
         job_type=job_type,
         project_id=project_id,
@@ -61,7 +81,10 @@ def enqueue_job(
     db.flush()  # assign job.id so the outbox row can reference it in the same txn
     outbox = JobOutbox(job_id=job.id)
     db.add(outbox)
-    db.commit()  # Job + JobOutbox committed together — durable before any Redis touch
+    if action_request is not None:
+        # The envelope is consumed by exactly this job, committed in the same txn.
+        action_request.execution_state = "executed"
+    db.commit()  # Job + JobOutbox (+ envelope) committed together — durable before Redis
     db.refresh(job)
 
     # Best-effort immediate delivery keeps happy-path latency. A failure here does

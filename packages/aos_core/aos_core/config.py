@@ -19,6 +19,11 @@ class Settings(BaseSettings):
     # AOS-SELFHEAL observability: when set, POST /audits/heartbeat requires a
     # matching x-telemetry-token header. Empty = no auth (local/tailnet default).
     audit_heartbeat_token: str = ""
+    # AOS-REVIEW-002 follow-up (P0-5): when set, the connector WRITE routes
+    # (POST /connectors/reconcile, /connectors/{name}/probe, /connectors/{name}/health)
+    # require a matching x-telemetry-token header, so an unauthenticated client can no
+    # longer post false connector health. Empty = no auth (local/tailnet default).
+    connector_write_token: str = ""
     llm_provider: str = "deterministic"
     # AOS-LLM-LOCAL-001: the "openai_compatible" provider runs ArchetypeOS's
     # reasoned tiers off a local model (Ollama/vLLM/LM Studio — e.g. teevee's

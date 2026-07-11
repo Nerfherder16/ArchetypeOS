@@ -5,6 +5,7 @@ from aos_core.config import get_settings
 from aos_core.database import get_db
 from aos_core.models import KnowledgePage, Project, Repository, RepositoryDNA
 from aos_core.repository_scanner import safe_repo_path
+from aos_core.services.authority_envelope import is_authorized, mark_executed, request_action
 from aos_core.services.distillation import distill_repository
 
 from ..schemas import KnowledgePageRead, RepositoryCreate, RepositoryDnaRead, RepositoryRead
@@ -58,8 +59,33 @@ def distill_repository_endpoint(repository_id: str, db: Session = Depends(get_db
     # set of source files through verified_generate (routes via settings; deterministic
     # in CI). AOS-USAGE-001: the ledger sink is created inside distill_repository.
     settings_ = get_settings()
-    return distill_repository(
+    # AOS-REVIEW-002 follow-up (P0-6): distillation egresses repository content to a
+    # model provider, so it is a direct sensitive-egress action — it must pass through
+    # the same authority envelope that gates job origination, not just jobs. Public
+    # egress auto-authorizes (unchanged behaviour); a policy that requires approval
+    # for egress makes this return 403 with the pending ActionRequest to approve.
+    action = request_action(
+        db,
+        action_class="external_network",
+        actor="operator",
+        agent="distillation",
+        target=f"repository:{repository_id}",
+        sensitivity="public",
+        requested_capability="distill",
+    )
+    if not is_authorized(action):
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "reason": "distillation egress requires approval",
+                "action_request_id": action.id,
+            },
+        )
+    page = distill_repository(
         db,
         repository_id=repository_id,
         knowledge_root=settings_.knowledge_root,
     )
+    mark_executed(db, action)
+    db.commit()
+    return page

@@ -102,3 +102,28 @@ def test_probe_route_records_health(client):
 
 def test_probe_unknown_connector_404(client):
     assert client.post("/connectors/nope/probe").status_code == 404
+
+
+# --- AOS-REVIEW-002 follow-up (P0-5): connector WRITE routes gated by a token ---
+
+
+def test_connector_write_routes_require_token_when_configured(client, monkeypatch):
+    from app.routes import connectors as conn_routes
+
+    monkeypatch.setattr(conn_routes.settings, "connector_write_token", "s3cret")
+
+    # Without the token, every write route is rejected.
+    assert client.post("/connectors/reconcile").status_code == 401
+    assert client.post("/connectors/exa/probe").status_code == 401
+    assert client.post("/connectors/exa/health", json={"status": "degraded"}).status_code == 401
+
+    # With the token, they succeed.
+    h = {"X-Telemetry-Token": "s3cret"}
+    assert client.post("/connectors/reconcile", headers=h).status_code == 200
+    assert client.post("/connectors/exa/health", json={"status": "degraded"}, headers=h).status_code == 200
+
+
+def test_connector_write_routes_open_when_no_token_configured(client):
+    # Default (no token) stays open for the local/tailnet deployment.
+    assert client.post("/connectors/reconcile").status_code == 200
+    assert client.post("/connectors/exa/health", json={"status": "healthy"}).status_code == 200

@@ -30,9 +30,28 @@ The catalog is declarative. Each connector carries:
 | `quota_policy` | Short label: `subscription` / `free-tier` / `self-hosted` / `metered` / `rate-limited` / `unmetered`. |
 | `last_health_status` / `last_error` / `last_checked_at` | Recorded by a health probe (`POST /connectors/{name}/health`). |
 
-`GET /connectors` reconciles the catalog into the registry on read, so the list is
-never empty or stale and `configured` always reflects current settings. Disabled and
-unconfigured connectors remain visible without erroring.
+`GET /connectors` is a **read-only** view derived from the catalog + current
+settings + persisted health (finding P0-4: it no longer writes on a read), so the
+list is never empty or stale and `configured` always reflects current settings.
+Disabled and unconfigured connectors remain visible without erroring. The explicit
+write path is `POST /connectors/reconcile`.
+
+## Write authorization
+
+The connector **write** routes — `POST /connectors/reconcile`,
+`POST /connectors/{name}/probe`, and `POST /connectors/{name}/health` — mutate
+registry state, so a client that can reach them can post false connector health.
+They are gated by a soft token (AOS-REVIEW-002 P0-5 follow-up to node identity):
+
+- When `connector_write_token` is **empty** (the default), the routes are open —
+  the local/tailnet single-operator deployment is unchanged.
+- When `connector_write_token` is **set**, every connector write route requires a
+  matching `X-Telemetry-Token` header; an unauthenticated client is rejected with
+  `401`. Reads (`GET /connectors`, `GET /connectors/{name}`) are never gated.
+
+This mirrors the audit-heartbeat telemetry gate: a shared secret for the tailnet,
+not per-node identity — enrolled per-node credentials (AOS-NODE-IDENTITY-001)
+remain the stronger control for node-reported state.
 
 ## Governance rules
 

@@ -1134,3 +1134,50 @@ def test_drop_uncited_capabilities_removes_hallucinated_and_uncited() -> None:
     assert "LLM routing" in names  # basename/suffix match against a known file survives
     assert "SOP via LLM" not in names  # cites a file the repo does not contain → dropped
     assert "Uncited" not in names  # no citation → cannot ground → dropped
+
+
+# --- AOS-REVIEW-002 follow-up (P0-6): distillation egress via the authority envelope ---
+
+
+def test_distill_records_authorized_egress_envelope(client, tmp_path) -> None:
+    from aos_core.models import ActionRequest
+
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_repo(client, project_id, name="Env", local_path="env", readme="# Env\n\nhello world")
+
+    resp = client.post(f"/repositories/{repo_id}/distill")
+    assert resp.status_code == 200, resp.text
+
+    session = _same_file_session(tmp_path)
+    try:
+        ars = session.query(ActionRequest).filter(ActionRequest.action_class == "external_network").all()
+        assert len(ars) == 1, "distillation egress creates exactly one authority envelope"
+        assert ars[0].execution_state == "executed"
+        assert ars[0].target == f"repository:{repo_id}"
+    finally:
+        session.close()
+
+
+def test_distill_blocked_when_egress_requires_approval(client, tmp_path, monkeypatch) -> None:
+    import aos_core.services.authority_envelope as env
+    from aos_core.models import KnowledgePage
+
+    settings.knowledge_root = tmp_path
+    project_id = _project(client)
+    repo_id = _register_repo(client, project_id, name="Gate", local_path="gate", readme="# Gate\n\nhello")
+
+    # A policy that requires approval for egress leaves the envelope pending → 403.
+    monkeypatch.setattr(env, "requires_approval", lambda *a, **k: True)
+    resp = client.post(f"/repositories/{repo_id}/distill")
+    assert resp.status_code == 403, resp.text
+    detail = resp.json()["detail"]
+    assert detail["reason"].startswith("distillation egress")
+    assert detail["action_request_id"]
+
+    # The egress was refused before distillation ran — no page written.
+    session = _same_file_session(tmp_path)
+    try:
+        assert session.query(KnowledgePage).filter(KnowledgePage.page_type == "repository").count() == 0
+    finally:
+        session.close()

@@ -19,7 +19,9 @@ depend on redis.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 from sqlalchemy import or_, update
 
@@ -132,6 +134,21 @@ def dispatch_outbox(db, client, *, limit: int = 100) -> int:
     return delivered
 
 
+@dataclass(frozen=True)
+class Claim:
+    """Proof of active ownership returned by a winning :func:`claim_job`.
+
+    Every subsequent worker-side transition for this job must present the
+    ``claim_token`` so a stale worker (one whose lease expired and whose job was
+    reclaimed) cannot mutate it — the transition compare-and-swaps on the token.
+    """
+
+    job_id: str
+    worker_id: str
+    claim_token: str
+    lease_expires_at: datetime
+
+
 def claim_job(
     db,
     job_id: str,
@@ -139,15 +156,19 @@ def claim_job(
     *,
     lease_seconds: int = DEFAULT_LEASE_SECONDS,
     now: datetime | None = None,
-) -> bool:
-    """Atomically claim a job with a lease (compare-and-swap). Returns True if won.
+) -> Claim | None:
+    """Atomically claim a job with a lease + fresh fencing token (compare-and-swap).
 
-    The claim only succeeds when the job is ``queued``/``running`` AND its lease is
-    absent or expired, so two workers racing the same id cannot both win — the
-    second sees ``rowcount == 0`` and drops it (finding P0-1). Claiming increments
+    Returns a :class:`Claim` if won, else ``None``. The claim only succeeds when the
+    job is ``queued``/``running`` AND its lease is absent or expired, so two workers
+    racing the same id cannot both win — the second sees ``rowcount == 0`` and drops
+    it (finding P0-1). Winning mints a NEW ``claim_token`` (AOS-JOB-FENCING-001), so
+    any previously-issued token for this job is instantly stale. Claiming increments
     ``attempts`` and stamps ``started_at``.
     """
     now = now or now_utc()
+    token = uuid4().hex
+    expires = now + timedelta(seconds=lease_seconds)
     stmt = (
         update(Job)
         .where(
@@ -158,29 +179,40 @@ def claim_job(
         .values(
             status="running",
             claimed_by=worker_id,
-            lease_expires_at=now + timedelta(seconds=lease_seconds),
+            claim_token=token,
+            lease_expires_at=expires,
             started_at=now,
             attempts=Job.attempts + 1,
         )
     )
     result = db.execute(stmt)
     db.commit()
-    return result.rowcount == 1
+    if result.rowcount == 1:
+        return Claim(job_id=job_id, worker_id=worker_id, claim_token=token, lease_expires_at=expires)
+    return None
 
 
 def renew_lease(
     db,
-    job_id: str,
-    worker_id: str,
+    claim: Claim,
     *,
     lease_seconds: int = DEFAULT_LEASE_SECONDS,
     now: datetime | None = None,
 ) -> bool:
-    """Extend the lease for a job this worker still holds. Returns True if renewed."""
+    """Extend the lease for a job this worker still owns. Returns True if renewed.
+
+    Guarded by the fencing token: if the job was reclaimed (new token) or moved off
+    ``running``, this affects 0 rows and the owner learns it has lost the lease.
+    """
     now = now or now_utc()
     stmt = (
         update(Job)
-        .where(Job.id == job_id, Job.claimed_by == worker_id, Job.status == "running")
+        .where(
+            Job.id == claim.job_id,
+            Job.claimed_by == claim.worker_id,
+            Job.claim_token == claim.claim_token,
+            Job.status == "running",
+        )
         .values(lease_expires_at=now + timedelta(seconds=lease_seconds))
     )
     result = db.execute(stmt)
@@ -188,51 +220,105 @@ def renew_lease(
     return result.rowcount == 1
 
 
-def complete_job(db, job_id: str, result: dict | None) -> None:
-    """Mark a job completed and release its lease (same session as the handler)."""
-    job = db.get(Job, job_id)
-    if job is None:
-        return
+def _owned_transition(db, claim: Claim, values: dict) -> bool:
+    """Apply a state transition only if ``claim`` still owns the running job (CAS).
+
+    Returns True if the row was updated (ownership proven), False if a stale worker
+    tried to mutate a job it no longer holds. Clears the lease + token as part of any
+    terminal/requeue transition so the fence is released cleanly.
+    """
+    stmt = (
+        update(Job)
+        .where(
+            Job.id == claim.job_id,
+            Job.claimed_by == claim.worker_id,
+            Job.claim_token == claim.claim_token,
+            Job.status == "running",
+        )
+        .values(**values)
+    )
+    result = db.execute(stmt)
+    db.commit()
+    return result.rowcount == 1
+
+
+def complete_job(db, job_id: str, result: dict | None, *, claim: Claim | None = None) -> bool:
+    """Mark a job completed and release its lease — only if ``claim`` still owns it.
+
+    Fenced (AOS-JOB-FENCING-001): a stale worker whose lease expired and whose job
+    was reclaimed cannot overwrite the newer worker's result — the CAS affects 0
+    rows and this returns ``False``. When ``claim`` is omitted (legacy/unfenced
+    callers) the completion falls back to an id-only update for backward compat.
+    """
     now = now_utc()
-    job.status = "completed"
-    job.result = result
-    job.finished_at = now
-    job.updated_at = now
-    job.claimed_by = None
-    job.lease_expires_at = None
-    db.commit()
-
-
-def release_for_retry(db, job_id: str) -> None:
-    """Reset a job to ``queued`` and release its lease so it can be re-claimed."""
+    values = dict(status="completed", result=result, finished_at=now, updated_at=now,
+                  claimed_by=None, claim_token=None, lease_expires_at=None)
+    if claim is not None:
+        return _owned_transition(db, claim, values)
     job = db.get(Job, job_id)
     if job is None:
-        return
-    job.status = "queued"
-    job.claimed_by = None
-    job.lease_expires_at = None
-    job.updated_at = now_utc()
+        return False
+    for k, v in values.items():
+        setattr(job, k, v)
     db.commit()
+    return True
 
 
-def fail_job(db, job_id: str, error: str | None, *, status: str = "failed") -> None:
-    """Mark a job terminal (``failed`` or ``dead_letter``) and release its lease."""
+def release_for_retry(db, job_id: str, *, claim: Claim | None = None) -> bool:
+    """Reset a job to ``queued`` and release its lease so it can be re-claimed.
+
+    Fenced when ``claim`` is supplied: a stale worker cannot requeue a job it lost.
+    """
+    values = dict(status="queued", claimed_by=None, claim_token=None,
+                  lease_expires_at=None, updated_at=now_utc())
+    if claim is not None:
+        return _owned_transition(db, claim, values)
     job = db.get(Job, job_id)
     if job is None:
-        return
+        return False
+    for k, v in values.items():
+        setattr(job, k, v)
+    db.commit()
+    return True
+
+
+def fail_job(db, job_id: str, error: str | None, *, status: str = "failed", claim: Claim | None = None) -> bool:
+    """Mark a job terminal (``failed`` or ``dead_letter``) and release its lease.
+
+    Fenced when ``claim`` is supplied: a stale worker cannot fail a job it lost.
+    """
     now = now_utc()
-    job.status = status
-    job.error = error
-    job.finished_at = now
-    job.updated_at = now
-    job.claimed_by = None
-    job.lease_expires_at = None
+    values = dict(status=status, error=error, finished_at=now, updated_at=now,
+                  claimed_by=None, claim_token=None, lease_expires_at=None)
+    if claim is not None:
+        return _owned_transition(db, claim, values)
+    job = db.get(Job, job_id)
+    if job is None:
+        return False
+    for k, v in values.items():
+        setattr(job, k, v)
     db.commit()
+    return True
 
 
-def dead_letter_job(db, job_id: str, error: str | None) -> None:
+def dead_letter_job(db, job_id: str, error: str | None, *, claim: Claim | None = None) -> bool:
     """Move a job to the ``dead_letter`` terminal state (retry budget exhausted)."""
-    fail_job(db, job_id, error, status="dead_letter")
+    return fail_job(db, job_id, error, status="dead_letter", claim=claim)
+
+
+def rearm_outbox(db, job_id: str) -> None:
+    """Re-arm (or create) a job's outbox row so the dispatcher redelivers it.
+
+    Used by the fenced retry path: a job reset to ``queued`` must be redelivered
+    through the durable outbox rather than a direct Redis push, so retry survives a
+    broker outage exactly like origination does (RFC-0014).
+    """
+    outbox = db.query(JobOutbox).filter(JobOutbox.job_id == job_id).one_or_none()
+    if outbox is None:
+        db.add(JobOutbox(job_id=job_id))
+    else:
+        outbox.delivered_at = None
+    db.commit()
 
 
 def reap_expired_leases(db, client, *, max_attempts: int, now: datetime | None = None) -> int:
@@ -255,6 +341,7 @@ def reap_expired_leases(db, client, *, max_attempts: int, now: datetime | None =
     requeued = 0
     for job in stale:
         job.claimed_by = None
+        job.claim_token = None  # AOS-JOB-FENCING-001: kill the dead owner's fence
         job.lease_expires_at = None
         if (job.attempts or 0) < max_attempts:
             job.status = "queued"
@@ -311,6 +398,7 @@ def reconcile(db, client, *, max_attempts: int, now: datetime | None = None) -> 
 __all__ = [
     "QUEUE",
     "DEFAULT_LEASE_SECONDS",
+    "Claim",
     "enqueue_job",
     "dispatch_outbox",
     "reconcile",
@@ -320,5 +408,6 @@ __all__ = [
     "release_for_retry",
     "fail_job",
     "dead_letter_job",
+    "rearm_outbox",
     "reap_expired_leases",
 ]

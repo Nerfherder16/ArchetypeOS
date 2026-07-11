@@ -358,6 +358,30 @@ class Schedule(AuditMixin, Base):
     next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now_utc, nullable=False)
 
 
+class ScheduleFire(AuditMixin, Base):
+    """One materialized firing of a :class:`Schedule` (AOS-SCHEDULER-RELIABILITY-001).
+
+    Unique on ``(schedule_id, nominal_fire_at)`` so a schedule's occurrence fires
+    EXACTLY once — even across scheduler replicas or a crash-and-retry: the second
+    attempt hits the unique constraint and is skipped instead of enqueuing a
+    duplicate job (finding P0-2). ``nominal_fire_at`` is the scheduled time, not
+    the wall-clock tick, so cadence is anchored and cannot drift forward.
+    """
+
+    __tablename__ = "schedule_fires"
+    __table_args__ = (
+        UniqueConstraint(
+            "schedule_id", "nominal_fire_at", name="uq_schedule_fires_schedule_nominal"
+        ),
+    )
+
+    schedule_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("schedules.id"), nullable=False, index=True
+    )
+    nominal_fire_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
+
+
 class Agent(AuditMixin, Base):
     __tablename__ = "agents"
 

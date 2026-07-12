@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from uuid import uuid4
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint, event, inspect, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import JSON, TypeDecorator
@@ -831,3 +831,300 @@ class ApprovalRecord(AuditMixin, Base):
     approval_status: Mapped[str] = mapped_column(String(64), default="pending", nullable=False)
     output: Mapped[dict | None] = mapped_column(JSONField())
     rollback_notes: Mapped[str | None] = mapped_column(Text)
+
+
+# ---------------------------------------------------------------------------
+# Evidence spine (RFC-0018, AOS-EVIDENCE-MODELS-001) — the claim-centric
+# evidence graph as first-class, queryable, versioned tables. Columns store
+# ``aos_core.foundation.enums``/``aos_core.sensitivity`` values as ``String``;
+# JSON only for the contracts' open structures (locator/scope/derivation/
+# authority_domains/claim_ids/blocking_stages/affected_*). The ONLY write path
+# is ``services/evidence.py`` — it builds each row through its RFC-0017
+# Pydantic contract first (C1/C3 validators run there too, defense in depth),
+# computes ``content_hash``/``claim_set_hash`` (C4), then persists the ORM row.
+# A ``before_update`` guard below (``_assert_content_immutable``) refuses an
+# UPDATE that touches a content field on any of the five immutable row kinds
+# (Source/SourceVersion/Fragment/Claim/CorpusSnapshot) — status/annotation
+# transitions (e.g. a conflict's status, a claim's status) are unaffected.
+# ---------------------------------------------------------------------------
+
+
+class EvidenceSource(AuditMixin, Base):
+    """design §4.2 — a logical evidence source (repo, doc, diagram, ...).
+
+    ``status`` (AuditMixin) carries ``SourceStatus`` (active/superseded/
+    withdrawn/unavailable). The RFC-0017 contract has no ``content_hash``
+    field for this entity, so this column is a pure C4 audit hash of the
+    contract's content projection — computed by ``services/evidence.py``.
+    """
+
+    __tablename__ = "evidence_sources"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    source_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    origin: Mapped[str] = mapped_column(String(64), nullable=False)
+    originator: Mapped[str] = mapped_column(String(255), nullable=False)
+    canonical_uri: Mapped[str | None] = mapped_column(Text)
+    sensitivity: Mapped[str] = mapped_column(String(32), default="internal", nullable=False)
+    authority_domains: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    access_policy_id: Mapped[str | None] = mapped_column(String(128))
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    content_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+
+
+class EvidenceSourceVersion(AuditMixin, Base):
+    """design §4.3 — append-only; a correction creates a NEW version row.
+
+    ``content_hash`` here is the RFC-0017 contract's own field — the hash of
+    the underlying source *content* (e.g. a file/blob checksum), supplied by
+    the caller at ingestion time — distinct from the C4 audit-hash mechanism
+    (this entity's contract already carries its content anchor, so no second
+    hash is derived from the row).
+    """
+
+    __tablename__ = "evidence_source_versions"
+
+    source_id: Mapped[str] = mapped_column(GUID(), ForeignKey("evidence_sources.id"), nullable=False, index=True)
+    version_ref: Mapped[str] = mapped_column(String(255), nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    captured_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    effective_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    supersedes_version_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("evidence_source_versions.id"), index=True
+    )
+    ingestion_method: Mapped[str] = mapped_column(String(64), nullable=False)
+    parser_version: Mapped[str | None] = mapped_column(String(128))
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class EvidenceFragment(AuditMixin, Base):
+    """design §4.4 — append-only; a locatable slice of a source version.
+
+    ``content_hash`` is the contract's own field (hash of the extracted
+    excerpt), caller-supplied — same rationale as ``EvidenceSourceVersion``.
+    """
+
+    __tablename__ = "evidence_fragments"
+
+    source_version_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("evidence_source_versions.id"), nullable=False, index=True
+    )
+    locator: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    excerpt: Mapped[str] = mapped_column(Text, nullable=False)
+    extraction_method: Mapped[str] = mapped_column(String(64), nullable=False)
+    extraction_confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class Claim(AuditMixin, Base):
+    """design §4.5 — the central reasoning primitive (RFC-0016 C1/C3 apply).
+
+    ``status`` (AuditMixin) carries ``ClaimStatus`` (active/disputed/
+    superseded/rejected/resolved). ``decision_id`` is the C1 link: only
+    ``services.evidence.project_decided_claim`` sets it, from an **approved**
+    ``Decision``. The contract has no ``content_hash`` field, so this column
+    is a pure C4 audit hash of the contract's content projection.
+    """
+
+    __tablename__ = "claims"
+    __table_args__ = (Index("ix_claims_project_id_truth_layer", "project_id", "truth_layer"),)
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    statement: Mapped[str] = mapped_column(Text, nullable=False)
+    claim_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    truth_layer: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    domain: Mapped[str] = mapped_column(String(128), nullable=False)
+    scope: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    polarity: Mapped[str] = mapped_column(String(32), default="affirming", nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    materiality: Mapped[str] = mapped_column(String(32), default="medium", nullable=False)
+    valid_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    valid_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    derivation: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+    decision_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("decisions.id"), index=True)
+    content_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+
+
+class ClaimEvidenceLink(AuditMixin, Base):
+    """design §4.6 — evidence has a relationship to the claim, not a bare attachment.
+
+    Junction table: surrogate id (AuditMixin) + a unique constraint on
+    ``(claim_id, fragment_id, relationship)`` (RFC-0018 open question #2,
+    resolved). No ``content_hash`` — junction rows carry no independent content.
+    """
+
+    __tablename__ = "claim_evidence_links"
+    __table_args__ = (
+        UniqueConstraint("claim_id", "fragment_id", "relationship", name="uq_claim_evidence_links_claim_fragment_rel"),
+    )
+
+    claim_id: Mapped[str] = mapped_column(GUID(), ForeignKey("claims.id"), nullable=False, index=True)
+    fragment_id: Mapped[str] = mapped_column(GUID(), ForeignKey("evidence_fragments.id"), nullable=False, index=True)
+    relationship: Mapped[str] = mapped_column(String(32), nullable=False)
+    relevance: Mapped[float] = mapped_column(Float, default=1.0, nullable=False)
+    strength: Mapped[str] = mapped_column(String(32), default="moderate", nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class ClaimRelationship(AuditMixin, Base):
+    """design §4.8 — the claim graph's edges (supports/contradicts/supersedes/...)."""
+
+    __tablename__ = "claim_relationships"
+
+    from_claim_id: Mapped[str] = mapped_column(GUID(), ForeignKey("claims.id"), nullable=False, index=True)
+    to_claim_id: Mapped[str] = mapped_column(GUID(), ForeignKey("claims.id"), nullable=False, index=True)
+    relationship: Mapped[str] = mapped_column(String(32), nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class EvidenceConflict(AuditMixin, Base):
+    """design §4.9 — a contradiction that remains visible until explicitly resolved.
+
+    ``status`` (AuditMixin) carries ``ConflictStatus``; ``services.evidence.
+    open_conflict`` sets it to ``open`` (overriding AuditMixin's ``active``
+    default) so a conflict stays visible until a later, explicit resolution
+    transition sets ``status="resolved"``/``resolution_decision_id`` (the C1
+    decision link for the resolution).
+    """
+
+    __tablename__ = "evidence_conflicts"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    conflict_type: Mapped[str] = mapped_column(String(64), nullable=False)
+    materiality: Mapped[str] = mapped_column(String(32), nullable=False)
+    resolution: Mapped[str | None] = mapped_column(Text)
+    resolution_decision_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("decisions.id"), index=True)
+    blocking_stages: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class CorpusSnapshot(AuditMixin, Base):
+    """design §5 — the frozen analysis input set. Immutable once created.
+
+    ``claim_set_hash`` is ``set_hash`` over the project's member claim
+    ``content_hash`` values at freeze time (``services.evidence.freeze_corpus``)
+    — permutation-invariant, so it does not depend on ``source_version_ids``
+    order. The contract has no ``content_hash`` field (it has
+    ``claim_set_hash`` instead), so there is no separate audit-hash column here.
+    """
+
+    __tablename__ = "corpus_snapshots"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    source_version_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    repository_refs: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    claim_set_hash: Mapped[str | None] = mapped_column(String(64), index=True)
+    purpose: Mapped[str] = mapped_column(String(255), nullable=False)
+
+
+class CorpusSnapshotSource(AuditMixin, Base):
+    """design §5 — normalized many-to-many: a snapshot's source-version membership.
+
+    Queryable membership (not only the JSON ``source_version_ids`` list on
+    ``CorpusSnapshot``) so "which snapshots include version X" is a plain join.
+    """
+
+    __tablename__ = "corpus_snapshot_sources"
+    __table_args__ = (
+        UniqueConstraint(
+            "snapshot_id", "source_version_id", name="uq_corpus_snapshot_sources_snapshot_version"
+        ),
+    )
+
+    snapshot_id: Mapped[str] = mapped_column(GUID(), ForeignKey("corpus_snapshots.id"), nullable=False, index=True)
+    source_version_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("evidence_source_versions.id"), nullable=False, index=True
+    )
+
+
+class OpenQuestion(AuditMixin, Base):
+    """design §7 — a materially significant unresolved question.
+
+    ``status`` (AuditMixin) carries ``QuestionStatus`` (open/answered/deferred/
+    unanswerable); ``genome_snapshot_id`` is a soft (no-FK) reference — Slice 2
+    (Genome) wires the real table later. ``answer_claim_id`` links the claim
+    that answered this question, once one exists.
+    """
+
+    __tablename__ = "open_questions"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    genome_snapshot_id: Mapped[str | None] = mapped_column(GUID(), index=True)
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    affected_dimensions: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    affected_foundation_domains: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    materiality: Mapped[str] = mapped_column(String(32), nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False)
+    answer_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    answer_claim_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("claims.id"), index=True)
+    minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+# C4 — immutable-content guard. Each entry names the fields that constitute the
+# row's *content* (mirroring its RFC-0017 contract's CONTENT_FIELDS projection,
+# minus surrogate/audit columns the contract doesn't have at all, e.g.
+# AuditMixin's own created_by/meta which aren't part of any evidence contract).
+# A ``before_update`` UPDATE that touches any of these is refused — corrections
+# go through a new row (``add_source_version``) or an explicit status/annotation
+# transition, never an in-place content edit.
+_EVIDENCE_IMMUTABLE_CONTENT_FIELDS: dict[type, frozenset[str]] = {
+    EvidenceSource: frozenset(
+        {
+            "project_id", "source_type", "title", "origin", "originator", "canonical_uri",
+            "sensitivity", "authority_domains", "access_policy_id", "minted_by", "content_hash",
+        }
+    ),
+    EvidenceSourceVersion: frozenset(
+        {
+            "source_id", "version_ref", "content_hash", "captured_at", "effective_from",
+            "effective_until", "supersedes_version_id", "ingestion_method", "parser_version",
+            "minted_by",
+        }
+    ),
+    EvidenceFragment: frozenset(
+        {
+            "source_version_id", "locator", "content_hash", "excerpt",
+            "extraction_method", "extraction_confidence", "minted_by",
+        }
+    ),
+    Claim: frozenset(
+        {
+            "project_id", "statement", "claim_type", "truth_layer", "domain", "scope", "polarity",
+            "confidence", "materiality", "valid_from", "valid_until", "created_by", "derivation",
+            "minted_by", "decision_id", "content_hash",
+        }
+    ),
+    CorpusSnapshot: frozenset(
+        {"project_id", "source_version_ids", "repository_refs", "claim_set_hash", "created_by", "purpose"}
+    ),
+}
+
+
+class ImmutableContentError(ValueError):
+    """Raised when an UPDATE attempts to change a content field of an immutable evidence row (C4)."""
+
+
+def _assert_evidence_content_immutable(mapper, connection, target) -> None:
+    fields = _EVIDENCE_IMMUTABLE_CONTENT_FIELDS.get(type(target))
+    if not fields:
+        return
+    state = inspect(target)
+    changed = [attr for attr in fields if state.attrs[attr].history.has_changes()]
+    if changed:
+        raise ImmutableContentError(
+            f"C4 violation: cannot UPDATE immutable content field(s) {sorted(changed)} on "
+            f"{type(target).__name__} id={target.id!r}; corrections require a new row "
+            "(e.g. add_source_version) or an explicit status/annotation transition, not an "
+            "in-place content edit."
+        )
+
+
+for _evidence_model in _EVIDENCE_IMMUTABLE_CONTENT_FIELDS:
+    event.listen(_evidence_model, "before_update", _assert_evidence_content_immutable)

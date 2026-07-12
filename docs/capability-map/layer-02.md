@@ -24,4 +24,5 @@ Primary artifacts:
 - docs/FOUNDATION_INTELLIGENCE_DESIGN_V0_1.md
 - docs/rfc/RFC-0016-Foundation-Intelligence-Evidence-Spine-System-Genome.md
 - docs/rfc/RFC-0017-Foundation-Intelligence-Slice-0-Vocabulary-And-Contracts.md
+- docs/rfc/RFC-0018-Foundation-Intelligence-Slice-1-Evidence-Spine.md
 

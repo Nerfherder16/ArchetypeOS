@@ -153,6 +153,10 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/projects/{project_id}/corpus-snapshots"),
         ("GET", "/projects/{project_id}/corpus-snapshots"),
         ("POST", "/decisions/{decision_id}/project-claim"),
+        # evidence backfill (AOS-EVIDENCE-BACKFILL-001 — RFC-0018 C5: project
+        # EXISTING RepositoryDNA/Decision/Recommendation/Evaluation/Risk/
+        # ResearchRun rows into the claim model)
+        ("POST", "/projects/{project_id}/evidence-backfill"),
     }
 )
 
@@ -226,5 +230,7 @@ def test_route_inventory_count() -> None:
     # POST/GET /projects/{project_id}/conflicts, PATCH /conflicts/{conflict_id},
     # POST/GET /projects/{project_id}/corpus-snapshots, POST
     # /decisions/{decision_id}/project-claim) = 107.
-    assert len(EXPECTED_ROUTES) == 107
-    assert len(_actual_routes()) == 107
+    # AOS-EVIDENCE-BACKFILL-001 added the evidence-backfill route (POST
+    # /projects/{project_id}/evidence-backfill) = 108.
+    assert len(EXPECTED_ROUTES) == 108
+    assert len(_actual_routes()) == 108

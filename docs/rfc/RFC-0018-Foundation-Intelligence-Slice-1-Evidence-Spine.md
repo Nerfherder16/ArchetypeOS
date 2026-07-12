@@ -261,5 +261,14 @@ Tracks the packages that realize this RFC (updated as each lands):
   - Guard→HTTP mapping: service `ValueError` (C3) → 422; the public claims route rejects
     `minted_by=deterministic_tool`; `project_decided_claim` 404/409 (C1) propagate. No authority
     envelope (evidence ingestion is additive/advisory).
-- **AOS-EVIDENCE-BACKFILL-001** (queued) — the C5 adapter.
+- **AOS-EVIDENCE-BACKFILL-001** (this PR) — the C5 adapter `services/evidence_backfill.py`:
+  projects existing `RepositoryDNA` / `Decision` / `Recommendation` / `Evaluation` / `Risk` /
+  `ResearchRun` rows into the claim model through the guarded `services/evidence.py` write path,
+  plus `POST /projects/{id}/evidence-backfill`. Truth-layer mapping respects C3 (backfill mints as
+  `deterministic_tool`, so only `observed`/`inferred`): DNA scan facts + Evaluation scores →
+  `observed`; recommendations/research/risk/eval-findings/non-approved-decisions → `inferred`;
+  **approved** decisions → `decided` via `project_decided_claim` (C1, `approval_process`).
+  Idempotent + re-runnable (sources deduped by a `backfill://<kind>/<id>` canonical URI; claims by
+  predicting the service's content hash) — a second run creates zero rows. With this, **Slice 1
+  (Evidence Spine) is complete**: design §20 steps 1–8 are demonstrable.
 - **AOS-EVIDENCE-UI-001** (queued) — the provenance UI.

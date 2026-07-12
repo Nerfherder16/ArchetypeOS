@@ -1,0 +1,105 @@
+{
+  "$defs": {
+    "RepositoryRef": {
+      "additionalProperties": false,
+      "description": "design \u00a75 \u2014 CorpusSnapshot.repository_refs entry.",
+      "properties": {
+        "branch": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Branch"
+        },
+        "commit_sha": {
+          "title": "Commit Sha",
+          "type": "string"
+        },
+        "repository_id": {
+          "title": "Repository Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "repository_id",
+        "commit_sha"
+      ],
+      "title": "RepositoryRef",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a75 \u2014 the frozen analysis input set.",
+  "properties": {
+    "claim_set_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Claim Set Hash"
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Created At"
+    },
+    "created_by": {
+      "default": "system",
+      "title": "Created By",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "purpose": {
+      "title": "Purpose",
+      "type": "string"
+    },
+    "repository_refs": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/RepositoryRef"
+      },
+      "title": "Repository Refs",
+      "type": "array"
+    },
+    "source_version_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Version Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "purpose"
+  ],
+  "title": "CorpusSnapshot",
+  "type": "object"
+}

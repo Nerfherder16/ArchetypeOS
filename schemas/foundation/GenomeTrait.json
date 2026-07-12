@@ -1,0 +1,176 @@
+{
+  "$defs": {
+    "Criticality": {
+      "description": "design \u00a76.4 \u2014 GenomeTrait.criticality.",
+      "enum": [
+        "informational",
+        "important",
+        "foundation_shaping"
+      ],
+      "title": "Criticality",
+      "type": "string"
+    },
+    "GenomeDimension": {
+      "description": "design \u00a76.5 \u2014 the 16 Genome dimensions (A-P), as stable snake_case keys.",
+      "enum": [
+        "mission_product_form",
+        "domain",
+        "lifecycle_maturity",
+        "system_composition",
+        "runtime_topology",
+        "deployment_ownership",
+        "workload_characteristics",
+        "data_profile",
+        "integration_profile",
+        "ai_autonomy",
+        "assurance_criticality",
+        "security_privacy",
+        "reliability_continuity",
+        "organizational_context",
+        "economic_delivery_constraints",
+        "change_profile"
+      ],
+      "title": "GenomeDimension",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "Stability": {
+      "description": "design \u00a76.4 \u2014 GenomeTrait.stability.",
+      "enum": [
+        "stable",
+        "evolving",
+        "volatile",
+        "unknown"
+      ],
+      "title": "Stability",
+      "type": "string"
+    },
+    "TraitClassification": {
+      "description": "design \u00a76.4 \u2014 GenomeTrait.classification.",
+      "enum": [
+        "primary",
+        "secondary",
+        "conditional",
+        "absent",
+        "unknown"
+      ],
+      "title": "TraitClassification",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a76.4 \u2014 an individual evidence-backed trait.",
+  "properties": {
+    "classification": {
+      "$ref": "#/$defs/TraitClassification",
+      "default": "unknown"
+    },
+    "confidence": {
+      "default": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "criticality": {
+      "$ref": "#/$defs/Criticality",
+      "default": "informational"
+    },
+    "dimension": {
+      "$ref": "#/$defs/GenomeDimension"
+    },
+    "genome_snapshot_id": {
+      "title": "Genome Snapshot Id",
+      "type": "string"
+    },
+    "human_locked": {
+      "default": false,
+      "title": "Human Locked",
+      "type": "boolean"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "opposing_claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Opposing Claim Ids",
+      "type": "array"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "source_methods": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Methods",
+      "type": "array"
+    },
+    "stability": {
+      "$ref": "#/$defs/Stability",
+      "default": "unknown"
+    },
+    "supporting_claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Supporting Claim Ids",
+      "type": "array"
+    },
+    "trait_key": {
+      "title": "Trait Key",
+      "type": "string"
+    },
+    "value": {
+      "anyOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "integer"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Value"
+    },
+    "value_type": {
+      "title": "Value Type",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "genome_snapshot_id",
+    "dimension",
+    "trait_key",
+    "value",
+    "value_type",
+    "minted_by"
+  ],
+  "title": "GenomeTrait",
+  "type": "object"
+}

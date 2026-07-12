@@ -1,0 +1,399 @@
+{
+  "_comment": "design §20 MVP acceptance scenario as golden data. Every object here must validate against packages/aos_core/aos_core/foundation/contracts.py; exercised by apps/api/tests/test_foundation_fixture.py.",
+
+  "evidence_sources": [
+    {
+      "id": "src-repo-001",
+      "project_id": "proj-mvp-001",
+      "source_type": "repository",
+      "title": "control-plane repository",
+      "origin": "github",
+      "originator": "acme/control-plane",
+      "canonical_uri": "https://github.com/acme/control-plane",
+      "sensitivity": "internal",
+      "authority_domains": ["runtime", "architecture"],
+      "status": "active",
+      "created_at": "2026-07-01T00:00:00Z",
+      "minted_by": "deterministic_tool"
+    },
+    {
+      "id": "src-doc-product-notes",
+      "project_id": "proj-mvp-001",
+      "source_type": "document",
+      "title": "Product notes",
+      "origin": "upload",
+      "originator": "product manager",
+      "sensitivity": "internal",
+      "authority_domains": ["product"],
+      "status": "active",
+      "created_at": "2026-07-02T00:00:00Z",
+      "minted_by": "human"
+    },
+    {
+      "id": "src-diagram-architecture",
+      "project_id": "proj-mvp-001",
+      "source_type": "diagram",
+      "title": "Target architecture diagram",
+      "origin": "upload",
+      "originator": "architecture lead",
+      "sensitivity": "internal",
+      "authority_domains": ["architecture"],
+      "status": "active",
+      "created_at": "2026-07-02T00:00:00Z",
+      "minted_by": "human"
+    },
+    {
+      "id": "src-legal-constraint",
+      "project_id": "proj-mvp-001",
+      "source_type": "communication",
+      "title": "Legal data-residency constraint",
+      "origin": "upload",
+      "originator": "legal counsel",
+      "sensitivity": "confidential",
+      "authority_domains": ["legal", "compliance"],
+      "status": "active",
+      "created_at": "2026-07-02T00:00:00Z",
+      "minted_by": "human"
+    }
+  ],
+
+  "evidence_source_versions": [
+    {
+      "id": "srcv-repo-001-v1",
+      "source_id": "src-repo-001",
+      "version_ref": "a1b2c3d4",
+      "content_hash": "9f1c2b6a4e8d7f0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0",
+      "captured_at": "2026-07-01T00:05:00Z",
+      "ingestion_method": "scan",
+      "parser_version": "repo-scanner-1.0",
+      "minted_by": "deterministic_tool"
+    },
+    {
+      "id": "srcv-doc-product-notes-v1",
+      "source_id": "src-doc-product-notes",
+      "version_ref": "upload-2026-07-02T00:00:00Z",
+      "content_hash": "1111111111111111111111111111111111111111111111111111111111111a",
+      "captured_at": "2026-07-02T00:00:00Z",
+      "ingestion_method": "upload",
+      "minted_by": "human"
+    },
+    {
+      "id": "srcv-diagram-architecture-v1",
+      "source_id": "src-diagram-architecture",
+      "version_ref": "upload-2026-07-02T00:01:00Z",
+      "content_hash": "2222222222222222222222222222222222222222222222222222222222222b",
+      "captured_at": "2026-07-02T00:01:00Z",
+      "ingestion_method": "upload",
+      "minted_by": "human"
+    },
+    {
+      "id": "srcv-legal-constraint-v1",
+      "source_id": "src-legal-constraint",
+      "version_ref": "upload-2026-07-02T00:02:00Z",
+      "content_hash": "3333333333333333333333333333333333333333333333333333333333333c",
+      "captured_at": "2026-07-02T00:02:00Z",
+      "ingestion_method": "upload",
+      "minted_by": "human"
+    }
+  ],
+
+  "evidence_fragments": [
+    {
+      "id": "frag-repo-dockerfile",
+      "source_version_id": "srcv-repo-001-v1",
+      "locator": {"path": "Dockerfile", "start_line": 1, "end_line": 12},
+      "content_hash": "4444444444444444444444444444444444444444444444444444444444444d",
+      "excerpt": "FROM python:3.12-slim ... EXPOSE 8000",
+      "extraction_method": "deterministic",
+      "extraction_confidence": 0.99,
+      "minted_by": "deterministic_tool"
+    },
+    {
+      "id": "frag-doc-offline-requirement",
+      "source_version_id": "srcv-doc-product-notes-v1",
+      "locator": {"section": "Deployment", "start_line": 40, "end_line": 44},
+      "content_hash": "5555555555555555555555555555555555555555555555555555555555555e",
+      "excerpt": "The deployment environment must not require public cloud connectivity.",
+      "extraction_method": "human",
+      "extraction_confidence": 0.95,
+      "minted_by": "human"
+    },
+    {
+      "id": "frag-legal-retention",
+      "source_version_id": "srcv-legal-constraint-v1",
+      "locator": {"section": "Data Retention", "start_line": 3, "end_line": 5},
+      "content_hash": "6666666666666666666666666666666666666666666666666666666666666f",
+      "excerpt": "The system may not retain category X data beyond 30 days.",
+      "extraction_method": "human",
+      "extraction_confidence": 0.97,
+      "minted_by": "human"
+    }
+  ],
+
+  "claims": [
+    {
+      "id": "claim-observed-cloud-egress",
+      "project_id": "proj-mvp-001",
+      "statement": "The control-plane repository's Dockerfile does not declare any outbound cloud SDK dependency.",
+      "claim_type": "fact",
+      "truth_layer": "observed",
+      "domain": "deployment",
+      "scope": {"repository_ids": ["repo-control-plane"]},
+      "polarity": "affirming",
+      "confidence": 0.9,
+      "materiality": "medium",
+      "status": "active",
+      "created_by": "repository-scanner",
+      "derivation": {"method": "direct", "parent_claim_ids": []},
+      "minted_by": "deterministic_tool"
+    },
+    {
+      "id": "claim-observed-service-listens",
+      "project_id": "proj-mvp-001",
+      "statement": "A service in the control-plane repository listens on port 8000.",
+      "claim_type": "fact",
+      "truth_layer": "observed",
+      "domain": "runtime",
+      "scope": {"repository_ids": ["repo-control-plane"]},
+      "polarity": "affirming",
+      "confidence": 0.98,
+      "materiality": "low",
+      "status": "active",
+      "created_by": "repository-scanner",
+      "derivation": {"method": "direct", "parent_claim_ids": []},
+      "minted_by": "deterministic_tool"
+    },
+    {
+      "id": "claim-requirement-offline",
+      "project_id": "proj-mvp-001",
+      "statement": "The deployment environment must not require public cloud connectivity.",
+      "claim_type": "requirement",
+      "truth_layer": "claimed",
+      "domain": "deployment",
+      "scope": {"environment": "production"},
+      "polarity": "affirming",
+      "confidence": 0.91,
+      "materiality": "high",
+      "status": "active",
+      "created_by": "product manager",
+      "derivation": {"method": "direct", "parent_claim_ids": []},
+      "minted_by": "human"
+    },
+    {
+      "id": "claim-constraint-retention",
+      "project_id": "proj-mvp-001",
+      "statement": "The system may not retain category X data beyond 30 days.",
+      "claim_type": "constraint",
+      "truth_layer": "claimed",
+      "domain": "data",
+      "scope": {},
+      "polarity": "negating",
+      "confidence": 0.97,
+      "materiality": "critical",
+      "status": "active",
+      "created_by": "legal counsel",
+      "derivation": {"method": "direct", "parent_claim_ids": []},
+      "minted_by": "human"
+    },
+    {
+      "id": "claim-inferred-latency-sensitive",
+      "project_id": "proj-mvp-001",
+      "statement": "The system appears latency-sensitive based on its interactive workload.",
+      "claim_type": "finding",
+      "truth_layer": "inferred",
+      "domain": "runtime",
+      "scope": {},
+      "polarity": "affirming",
+      "confidence": 0.7,
+      "materiality": "medium",
+      "status": "active",
+      "created_by": "genome-classifier",
+      "derivation": {"method": "aggregated", "parent_claim_ids": ["claim-observed-service-listens"]},
+      "minted_by": "agent"
+    }
+  ],
+
+  "claim_evidence_links": [
+    {
+      "claim_id": "claim-observed-cloud-egress",
+      "fragment_id": "frag-repo-dockerfile",
+      "relationship": "originates",
+      "relevance": 0.9,
+      "strength": "direct",
+      "minted_by": "deterministic_tool"
+    },
+    {
+      "claim_id": "claim-requirement-offline",
+      "fragment_id": "frag-doc-offline-requirement",
+      "relationship": "originates",
+      "relevance": 0.95,
+      "strength": "direct",
+      "minted_by": "human"
+    },
+    {
+      "claim_id": "claim-constraint-retention",
+      "fragment_id": "frag-legal-retention",
+      "relationship": "originates",
+      "relevance": 0.97,
+      "strength": "direct",
+      "minted_by": "human"
+    }
+  ],
+
+  "evidence_conflicts": [
+    {
+      "id": "conflict-code-vs-intent-offline",
+      "project_id": "proj-mvp-001",
+      "claim_ids": ["claim-observed-cloud-egress", "claim-requirement-offline"],
+      "conflict_type": "implementation_drift",
+      "materiality": "high",
+      "status": "open",
+      "blocking_stages": ["foundation_selection"],
+      "minted_by": "agent"
+    }
+  ],
+
+  "corpus_snapshots": [
+    {
+      "id": "corpus-mvp-001",
+      "project_id": "proj-mvp-001",
+      "source_version_ids": [
+        "srcv-repo-001-v1",
+        "srcv-doc-product-notes-v1",
+        "srcv-diagram-architecture-v1",
+        "srcv-legal-constraint-v1"
+      ],
+      "repository_refs": [
+        {"repository_id": "repo-control-plane", "commit_sha": "a1b2c3d4", "branch": "main"}
+      ],
+      "created_at": "2026-07-02T01:00:00Z",
+      "created_by": "system",
+      "purpose": "genome_generation"
+    }
+  ],
+
+  "genome_snapshots": [
+    {
+      "id": "genome-current-001",
+      "project_id": "proj-mvp-001",
+      "corpus_snapshot_id": "corpus-mvp-001",
+      "state_view": "current",
+      "version": 1,
+      "status": "draft",
+      "summary": "Current system: a modular monolith deployed with a Dockerfile that has no declared cloud-egress dependency.",
+      "coverage": 0.6,
+      "aggregate_confidence": 0.75,
+      "open_question_count": 1,
+      "critical_conflict_count": 1,
+      "minted_by": "agent"
+    },
+    {
+      "id": "genome-intended-001",
+      "project_id": "proj-mvp-001",
+      "corpus_snapshot_id": "corpus-mvp-001",
+      "state_view": "intended",
+      "version": 1,
+      "status": "draft",
+      "summary": "Intended system: a local-first deployment with no public cloud dependency and strict data retention.",
+      "coverage": 0.55,
+      "aggregate_confidence": 0.8,
+      "open_question_count": 1,
+      "critical_conflict_count": 1,
+      "minted_by": "agent"
+    }
+  ],
+
+  "genome_traits": [
+    {
+      "id": "trait-current-runtime-topology",
+      "genome_snapshot_id": "genome-current-001",
+      "dimension": "runtime_topology",
+      "trait_key": "modular_monolith",
+      "value": true,
+      "value_type": "boolean",
+      "classification": "primary",
+      "confidence": 0.85,
+      "stability": "stable",
+      "criticality": "important",
+      "rationale": "Single deployable service observed listening on one port with no service-mesh manifest.",
+      "supporting_claim_ids": ["claim-observed-service-listens"],
+      "minted_by": "agent"
+    },
+    {
+      "id": "trait-current-deployment-ownership",
+      "genome_snapshot_id": "genome-current-001",
+      "dimension": "deployment_ownership",
+      "trait_key": "local_first",
+      "value": false,
+      "value_type": "boolean",
+      "classification": "conditional",
+      "confidence": 0.6,
+      "stability": "evolving",
+      "criticality": "foundation_shaping",
+      "rationale": "No outbound cloud SDK dependency observed, but deployment target is not yet confirmed local-first.",
+      "supporting_claim_ids": ["claim-observed-cloud-egress"],
+      "minted_by": "agent"
+    },
+    {
+      "id": "trait-intended-deployment-ownership",
+      "genome_snapshot_id": "genome-intended-001",
+      "dimension": "deployment_ownership",
+      "trait_key": "local_first",
+      "value": true,
+      "value_type": "boolean",
+      "classification": "primary",
+      "confidence": 0.91,
+      "stability": "stable",
+      "criticality": "foundation_shaping",
+      "rationale": "Product notes explicitly require no public cloud connectivity for the deployment environment.",
+      "supporting_claim_ids": ["claim-requirement-offline"],
+      "minted_by": "agent"
+    },
+    {
+      "id": "trait-intended-data-profile",
+      "genome_snapshot_id": "genome-intended-001",
+      "dimension": "data_profile",
+      "trait_key": "legal_privileged_data",
+      "value": true,
+      "value_type": "boolean",
+      "classification": "primary",
+      "confidence": 0.97,
+      "stability": "stable",
+      "criticality": "foundation_shaping",
+      "rationale": "Legal constraint requires bounded retention of category X data.",
+      "supporting_claim_ids": ["claim-constraint-retention"],
+      "minted_by": "agent"
+    }
+  ],
+
+  "foundation_requirements": [
+    {
+      "id": "req-hard-offline",
+      "project_id": "proj-mvp-001",
+      "genome_snapshot_id": "genome-intended-001",
+      "requirement_type": "hard_constraint",
+      "domain": "deployment",
+      "statement": "The production system must support operation without public cloud availability.",
+      "priority": "must",
+      "weight": 0.9,
+      "veto_if_unsatisfied": true,
+      "claim_ids": ["claim-requirement-offline"],
+      "verification_method": "architecture_inspection",
+      "minted_by": "agent"
+    },
+    {
+      "id": "req-hard-retention",
+      "project_id": "proj-mvp-001",
+      "genome_snapshot_id": "genome-intended-001",
+      "requirement_type": "hard_constraint",
+      "domain": "data",
+      "statement": "Category X data must not be retained beyond 30 days.",
+      "priority": "must",
+      "weight": 1.0,
+      "veto_if_unsatisfied": true,
+      "claim_ids": ["claim-constraint-retention"],
+      "verification_method": "legal_review",
+      "minted_by": "agent"
+    }
+  ]
+}

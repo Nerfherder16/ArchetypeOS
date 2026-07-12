@@ -1,0 +1,184 @@
+{
+  "$defs": {
+    "ExtractionMethod": {
+      "description": "design \u00a74.4 \u2014 how an EvidenceFragment was extracted.",
+      "enum": [
+        "deterministic",
+        "parser",
+        "agent",
+        "human"
+      ],
+      "title": "ExtractionMethod",
+      "type": "string"
+    },
+    "Locator": {
+      "additionalProperties": false,
+      "description": "design \u00a74.4 \u2014 permissive; a fragment may locate code lines, PDF pages,\nspreadsheet ranges, video timestamps, JSON paths, or message ids.",
+      "properties": {
+        "end_line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End Line"
+        },
+        "json_pointer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Json Pointer"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Page"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "section": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Section"
+        },
+        "start_line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Start Line"
+        },
+        "timestamp_end": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timestamp End"
+        },
+        "timestamp_start": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timestamp Start"
+        }
+      },
+      "title": "Locator",
+      "type": "object"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.4.",
+  "properties": {
+    "content_hash": {
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "excerpt": {
+      "title": "Excerpt",
+      "type": "string"
+    },
+    "extraction_confidence": {
+      "default": 0.0,
+      "title": "Extraction Confidence",
+      "type": "number"
+    },
+    "extraction_method": {
+      "$ref": "#/$defs/ExtractionMethod"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "locator": {
+      "$ref": "#/$defs/Locator",
+      "default": {
+        "end_line": null,
+        "json_pointer": null,
+        "page": null,
+        "path": null,
+        "section": null,
+        "start_line": null,
+        "timestamp_end": null,
+        "timestamp_start": null
+      }
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "source_version_id": {
+      "title": "Source Version Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "source_version_id",
+    "content_hash",
+    "excerpt",
+    "extraction_method",
+    "minted_by"
+  ],
+  "title": "EvidenceFragment",
+  "type": "object"
+}

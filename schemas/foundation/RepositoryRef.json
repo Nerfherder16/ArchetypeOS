@@ -1,0 +1,32 @@
+{
+  "additionalProperties": false,
+  "description": "design \u00a75 \u2014 CorpusSnapshot.repository_refs entry.",
+  "properties": {
+    "branch": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Branch"
+    },
+    "commit_sha": {
+      "title": "Commit Sha",
+      "type": "string"
+    },
+    "repository_id": {
+      "title": "Repository Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "repository_id",
+    "commit_sha"
+  ],
+  "title": "RepositoryRef",
+  "type": "object"
+}

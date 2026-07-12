@@ -1,0 +1,184 @@
+{
+  "$defs": {
+    "CandidateStatus": {
+      "description": "design \u00a79.3 \u2014 FoundationCandidate.status.",
+      "enum": [
+        "draft",
+        "eligible",
+        "challenged",
+        "validation_required",
+        "selectable",
+        "rejected",
+        "selected"
+      ],
+      "title": "CandidateStatus",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "Reversibility": {
+      "description": "design \u00a79.3 \u2014 FoundationCandidate.reversibility.",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Reversibility",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a79.3.",
+  "properties": {
+    "architecture_style": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Architecture Style",
+      "type": "array"
+    },
+    "assumption_claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Assumption Claim Ids",
+      "type": "array"
+    },
+    "confidence": {
+      "default": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "estimated_cost": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Estimated Cost",
+      "type": "object"
+    },
+    "estimated_effort": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Estimated Effort",
+      "type": "object"
+    },
+    "foundation_elements": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Foundation Elements",
+      "type": "array"
+    },
+    "hard_constraint_violations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Hard Constraint Violations",
+      "type": "array"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "lock_in_profile": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Lock In Profile",
+      "type": "object"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "recommendation_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Recommendation Ref"
+    },
+    "reversibility": {
+      "$ref": "#/$defs/Reversibility",
+      "default": "medium"
+    },
+    "risks": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Risks",
+      "type": "array"
+    },
+    "satisfied_requirement_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Satisfied Requirement Ids",
+      "type": "array"
+    },
+    "score_summary": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Score Summary",
+      "type": "object"
+    },
+    "selection_run_id": {
+      "title": "Selection Run Id",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/CandidateStatus",
+      "default": "draft"
+    },
+    "summary": {
+      "default": "",
+      "title": "Summary",
+      "type": "string"
+    },
+    "unsatisfied_requirement_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Unsatisfied Requirement Ids",
+      "type": "array"
+    },
+    "validation_tasks": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Validation Tasks",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "selection_run_id",
+    "name",
+    "minted_by"
+  ],
+  "title": "FoundationCandidate",
+  "type": "object"
+}

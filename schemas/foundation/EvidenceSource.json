@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "AuthorityDomain": {
+      "description": "A subject-matter domain a source may or may not be entitled to define.",
+      "enum": [
+        "runtime",
+        "product",
+        "legal",
+        "security",
+        "data",
+        "architecture",
+        "operations",
+        "cost",
+        "compliance"
+      ],
+      "title": "AuthorityDomain",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "Sensitivity": {
+      "description": "Ordered data-sensitivity classes; lower index = less sensitive.",
+      "enum": [
+        "public",
+        "private",
+        "internal",
+        "confidential",
+        "restricted",
+        "secret"
+      ],
+      "title": "Sensitivity",
+      "type": "string"
+    },
+    "SourceOrigin": {
+      "description": "design \u00a74.2 \u2014 how an EvidenceSource entered the system.",
+      "enum": [
+        "github",
+        "upload",
+        "email",
+        "local_filesystem",
+        "web",
+        "connector",
+        "manual",
+        "generated"
+      ],
+      "title": "SourceOrigin",
+      "type": "string"
+    },
+    "SourceStatus": {
+      "description": "design \u00a74.2 \u2014 EvidenceSource lifecycle status.",
+      "enum": [
+        "active",
+        "superseded",
+        "withdrawn",
+        "unavailable"
+      ],
+      "title": "SourceStatus",
+      "type": "string"
+    },
+    "SourceType": {
+      "description": "design \u00a74.2 \u2014 the logical kind of an EvidenceSource.",
+      "enum": [
+        "repository",
+        "document",
+        "communication",
+        "simulation",
+        "test_run",
+        "runtime_record",
+        "external_reference",
+        "human_input",
+        "diagram",
+        "dataset"
+      ],
+      "title": "SourceType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.2.",
+  "properties": {
+    "access_policy_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Access Policy Id"
+    },
+    "authority_domains": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/AuthorityDomain"
+      },
+      "title": "Authority Domains",
+      "type": "array"
+    },
+    "canonical_uri": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Canonical Uri"
+    },
+    "created_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Created At"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "origin": {
+      "$ref": "#/$defs/SourceOrigin"
+    },
+    "originator": {
+      "title": "Originator",
+      "type": "string"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "sensitivity": {
+      "$ref": "#/$defs/Sensitivity",
+      "default": "internal"
+    },
+    "source_type": {
+      "$ref": "#/$defs/SourceType"
+    },
+    "status": {
+      "$ref": "#/$defs/SourceStatus",
+      "default": "active"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "source_type",
+    "title",
+    "origin",
+    "originator",
+    "minted_by"
+  ],
+  "title": "EvidenceSource",
+  "type": "object"
+}

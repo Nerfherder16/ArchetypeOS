@@ -260,7 +260,7 @@ migration). No data migration; requirements/candidates are generated on demand.
 
 ## Implementation Status
 
-- **AOS-FOUNDATION-MODELS-001** (this PR) — the 5 foundation ORM models + migration `0030` (single
+- **AOS-FOUNDATION-MODELS-001** (PR #218, merged) — the 5 foundation ORM models + migration `0030` (single
   head, `0029→0030`, mixin-safe: `_audit_columns()` helper once per table, verified in isolation via a
   `stamp 0029` + `upgrade`), `services/foundation_rules.py` (deterministic compilation rules +
   candidate templates + AD-8 violation detection + scoring helpers), and `services/foundation.py`:
@@ -273,8 +273,14 @@ migration). No data migration; requirements/candidates are generated on demand.
   with evidence thinness, LES-023). Run lifecycle advances via `foundation.lifecycle` to
   `eligibility_review`. Scored `EvaluationCriterion` subset = requirement_coverage / evidence_strength /
   residual_uncertainty (the deterministically-derivable ones; the other 17 are not invented).
-- **AOS-FOUNDATION-API-001** (queued) — routes: open-run / compile-requirements / generate-candidates /
-  evaluate-eligibility / score / list / get.
+- **AOS-FOUNDATION-API-001** (this PR) — the HTTP surface `apps/api/app/routes/foundation.py` (thin
+  wrappers over `services/foundation.py`, no business logic): `POST /projects/{id}/foundation-runs`,
+  `POST /foundation-runs/{id}/compile-requirements`, `.../generate-candidates`,
+  `.../evaluate-eligibility`, `POST /candidates/{id}/score`, `GET /projects/{id}/foundation-runs`,
+  `GET /foundation-runs/{id}` (run + requirements + candidates), `GET /candidates/{id}` (candidate +
+  elements + score vector), plus manual `create_candidate`/`add_element`. Error mapping:
+  `IllegalTransition` → 409; the service's score-on-ineligible `HTTPException` (409, AD-8) propagates;
+  `ValueError` → 422; missing entity → 404. Route inventory + DTOs added; no migration/model change.
 
 ## Final Judge verdict
 

@@ -1191,3 +1191,168 @@ class ApprovalRecordRead(BaseModel):
     updated_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+# AOS-FOUNDATION-API-001 (RFC-0020 design §16 HTTP surface) — thin DTOs over
+# services/foundation.py. Enum-like fields (state, requirement_type, domain,
+# priority, status, criterion, ...) are plain `str` here (house style, matching
+# the Evidence Spine / Genome DTOs above); the service layer coerces/validates
+# them against the real aos_core.foundation.enums values. Every action route
+# (compile-requirements/generate-candidates/evaluate-eligibility/score) takes a
+# single `actor` field — the API-level name for whichever `created_by`/`actor`
+# kwarg the matching services/foundation.py function expects.
+
+
+class FoundationRunCreate(BaseModel):
+    target_genome_snapshot_id: str
+    corpus_snapshot_id: str | None = None
+    created_by: str = "system"
+
+
+class FoundationRunActionRequest(BaseModel):
+    actor: str = "system"
+
+
+class FoundationSelectionRunRead(BaseModel):
+    id: str
+    project_id: str
+    target_genome_snapshot_id: str
+    corpus_snapshot_id: str | None
+    state: str
+    summary: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationRequirementRead(BaseModel):
+    id: str
+    selection_run_id: str
+    genome_snapshot_id: str | None
+    requirement_type: str
+    domain: str
+    statement: str
+    priority: str
+    weight: float
+    veto_if_unsatisfied: bool
+    verification_method: str
+    claim_ids: list
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationCandidateCreate(BaseModel):
+    name: str
+    summary: str = ""
+    architecture_style: list[str] = Field(default_factory=list)
+    reversibility: str = "medium"
+    recommendation_ref: str | None = None
+    created_by: str = "system"
+
+
+class FoundationCandidateRead(BaseModel):
+    id: str
+    selection_run_id: str
+    name: str
+    summary: str
+    architecture_style: list
+    recommendation_ref: str | None
+    assumption_claim_ids: list
+    satisfied_requirement_ids: list
+    unsatisfied_requirement_ids: list
+    hard_constraint_violations: list
+    reversibility: str
+    lock_in_profile: dict
+    estimated_cost: dict
+    estimated_effort: dict
+    score_summary: dict
+    confidence: float
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationElementCreate(BaseModel):
+    domain: str
+    title: str
+    decision: str
+    verification_method: str
+    rationale: str = ""
+    technology_refs: list[str] = Field(default_factory=list)
+    claim_ids: list[str] = Field(default_factory=list)
+    requirement_ids: list[str] = Field(default_factory=list)
+    alternatives_rejected: list[str] = Field(default_factory=list)
+    tradeoffs: list[str] = Field(default_factory=list)
+    risks: list[str] = Field(default_factory=list)
+    created_by: str = "system"
+
+
+class FoundationElementRead(BaseModel):
+    id: str
+    candidate_id: str
+    domain: str
+    title: str
+    decision: str
+    rationale: str
+    technology_refs: list
+    claim_ids: list
+    requirement_ids: list
+    alternatives_rejected: list
+    tradeoffs: list
+    risks: list
+    verification_method: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationScoreRead(BaseModel):
+    id: str
+    candidate_id: str
+    criterion: str
+    raw_score: float
+    weight: float
+    confidence: float
+    uncertainty_penalty: float
+    adjusted_score: float
+    rationale: str
+    supporting_claim_ids: list
+    evaluation_ref: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationRunDetailRead(FoundationSelectionRunRead):
+    # GET /foundation-runs/{run_id}: the run plus its compiled requirements and
+    # generated/authored candidates.
+    requirements: list[FoundationRequirementRead] = Field(default_factory=list)
+    candidates: list[FoundationCandidateRead] = Field(default_factory=list)
+
+
+class FoundationCandidateDetailRead(FoundationCandidateRead):
+    # GET /candidates/{candidate_id}: the candidate plus its elements and its
+    # design §10.3 score vector (FoundationScore rows — never a lone scalar).
+    elements: list[FoundationElementRead] = Field(default_factory=list)
+    scores: list[FoundationScoreRead] = Field(default_factory=list)

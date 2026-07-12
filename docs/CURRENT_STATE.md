@@ -13,7 +13,7 @@ fixed; see LES-L09).
      `state-canonical-refresh` workflow (tools/doc_staleness.py --refresh-canonical).
      Do NOT hand-edit those two lines — they cannot drift because a human never owns
      them. The other fields are human-authored and kept short. -->
-- Watermark PR: #213
+- Watermark PR: #214
 - Active Branch: none (on main)
 - Current Phase: post-AOS-REVIEW-002 runtime-integrity remediation (the July-10 evaluation, LES-033)
 - Current Objective: Close the runtime-integrity gaps LES-033 named — the registries/evaluators exist but must be ON the execution path. The AOS-REVIEW-002 wave is landing: durable job fencing (AOS-JOB-FENCING-001), operator+node auth boundary (AOS-AUTH-BOUNDARY-001), node-enforced execution (AOS-NODE-EXECUTION-001), hardened one-use authority envelope (AOS-AUTHORITY-HARDEN-001), reproducible web build (AOS-WEB-LOCK-001) are merged; state reconciliation (AOS-STATE-RECON-002) and capability-level reuse (RFC-0013) close it out.

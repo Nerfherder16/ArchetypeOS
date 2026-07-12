@@ -195,6 +195,19 @@ arrays to typed objects, keeping backward-compatible reads. This is the design's
 lands on a confirmed seam, and delivers value before Slice 4 needs it. It is its own work
 package + PR under this RFC.
 
+**Cross-cutting security RFC — RFC-0024 (Evidence Compartmentalization).** The design's §4.10
+claim-level compartmentalization is **promoted to its own child RFC**, not a Slice-1
+sub-slice, because it is a security-model change (RFC_PROCESS) and is cross-cutting — it
+touches the Evidence Spine (claim/source sensitivity), the Council (per-agent capability
+restrictions on claim reads), and the Provider egress seam (`llm_router`). The seam mirrors
+the platform's existing authority split (advisory policy → enforced envelope, two waves):
+**Slice 1 (RFC-0018) carries only the inert sensitivity data** — a `sensitivity` column on
+`Claim`/`Source` plus inheritance stamping (a label is just data) — while the **enforcement
+layer** (capability-gated claim reads, redacted derivative claims, egress gating on claim
+sensitivity, the privileged/legal compartment, and the access audit trail) lives in
+**RFC-0024**, sequenced after Slice 1 and **gated by Security Agent council review**. The
+non-sensitive spine ships without waiting on it; no half-built ACL lands.
+
 ### Routed delivery plan (model routing per CLAUDE.md)
 
 Opus orchestrates, decides the reconciliations, and adversarially reviews; mechanical build
@@ -267,15 +280,17 @@ Each package = one work spec + one PR (roadmap non-negotiable).
 
 ## Security impact
 
-- **New access-control surface (design §4.10) is real and gated.** Claim-level sensitivity
-  inheritance, per-agent capability restrictions on claim reads, redacted derivative claims,
-  and a privileged/legal compartment are a genuine ACL layer — a **security-model change
-  requiring Security Agent council review** before Slice 1's sensitivity work lands. The
-  primitives exist (source `sensitivity` on `Repository` `models.py:74`; the `llm_router`
-  PRIVATE-strips-`FREE_HOSTED` egress guardrail `services/llm_router.py:134-135`; LES-021
-  provider context isolation), but half-built claim ACLs are worse than none — the
-  compartmentalization sub-slice is explicitly gated and may be deferred within Slice 1
-  without blocking the non-sensitive spine.
+- **New access-control surface (design §4.10) is real and gets its own RFC.** Claim-level
+  sensitivity inheritance, per-agent capability restrictions on claim reads, redacted
+  derivative claims, and a privileged/legal compartment are a genuine ACL layer — a
+  **security-model change** that RFC_PROCESS routes as its own RFC (**RFC-0024**), gated by
+  Security Agent council review. It is cross-cutting (spine + council + provider egress), so
+  it does not belong inside the Evidence Spine RFC. The primitives exist (source
+  `sensitivity` on `Repository` `models.py:74`; the `llm_router` PRIVATE-strips-`FREE_HOSTED`
+  egress guardrail `services/llm_router.py:134-135`; LES-021 provider context isolation), but
+  half-built claim ACLs are worse than none. **Slice 1 (RFC-0018) carries only inert
+  sensitivity labels + inheritance stamping**; the enforcement layer is RFC-0024, sequenced
+  after Slice 1, so the non-sensitive spine ships unblocked and no partial ACL lands.
 - **No new external surface in CI/default.** Deterministic tier drives extraction offline;
   agent extraction runs behind the `Provider` seam on the operator's authed node.
 - **Every selection/approval/exception/baseline write** originates through the Authority
@@ -336,8 +351,8 @@ Each package = one work spec + one PR (roadmap non-negotiable).
   reuse-vs-new decision (C2); no path mints an `observed` claim from a non-deterministic
   source (C3); no immutable row is UPDATE-able (C4).
 - `AOS-COUNCIL-TYPED-001` may proceed independently of the spine.
-- The claim-level compartmentalization sub-slice passes Security Agent council review before
-  landing.
+- Claim-level compartmentalization is specified in its own **RFC-0024** and passes Security
+  Agent council review before landing; Slice 1 ships only inert sensitivity labels.
 
 ## Open questions
 
@@ -349,9 +364,11 @@ Each package = one work spec + one PR (roadmap non-negotiable).
    into `Benchmark`/`Experiment` rows (which already carry evidence). Resolve at RFC-0021.
 3. **Corpus freeze granularity** — per-selection-run vs per-project reusable snapshot. Leaning
    per-run immutable snapshot referencing shared `SourceVersion` rows. Resolve at RFC-0018.
-4. **Claim-level sensitivity: deferred sub-slice or Slice-1 blocker?** Leaning: ship the
-   non-sensitive spine first, gate the compartment behind Security Agent review as a Slice-1
-   tail sub-slice. Confirm with the operator.
+4. **Claim-level sensitivity — RESOLVED (operator, 2026-07-12): its own RFC.** Compartment-
+   alization is promoted to **RFC-0024** (security-model change, cross-cutting), gated by
+   Security Agent review; Slice 1 carries only inert sensitivity labels + inheritance. The
+   remaining open item is RFC-0024's *sequencing* — immediately after Slice 1 vs. after the
+   Genome MVP (Slice 2) — resolved at RFC-0024 drafting time.
 5. **Genome trait derivation:** how much is deterministic rules over DNA/architecture vs
    agent classification in Slice 2 (design says deterministic + human first). Resolve at
    RFC-0019.

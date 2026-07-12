@@ -1192,6 +1192,150 @@ class GenomeDelta(AuditMixin, Base):
     summary: Mapped[str] = mapped_column(Text, nullable=False)
 
 
+# ---------------------------------------------------------------------------
+# Foundation domain (RFC-0020, Foundation Intelligence Slice 3: requirements +
+# candidates). Enums are ``aos_core.foundation.enums`` values stored as plain
+# strings; ``status`` (AuditMixin) is unused by these rows' own lifecycle
+# except ``FoundationSelectionRun`` (see below) — the write path is
+# ``services/foundation.py``.
+# ---------------------------------------------------------------------------
+
+
+class FoundationSelectionRun(AuditMixin, Base):
+    """design §13 — the state-machine container a Foundation selection advances through.
+
+    ``state`` carries ``SelectionRunState`` (draft/requirements_compiled/
+    candidates_generated/eligibility_review/...); transitions are validated
+    through ``foundation.lifecycle.can_transition(LifecycleKind.selection_run,
+    ...)`` — the single edge-legality source. Service-enforced invariant: at
+    most one active (non-terminal) run per project.
+    """
+
+    __tablename__ = "foundation_selection_runs"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    target_genome_snapshot_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("genome_snapshots.id"), nullable=False, index=True
+    )
+    corpus_snapshot_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("corpus_snapshots.id"), index=True)
+    state: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+
+
+class FoundationRequirement(AuditMixin, Base):
+    """design §8 — a single normalized requirement compiled from the Genome + claims.
+
+    Every ``hard_constraint`` requirement (service-enforced,
+    ``services/foundation.py``) carries at least one source ``claim_id`` and a
+    ``verification_method`` — the design §8 traceability gate. Indexed on
+    ``(selection_run_id, requirement_type)`` — the common "hard constraints for
+    this run" query.
+    """
+
+    __tablename__ = "foundation_requirements"
+    __table_args__ = (
+        Index("ix_foundation_requirements_run_type", "selection_run_id", "requirement_type"),
+    )
+
+    selection_run_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_selection_runs.id"), nullable=False, index=True
+    )
+    genome_snapshot_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("genome_snapshots.id"), index=True)
+    requirement_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    domain: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    statement: Mapped[str] = mapped_column(Text, nullable=False)
+    priority: Mapped[str] = mapped_column(String(16), nullable=False)
+    weight: Mapped[float] = mapped_column(Float, default=0.5, nullable=False)
+    veto_if_unsatisfied: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    verification_method: Mapped[str] = mapped_column(Text, nullable=False)
+    claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+
+
+class FoundationCandidate(AuditMixin, Base):
+    """design §9.3 — a coherent cross-domain decision set.
+
+    ``status`` (AuditMixin) carries ``CandidateStatus`` (draft/eligible/
+    challenged/.../rejected/selected); transitions are validated through
+    ``foundation.lifecycle.can_transition(LifecycleKind.candidate, ...)``.
+    ``recommendation_ref`` is the C2 reuse-link (RFC-0020): a candidate may
+    cite the ``Recommendation``(s) that seeded an element, without duplicating
+    them. ``score_summary`` is always the score VECTOR (list of per-criterion
+    entries + shape metadata), never a lone scalar (design §10.3).
+    """
+
+    __tablename__ = "foundation_candidates"
+
+    selection_run_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_selection_runs.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    architecture_style: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    recommendation_ref: Mapped[str | None] = mapped_column(GUID(), index=True)
+    assumption_claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    satisfied_requirement_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    unsatisfied_requirement_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    hard_constraint_violations: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    reversibility: Mapped[str] = mapped_column(String(16), default="medium", nullable=False)
+    lock_in_profile: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    estimated_cost: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    estimated_effort: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    score_summary: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+
+
+class FoundationElement(AuditMixin, Base):
+    """design §9.4 — a per-domain decision within a ``FoundationCandidate``, with
+    rationale/tradeoffs/alternatives-rejected/risks."""
+
+    __tablename__ = "foundation_elements"
+
+    candidate_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_candidates.id"), nullable=False, index=True
+    )
+    domain: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    technology_refs: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    requirement_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    alternatives_rejected: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    tradeoffs: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    risks: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    verification_method: Mapped[str] = mapped_column(Text, nullable=False)
+
+
+class FoundationScore(AuditMixin, Base):
+    """design §10.3 — one per-criterion score row (the vector's persisted shape).
+
+    ``adjusted_score = raw_score * weight - uncertainty_penalty``
+    (``services/foundation.py``). ``evaluation_ref`` is the C2 reuse-link: a
+    criterion score may be *backed by* a real ``Evaluation`` row without this
+    table being a duplicate of ``Evaluation`` (RFC-0020 C2 — no candidate FK /
+    wrong cardinality on ``Evaluation``). Unique ``(candidate_id, criterion)``
+    — one row per criterion per candidate.
+    """
+
+    __tablename__ = "foundation_scores"
+    __table_args__ = (
+        UniqueConstraint("candidate_id", "criterion", name="uq_foundation_scores_candidate_criterion"),
+    )
+
+    candidate_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_candidates.id"), nullable=False, index=True
+    )
+    criterion: Mapped[str] = mapped_column(String(64), nullable=False)
+    raw_score: Mapped[float] = mapped_column(Float, nullable=False)
+    weight: Mapped[float] = mapped_column(Float, nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    uncertainty_penalty: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    adjusted_score: Mapped[float] = mapped_column(Float, nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    supporting_claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    evaluation_ref: Mapped[str | None] = mapped_column(GUID(), index=True)
+
+
 # C4 — immutable-content guard. Each entry names the fields that constitute the
 # row's *content* (mirroring its RFC-0017 contract's CONTENT_FIELDS projection,
 # minus surrogate/audit columns the contract doesn't have at all, e.g.

@@ -19,9 +19,12 @@ Capabilities:
 - **Multi-model Council — AOS-LLM-EVAL-001** (RFC-0005): the reasoned tier's router (`services/llm_router.py`, privacy guardrail: private input never reaches a free tier) + a free-API **rotation pool** (`services/llm_pool.py`, 429-fallback across Groq/Cerebras/Gemini/Mistral) let the Agent Council run **each agent on a different free frontier model** (`council_provider` + `run_council` records `agent_model` per agent; opt-in `council_multi_model`), Claude reserved for Final Judge. Genuine model diversity at ~zero cost. Demo: `tools/council_multimodel.py`; ADR-0001.
 - **Local code reviewer — AOS-LLM-REVIEW-001** (Tier-1, `packages/aos_core/aos_core/services/code_review.py` + `tools/pr_reviewer.py`): advisory per-category ("pointwise") review of a unified diff on the on-node `qwen2.5-coder-reviewer` model, **layered on the deterministic PR Guardian, never a merge gate, fail-open**. Validated on teevee's 3070: `num_ctx` fix (Ollama's 4096 default truncated large diffs) + structured JSON + rubric gave high precision; per-category passes tripled recall (1/3 → 3/3 on a planted-bug diff). Eval harness `scripts/eval/review_spike.py` (log `.archetype/eval/`).
 
+- Foundation Intelligence — Requirements & Candidates (Slice 3, proposed, RFC-0020): deterministically compiles the System Genome (Layer 3) + claims (Layer 2) into a normalized Foundation Requirement Set (hard constraints / quality attributes, each tracing source claims + a verification method), then generates coherent Foundation Candidates + Elements with **score vectors** (not scalars, §10.3), gated by **hard-constraint eligibility before weighted scoring** (AD-8). Deterministic + human-reviewed (no LLM this slice); the `foundation_selection_runs` state machine advances to `eligibility_review`. Council review / validation / selection are Slice 4, baseline Slice 5
+
 Primary artifacts:
 
 - docs/TECHNOLOGY_FITNESS_ENGINE.md
+- docs/rfc/RFC-0020-Foundation-Intelligence-Slice-3-Requirements-And-Candidates.md
 - docs/STRATEGY_ENGINE.md
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
 - docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md

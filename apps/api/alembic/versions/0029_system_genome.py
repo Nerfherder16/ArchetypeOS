@@ -47,7 +47,8 @@ def upgrade() -> None:
         sa.Column('project_id', aos_core.models.GUID(), nullable=False),
         sa.Column('corpus_snapshot_id', aos_core.models.GUID(), nullable=True),
         sa.Column('state_view', sa.String(length=32), nullable=False),
-        sa.Column('version', sa.Integer(), nullable=False),
+        # `version` is provided by _audit_columns() below — do NOT list it here too
+        # (a second 'version' collides: DuplicateColumnError on genome_snapshots; LES-042).
         sa.Column('summary', sa.Text(), nullable=False),
         sa.Column('coverage', sa.Float(), nullable=False),
         sa.Column('aggregate_confidence', sa.Float(), nullable=False),

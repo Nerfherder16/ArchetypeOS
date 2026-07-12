@@ -89,6 +89,7 @@ __all__ = [
     "link_evidence",
     "relate_claims",
     "open_conflict",
+    "resolve_conflict",
     "freeze_corpus",
     "project_decided_claim",
 ]
@@ -449,6 +450,42 @@ def open_conflict(
     db.commit()
     db.refresh(row)
     return row
+
+
+def resolve_conflict(
+    db: Session,
+    *,
+    conflict_id: str,
+    status: ConflictStatus | str,
+    resolution: str,
+    resolution_decision_id: str | None = None,
+) -> EvidenceConflict:
+    """Transition an open :class:`~aos_core.models.EvidenceConflict` to a resolution (AOS-EVIDENCE-API-001).
+
+    ``status``/``resolution``/``resolution_decision_id`` are annotation
+    fields, not content — ``EvidenceConflict`` has no entry in
+    ``models._EVIDENCE_IMMUTABLE_CONTENT_FIELDS`` (RFC-0018 leaves conflicts
+    un-hashed/un-guarded), so this UPDATE is permitted by the C4 guard.
+    404s a missing conflict; raises ``ValueError`` for any status other than
+    ``resolved``/``accepted_exception`` (only those two are a resolution).
+    """
+    conflict = db.get(EvidenceConflict, conflict_id)
+    if not conflict:
+        raise HTTPException(status_code=404, detail="Evidence conflict not found")
+
+    status_enum = _coerce(ConflictStatus, status)
+    if status_enum not in (ConflictStatus.RESOLVED, ConflictStatus.ACCEPTED_EXCEPTION):
+        raise ValueError(
+            f"resolve_conflict: status must be 'resolved' or 'accepted_exception', got {status_enum.value!r}"
+        )
+
+    conflict.status = status_enum.value
+    conflict.resolution = resolution
+    if resolution_decision_id is not None:
+        conflict.resolution_decision_id = resolution_decision_id
+    db.commit()
+    db.refresh(conflict)
+    return conflict
 
 
 def freeze_corpus(

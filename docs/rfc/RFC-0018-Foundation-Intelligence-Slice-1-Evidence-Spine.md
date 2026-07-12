@@ -242,3 +242,24 @@ Pending operator approval. The keystone slice: it makes evidence first-class and
 tested pure functions into the enforced write path, with C5 bridging existing data so nothing forks.
 Scoped into three reviewable packages; the models+guards land first and are trusted before the API and
 backfill build on them. Recommend acceptance; start AOS-EVIDENCE-MODELS-001 (bundled here).
+
+## Implementation Status
+
+Tracks the packages that realize this RFC (updated as each lands):
+
+- **AOS-EVIDENCE-MODELS-001** (PR #211, merged) — the 10 evidence ORM models, migration `0028`, and
+  `services/evidence.py` as the guarded write path (C1 `project_decided_claim`, C3 `may_mint`, C4
+  `content_hash` + `before_update` immutability guard + permutation-invariant `claim_set_hash`).
+- **AOS-EVIDENCE-API-001** (this PR) — the HTTP surface in `apps/api/app/routes/evidence.py` (thin
+  wrappers over the guarded service), design §16:
+  - `POST/GET /projects/{id}/sources`, `POST/GET /sources/{id}/versions`,
+    `POST /source-versions/{id}/fragments`
+  - `POST/GET /projects/{id}/claims` (`?truth_layer=` filter), `GET /claims/{id}` (with links +
+    relationships), `POST /claims/{id}/evidence`, `POST /claims/{id}/relationships`
+  - `POST/GET /projects/{id}/conflicts`, `PATCH /conflicts/{id}` (resolve)
+  - `POST/GET /projects/{id}/corpus-snapshots`, `POST /decisions/{id}/project-claim` (C1)
+  - Guard→HTTP mapping: service `ValueError` (C3) → 422; the public claims route rejects
+    `minted_by=deterministic_tool`; `project_decided_claim` 404/409 (C1) propagate. No authority
+    envelope (evidence ingestion is additive/advisory).
+- **AOS-EVIDENCE-BACKFILL-001** (queued) — the C5 adapter.
+- **AOS-EVIDENCE-UI-001** (queued) — the provenance UI.

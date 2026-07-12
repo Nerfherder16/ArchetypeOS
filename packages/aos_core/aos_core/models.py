@@ -1097,7 +1097,11 @@ class GenomeSnapshot(AuditMixin, Base):
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
     corpus_snapshot_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("corpus_snapshots.id"), index=True)
     state_view: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    # NB: no explicit `version` column — AuditMixin already provides one
+    # (Integer, default=1). Redeclaring it collides at declarative-mapping time
+    # (DuplicateColumnError in the compose/container import path, though it can
+    # import-OK locally depending on import order — LES-042). The genome
+    # snapshot "version N" semantics reuse the mixin column.
     summary: Mapped[str] = mapped_column(Text, nullable=False)
     coverage: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
     aggregate_confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)

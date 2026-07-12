@@ -1046,6 +1046,136 @@ class CorpusSnapshotRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# AOS-GENOME-API-001 (RFC-0019 §16 HTTP surface) — thin DTOs over
+# services/genome.py. Enum-like fields (state_view, classification, ...) are
+# plain `str` here (house style, matching the Evidence Spine DTOs above); the
+# service layer coerces/validates them against the real
+# aos_core.foundation.enums values.
+
+
+class GenomeGenerateRequest(BaseModel):
+    state_view: str
+    corpus_snapshot_id: str | None = None
+    generated_by: str | None = None
+    created_by: str = "system"
+
+
+class GenomeSnapshotRead(BaseModel):
+    id: str
+    project_id: str
+    corpus_snapshot_id: str | None
+    state_view: str
+    summary: str
+    coverage: float
+    aggregate_confidence: float
+    open_question_count: int
+    critical_conflict_count: int
+    generated_by: str
+    approved_by: str | None
+    approved_at: datetime | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class GenomeTraitRead(BaseModel):
+    id: str
+    genome_snapshot_id: str
+    dimension: str
+    trait_key: str
+    value: object | None
+    value_type: str
+    classification: str
+    confidence: float
+    stability: str
+    criticality: str
+    rationale: str
+    source_methods: list
+    human_locked: bool
+    supporting_claim_ids: list[str] = Field(default_factory=list)
+    opposing_claim_ids: list[str] = Field(default_factory=list)
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class SystemArchetypeRead(BaseModel):
+    id: str
+    genome_snapshot_id: str
+    name: str
+    tier: str
+    confidence: float
+    trait_ids: list
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class GenomeSnapshotDetailRead(GenomeSnapshotRead):
+    # GET /genomes/{genome_id}: the snapshot plus its traits (each with
+    # supporting/opposing claim ids) and rolled-up archetypes.
+    traits: list[GenomeTraitRead] = Field(default_factory=list)
+    archetypes: list[SystemArchetypeRead] = Field(default_factory=list)
+
+
+class GenomeReviewRequest(BaseModel):
+    reviewer: str = "system"
+
+
+class GenomeApproveRequest(BaseModel):
+    approver: str
+    rationale: str | None = None
+
+
+class OpenQuestionRead(BaseModel):
+    id: str
+    project_id: str
+    genome_snapshot_id: str | None
+    question: str
+    affected_dimensions: list
+    affected_foundation_domains: list
+    materiality: str
+    reason: str
+    answer_type: str
+    answer_claim_id: str | None
+    minted_by: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class GenomeDeltaRead(BaseModel):
+    id: str
+    project_id: str
+    from_snapshot_id: str
+    to_snapshot_id: str
+    changes: dict
+    summary: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
 class ApprovalRecordRead(BaseModel):
     id: str
     project_id: str | None = None

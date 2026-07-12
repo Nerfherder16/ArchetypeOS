@@ -1,0 +1,28 @@
+{
+  "additionalProperties": false,
+  "description": "design \u00a76.6 \u2014 a readable summary over traits, not a substitute for them.",
+  "properties": {
+    "confidence": {
+      "title": "Confidence",
+      "type": "number"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "trait_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Trait Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "name",
+    "confidence"
+  ],
+  "title": "Archetype",
+  "type": "object"
+}

@@ -1,0 +1,123 @@
+{
+  "$defs": {
+    "SelectionRunState": {
+      "description": "design \u00a713 \u2014 the 22 persisted Selection Run states.",
+      "enum": [
+        "draft",
+        "intake_complete",
+        "corpus_frozen",
+        "evidence_extracted",
+        "current_state_reconstructed",
+        "intent_reconstructed",
+        "reconciled",
+        "genome_review",
+        "requirements_compiled",
+        "candidates_generated",
+        "eligibility_review",
+        "council_review",
+        "validation_required",
+        "validation_complete",
+        "ready_for_selection",
+        "selected",
+        "baselined",
+        "execution_compiled",
+        "monitoring",
+        "blocked",
+        "cancelled",
+        "superseded"
+      ],
+      "title": "SelectionRunState",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a713 \u2014 one recorded transition of a Selection Run's state machine.",
+  "properties": {
+    "actor": {
+      "title": "Actor",
+      "type": "string"
+    },
+    "authority_envelope": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Authority Envelope"
+    },
+    "evidence_generated": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Generated",
+      "type": "array"
+    },
+    "gate_result": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Gate Result",
+      "type": "object"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "new_state": {
+      "$ref": "#/$defs/SelectionRunState"
+    },
+    "previous_state": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SelectionRunState"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reason"
+    },
+    "selection_run_id": {
+      "title": "Selection Run Id",
+      "type": "string"
+    },
+    "timestamp": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Timestamp"
+    }
+  },
+  "required": [
+    "id",
+    "selection_run_id",
+    "actor",
+    "new_state"
+  ],
+  "title": "SelectionStageEvent",
+  "type": "object"
+}

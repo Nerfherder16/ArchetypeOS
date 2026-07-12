@@ -1,0 +1,126 @@
+{
+  "$defs": {
+    "IngestionMethod": {
+      "description": "design \u00a74.3 \u2014 how an EvidenceSourceVersion was captured.",
+      "enum": [
+        "connector",
+        "upload",
+        "scan",
+        "manual",
+        "generated"
+      ],
+      "title": "IngestionMethod",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.3 \u2014 immutable; corrections create new versions.",
+  "properties": {
+    "captured_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Captured At"
+    },
+    "content_hash": {
+      "title": "Content Hash",
+      "type": "string"
+    },
+    "effective_from": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effective From"
+    },
+    "effective_until": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effective Until"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "ingestion_method": {
+      "$ref": "#/$defs/IngestionMethod"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "parser_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Parser Version"
+    },
+    "source_id": {
+      "title": "Source Id",
+      "type": "string"
+    },
+    "supersedes_version_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Supersedes Version Id"
+    },
+    "version_ref": {
+      "title": "Version Ref",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "source_id",
+    "version_ref",
+    "content_hash",
+    "ingestion_method",
+    "minted_by"
+  ],
+  "title": "EvidenceSourceVersion",
+  "type": "object"
+}

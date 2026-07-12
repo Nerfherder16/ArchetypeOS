@@ -1,0 +1,36 @@
+{
+  "$defs": {
+    "DerivationMethod": {
+      "description": "design \u00a74.5 \u2014 Claim.derivation.method.",
+      "enum": [
+        "direct",
+        "extracted",
+        "aggregated",
+        "inferred",
+        "approved"
+      ],
+      "title": "DerivationMethod",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.5 \u2014 Claim.derivation.",
+  "properties": {
+    "method": {
+      "$ref": "#/$defs/DerivationMethod"
+    },
+    "parent_claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Parent Claim Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "method"
+  ],
+  "title": "Derivation",
+  "type": "object"
+}

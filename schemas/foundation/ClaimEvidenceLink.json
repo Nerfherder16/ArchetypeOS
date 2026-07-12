@@ -1,0 +1,86 @@
+{
+  "$defs": {
+    "EvidenceRelationship": {
+      "description": "design \u00a74.6 \u2014 ClaimEvidenceLink.relationship.",
+      "enum": [
+        "supports",
+        "opposes",
+        "qualifies",
+        "originates",
+        "verifies",
+        "invalidates"
+      ],
+      "title": "EvidenceRelationship",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "Strength": {
+      "description": "design \u00a74.6 \u2014 ClaimEvidenceLink.strength.",
+      "enum": [
+        "weak",
+        "moderate",
+        "strong",
+        "direct"
+      ],
+      "title": "Strength",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.6 \u2014 evidence has a relationship to the claim, not a bare attachment.",
+  "properties": {
+    "claim_id": {
+      "title": "Claim Id",
+      "type": "string"
+    },
+    "fragment_id": {
+      "title": "Fragment Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    },
+    "relationship": {
+      "$ref": "#/$defs/EvidenceRelationship"
+    },
+    "relevance": {
+      "default": 1.0,
+      "title": "Relevance",
+      "type": "number"
+    },
+    "strength": {
+      "$ref": "#/$defs/Strength",
+      "default": "moderate"
+    }
+  },
+  "required": [
+    "claim_id",
+    "fragment_id",
+    "relationship",
+    "minted_by"
+  ],
+  "title": "ClaimEvidenceLink",
+  "type": "object"
+}

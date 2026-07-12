@@ -258,6 +258,24 @@ migration). No data migration; requirements/candidates are generated on demand.
 - **Enables:** Slice 4 (council review + validation + selection consume these candidates/scores) and the
   design §20 MVP steps 9–14.
 
+## Implementation Status
+
+- **AOS-FOUNDATION-MODELS-001** (this PR) — the 5 foundation ORM models + migration `0030` (single
+  head, `0029→0030`, mixin-safe: `_audit_columns()` helper once per table, verified in isolation via a
+  `stamp 0029` + `upgrade`), `services/foundation_rules.py` (deterministic compilation rules +
+  candidate templates + AD-8 violation detection + scoring helpers), and `services/foundation.py`:
+  `open_selection_run`, `compile_requirements` (constraint claim → `hard_constraint` with source claim
+  + verification method; foundation-shaping trait → `required_capability`/`quality_attribute`;
+  `preference` claim → `preference`), `generate_candidates` (a *recommended* + a *conservative*
+  template, each addressing hard-constraint domains), `evaluate_eligibility` (**AD-8** — hard-constraint
+  check flips violators to `rejected` **before** scoring), `score_candidate` (per-criterion
+  `FoundationScore` vector; refuses any non-`eligible` candidate with 409; `uncertainty_penalty` grows
+  with evidence thinness, LES-023). Run lifecycle advances via `foundation.lifecycle` to
+  `eligibility_review`. Scored `EvaluationCriterion` subset = requirement_coverage / evidence_strength /
+  residual_uncertainty (the deterministically-derivable ones; the other 17 are not invented).
+- **AOS-FOUNDATION-API-001** (queued) — routes: open-run / compile-requirements / generate-candidates /
+  evaluate-eligibility / score / list / get.
+
 ## Final Judge verdict
 
 Pending operator approval. Slice 3 turns the Genome into the requirement set and candidate options a

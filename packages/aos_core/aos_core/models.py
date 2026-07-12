@@ -1048,15 +1048,16 @@ class OpenQuestion(AuditMixin, Base):
     """design §7 — a materially significant unresolved question.
 
     ``status`` (AuditMixin) carries ``QuestionStatus`` (open/answered/deferred/
-    unanswerable); ``genome_snapshot_id`` is a soft (no-FK) reference — Slice 2
-    (Genome) wires the real table later. ``answer_claim_id`` links the claim
-    that answered this question, once one exists.
+    unanswerable); ``genome_snapshot_id`` is now a real FK into
+    ``genome_snapshots`` (RFC-0019, AOS-GENOME-MODELS-001 wires the table this
+    slice adds). ``answer_claim_id`` links the claim that answered this
+    question, once one exists.
     """
 
     __tablename__ = "open_questions"
 
     project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
-    genome_snapshot_id: Mapped[str | None] = mapped_column(GUID(), index=True)
+    genome_snapshot_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("genome_snapshots.id"), index=True)
     question: Mapped[str] = mapped_column(Text, nullable=False)
     affected_dimensions: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     affected_foundation_domains: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
@@ -1065,6 +1066,126 @@ class OpenQuestion(AuditMixin, Base):
     answer_type: Mapped[str] = mapped_column(String(32), nullable=False)
     answer_claim_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("claims.id"), index=True)
     minted_by: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# System Genome (RFC-0019, AOS-GENOME-MODELS-001) — the versioned,
+# evidence-backed classification of the engineered system across the design's
+# 16 GenomeDimensions (``aos_core.foundation.enums``). Derived deterministically
+# from ``claims`` (AD-4, RFC-0016) by ``services/genome_rules.py`` +
+# ``services/genome.py`` — NEVER from ``RepositoryDNA`` directly (DNA already
+# reaches here as ``observed`` claims via the C5 backfill, RFC-0018 #214).
+# Columns store ``aos_core.foundation.enums`` values as ``String``; JSON only
+# for the open structures (``source_methods``/``trait_ids`` lists, the delta
+# ``changes`` diff). The write path is ``services/genome.py``.
+# ---------------------------------------------------------------------------
+
+
+class GenomeSnapshot(AuditMixin, Base):
+    """design §6.2-6.3 — a versioned system classification for one ``state_view``.
+
+    ``status`` (AuditMixin) carries ``GenomeStatus`` (draft/reviewed/approved/
+    superseded). Invariant (service-enforced, ``services/genome.py``): at most
+    one non-superseded snapshot per ``(project_id, state_view)`` — generating a
+    new one supersedes the prior. Approved snapshots are immutable: a later
+    ``generate_genome`` call creates a NEW row and only flips the prior's
+    ``status`` to ``superseded``; it never rewrites an approved row's traits.
+    """
+
+    __tablename__ = "genome_snapshots"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    corpus_snapshot_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("corpus_snapshots.id"), index=True)
+    state_view: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    coverage: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    aggregate_confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    open_question_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    critical_conflict_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    generated_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    approved_by: Mapped[str | None] = mapped_column(String(128))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class GenomeTrait(AuditMixin, Base):
+    """design §6.4 — a single evidence-backed trait within a ``GenomeSnapshot``.
+
+    No trait exists without provenance or an explicit ``unknown``
+    classification (design §6.4; ``services/genome.py`` enforces this for every
+    FOUNDATION_SHAPING dimension). Indexed on ``(genome_snapshot_id,
+    dimension)`` — the common "traits for this snapshot's dimension X" query.
+    """
+
+    __tablename__ = "genome_traits"
+    __table_args__ = (Index("ix_genome_traits_snapshot_dimension", "genome_snapshot_id", "dimension"),)
+
+    genome_snapshot_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("genome_snapshots.id"), nullable=False, index=True
+    )
+    dimension: Mapped[str] = mapped_column(String(64), nullable=False)
+    trait_key: Mapped[str] = mapped_column(String(128), nullable=False)
+    value: Mapped[object | None] = mapped_column(JSONField(), nullable=True)
+    value_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    classification: Mapped[str] = mapped_column(String(32), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    stability: Mapped[str] = mapped_column(String(32), default="unknown", nullable=False)
+    criticality: Mapped[str] = mapped_column(String(32), nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, nullable=False)
+    source_methods: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    human_locked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+
+class GenomeTraitClaim(AuditMixin, Base):
+    """design §6.4 — the normalized trait<->claim provenance link.
+
+    Keeps ``supporting_claim_ids``/``opposing_claim_ids`` queryable (per-row,
+    joinable) rather than JSON blobs on ``GenomeTrait`` (design §15 — the same
+    rationale as ``ClaimEvidenceLink`` for claims/fragments).
+    """
+
+    __tablename__ = "genome_trait_claims"
+    __table_args__ = (
+        UniqueConstraint("trait_id", "claim_id", "polarity", name="uq_genome_trait_claims_trait_claim_polarity"),
+    )
+
+    trait_id: Mapped[str] = mapped_column(GUID(), ForeignKey("genome_traits.id"), nullable=False, index=True)
+    claim_id: Mapped[str] = mapped_column(GUID(), ForeignKey("claims.id"), nullable=False, index=True)
+    polarity: Mapped[str] = mapped_column(String(32), nullable=False)
+
+
+class SystemArchetype(AuditMixin, Base):
+    """design §6.6 — a small, readable rollup of trait combinations.
+
+    A summary, never a substitute for the underlying traits (design §6.6).
+    """
+
+    __tablename__ = "system_archetypes"
+
+    genome_snapshot_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("genome_snapshots.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    tier: Mapped[str] = mapped_column(String(32), nullable=False)
+    confidence: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
+    trait_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+
+
+class GenomeDelta(AuditMixin, Base):
+    """design §6.7 — a pure diff between two ``GenomeSnapshot`` rows (``compare_genomes``).
+
+    ``changes`` holds added/removed/changed traits plus coverage/confidence
+    deltas (JSON — an open structure, like other delta/diff payloads in this
+    module).
+    """
+
+    __tablename__ = "genome_deltas"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    from_snapshot_id: Mapped[str] = mapped_column(GUID(), ForeignKey("genome_snapshots.id"), nullable=False, index=True)
+    to_snapshot_id: Mapped[str] = mapped_column(GUID(), ForeignKey("genome_snapshots.id"), nullable=False, index=True)
+    changes: Mapped[dict] = mapped_column(JSONField(), default=dict, nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
 
 
 # C4 — immutable-content guard. Each entry names the fields that constitute the

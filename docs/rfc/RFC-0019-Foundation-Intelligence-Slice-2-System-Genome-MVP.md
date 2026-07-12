@@ -234,6 +234,20 @@ claims (idempotent-ish via supersession).
 - **Enables:** Slice 3 (Foundation Requirements compile from Genome traits + claims), and the design
   §20 MVP steps 7–9.
 
+## Implementation Status
+
+- **AOS-GENOME-MODELS-001** (this PR) — the 5 genome ORM models + migration `0029` (single head,
+  `0028→0029`; wires `open_questions.genome_snapshot_id` to a real FK), `services/genome_rules.py`
+  (8 deterministic seed rules across the 6 foundation-shaping dimensions, with negation-aware keyword
+  matching so mutually-exclusive traits don't double-fire; `FOUNDATION_SHAPING_DIMENSIONS` derived
+  from the rule table), and `services/genome.py` (`generate_genome` with the current/intended split
+  and coverage-calibrated `aggregate_confidence = mean(evidence-backed conf) × coverage`;
+  `review_genome`/`approve_genome` via `ApprovalRecord`; `compare_genomes` delta; explicit `unknown`
+  traits for unevidenced foundation-shaping dimensions; supersession). Reads **claims only** (AD-4).
+- **AOS-GENOME-API-001** (queued) — routes: generate / list / get / review / questions / compare.
+- **AOS-GENOME-UI-001** (queued) — the genome view (current/intended toggle, trait confidence,
+  coverage, unknowns).
+
 ## Final Judge verdict
 
 Pending operator approval. The Genome turns the evidence graph into a system classification — still

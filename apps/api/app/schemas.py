@@ -781,6 +781,271 @@ class ActionRequestRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# AOS-EVIDENCE-API-001 (RFC-0018 Evidence Spine HTTP API) — thin DTOs over
+# services/evidence.py. Enum-like fields (minted_by, source_type, truth_layer,
+# ...) are plain `str` here (matching house style elsewhere in this file); the
+# service layer coerces/validates them against the real enums.
+
+
+class EvidenceSourceCreate(BaseModel):
+    minted_by: str
+    source_type: str
+    title: str
+    origin: str
+    originator: str
+    canonical_uri: str | None = None
+    sensitivity: str = "internal"
+    authority_domains: list[str] = Field(default_factory=list)
+    access_policy_id: str | None = None
+    status: str = "active"
+    created_by: str = "system"
+
+
+class EvidenceSourceRead(BaseModel):
+    id: str
+    project_id: str
+    source_type: str
+    title: str
+    origin: str
+    originator: str
+    canonical_uri: str | None
+    sensitivity: str
+    authority_domains: list
+    access_policy_id: str | None
+    minted_by: str
+    content_hash: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class EvidenceSourceVersionCreate(BaseModel):
+    minted_by: str
+    version_ref: str
+    content_hash: str
+    ingestion_method: str
+    captured_at: datetime | None = None
+    effective_from: datetime | None = None
+    effective_until: datetime | None = None
+    supersedes_version_id: str | None = None
+    parser_version: str | None = None
+    created_by: str = "system"
+
+
+class EvidenceSourceVersionRead(BaseModel):
+    id: str
+    source_id: str
+    version_ref: str
+    content_hash: str
+    captured_at: datetime | None
+    effective_from: datetime | None
+    effective_until: datetime | None
+    supersedes_version_id: str | None
+    ingestion_method: str
+    parser_version: str | None
+    minted_by: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class EvidenceFragmentCreate(BaseModel):
+    minted_by: str
+    content_hash: str
+    excerpt: str
+    extraction_method: str
+    locator: dict = Field(default_factory=dict)
+    extraction_confidence: float = 0.0
+    created_by: str = "system"
+
+
+class EvidenceFragmentRead(BaseModel):
+    id: str
+    source_version_id: str
+    locator: dict
+    content_hash: str
+    excerpt: str
+    extraction_method: str
+    extraction_confidence: float
+    minted_by: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class ClaimCreate(BaseModel):
+    minted_by: str
+    truth_layer: str
+    statement: str
+    claim_type: str
+    domain: str
+    created_by: str
+    derivation: dict
+    scope: dict | None = None
+    polarity: str = "affirming"
+    confidence: float = 1.0
+    materiality: str = "medium"
+    status: str = "active"
+    valid_from: datetime | None = None
+    valid_until: datetime | None = None
+
+
+class ClaimRead(BaseModel):
+    id: str
+    project_id: str
+    statement: str
+    claim_type: str
+    truth_layer: str
+    domain: str
+    scope: dict
+    polarity: str
+    confidence: float
+    materiality: str
+    valid_from: datetime | None
+    valid_until: datetime | None
+    derivation: dict
+    minted_by: str
+    decision_id: str | None
+    content_hash: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class ClaimEvidenceLinkCreate(BaseModel):
+    fragment_id: str
+    minted_by: str
+    relationship: str
+    relevance: float = 1.0
+    strength: str = "moderate"
+    notes: str | None = None
+    created_by: str = "system"
+
+
+class ClaimEvidenceLinkRead(BaseModel):
+    id: str
+    claim_id: str
+    fragment_id: str
+    relationship: str
+    relevance: float
+    strength: str
+    notes: str | None
+    minted_by: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class ClaimRelationshipCreate(BaseModel):
+    to_claim_id: str
+    minted_by: str
+    relationship: str
+    notes: str | None = None
+    created_by: str = "system"
+
+
+class ClaimRelationshipRead(BaseModel):
+    id: str
+    from_claim_id: str
+    to_claim_id: str
+    relationship: str
+    notes: str | None
+    minted_by: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class ClaimDetailRead(ClaimRead):
+    # GET /claims/{claim_id}: the claim plus its evidence links and claim
+    # relationships (both directions — this claim as `from` or as `to`).
+    evidence_links: list[ClaimEvidenceLinkRead] = Field(default_factory=list)
+    relationships: list[ClaimRelationshipRead] = Field(default_factory=list)
+
+
+class EvidenceConflictCreate(BaseModel):
+    claim_ids: list[str]
+    minted_by: str
+    conflict_type: str
+    materiality: str
+    blocking_stages: list[str] = Field(default_factory=list)
+    created_by: str = "system"
+
+
+class EvidenceConflictRead(BaseModel):
+    id: str
+    project_id: str
+    claim_ids: list
+    conflict_type: str
+    materiality: str
+    resolution: str | None
+    resolution_decision_id: str | None
+    blocking_stages: list
+    minted_by: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class EvidenceConflictResolve(BaseModel):
+    # status transitions to "resolved" or "accepted_exception" (ConflictStatus);
+    # not a content field (RFC-0018 leaves EvidenceConflict un-hashed/un-guarded).
+    status: str
+    resolution: str
+    resolution_decision_id: str | None = None
+
+
+class CorpusSnapshotCreate(BaseModel):
+    source_version_ids: list[str] = Field(default_factory=list)
+    purpose: str
+    repository_refs: list[dict] = Field(default_factory=list)
+    created_by: str = "system"
+
+
+class CorpusSnapshotRead(BaseModel):
+    id: str
+    project_id: str
+    source_version_ids: list
+    repository_refs: list
+    claim_set_hash: str | None
+    purpose: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
 class ApprovalRecordRead(BaseModel):
     id: str
     project_id: str | None = None

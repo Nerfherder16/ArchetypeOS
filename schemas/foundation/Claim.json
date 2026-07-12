@@ -1,0 +1,285 @@
+{
+  "$defs": {
+    "ClaimScope": {
+      "additionalProperties": false,
+      "description": "design \u00a74.5 \u2014 Claim.scope.",
+      "properties": {
+        "applicable_version": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Applicable Version"
+        },
+        "component_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Component Ids",
+          "type": "array"
+        },
+        "environment": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Environment"
+        },
+        "repository_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Repository Ids",
+          "type": "array"
+        },
+        "system_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "System Id"
+        }
+      },
+      "title": "ClaimScope",
+      "type": "object"
+    },
+    "ClaimStatus": {
+      "description": "design \u00a74.5 \u2014 Claim.status.",
+      "enum": [
+        "active",
+        "disputed",
+        "superseded",
+        "rejected",
+        "resolved"
+      ],
+      "title": "ClaimStatus",
+      "type": "string"
+    },
+    "ClaimType": {
+      "description": "design \u00a74.5 \u2014 claim classification controlled vocabulary.",
+      "enum": [
+        "fact",
+        "requirement",
+        "constraint",
+        "preference",
+        "hypothesis",
+        "finding",
+        "risk",
+        "assumption",
+        "decision_candidate",
+        "definition"
+      ],
+      "title": "ClaimType",
+      "type": "string"
+    },
+    "Derivation": {
+      "additionalProperties": false,
+      "description": "design \u00a74.5 \u2014 Claim.derivation.",
+      "properties": {
+        "method": {
+          "$ref": "#/$defs/DerivationMethod"
+        },
+        "parent_claim_ids": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Parent Claim Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "title": "Derivation",
+      "type": "object"
+    },
+    "DerivationMethod": {
+      "description": "design \u00a74.5 \u2014 Claim.derivation.method.",
+      "enum": [
+        "direct",
+        "extracted",
+        "aggregated",
+        "inferred",
+        "approved"
+      ],
+      "title": "DerivationMethod",
+      "type": "string"
+    },
+    "Materiality": {
+      "description": "design \u00a74.5 / \u00a74.9 \u2014 how much a claim or conflict matters.",
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Materiality",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "Polarity": {
+      "description": "design \u00a74.5 \u2014 Claim.polarity.",
+      "enum": [
+        "affirming",
+        "negating",
+        "qualifying"
+      ],
+      "title": "Polarity",
+      "type": "string"
+    },
+    "TruthLayer": {
+      "description": "design \u00a73 \u2014 the shared truth model. Must never be silently merged.",
+      "enum": [
+        "observed",
+        "claimed",
+        "inferred",
+        "decided"
+      ],
+      "title": "TruthLayer",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.5 \u2014 the central reasoning primitive.\n\nC1 and C3 are enforced as a post-construction model validator.",
+  "properties": {
+    "claim_type": {
+      "$ref": "#/$defs/ClaimType"
+    },
+    "confidence": {
+      "default": 1.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "created_by": {
+      "title": "Created By",
+      "type": "string"
+    },
+    "decision_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Decision Ref"
+    },
+    "derivation": {
+      "$ref": "#/$defs/Derivation"
+    },
+    "domain": {
+      "title": "Domain",
+      "type": "string"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "materiality": {
+      "$ref": "#/$defs/Materiality",
+      "default": "medium"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "polarity": {
+      "$ref": "#/$defs/Polarity",
+      "default": "affirming"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "scope": {
+      "$ref": "#/$defs/ClaimScope",
+      "default": {
+        "applicable_version": null,
+        "component_ids": [],
+        "environment": null,
+        "repository_ids": [],
+        "system_id": null
+      }
+    },
+    "statement": {
+      "title": "Statement",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/ClaimStatus",
+      "default": "active"
+    },
+    "truth_layer": {
+      "$ref": "#/$defs/TruthLayer"
+    },
+    "valid_from": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Valid From"
+    },
+    "valid_until": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Valid Until"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "statement",
+    "claim_type",
+    "truth_layer",
+    "domain",
+    "created_by",
+    "derivation",
+    "minted_by"
+  ],
+  "title": "Claim",
+  "type": "object"
+}

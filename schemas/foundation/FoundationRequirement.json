@@ -1,0 +1,134 @@
+{
+  "$defs": {
+    "FoundationDomain": {
+      "description": "design \u00a79.2 \u2014 the 16 foundation domains, as stable snake_case keys.",
+      "enum": [
+        "product_boundary",
+        "architecture",
+        "runtime",
+        "deployment",
+        "data",
+        "integration",
+        "identity_authority",
+        "security_privacy",
+        "reliability",
+        "observability",
+        "verification",
+        "development_workflow",
+        "agent_governance",
+        "operations",
+        "economics",
+        "migration_evolution"
+      ],
+      "title": "FoundationDomain",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "Priority": {
+      "description": "design \u00a78 \u2014 FoundationRequirement.priority.",
+      "enum": [
+        "must",
+        "should",
+        "could"
+      ],
+      "title": "Priority",
+      "type": "string"
+    },
+    "RequirementType": {
+      "description": "design \u00a78 \u2014 FoundationRequirement.requirement_type.",
+      "enum": [
+        "hard_constraint",
+        "required_capability",
+        "quality_attribute",
+        "preference",
+        "optimization_goal"
+      ],
+      "title": "RequirementType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a78.",
+  "properties": {
+    "claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Claim Ids",
+      "type": "array"
+    },
+    "domain": {
+      "$ref": "#/$defs/FoundationDomain"
+    },
+    "genome_snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Genome Snapshot Id"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "priority": {
+      "$ref": "#/$defs/Priority"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "requirement_type": {
+      "$ref": "#/$defs/RequirementType"
+    },
+    "statement": {
+      "title": "Statement",
+      "type": "string"
+    },
+    "verification_method": {
+      "title": "Verification Method",
+      "type": "string"
+    },
+    "veto_if_unsatisfied": {
+      "default": false,
+      "title": "Veto If Unsatisfied",
+      "type": "boolean"
+    },
+    "weight": {
+      "default": 0.5,
+      "title": "Weight",
+      "type": "number"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "requirement_type",
+    "domain",
+    "statement",
+    "priority",
+    "verification_method",
+    "minted_by"
+  ],
+  "title": "FoundationRequirement",
+  "type": "object"
+}

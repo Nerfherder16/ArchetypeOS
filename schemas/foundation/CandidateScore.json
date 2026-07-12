@@ -1,0 +1,125 @@
+{
+  "$defs": {
+    "EvaluationCriterion": {
+      "description": "design \u00a710.2 \u2014 the 20 candidate evaluation criteria, as snake_case keys.",
+      "enum": [
+        "requirement_coverage",
+        "architectural_coherence",
+        "security_fitness",
+        "privacy_compliance_fitness",
+        "reliability_fitness",
+        "operational_feasibility",
+        "team_capability_fit",
+        "cost_fit",
+        "delivery_speed",
+        "performance_fitness",
+        "scalability_fitness",
+        "maintainability",
+        "testability",
+        "observability",
+        "reversibility",
+        "vendor_lock_in",
+        "existing_asset_reuse",
+        "migration_complexity",
+        "evidence_strength",
+        "residual_uncertainty"
+      ],
+      "title": "EvaluationCriterion",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a710.3 \u2014 the UI shows the score vector, not only one overall number.",
+  "properties": {
+    "adjusted_score": {
+      "title": "Adjusted Score",
+      "type": "number"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "confidence": {
+      "title": "Confidence",
+      "type": "number"
+    },
+    "criterion": {
+      "$ref": "#/$defs/EvaluationCriterion"
+    },
+    "evaluation_ref": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Evaluation Ref"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "raw_score": {
+      "title": "Raw Score",
+      "type": "number"
+    },
+    "reviewer_agent_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reviewer Agent Id"
+    },
+    "supporting_claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Supporting Claim Ids",
+      "type": "array"
+    },
+    "uncertainty_penalty": {
+      "default": 0.0,
+      "title": "Uncertainty Penalty",
+      "type": "number"
+    },
+    "weight": {
+      "title": "Weight",
+      "type": "number"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "criterion",
+    "raw_score",
+    "weight",
+    "confidence",
+    "adjusted_score",
+    "minted_by"
+  ],
+  "title": "CandidateScore",
+  "type": "object"
+}

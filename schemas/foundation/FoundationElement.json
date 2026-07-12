@@ -1,0 +1,132 @@
+{
+  "$defs": {
+    "FoundationDomain": {
+      "description": "design \u00a79.2 \u2014 the 16 foundation domains, as stable snake_case keys.",
+      "enum": [
+        "product_boundary",
+        "architecture",
+        "runtime",
+        "deployment",
+        "data",
+        "integration",
+        "identity_authority",
+        "security_privacy",
+        "reliability",
+        "observability",
+        "verification",
+        "development_workflow",
+        "agent_governance",
+        "operations",
+        "economics",
+        "migration_evolution"
+      ],
+      "title": "FoundationDomain",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a79.4.",
+  "properties": {
+    "alternatives_rejected": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Alternatives Rejected",
+      "type": "array"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Claim Ids",
+      "type": "array"
+    },
+    "decision": {
+      "title": "Decision",
+      "type": "string"
+    },
+    "domain": {
+      "$ref": "#/$defs/FoundationDomain"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "rationale": {
+      "default": "",
+      "title": "Rationale",
+      "type": "string"
+    },
+    "requirement_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Requirement Ids",
+      "type": "array"
+    },
+    "risks": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Risks",
+      "type": "array"
+    },
+    "technology_refs": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Technology Refs",
+      "type": "array"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "tradeoffs": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Tradeoffs",
+      "type": "array"
+    },
+    "verification_method": {
+      "title": "Verification Method",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "candidate_id",
+    "domain",
+    "title",
+    "decision",
+    "verification_method",
+    "minted_by"
+  ],
+  "title": "FoundationElement",
+  "type": "object"
+}

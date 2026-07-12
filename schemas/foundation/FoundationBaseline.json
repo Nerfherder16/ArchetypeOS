@@ -1,0 +1,127 @@
+{
+  "$defs": {
+    "BaselineStatus": {
+      "description": "design \u00a712 Stage 14 \u2014 FoundationBaseline.status.",
+      "enum": [
+        "active",
+        "superseded",
+        "retired"
+      ],
+      "title": "BaselineStatus",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a712 Stage 14 \u2014 the approved, immutable Foundation Baseline.",
+  "properties": {
+    "approved_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Approved At"
+    },
+    "approved_by": {
+      "title": "Approved By",
+      "type": "string"
+    },
+    "approved_decision_id": {
+      "title": "Approved Decision Id",
+      "type": "string"
+    },
+    "baseline_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Baseline Hash"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "corpus_snapshot_id": {
+      "title": "Corpus Snapshot Id",
+      "type": "string"
+    },
+    "effective_from": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Effective From"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "review_triggers": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Review Triggers",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/BaselineStatus",
+      "default": "active"
+    },
+    "target_genome_snapshot_id": {
+      "title": "Target Genome Snapshot Id",
+      "type": "string"
+    },
+    "version": {
+      "default": "1.0",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "candidate_id",
+    "target_genome_snapshot_id",
+    "approved_decision_id",
+    "corpus_snapshot_id",
+    "approved_by",
+    "minted_by"
+  ],
+  "title": "FoundationBaseline",
+  "type": "object"
+}

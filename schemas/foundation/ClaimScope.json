@@ -1,0 +1,60 @@
+{
+  "additionalProperties": false,
+  "description": "design \u00a74.5 \u2014 Claim.scope.",
+  "properties": {
+    "applicable_version": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Applicable Version"
+    },
+    "component_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Component Ids",
+      "type": "array"
+    },
+    "environment": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Environment"
+    },
+    "repository_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Repository Ids",
+      "type": "array"
+    },
+    "system_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "System Id"
+    }
+  },
+  "title": "ClaimScope",
+  "type": "object"
+}

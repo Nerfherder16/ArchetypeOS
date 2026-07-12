@@ -1,0 +1,72 @@
+{
+  "$defs": {
+    "ClaimRelationship": {
+      "description": "design \u00a74.8 \u2014 the claim graph's supported relationship kinds.",
+      "enum": [
+        "supports",
+        "contradicts",
+        "supersedes",
+        "refines",
+        "duplicates",
+        "depends_on",
+        "derived_from",
+        "implements",
+        "violates",
+        "applies_to",
+        "validated_by",
+        "invalidated_by"
+      ],
+      "title": "ClaimRelationship",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.8 \u2014 the claim graph's edges.",
+  "properties": {
+    "from_claim_id": {
+      "title": "From Claim Id",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "notes": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Notes"
+    },
+    "relationship": {
+      "$ref": "#/$defs/ClaimRelationship"
+    },
+    "to_claim_id": {
+      "title": "To Claim Id",
+      "type": "string"
+    }
+  },
+  "required": [
+    "from_claim_id",
+    "to_claim_id",
+    "relationship",
+    "minted_by"
+  ],
+  "title": "ClaimRelationshipEdge",
+  "type": "object"
+}

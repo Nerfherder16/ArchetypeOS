@@ -1,0 +1,180 @@
+{
+  "$defs": {
+    "AnswerType": {
+      "description": "design \u00a77 \u2014 OpenQuestion.answer_type.",
+      "enum": [
+        "boolean",
+        "choice",
+        "number",
+        "text",
+        "document_request"
+      ],
+      "title": "AnswerType",
+      "type": "string"
+    },
+    "FoundationDomain": {
+      "description": "design \u00a79.2 \u2014 the 16 foundation domains, as stable snake_case keys.",
+      "enum": [
+        "product_boundary",
+        "architecture",
+        "runtime",
+        "deployment",
+        "data",
+        "integration",
+        "identity_authority",
+        "security_privacy",
+        "reliability",
+        "observability",
+        "verification",
+        "development_workflow",
+        "agent_governance",
+        "operations",
+        "economics",
+        "migration_evolution"
+      ],
+      "title": "FoundationDomain",
+      "type": "string"
+    },
+    "GenomeDimension": {
+      "description": "design \u00a76.5 \u2014 the 16 Genome dimensions (A-P), as stable snake_case keys.",
+      "enum": [
+        "mission_product_form",
+        "domain",
+        "lifecycle_maturity",
+        "system_composition",
+        "runtime_topology",
+        "deployment_ownership",
+        "workload_characteristics",
+        "data_profile",
+        "integration_profile",
+        "ai_autonomy",
+        "assurance_criticality",
+        "security_privacy",
+        "reliability_continuity",
+        "organizational_context",
+        "economic_delivery_constraints",
+        "change_profile"
+      ],
+      "title": "GenomeDimension",
+      "type": "string"
+    },
+    "Materiality": {
+      "description": "design \u00a74.5 / \u00a74.9 \u2014 how much a claim or conflict matters.",
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Materiality",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "QuestionStatus": {
+      "description": "design \u00a77 \u2014 OpenQuestion.status.",
+      "enum": [
+        "open",
+        "answered",
+        "deferred",
+        "unanswerable"
+      ],
+      "title": "QuestionStatus",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a77.",
+  "properties": {
+    "affected_dimensions": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/GenomeDimension"
+      },
+      "title": "Affected Dimensions",
+      "type": "array"
+    },
+    "affected_foundation_domains": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/FoundationDomain"
+      },
+      "title": "Affected Foundation Domains",
+      "type": "array"
+    },
+    "answer_claim_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Answer Claim Id"
+    },
+    "answer_type": {
+      "$ref": "#/$defs/AnswerType"
+    },
+    "genome_snapshot_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Genome Snapshot Id"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "materiality": {
+      "$ref": "#/$defs/Materiality"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "question": {
+      "title": "Question",
+      "type": "string"
+    },
+    "reason": {
+      "title": "Reason",
+      "type": "string"
+    },
+    "status": {
+      "$ref": "#/$defs/QuestionStatus",
+      "default": "open"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "question",
+    "materiality",
+    "reason",
+    "answer_type",
+    "minted_by"
+  ],
+  "title": "OpenQuestion",
+  "type": "object"
+}

@@ -1,0 +1,125 @@
+{
+  "$defs": {
+    "ConflictStatus": {
+      "description": "design \u00a74.9 \u2014 EvidenceConflict.status.",
+      "enum": [
+        "open",
+        "accepted_exception",
+        "resolved",
+        "superseded"
+      ],
+      "title": "ConflictStatus",
+      "type": "string"
+    },
+    "ConflictType": {
+      "description": "design \u00a74.9 \u2014 EvidenceConflict.conflict_type.",
+      "enum": [
+        "direct_contradiction",
+        "scope_mismatch",
+        "temporal_conflict",
+        "authority_conflict",
+        "implementation_drift",
+        "ambiguity"
+      ],
+      "title": "ConflictType",
+      "type": "string"
+    },
+    "Materiality": {
+      "description": "design \u00a74.5 / \u00a74.9 \u2014 how much a claim or conflict matters.",
+      "enum": [
+        "informational",
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ],
+      "title": "Materiality",
+      "type": "string"
+    },
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a74.9 \u2014 a contradiction that remains visible until explicitly resolved.",
+  "properties": {
+    "blocking_stages": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Blocking Stages",
+      "type": "array"
+    },
+    "claim_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Claim Ids",
+      "type": "array"
+    },
+    "conflict_type": {
+      "$ref": "#/$defs/ConflictType"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "materiality": {
+      "$ref": "#/$defs/Materiality"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "project_id": {
+      "title": "Project Id",
+      "type": "string"
+    },
+    "resolution": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resolution"
+    },
+    "resolution_decision_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Resolution Decision Id"
+    },
+    "status": {
+      "$ref": "#/$defs/ConflictStatus",
+      "default": "open"
+    }
+  },
+  "required": [
+    "id",
+    "project_id",
+    "claim_ids",
+    "conflict_type",
+    "materiality",
+    "minted_by"
+  ],
+  "title": "EvidenceConflict",
+  "type": "object"
+}

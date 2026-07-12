@@ -1,0 +1,133 @@
+{
+  "$defs": {
+    "MinterClass": {
+      "description": "Who/what is asserting a claim.",
+      "enum": [
+        "deterministic_tool",
+        "agent",
+        "human",
+        "approval_process"
+      ],
+      "title": "MinterClass",
+      "type": "string"
+    },
+    "ValidationStatus": {
+      "description": "design \u00a711 \u2014 ValidationTask.status.",
+      "enum": [
+        "proposed",
+        "approved",
+        "running",
+        "passed",
+        "failed",
+        "inconclusive"
+      ],
+      "title": "ValidationStatus",
+      "type": "string"
+    },
+    "ValidationType": {
+      "description": "design \u00a711 \u2014 ValidationTask.validation_type.",
+      "enum": [
+        "prototype",
+        "benchmark",
+        "simulation",
+        "security_review",
+        "legal_review",
+        "user_test",
+        "vendor_check",
+        "integration_spike"
+      ],
+      "title": "ValidationType",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "design \u00a711 \u2014 prescribe validation rather than invent certainty.",
+  "properties": {
+    "blocking": {
+      "default": false,
+      "title": "Blocking",
+      "type": "boolean"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "failure_criteria": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Failure Criteria",
+      "type": "array"
+    },
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "method": {
+      "default": "",
+      "title": "Method",
+      "type": "string"
+    },
+    "minted_by": {
+      "$ref": "#/$defs/MinterClass"
+    },
+    "question": {
+      "title": "Question",
+      "type": "string"
+    },
+    "required_evidence": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Required Evidence",
+      "type": "array"
+    },
+    "result_claim_ids": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Result Claim Ids",
+      "type": "array"
+    },
+    "result_refs": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Result Refs",
+      "type": "array"
+    },
+    "status": {
+      "$ref": "#/$defs/ValidationStatus",
+      "default": "proposed"
+    },
+    "success_criteria": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Success Criteria",
+      "type": "array"
+    },
+    "title": {
+      "title": "Title",
+      "type": "string"
+    },
+    "validation_type": {
+      "$ref": "#/$defs/ValidationType"
+    }
+  },
+  "required": [
+    "id",
+    "candidate_id",
+    "title",
+    "validation_type",
+    "question",
+    "minted_by"
+  ],
+  "title": "ValidationTask",
+  "type": "object"
+}

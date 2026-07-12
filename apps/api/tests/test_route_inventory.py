@@ -135,6 +135,24 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/plans/{plan_id}"),
         ("GET", "/projects/{project_id}/plans"),
         ("POST", "/plans/{plan_id}/approve"),
+        # evidence spine API (AOS-EVIDENCE-API-001 — RFC-0018 HTTP surface over
+        # services/evidence.py)
+        ("POST", "/projects/{project_id}/sources"),
+        ("GET", "/projects/{project_id}/sources"),
+        ("POST", "/sources/{source_id}/versions"),
+        ("GET", "/sources/{source_id}/versions"),
+        ("POST", "/source-versions/{version_id}/fragments"),
+        ("POST", "/projects/{project_id}/claims"),
+        ("GET", "/projects/{project_id}/claims"),
+        ("GET", "/claims/{claim_id}"),
+        ("POST", "/claims/{claim_id}/evidence"),
+        ("POST", "/claims/{claim_id}/relationships"),
+        ("POST", "/projects/{project_id}/conflicts"),
+        ("GET", "/projects/{project_id}/conflicts"),
+        ("PATCH", "/conflicts/{conflict_id}"),
+        ("POST", "/projects/{project_id}/corpus-snapshots"),
+        ("GET", "/projects/{project_id}/corpus-snapshots"),
+        ("POST", "/decisions/{decision_id}/project-claim"),
     }
 )
 
@@ -200,5 +218,13 @@ def test_route_inventory_count() -> None:
     # AOS-EVOLVE-001 added the evolution-engine routes (GET
     # /projects/{project_id}/decisions/stale, POST
     # /decisions/{decision_id}/reevaluate) = 91.
-    assert len(EXPECTED_ROUTES) == 91
-    assert len(_actual_routes()) == 91
+    # AOS-EVIDENCE-API-001 added the Evidence Spine HTTP API routes (POST/GET
+    # /projects/{project_id}/sources, POST/GET /sources/{source_id}/versions,
+    # POST /source-versions/{version_id}/fragments, POST/GET
+    # /projects/{project_id}/claims, GET /claims/{claim_id}, POST
+    # /claims/{claim_id}/evidence, POST /claims/{claim_id}/relationships,
+    # POST/GET /projects/{project_id}/conflicts, PATCH /conflicts/{conflict_id},
+    # POST/GET /projects/{project_id}/corpus-snapshots, POST
+    # /decisions/{decision_id}/project-claim) = 107.
+    assert len(EXPECTED_ROUTES) == 107
+    assert len(_actual_routes()) == 107

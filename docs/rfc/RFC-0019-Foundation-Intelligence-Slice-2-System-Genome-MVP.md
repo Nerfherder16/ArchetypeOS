@@ -236,7 +236,7 @@ claims (idempotent-ish via supersession).
 
 ## Implementation Status
 
-- **AOS-GENOME-MODELS-001** (this PR) — the 5 genome ORM models + migration `0029` (single head,
+- **AOS-GENOME-MODELS-001** (PR #215, merged) — the 5 genome ORM models + migration `0029` (single head,
   `0028→0029`; wires `open_questions.genome_snapshot_id` to a real FK), `services/genome_rules.py`
   (8 deterministic seed rules across the 6 foundation-shaping dimensions, with negation-aware keyword
   matching so mutually-exclusive traits don't double-fire; `FOUNDATION_SHAPING_DIMENSIONS` derived
@@ -244,7 +244,14 @@ claims (idempotent-ish via supersession).
   and coverage-calibrated `aggregate_confidence = mean(evidence-backed conf) × coverage`;
   `review_genome`/`approve_genome` via `ApprovalRecord`; `compare_genomes` delta; explicit `unknown`
   traits for unevidenced foundation-shaping dimensions; supersession). Reads **claims only** (AD-4).
-- **AOS-GENOME-API-001** (queued) — routes: generate / list / get / review / questions / compare.
+- **AOS-GENOME-API-001** (this PR) — the HTTP surface `apps/api/app/routes/genome.py` (thin wrappers
+  over `services/genome.py`, no business logic): `POST /projects/{id}/genomes/generate` (`state_view`
+  `current`/`intended`; **422** on `target`/`candidate`), `GET /projects/{id}/genomes` (`?state_view=`
+  filter), `GET /genomes/{id}` (detail with traits + supporting/opposing claim ids + archetypes),
+  `POST /genomes/{id}/review`, `POST /genomes/{id}/approve` (the service raises 404/409 for missing/
+  illegal-transition, mirroring `routes/decisions.py`), `GET /genomes/{id}/questions`,
+  `POST /genomes/{from_id}/compare/{to_id}` → `GenomeDelta`. Route inventory + DTOs added; no
+  migration/model change.
 - **AOS-GENOME-UI-001** (queued) — the genome view (current/intended toggle, trait confidence,
   coverage, unknowns).
 

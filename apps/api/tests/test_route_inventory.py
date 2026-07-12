@@ -157,6 +157,15 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         # EXISTING RepositoryDNA/Decision/Recommendation/Evaluation/Risk/
         # ResearchRun rows into the claim model)
         ("POST", "/projects/{project_id}/evidence-backfill"),
+        # genome API (AOS-GENOME-API-001 — RFC-0019 §16 HTTP surface over
+        # services/genome.py)
+        ("POST", "/projects/{project_id}/genomes/generate"),
+        ("GET", "/projects/{project_id}/genomes"),
+        ("GET", "/genomes/{genome_id}"),
+        ("POST", "/genomes/{genome_id}/review"),
+        ("POST", "/genomes/{genome_id}/approve"),
+        ("GET", "/genomes/{genome_id}/questions"),
+        ("POST", "/genomes/{from_id}/compare/{to_id}"),
     }
 )
 
@@ -232,5 +241,10 @@ def test_route_inventory_count() -> None:
     # /decisions/{decision_id}/project-claim) = 107.
     # AOS-EVIDENCE-BACKFILL-001 added the evidence-backfill route (POST
     # /projects/{project_id}/evidence-backfill) = 108.
-    assert len(EXPECTED_ROUTES) == 108
-    assert len(_actual_routes()) == 108
+    # AOS-GENOME-API-001 added the genome HTTP API routes (POST
+    # /projects/{project_id}/genomes/generate, GET /projects/{project_id}/genomes,
+    # GET /genomes/{genome_id}, POST /genomes/{genome_id}/review, POST
+    # /genomes/{genome_id}/approve, GET /genomes/{genome_id}/questions, POST
+    # /genomes/{from_id}/compare/{to_id}) = 115.
+    assert len(EXPECTED_ROUTES) == 115
+    assert len(_actual_routes()) == 115

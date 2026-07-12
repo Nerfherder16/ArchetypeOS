@@ -40,6 +40,7 @@ from aos_core.services.evidence import (
     relate_claims,
     resolve_conflict,
 )
+from aos_core.services.evidence_backfill import backfill_project
 
 from ..schemas import (
     ClaimCreate,
@@ -400,3 +401,19 @@ def project_decided_claim_endpoint(decision_id: str, db: Session = Depends(get_d
     # Service 404s a missing decision and 409s a non-approved decision (C1) —
     # both propagate as-is; no ValueError path here.
     return project_decided_claim(db, decision_id=decision_id)
+
+
+# ---------------------------------------------------------------------------
+# Evidence backfill (AOS-EVIDENCE-BACKFILL-001 — RFC-0018 C5 reconciliation)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/projects/{project_id}/evidence-backfill")
+def evidence_backfill_endpoint(project_id: str, db: Session = Depends(get_db)) -> dict:
+    # Thin wrapper: no business logic here, just the guard + delegation, same
+    # pattern as every other route in this module. 404s a missing project;
+    # backfill_project itself is deterministic/idempotent (a repeat call is a
+    # no-op, all counts land in *_skipped).
+    if not db.get(Project, project_id):
+        raise HTTPException(status_code=404, detail="Project not found")
+    return backfill_project(db, project_id)

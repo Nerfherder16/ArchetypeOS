@@ -14,6 +14,7 @@ Capabilities:
 - data flow
 - Engineering OS strategy
 - Source-classified language weighting (AOS-ARCH-SEMANTICS-001: the scan summary derives a `primary_language` from the top **source**-classified language via `LANGUAGE_CLASS` (source/config/markup/data/docs) and ranks `primary_language_hints` source-first, so config/docs-heavy repos are no longer misreported as YAML/Markdown-primary; raw `language_mix` counts retained — LES-013)
+- System Genome (Foundation Intelligence Slice 2, proposed, RFC-0019) — versioned, evidence-backed multi-dimensional classification of the whole engineered system, derived deterministically from the Evidence-Spine claims (Layer 2), not from Repository DNA directly (AD-4: DNA describes code, the Genome describes the system). Separate `current`/`intended` snapshots, coverage-calibrated confidence (LES-023), archetypes, and targeted open questions
 
 Primary artifacts:
 
@@ -21,6 +22,7 @@ Primary artifacts:
 - docs/ENGINEERING_DIGITAL_TWIN.md
 - docs/PORTFOLIO_ARCHITECTURE.md
 - docs/ENGINEERING_OS_STRATEGY.md
+- docs/rfc/RFC-0019-Foundation-Intelligence-Slice-2-System-Genome-MVP.md
 - docs/REPOSITORY_SCANNER.md (compose-derived `service`/`depends_on` edges + source-classified language weighting — AOS-ARCH-SEMANTICS-001)
 - agents/architecture_cartographer/CLAUDE.md
 - packages/aos_core/aos_core/repository_scanner.py (compose parse → service/depends_on edges; `LANGUAGE_CLASS` → `primary_language`/`language_classes`)

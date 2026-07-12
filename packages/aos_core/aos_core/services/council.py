@@ -264,9 +264,17 @@ def _build_prompt(agent: dict, question: str, evidence_items: list[dict]) -> str
         f"{json.dumps(evidence_items)}\n"
         "\n"
         "Respond ONLY with a JSON object with keys: "
-        "summary (string), findings (array of strings), evidence (array of strings), "
-        "concerns (array of strings), confidence (0.0-1.0 number), "
-        "status (one of Complete, Needs Evidence, Escalated, Rejected)."
+        "summary (string), "
+        "findings (array of typed items: {'kind': string, 'detail': string, 'ref': string or null} "
+        "— kind labels the item, e.g. 'finding'/'structural'/'risk'; detail is a short single-line "
+        "claim; ref optionally cites a supplied evidence item's own 'ref'), "
+        "evidence (array of the same typed-item shape — one per supplied evidence item you relied "
+        "on, citing its 'ref' where possible), "
+        "concerns (array of the same typed-item shape), "
+        "confidence (0.0-1.0 number), "
+        "status (one of Complete, Needs Evidence, Escalated, Rejected). "
+        "A plain string is also accepted anywhere a typed item is expected and is treated as that "
+        "item's 'detail' with no ref."
     )
 
 
@@ -276,6 +284,45 @@ def _coerce_list(value) -> list:
     if value in (None, ""):
         return []
     return [value]
+
+
+def _coerce_finding_item(item, default_kind: str) -> dict:
+    """Coerce one findings/evidence/concerns entry into a typed ``{kind, detail, ref}`` item.
+
+    RFC-0016 §11 (AOS-COUNCIL-TYPED-001): the evidence selectors and the
+    deterministic provider already speak typed items; a real-model agent (or
+    old stored data) may still hand back a plain string. Both are accepted and
+    normalized to the same shape — never raises on an unexpected input.
+    """
+    if isinstance(item, dict):
+        detail = item.get("detail")
+        if detail in (None, ""):
+            detail = item.get("text") or item.get("summary") or ""
+        ref = item.get("ref")
+        return {
+            "kind": str(item.get("kind") or default_kind),
+            "detail": str(detail),
+            "ref": str(ref) if ref not in (None, "") else None,
+        }
+    return {"kind": default_kind, "detail": str(item), "ref": None}
+
+
+def _coerce_items(value, default_kind: str) -> list[dict]:
+    """Coerce a findings/evidence/concerns list into typed ``{kind, detail, ref}`` items."""
+    return [_coerce_finding_item(item, default_kind) for item in _coerce_list(value) if item not in (None, "")]
+
+
+def _item_text(item) -> str:
+    """Human-readable text for one findings/evidence/concerns entry.
+
+    Tolerant of both shapes: a typed ``{kind, detail, ref}`` object (post
+    RFC-0016 §11) and a plain string (pre-existing rows, or an agent that
+    ignored the typed contract). Never raises.
+    """
+    if isinstance(item, dict):
+        detail = item.get("detail")
+        return str(detail) if detail is not None else str(item)
+    return str(item)
 
 
 def _loads_tolerant(text: str):
@@ -349,9 +396,9 @@ def _parse_agent_output(text: str) -> dict:
         confidence = 0.0
     return {
         "summary": str(obj.get("summary") or ""),
-        "findings": _coerce_list(obj.get("findings")),
-        "evidence": _coerce_list(obj.get("evidence")),
-        "concerns": _coerce_list(obj.get("concerns")),
+        "findings": _coerce_items(obj.get("findings"), "finding"),
+        "evidence": _coerce_items(obj.get("evidence"), "evidence"),
+        "concerns": _coerce_items(obj.get("concerns"), "concern"),
         "confidence": max(0.0, min(1.0, confidence)),
         "status": str(obj.get("status") or "Complete"),
     }
@@ -406,7 +453,7 @@ def synthesize_verdict(outputs: list[CouncilAgentOutput]) -> dict:
         ]
         for output in outputs:
             for concern in output.concerns or []:
-                follow_up.append(f"Verify: {concern}")
+                follow_up.append(f"Verify: {_item_text(concern)}")
         return {
             "verdict": "Insufficient evidence",
             "confidence": aggregate_confidence,
@@ -429,7 +476,7 @@ def synthesize_verdict(outputs: list[CouncilAgentOutput]) -> dict:
     follow_up = []
     for output in outputs:
         for concern in output.concerns or []:
-            follow_up.append(f"Address: {concern}")
+            follow_up.append(f"Address: {_item_text(concern)}")
 
     return {
         "verdict": verdict,

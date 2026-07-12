@@ -33,6 +33,17 @@ Required Next Verifier:
 
 Allowed statuses: `Verified`, `Verified with warnings`, `Verification pending`, `Verification unavailable`, `Verification blocked`.
 
+## Acceptance Evidence
+
+Map each acceptance criterion to its verification. **Format matters** — PR Guardian
+(`tools/pr_guardian.py`) requires **bullet lines** (starting with `-` or `*`), each
+containing the literal token `evidence:` pointing at a test, command, or CI job. A markdown
+table does NOT satisfy the check. Delete this section only if the change has no assertable
+acceptance (then include `PR_GUARDIAN_OVERRIDE_ACCEPTANCE` with rationale).
+
+- <criterion> — evidence: `path/to/test.py::test_name`
+- <criterion> — evidence: CI job "API tests and lint"
+
 ## Tests / Verification
 
 - [ ] API tests added/updated or not affected

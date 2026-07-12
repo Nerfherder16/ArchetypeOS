@@ -166,6 +166,18 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("POST", "/genomes/{genome_id}/approve"),
         ("GET", "/genomes/{genome_id}/questions"),
         ("POST", "/genomes/{from_id}/compare/{to_id}"),
+        # foundation API (AOS-FOUNDATION-API-001 — RFC-0020 design §16 HTTP
+        # surface over services/foundation.py)
+        ("POST", "/projects/{project_id}/foundation-runs"),
+        ("GET", "/projects/{project_id}/foundation-runs"),
+        ("GET", "/foundation-runs/{run_id}"),
+        ("POST", "/foundation-runs/{run_id}/compile-requirements"),
+        ("POST", "/foundation-runs/{run_id}/generate-candidates"),
+        ("POST", "/foundation-runs/{run_id}/evaluate-eligibility"),
+        ("POST", "/foundation-runs/{run_id}/candidates"),
+        ("GET", "/candidates/{candidate_id}"),
+        ("POST", "/candidates/{candidate_id}/score"),
+        ("POST", "/candidates/{candidate_id}/elements"),
     }
 )
 
@@ -246,5 +258,12 @@ def test_route_inventory_count() -> None:
     # GET /genomes/{genome_id}, POST /genomes/{genome_id}/review, POST
     # /genomes/{genome_id}/approve, GET /genomes/{genome_id}/questions, POST
     # /genomes/{from_id}/compare/{to_id}) = 115.
-    assert len(EXPECTED_ROUTES) == 115
-    assert len(_actual_routes()) == 115
+    # AOS-FOUNDATION-API-001 added the foundation HTTP API routes (POST/GET
+    # /projects/{project_id}/foundation-runs, GET /foundation-runs/{run_id}, POST
+    # /foundation-runs/{run_id}/compile-requirements, POST
+    # /foundation-runs/{run_id}/generate-candidates, POST
+    # /foundation-runs/{run_id}/evaluate-eligibility, POST
+    # /foundation-runs/{run_id}/candidates, GET /candidates/{candidate_id}, POST
+    # /candidates/{candidate_id}/score, POST /candidates/{candidate_id}/elements) = 125.
+    assert len(EXPECTED_ROUTES) == 125
+    assert len(_actual_routes()) == 125

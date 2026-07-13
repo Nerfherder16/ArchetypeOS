@@ -1356,3 +1356,119 @@ class FoundationCandidateDetailRead(FoundationCandidateRead):
     # design §10.3 score vector (FoundationScore rows — never a lone scalar).
     elements: list[FoundationElementRead] = Field(default_factory=list)
     scores: list[FoundationScoreRead] = Field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# Council & Validation (RFC-0021, Foundation Intelligence Slice 4,
+# AOS-COUNCIL-VALIDATION-API-001) — thin DTOs over services/foundation_council.py.
+# ---------------------------------------------------------------------------
+
+
+class ValidationTaskRead(BaseModel):
+    id: str
+    candidate_id: str
+    selection_run_id: str
+    title: str
+    validation_type: str
+    question: str
+    method: str
+    success_criteria: list
+    failure_criteria: list
+    required_evidence: list
+    blocking: bool
+    result_claim_ids: list
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class ValidationResultRead(BaseModel):
+    id: str
+    validation_task_id: str
+    outcome: str
+    summary: str | None
+    evidence: list
+    benchmark_ref: str | None
+    experiment_ref: str | None
+    result_claim_ids: list
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationObjectionRead(BaseModel):
+    id: str
+    candidate_id: str
+    review_id: str | None
+    raised_by: str
+    objection: str
+    materiality: str
+    blocking: bool
+    resolution: str | None
+    resolution_validation_task_id: str | None
+    resolution_decision_id: str | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationDossierRead(BaseModel):
+    id: str
+    selection_run_id: str
+    recommended_candidate_id: str | None
+    verdict: str
+    reasons: list
+    remaining_uncertainty: list
+    rejected_alternatives: list
+    conditions_of_approval: list
+    required_future_reviews: list
+    approved_by: str | None
+    approved_at: datetime | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class ValidationTaskDetailRead(ValidationTaskRead):
+    # GET /validation-tasks/{task_id}: the task plus its recorded results.
+    results: list[ValidationResultRead] = Field(default_factory=list)
+
+
+class CouncilReviewSubjectRequest(BaseModel):
+    actor: str = "system"
+
+
+class ObjectionResolveRequest(BaseModel):
+    status: str
+    resolution: str | None = None
+    validation_task_id: str | None = None
+    decision_id: str | None = None
+
+
+class ValidationResultCreate(BaseModel):
+    outcome: str
+    summary: str | None = None
+    evidence: list = Field(default_factory=list)
+    benchmark_ref: str | None = None
+    experiment_ref: str | None = None
+
+
+class CandidateSelectRequest(BaseModel):
+    candidate_id: str
+    approver: str

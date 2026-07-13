@@ -21,12 +21,14 @@ Capabilities:
 
 - Foundation Intelligence — Requirements & Candidates (Slice 3, proposed, RFC-0020): deterministically compiles the System Genome (Layer 3) + claims (Layer 2) into a normalized Foundation Requirement Set (hard constraints / quality attributes, each tracing source claims + a verification method), then generates coherent Foundation Candidates + Elements with **score vectors** (not scalars, §10.3), gated by **hard-constraint eligibility before weighted scoring** (AD-8). Deterministic + human-reviewed (no LLM this slice); the `foundation_selection_runs` state machine advances to `eligibility_review`. Council review / validation / selection are Slice 4, baseline Slice 5
 - Foundation Intelligence — Council & Validation (Slice 4, proposed, RFC-0021): reuses the (now-typed, AOS-COUNCIL-TYPED-001) Engineering Council to adversarially review each eligible foundation candidate, tracks **objections** with a resolution workflow, prescribes **validation tasks** when evidence is insufficient (AD-10 — validation, not invented certainty), synthesizes a **Final Judge dossier** (recommends, does not select), and gates a **mandatory human candidate selection** (AD-9). Deterministic in CI (`DeterministicProvider`); real model behind the `Provider` seam. Baseline is Slice 5
+- Foundation Intelligence — Foundation Baseline (Slice 5, proposed, RFC-0022): converts a **selected** candidate into an **immutable, versioned `FoundationBaseline`** (design §12 Stage 14) — a second **mandatory human gate** (AD-12) that freezes the approved elements/genome/corpus into a reproducible `baseline_hash`, enforces immutability at the **database layer** (reconciliation C4 — the same `before_update` guard as `CorpusSnapshot`/`Claim`), creates + links a governing **approved anchor Decision** (AD-15 — the higher-order source Decisions/plans derive from), supersedes the prior active baseline as a new version, and ships a deterministic `compare_baselines` diff + persisted `review_triggers`. The active drift/evolution engine that consumes these is **Slice 6 (RFC-0023)** — not this slice.
 
 Primary artifacts:
 
 - docs/TECHNOLOGY_FITNESS_ENGINE.md
 - docs/rfc/RFC-0020-Foundation-Intelligence-Slice-3-Requirements-And-Candidates.md
 - docs/rfc/RFC-0021-Foundation-Intelligence-Slice-4-Council-And-Validation.md
+- docs/rfc/RFC-0022-Foundation-Intelligence-Slice-5-Baseline.md
 - docs/STRATEGY_ENGINE.md
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
 - docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md

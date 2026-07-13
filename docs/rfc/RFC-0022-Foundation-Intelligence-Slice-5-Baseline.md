@@ -112,7 +112,20 @@ Slices 0–4 (merged). `services/decisions.py` (anchor Decision), `foundation/se
 
 ## Implementation Status
 
-- **AOS-FOUNDATION-BASELINE-MODELS-001** — pending (bundled with this RFC).
+- **AOS-FOUNDATION-BASELINE-MODELS-001** (this PR) — the two ORM tables (`FoundationBaseline`,
+  `FoundationBaselineElement`) + migration `0032` (single head `0031→0032`, mixin-safe) + the C4
+  immutability-guard generalization (`_EVIDENCE_IMMUTABLE_CONTENT_FIELDS`→`_IMMUTABLE_CONTENT_FIELDS`,
+  `_assert_evidence_content_immutable`→`_assert_content_immutable`, reusing the same `before_update`
+  listener; the 5 evidence entries unchanged, `FoundationBaseline`/`FoundationBaselineElement` added
+  with `status`+audit excluded so status transitions stay legal), and `services/foundation_baseline.py`:
+  `mint_baseline` (409 unless a `selected` run with a selected candidate; freezes elements to
+  reproducible `content_hash`es, computes `element_set_hash` + a field-prefixed `baseline_hash`, mints +
+  approves the AD-15 anchor Decision, supersedes the prior active baseline with a version bump, writes an
+  `ApprovalRecord`, advances the run `selected→baselined` — one transaction, INSERT-only before commit so
+  the C4 guard never sees a mutation on a fresh row), `compare_baselines` (deterministic element/genome/
+  trigger diff), `supersede_baseline`/`retire_baseline` (status-only transitions). 11 hermetic tests
+  including C4 immutability (content edit refused; status transition allowed) and `baseline_hash`
+  reproducibility. Full API suite green (914 passed); the guard rename broke no evidence-immutability test.
 - **AOS-FOUNDATION-BASELINE-API-001** — queued.
 
 ## Final Judge verdict

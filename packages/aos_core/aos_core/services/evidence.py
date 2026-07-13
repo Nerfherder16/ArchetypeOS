@@ -21,7 +21,8 @@ the write path):
 - **C4** (every immutable-row insert): ``content_hash`` (or, for
   :class:`~aos_core.models.CorpusSnapshot`, ``claim_set_hash``) is computed via
   ``foundation.serialization`` at insert time. A ``before_update`` guard on the
-  ORM models themselves (``models._assert_evidence_content_immutable``)
+  ORM models themselves (``models._assert_content_immutable``, generalized by
+  RFC-0022 to also cover ``FoundationBaseline``/``FoundationBaselineElement``)
   refuses any UPDATE that touches a content field — corrections create a new
   row (:func:`add_source_version`) rather than editing one in place.
 
@@ -464,7 +465,7 @@ def resolve_conflict(
 
     ``status``/``resolution``/``resolution_decision_id`` are annotation
     fields, not content — ``EvidenceConflict`` has no entry in
-    ``models._EVIDENCE_IMMUTABLE_CONTENT_FIELDS`` (RFC-0018 leaves conflicts
+    ``models._IMMUTABLE_CONTENT_FIELDS`` (RFC-0018 leaves conflicts
     un-hashed/un-guarded), so this UPDATE is permitted by the C4 guard.
     404s a missing conflict; raises ``ValueError`` for any status other than
     ``resolved``/``accepted_exception`` (only those two are a resolution).

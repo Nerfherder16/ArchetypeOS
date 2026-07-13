@@ -126,7 +126,15 @@ Slices 0–4 (merged). `services/decisions.py` (anchor Decision), `foundation/se
   trigger diff), `supersede_baseline`/`retire_baseline` (status-only transitions). 11 hermetic tests
   including C4 immutability (content edit refused; status transition allowed) and `baseline_hash`
   reproducibility. Full API suite green (914 passed); the guard rename broke no evidence-immutability test.
-- **AOS-FOUNDATION-BASELINE-API-001** — queued.
+- **AOS-FOUNDATION-BASELINE-API-001** (this PR) — the HTTP surface over the engine
+  (`routes/foundation_baseline.py`, registered in `main.py`; thin wrappers mirroring
+  `routes/foundation_council.py`). 4 endpoints: `POST /foundation-runs/{run_id}/baseline` (the mint
+  gate — `IllegalTransition`→409; the engine's own 404 missing-run / 409 not-selected / 409
+  no-selected-candidate propagate unwrapped), `GET /projects/{project_id}/foundation-baselines`,
+  `GET /foundation-baselines/{baseline_id}` (detail with frozen `elements`), and
+  `GET /foundation-baselines/{base_id}/compare/{other_id}`. Schemas `FoundationBaselineRead` /
+  `FoundationBaselineElementRead` / `FoundationBaselineDetailRead` / `BaselineMintRequest`; route
+  inventory 135→139. 11 API tests (mint 200/409/404, list, detail-with-elements, compare identity/404).
 
 ## Final Judge verdict
 

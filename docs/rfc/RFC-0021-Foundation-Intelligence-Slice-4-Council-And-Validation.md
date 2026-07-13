@@ -250,6 +250,27 @@ migration.
 - **Enables:** Slice 5 (the selected candidate becomes the immutable Foundation Baseline) and the design
   §20 MVP steps 12–16.
 
+## Implementation Status
+
+- **AOS-COUNCIL-VALIDATION-MODELS-001** (this PR) — the 4 new ORM models (`ValidationTask`,
+  `ValidationResult`, `FoundationObjection`, `FoundationDossier`) + two nullable link columns
+  (`candidate_id`, `selection_run_id`) on `CouncilReview` + migration `0031` (single head, `0030→0031`,
+  mixin-safe: `_audit_columns()` once per table, the `council_reviews` columns are nullable `ADD
+  COLUMN`), and `services/foundation_council.py`: `review_candidate` (runs `run_council` over a
+  candidate's elements/requirements/score-vector, tags the `CouncilReview`, derives blocking
+  `FoundationObjection`s from council concerns + `ValidationTask`s from high-`uncertainty_penalty`/low-
+  confidence blocking criteria — AD-10), `resolve_objection` (open→resolved/accepted_exception/
+  converted_to_validation), `record_validation_result` (a failed blocking task marks the candidate
+  `challenged`, not rejected; clearing all blocking tasks advances the run to `validation_complete`),
+  `synthesize_dossier` (**recommends only — never selects**, AD-9; advances to `ready_for_selection`),
+  and `select_candidate` (**mandatory human gate** — 409 unless the candidate is eligible with no
+  unresolved blocking objection and every blocking validation `passed` (`accepted_exception` is an
+  objection resolution, not a validation outcome — `ValidationStatus` has no such state); sets
+  `selected`, advances the run, writes an `ApprovalRecord`). Deterministic in CI. Reuses the Council +
+  `synthesize_verdict` + `ApprovalRecord` (C2).
+- **AOS-COUNCIL-VALIDATION-API-001** (queued) — routes: review-candidate / objections (+resolve) /
+  validation-tasks (+result) / synthesize-dossier / select / list / get.
+
 ## Final Judge verdict
 
 Pending operator approval. Slice 4 is the adjudication payoff: it reviews the candidates with the

@@ -1412,6 +1412,83 @@ class ValidationResult(AuditMixin, Base):
     result_claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
 
 
+# ---------------------------------------------------------------------------
+# Foundation Baseline (RFC-0022, Foundation Intelligence Slice 5,
+# AOS-FOUNDATION-BASELINE-MODELS-001) — turns a SELECTED candidate into the
+# immutable, versioned root-of-trust the rest of the platform derives from
+# (design §12 Stage 14, AD-12, AD-15). Write path is
+# ``services/foundation_baseline.py``. ``status`` (AuditMixin) carries
+# ``BaselineStatus`` (active/superseded/retired); every other content field is
+# frozen at mint time and guarded by the C4 immutable-content registry below.
+# ---------------------------------------------------------------------------
+
+
+class FoundationBaseline(AuditMixin, Base):
+    """design §12 Stage 14 — the approved, immutable Foundation Baseline.
+
+    ``baseline_version`` is the contract's semantic ``"1.0"`` string — **not**
+    ``version``, which ``AuditMixin`` owns (LES-042). ``status`` (AuditMixin)
+    carries ``BaselineStatus`` and is the ONE mutable field post-mint (C4);
+    every other content field is frozen by the immutable-content guard.
+    ``supersedes_baseline_id`` chains versions (the ``EvidenceSourceVersion``
+    pattern) — a correction is always a new version, never an in-place edit.
+    """
+
+    __tablename__ = "foundation_baselines"
+
+    project_id: Mapped[str] = mapped_column(GUID(), ForeignKey("projects.id"), nullable=False, index=True)
+    candidate_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_candidates.id"), nullable=False, index=True
+    )
+    selection_run_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_selection_runs.id"), nullable=False, index=True
+    )
+    target_genome_snapshot_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("genome_snapshots.id"), nullable=False, index=True
+    )
+    corpus_snapshot_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("corpus_snapshots.id"), index=True)
+    approved_decision_id: Mapped[str] = mapped_column(GUID(), ForeignKey("decisions.id"), nullable=False, index=True)
+    supersedes_baseline_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("foundation_baselines.id"), index=True
+    )
+    baseline_version: Mapped[str] = mapped_column(String(32), default="1.0", nullable=False)
+    element_set_hash: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    baseline_hash: Mapped[str] = mapped_column(String(64), index=True, default="", nullable=False)
+    review_triggers: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    minted_by: Mapped[str] = mapped_column(String(32), default="approval_process", nullable=False)
+    approved_by: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    effective_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class FoundationBaselineElement(AuditMixin, Base):
+    """design §12 Stage 14 — a frozen copy of an approved :class:`FoundationElement`
+    at mint time, so the baseline is self-contained and reproducible even if the
+    source candidate's elements later change (membership-snapshot pattern, like
+    :class:`CorpusSnapshotSource`)."""
+
+    __tablename__ = "foundation_baseline_elements"
+
+    baseline_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_baselines.id"), nullable=False, index=True
+    )
+    source_element_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_elements.id"), nullable=False, index=True
+    )
+    domain: Mapped[str] = mapped_column(String(64), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    decision: Mapped[str] = mapped_column(Text, nullable=False)
+    rationale: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    verification_method: Mapped[str] = mapped_column(Text, nullable=False)
+    technology_refs: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    requirement_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    alternatives_rejected: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    tradeoffs: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    risks: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+
+
 class FoundationObjection(AuditMixin, Base):
     """design §11 — a tracked, resolvable objection raised against a candidate
     (typically by a council persona), distinct from a review's transient
@@ -1476,7 +1553,15 @@ class FoundationDossier(AuditMixin, Base):
 # A ``before_update`` UPDATE that touches any of these is refused — corrections
 # go through a new row (``add_source_version``) or an explicit status/annotation
 # transition, never an in-place content edit.
-_EVIDENCE_IMMUTABLE_CONTENT_FIELDS: dict[type, frozenset[str]] = {
+#
+# RFC-0022 (Foundation Intelligence Slice 5, AOS-FOUNDATION-BASELINE-MODELS-001)
+# generalized this registry from its original evidence-only name
+# (``_EVIDENCE_IMMUTABLE_CONTENT_FIELDS`` / ``_assert_evidence_content_immutable``)
+# to cover ``FoundationBaseline``/``FoundationBaselineElement`` too, reusing the
+# exact same ``before_update`` listener — the baseline is the root-of-trust
+# other Decisions/plans derive from, and a silent in-place content edit would
+# corrupt the whole derivation chain (C4/AD-12).
+_IMMUTABLE_CONTENT_FIELDS: dict[type, frozenset[str]] = {
     EvidenceSource: frozenset(
         {
             "project_id", "source_type", "title", "origin", "originator", "canonical_uri",
@@ -1506,6 +1591,21 @@ _EVIDENCE_IMMUTABLE_CONTENT_FIELDS: dict[type, frozenset[str]] = {
     CorpusSnapshot: frozenset(
         {"project_id", "source_version_ids", "repository_refs", "claim_set_hash", "created_by", "purpose"}
     ),
+    FoundationBaseline: frozenset(
+        {
+            "project_id", "candidate_id", "selection_run_id", "target_genome_snapshot_id",
+            "corpus_snapshot_id", "approved_decision_id", "supersedes_baseline_id", "baseline_version",
+            "element_set_hash", "baseline_hash", "review_triggers", "minted_by", "approved_by",
+            "effective_from",
+        }
+    ),
+    FoundationBaselineElement: frozenset(
+        {
+            "baseline_id", "source_element_id", "domain", "title", "decision", "rationale",
+            "technology_refs", "claim_ids", "requirement_ids", "alternatives_rejected", "tradeoffs",
+            "risks", "verification_method", "content_hash",
+        }
+    ),
 }
 
 
@@ -1513,8 +1613,8 @@ class ImmutableContentError(ValueError):
     """Raised when an UPDATE attempts to change a content field of an immutable evidence row (C4)."""
 
 
-def _assert_evidence_content_immutable(mapper, connection, target) -> None:
-    fields = _EVIDENCE_IMMUTABLE_CONTENT_FIELDS.get(type(target))
+def _assert_content_immutable(mapper, connection, target) -> None:
+    fields = _IMMUTABLE_CONTENT_FIELDS.get(type(target))
     if not fields:
         return
     state = inspect(target)
@@ -1528,5 +1628,5 @@ def _assert_evidence_content_immutable(mapper, connection, target) -> None:
         )
 
 
-for _evidence_model in _EVIDENCE_IMMUTABLE_CONTENT_FIELDS:
-    event.listen(_evidence_model, "before_update", _assert_evidence_content_immutable)
+for _immutable_model in _IMMUTABLE_CONTENT_FIELDS:
+    event.listen(_immutable_model, "before_update", _assert_content_immutable)

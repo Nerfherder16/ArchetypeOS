@@ -615,6 +615,13 @@ class CouncilReview(AuditMixin, Base):
     follow_up: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     provider: Mapped[str | None] = mapped_column(String(128))
     job_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("jobs.id"), index=True)
+    # RFC-0021 (Foundation Intelligence Slice 4, AOS-COUNCIL-VALIDATION-MODELS-001):
+    # nullable C2 reuse-links — a candidate review *is* a council review with a
+    # subject. Added in migration 0031 as plain nullable ADD COLUMNs (LES-042).
+    candidate_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("foundation_candidates.id"), index=True)
+    selection_run_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("foundation_selection_runs.id"), index=True
+    )
 
     agent_outputs: Mapped[list["CouncilAgentOutput"]] = relationship(
         back_populates="review", cascade="all, delete-orphan"
@@ -1334,6 +1341,132 @@ class FoundationScore(AuditMixin, Base):
     rationale: Mapped[str] = mapped_column(Text, default="", nullable=False)
     supporting_claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
     evaluation_ref: Mapped[str | None] = mapped_column(GUID(), index=True)
+
+
+# ---------------------------------------------------------------------------
+# Council & Validation (RFC-0021, Foundation Intelligence Slice 4,
+# AOS-COUNCIL-VALIDATION-MODELS-001) — the adjudication layer over Slice 3's
+# candidates: typed council reviews (reused from ``CouncilReview``, see the two
+# link columns added above), objection tracking, prescribed validation tasks +
+# results, and the Final Judge dossier. Write path is
+# ``services/foundation_council.py``. ``status`` (AuditMixin) carries each
+# entity's own controlled vocabulary — see each class docstring — so none of
+# these declare a second ``status`` column (LES-042).
+# ---------------------------------------------------------------------------
+
+
+class ValidationTask(AuditMixin, Base):
+    """design §11 — a prescribed, blocking-or-not, pass/fail validation for a
+    candidate's uncertain assumption or council-flagged evidence gap (AD-10).
+
+    ``status`` (AuditMixin) carries ``ValidationStatus``
+    (proposed/approved/running/passed/failed/inconclusive); transitions are
+    validated through ``foundation.lifecycle.can_transition(LifecycleKind.validation,
+    ...)``. Indexed on ``(selection_run_id, status)`` — the common "outstanding
+    validations for this run" query.
+    """
+
+    __tablename__ = "validation_tasks"
+    __table_args__ = (
+        Index("ix_validation_tasks_run_status", "selection_run_id", "status"),
+    )
+
+    candidate_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_candidates.id"), nullable=False, index=True
+    )
+    selection_run_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_selection_runs.id"), nullable=False, index=True
+    )
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    validation_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    question: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    method: Mapped[str] = mapped_column(Text, default="", nullable=False)
+    success_criteria: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    failure_criteria: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    required_evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    blocking: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    result_claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+
+
+class ValidationResult(AuditMixin, Base):
+    """design §11 — a recorded outcome for a :class:`ValidationTask`.
+
+    ``outcome`` is the pass/fail/inconclusive vocabulary itself (distinct from
+    the inherited ``status`` column, which stays the AuditMixin default
+    ``"active"`` for this row — the *task's* status is what the lifecycle table
+    governs). ``benchmark_ref``/``experiment_ref`` are the C2 reuse-links: a
+    result may be *backed by* a real ``Benchmark``/``Experiment`` row without a
+    duplicate table.
+    """
+
+    __tablename__ = "validation_results"
+
+    validation_task_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("validation_tasks.id"), nullable=False, index=True
+    )
+    outcome: Mapped[str] = mapped_column(String(32), nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text)
+    evidence: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    benchmark_ref: Mapped[str | None] = mapped_column(GUID(), index=True)
+    experiment_ref: Mapped[str | None] = mapped_column(GUID(), index=True)
+    result_claim_ids: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+
+
+class FoundationObjection(AuditMixin, Base):
+    """design §11 — a tracked, resolvable objection raised against a candidate
+    (typically by a council persona), distinct from a review's transient
+    ``concerns`` text.
+
+    ``status`` (AuditMixin) carries the objection workflow:
+    ``open`` -> (``resolved`` | ``accepted_exception`` | ``converted_to_validation``)
+    — an objection stays visible until explicitly resolved (design §11).
+    ``blocking`` objections gate :func:`~aos_core.services.foundation_council.select_candidate`
+    (AD-9).
+    """
+
+    __tablename__ = "foundation_objections"
+
+    candidate_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_candidates.id"), nullable=False, index=True
+    )
+    review_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("council_reviews.id"), index=True)
+    raised_by: Mapped[str] = mapped_column(String(128), default="", nullable=False)
+    objection: Mapped[str] = mapped_column(Text, nullable=False)
+    materiality: Mapped[str] = mapped_column(String(32), default="medium", nullable=False)
+    blocking: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    resolution: Mapped[str | None] = mapped_column(Text)
+    resolution_validation_task_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("validation_tasks.id"), index=True
+    )
+    resolution_decision_id: Mapped[str | None] = mapped_column(GUID(), ForeignKey("decisions.id"), index=True)
+
+
+class FoundationDossier(AuditMixin, Base):
+    """design §13 — the Final Judge's per-run adjudication record: a
+    recommendation (never a selection — AD-9), reasons, remaining uncertainty,
+    rejected alternatives, conditions of approval, and required future reviews.
+
+    ``approved_by``/``approved_at`` are stamped only by the human selection gate
+    (:func:`~aos_core.services.foundation_council.select_candidate`), never by
+    :func:`~aos_core.services.foundation_council.synthesize_dossier` itself.
+    """
+
+    __tablename__ = "foundation_dossiers"
+
+    selection_run_id: Mapped[str] = mapped_column(
+        GUID(), ForeignKey("foundation_selection_runs.id"), nullable=False, index=True
+    )
+    recommended_candidate_id: Mapped[str | None] = mapped_column(
+        GUID(), ForeignKey("foundation_candidates.id"), index=True
+    )
+    verdict: Mapped[str] = mapped_column(String(64), default="", nullable=False)
+    reasons: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    remaining_uncertainty: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    rejected_alternatives: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    conditions_of_approval: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    required_future_reviews: Mapped[list] = mapped_column(JSONField(), default=list, nullable=False)
+    approved_by: Mapped[str | None] = mapped_column(String(128))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 # C4 — immutable-content guard. Each entry names the fields that constitute the

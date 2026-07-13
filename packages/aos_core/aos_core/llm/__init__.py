@@ -152,22 +152,28 @@ class DeterministicProvider:
         persona = _extract_line_value(prompt, "Persona:") or "agent"
         evidence_items = _extract_evidence(prompt)
 
-        findings: list[str] = []
-        evidence_refs: list[str] = []
-        concerns: list[str] = []
+        # RFC-0016 §11 (AOS-COUNCIL-TYPED-001): emit typed {kind, detail, ref}
+        # items end to end instead of flattening to an f"{kind}: {detail}"
+        # string — the council's ``_parse_agent_output`` stores these verbatim
+        # so downstream (Slice 4 specialist reviews) can use the type + ref,
+        # not a string blob.
+        findings: list[dict] = []
+        evidence_out: list[dict] = []
+        concerns: list[dict] = []
         for item in evidence_items:
             if isinstance(item, dict):
                 kind = str(item.get("kind", "signal"))
                 detail = str(item.get("detail", ""))
-                ref = str(item.get("ref", detail))
+                ref = item.get("ref")
             else:
                 kind = "signal"
                 detail = str(item)
-                ref = detail
-            findings.append(f"{kind}: {detail}")
-            evidence_refs.append(ref)
+                ref = None
+            ref = str(ref) if ref not in (None, "") else None
+            findings.append({"kind": kind, "detail": detail, "ref": ref})
+            evidence_out.append({"kind": kind, "detail": detail, "ref": ref})
             if any(keyword in detail.lower() for keyword in _RISK_KEYWORDS):
-                concerns.append(detail)
+                concerns.append({"kind": "concern", "detail": detail, "ref": ref})
 
         count = len(evidence_items)
         if count == 0:
@@ -185,7 +191,7 @@ class DeterministicProvider:
         obj = {
             "summary": summary,
             "findings": findings,
-            "evidence": evidence_refs,
+            "evidence": evidence_out,
             "concerns": concerns,
             "confidence": confidence,
             "status": status,

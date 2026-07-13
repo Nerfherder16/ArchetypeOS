@@ -195,6 +195,15 @@ arrays to typed objects, keeping backward-compatible reads. This is the design's
 lands on a confirmed seam, and delivers value before Slice 4 needs it. It is its own work
 package + PR under this RFC.
 
+> **Shipped.** `AOS-COUNCIL-TYPED-001` landed the typed `{kind, detail, ref}` payloads. The actual
+> flatten site was `DeterministicProvider.generate()` (`llm/__init__.py`) — it now emits typed dicts
+> for `findings`/`evidence`/`concerns` instead of `f"{kind}: {detail}"` strings; `council.py` gained
+> `_coerce_finding_item`/`_coerce_items` (string→object on write) and an `_item_text` reader helper
+> (both shapes tolerated on read, used by `synthesize_verdict`'s follow-ups); `CouncilAgentOutput`'s
+> `JSONField()` columns and the pydantic response DTOs already accept both shapes, so **no migration/
+> model change**. Backward-compatible with existing string-array rows. Slice 4's typed specialist
+> reviews build on this.
+
 **Cross-cutting security RFC — RFC-0024 (Evidence Compartmentalization).** The design's §4.10
 claim-level compartmentalization is **promoted to its own child RFC**, not a Slice-1
 sub-slice, because it is a security-model change (RFC_PROCESS) and is cross-cutting — it

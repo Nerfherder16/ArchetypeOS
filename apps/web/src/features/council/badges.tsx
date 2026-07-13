@@ -38,7 +38,7 @@ export function renderListItem(item: unknown): string {
   }
   if (item !== null && typeof item === 'object') {
     const obj = item as Record<string, unknown>;
-    const field = obj.text ?? obj.summary ?? obj.description ?? obj.message ?? obj.content;
+    const field = obj.detail ?? obj.text ?? obj.summary ?? obj.description ?? obj.message ?? obj.content;
     if (typeof field === 'string') {
       return field;
     }

@@ -1472,3 +1472,64 @@ class ValidationResultCreate(BaseModel):
 class CandidateSelectRequest(BaseModel):
     candidate_id: str
     approver: str
+
+
+class FoundationBaselineRead(BaseModel):
+    id: str
+    project_id: str
+    candidate_id: str
+    selection_run_id: str
+    target_genome_snapshot_id: str
+    corpus_snapshot_id: str | None
+    approved_decision_id: str
+    supersedes_baseline_id: str | None
+    baseline_version: str
+    element_set_hash: str
+    baseline_hash: str
+    review_triggers: list
+    minted_by: str
+    approved_by: str
+    approved_at: datetime | None
+    effective_from: datetime | None
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationBaselineElementRead(BaseModel):
+    id: str
+    baseline_id: str
+    source_element_id: str
+    domain: str
+    title: str
+    decision: str
+    rationale: str
+    verification_method: str
+    technology_refs: list
+    claim_ids: list
+    requirement_ids: list
+    alternatives_rejected: list
+    tradeoffs: list
+    risks: list
+    content_hash: str
+    status: str
+    version: int
+    created_at: datetime
+    updated_at: datetime
+    created_by: str
+
+    model_config = {"from_attributes": True}
+
+
+class FoundationBaselineDetailRead(FoundationBaselineRead):
+    # GET /foundation-baselines/{baseline_id}: the baseline plus its frozen elements.
+    elements: list[FoundationBaselineElementRead] = Field(default_factory=list)
+
+
+class BaselineMintRequest(BaseModel):
+    approver: str
+    review_triggers: list[str] = Field(default_factory=list)

@@ -178,6 +178,18 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/candidates/{candidate_id}"),
         ("POST", "/candidates/{candidate_id}/score"),
         ("POST", "/candidates/{candidate_id}/elements"),
+        # Foundation Intelligence Slice 4 — Council & Validation API (RFC-0021,
+        # AOS-COUNCIL-VALIDATION-API-001).
+        ("POST", "/candidates/{candidate_id}/council-review"),
+        ("POST", "/foundation-objections/{objection_id}/resolve"),
+        ("POST", "/validation-tasks/{task_id}/result"),
+        ("POST", "/foundation-runs/{run_id}/synthesize-dossier"),
+        ("POST", "/foundation-runs/{run_id}/select"),
+        ("GET", "/candidates/{candidate_id}/objections"),
+        ("GET", "/foundation-objections/{objection_id}"),
+        ("GET", "/foundation-runs/{run_id}/validation-tasks"),
+        ("GET", "/validation-tasks/{task_id}"),
+        ("GET", "/foundation-runs/{run_id}/dossier"),
     }
 )
 
@@ -265,5 +277,5 @@ def test_route_inventory_count() -> None:
     # /foundation-runs/{run_id}/evaluate-eligibility, POST
     # /foundation-runs/{run_id}/candidates, GET /candidates/{candidate_id}, POST
     # /candidates/{candidate_id}/score, POST /candidates/{candidate_id}/elements) = 125.
-    assert len(EXPECTED_ROUTES) == 125
-    assert len(_actual_routes()) == 125
+    assert len(EXPECTED_ROUTES) == 135
+    assert len(_actual_routes()) == 135

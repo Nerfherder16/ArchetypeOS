@@ -33,6 +33,7 @@ JOB_REQUIREMENTS: dict[str, JobRequirement] = {
     "repository_scan": JobRequirement(capability="scan"),
     "project_digest": JobRequirement(capability="digest"),
     "council_review": JobRequirement(capability="council"),
+    "foundation_council_review": JobRequirement(capability="council"),
     "research": JobRequirement(capability="research"),
     "research_run": JobRequirement(capability="research"),
     "test": JobRequirement(capability="noop"),

@@ -268,8 +268,21 @@ migration.
   objection resolution, not a validation outcome — `ValidationStatus` has no such state); sets
   `selected`, advances the run, writes an `ApprovalRecord`). Deterministic in CI. Reuses the Council +
   `synthesize_verdict` + `ApprovalRecord` (C2).
-- **AOS-COUNCIL-VALIDATION-API-001** (queued) — routes: review-candidate / objections (+resolve) /
-  validation-tasks (+result) / synthesize-dossier / select / list / get.
+- **AOS-COUNCIL-VALIDATION-API-001** (this PR) — the HTTP surface over the engine
+  (`routes/foundation_council.py`, registered in `main.py`; thin wrappers mirroring
+  `routes/foundation.py`'s error-mapping discipline). 10 endpoints: `POST
+  /candidates/{id}/council-review` (**async** — enqueues a `foundation_council_review` worker job
+  mirroring `routes/council.py`, since `review_candidate` runs the full Council; new handler
+  `apps/worker/app/handlers/foundation_council_review.py` + its `job_requirements`/registry entries),
+  `POST /foundation-objections/{id}/resolve`, `POST /validation-tasks/{id}/result`, `POST
+  /foundation-runs/{id}/synthesize-dossier`, `POST /foundation-runs/{id}/select` (the human gate),
+  and 5 GET list/detail routes (candidate objections, objection detail, run validation-tasks,
+  validation-task detail-with-results, run dossier). `IllegalTransition`→409, other `ValueError`→422;
+  the engine's own 404s/409s (incl. the `select` gate) propagate unwrapped. 24 API tests + a worker
+  handler path; deterministic in CI. **Limitation:** because `review_candidate` owns its commit, the
+  handler stamps `job_id` in a second commit — a crash between the two could re-run on retry and
+  create a duplicate review; the direction is fail-safe (more objections make selection harder, never
+  wrongly easier).
 
 ## Final Judge verdict
 

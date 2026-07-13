@@ -61,6 +61,7 @@ _HANDLER_MODULES: tuple[str, ...] = (
     "repository_scan",
     "project_digest",
     "council_review",
+    "foundation_council_review",
     "research",
     "research_run",
     "test",

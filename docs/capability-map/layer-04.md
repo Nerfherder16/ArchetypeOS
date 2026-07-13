@@ -20,11 +20,13 @@ Capabilities:
 - **Local code reviewer — AOS-LLM-REVIEW-001** (Tier-1, `packages/aos_core/aos_core/services/code_review.py` + `tools/pr_reviewer.py`): advisory per-category ("pointwise") review of a unified diff on the on-node `qwen2.5-coder-reviewer` model, **layered on the deterministic PR Guardian, never a merge gate, fail-open**. Validated on teevee's 3070: `num_ctx` fix (Ollama's 4096 default truncated large diffs) + structured JSON + rubric gave high precision; per-category passes tripled recall (1/3 → 3/3 on a planted-bug diff). Eval harness `scripts/eval/review_spike.py` (log `.archetype/eval/`).
 
 - Foundation Intelligence — Requirements & Candidates (Slice 3, proposed, RFC-0020): deterministically compiles the System Genome (Layer 3) + claims (Layer 2) into a normalized Foundation Requirement Set (hard constraints / quality attributes, each tracing source claims + a verification method), then generates coherent Foundation Candidates + Elements with **score vectors** (not scalars, §10.3), gated by **hard-constraint eligibility before weighted scoring** (AD-8). Deterministic + human-reviewed (no LLM this slice); the `foundation_selection_runs` state machine advances to `eligibility_review`. Council review / validation / selection are Slice 4, baseline Slice 5
+- Foundation Intelligence — Council & Validation (Slice 4, proposed, RFC-0021): reuses the (now-typed, AOS-COUNCIL-TYPED-001) Engineering Council to adversarially review each eligible foundation candidate, tracks **objections** with a resolution workflow, prescribes **validation tasks** when evidence is insufficient (AD-10 — validation, not invented certainty), synthesizes a **Final Judge dossier** (recommends, does not select), and gates a **mandatory human candidate selection** (AD-9). Deterministic in CI (`DeterministicProvider`); real model behind the `Provider` seam. Baseline is Slice 5
 
 Primary artifacts:
 
 - docs/TECHNOLOGY_FITNESS_ENGINE.md
 - docs/rfc/RFC-0020-Foundation-Intelligence-Slice-3-Requirements-And-Candidates.md
+- docs/rfc/RFC-0021-Foundation-Intelligence-Slice-4-Council-And-Validation.md
 - docs/STRATEGY_ENGINE.md
 - docs/KNOWLEDGE_TRANSFER_ENGINE.md
 - docs/PORTFOLIO_KNOWLEDGE_MARKETPLACE.md

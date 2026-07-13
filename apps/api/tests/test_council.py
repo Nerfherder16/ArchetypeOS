@@ -546,10 +546,21 @@ _AGENT_JSON = (
     '"concerns": ["c1"], "confidence": 0.35, "status": "Needs Evidence"}'
 )
 
+# Plain strings in the raw agent JSON are coerced to typed {kind, detail, ref}
+# items by ``_parse_agent_output`` (AOS-COUNCIL-TYPED-001) — this is the
+# expected coerced shape for the two findings/one evidence/one concern above.
+_EXPECTED_FINDINGS = [
+    {"kind": "finding", "detail": "f1", "ref": None},
+    {"kind": "finding", "detail": "f2", "ref": None},
+]
+_EXPECTED_EVIDENCE = [{"kind": "evidence", "detail": "e1", "ref": None}]
+_EXPECTED_CONCERNS = [{"kind": "concern", "detail": "c1", "ref": None}]
+
 
 def test_parse_agent_output_bare_json():
     out = _parse_agent_output(_AGENT_JSON)
-    assert out["findings"] == ["f1", "f2"]
+    assert out["findings"] == _EXPECTED_FINDINGS
+    assert out["evidence"] == _EXPECTED_EVIDENCE
     assert out["confidence"] == 0.35
     assert out["status"] == "Needs Evidence"
 
@@ -559,8 +570,8 @@ def test_parse_agent_output_fenced_json():
     out = _parse_agent_output(fenced)
     # Without fence-stripping this degraded to the prose fallback (conf 0.05,
     # empty findings). The fix must recover the real content.
-    assert out["findings"] == ["f1", "f2"]
-    assert out["concerns"] == ["c1"]
+    assert out["findings"] == _EXPECTED_FINDINGS
+    assert out["concerns"] == _EXPECTED_CONCERNS
     assert out["confidence"] == 0.35
     assert not out["summary"].startswith("```")
 
@@ -568,7 +579,7 @@ def test_parse_agent_output_fenced_json():
 def test_parse_agent_output_prose_then_json_object():
     messy = f"Here is my assessment:\n{_AGENT_JSON}\nHope that helps."
     out = _parse_agent_output(messy)
-    assert out["findings"] == ["f1", "f2"]
+    assert out["findings"] == _EXPECTED_FINDINGS
     assert out["confidence"] == 0.35
 
 

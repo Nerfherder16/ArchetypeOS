@@ -190,6 +190,12 @@ EXPECTED_ROUTES: frozenset[tuple[str, str]] = frozenset(
         ("GET", "/foundation-runs/{run_id}/validation-tasks"),
         ("GET", "/validation-tasks/{task_id}"),
         ("GET", "/foundation-runs/{run_id}/dossier"),
+        # Foundation Intelligence Slice 5 — Baseline API (RFC-0022,
+        # AOS-FOUNDATION-BASELINE-API-001).
+        ("POST", "/foundation-runs/{run_id}/baseline"),
+        ("GET", "/projects/{project_id}/foundation-baselines"),
+        ("GET", "/foundation-baselines/{baseline_id}"),
+        ("GET", "/foundation-baselines/{base_id}/compare/{other_id}"),
     }
 )
 
@@ -277,5 +283,21 @@ def test_route_inventory_count() -> None:
     # /foundation-runs/{run_id}/evaluate-eligibility, POST
     # /foundation-runs/{run_id}/candidates, GET /candidates/{candidate_id}, POST
     # /candidates/{candidate_id}/score, POST /candidates/{candidate_id}/elements) = 125.
-    assert len(EXPECTED_ROUTES) == 135
-    assert len(_actual_routes()) == 135
+    # AOS-COUNCIL-VALIDATION-API-001 (Foundation Intelligence Slice 4) added the
+    # Council & Validation API routes (POST
+    # /candidates/{candidate_id}/council-review, POST
+    # /foundation-objections/{objection_id}/resolve, POST
+    # /validation-tasks/{task_id}/result, POST
+    # /foundation-runs/{run_id}/synthesize-dossier, POST
+    # /foundation-runs/{run_id}/select, GET
+    # /candidates/{candidate_id}/objections, GET
+    # /foundation-objections/{objection_id}, GET
+    # /foundation-runs/{run_id}/validation-tasks, GET
+    # /validation-tasks/{task_id}, GET /foundation-runs/{run_id}/dossier) = 135.
+    # AOS-FOUNDATION-BASELINE-API-001 (Foundation Intelligence Slice 5) added the
+    # Baseline API routes (POST /foundation-runs/{run_id}/baseline, GET
+    # /projects/{project_id}/foundation-baselines, GET
+    # /foundation-baselines/{baseline_id}, GET
+    # /foundation-baselines/{base_id}/compare/{other_id}) = 139.
+    assert len(EXPECTED_ROUTES) == 139
+    assert len(_actual_routes()) == 139

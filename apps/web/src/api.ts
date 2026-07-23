@@ -27,6 +27,7 @@ export type Repository = {
   default_branch?: string | null;
   remote_url?: string | null;
   is_read_only: boolean;
+  sensitivity: string;
   status: string;
   last_scanned_at: string | null;
   version: number;
@@ -255,6 +256,14 @@ export type Job = {
   attempts: number;
   project_id: string | null;
   repository_id: string | null;
+  // AOS-NODE-EXECUTION-001: routing decision fields, surfaced for Control Tower audit.
+  required_capability: string | null;
+  sensitivity: string;
+  requires_write: boolean;
+  assigned_node_id: string | null;
+  routing_status: string;
+  routing_explanation: string | null;
+  routed_at: string | null;
 };
 
 export type KnowledgePage = {
@@ -717,6 +726,9 @@ export type Connector = {
   tier: string;
   enabled: boolean;
   configured: boolean;
+  // AOS-CONNECTOR-RUNTIME-001: decomposed status — credential present vs reachable.
+  credential_present: boolean;
+  reachable: boolean | null;
   privacy_class: string;
   egress_allowed: boolean;
   browser_exposed: boolean;
